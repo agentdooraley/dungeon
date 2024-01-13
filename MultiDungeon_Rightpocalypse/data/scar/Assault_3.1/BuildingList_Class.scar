@@ -1,0 +1,125 @@
+BuildingList_Class={
+	DebugON=0,
+}
+local BuildingList_Metatable={
+	__index=BuildingList_Class
+}
+
+function BuildingList_Class:New()
+	
+	local NewBuildingList={
+		List={},
+		ListCount=0
+	}
+	
+	setmetatable(NewBuildingList, BuildingList_Metatable)
+	
+	return NewBuildingList
+
+end
+
+function BuildingList_Class:AddBuildingList(BuildingList)
+	for BuildingIndex,Building in pairs(BuildingList.List) do
+		self.ListCount=self.ListCount+1
+		self.List[self.ListCount]=Building
+	end
+end
+
+function BuildingList_Class:NewEntityEgroup(EgroupID, FullAddonList)
+	local NewBuildingList=BuildingList_Class:New()
+	NewBuildingList:AddEntityEgroup(EgroupID, FullAddonList)
+end
+
+function BuildingList_Class:AddEntity(EntityID, AddonList, FillList)
+	self.ListCount=self.ListCount+1
+	if Building_Class.Building_List.Get(EntityID.id)~=nil then
+		if self.DebugON>0 then print("BuildingList_Class:AddEntity() Building " ..  Entity_GetBlueprintName(EntityID) .. " id=" .. EntityID.id .. " allready exist, using existing") end
+		self.List[self.ListCount]=Building_Class.Building_List.Get(EntityID.id)
+	else
+		if self.DebugON>0 then print("BuildingList_Class:AddEntity() - Creating Building " ..  Entity_GetBlueprintName(EntityID) .. " id=" .. EntityID.id) end
+		self.List[self.ListCount]=Building_Class:NewExisting(EntityID, AddonList, nil, FillList)
+	end
+end
+
+function BuildingList_Class:AddListeningPost(PlayerID, ListeningPostID, ListeningPostBP, AddonList)
+
+	if Can_Have_ListeningPoint[Entity_GetBlueprintName(ListeningPostID)]~=true then
+		print("WARNING: BuildingList_Class:AddListeningPost: BuildingID.id " .. ListeningPostID.id .." BP=" .. Entity_GetBlueprintName(ListeningPostID) .. " cannot receive listening point, skipping")
+		return
+	end
+
+	self.ListCount=self.ListCount+1
+	
+	self.List[self.ListCount]=Building_Class:New(
+		PlayerID, 
+		ListeningPostBP, 
+		Entity_GetPosition(ListeningPostID), 
+		AddonList,
+		ListeningPostID
+	)
+	
+end
+
+--[[ Add buildings belonging to an existing Egroup
+
+EgroupID
+
+FullAddonList: addon definition table
+{ 
+	<BuildingBP>=AddonList,
+	...
+}
+
+PlayerID: optional, only entities owned by player are added
+
+]]
+function BuildingList_Class:AddEntityEgroup(EgroupID, FullAddonList,FullFillList,PlayerID)
+
+	for i=1, EGroup_CountSpawned(EgroupID) do
+		
+		local EntityID=EGroup_GetSpawnedEntityAt(EgroupID,i)
+		
+		if PlayerID==nil then
+			
+			self:AddEntity(
+				EntityID, 
+				FullAddonList[Entity_GetBlueprintName(EntityID)], 
+				FullFillList[Entity_GetBlueprintName(EntityID)]
+			)
+			
+		elseif Entity_GetWorldOwner(EntityID) then
+			
+			-- do nothing (entity not owned by world)
+			if self.DebugON>0 then print("BuildingList_Class:AddEntityEgroup() Building " ..  Entity_GetBlueprintName(EntityID) .. " id=" .. EntityID.id .. " is owned by world, skipping") end
+			
+		elseif Entity_GetPlayerOwner(EntityID).id==PlayerID.id then
+			
+			self:AddEntity(
+				EntityID, 
+				FullAddonList[Entity_GetBlueprintName(EntityID)], 
+				FullFillList[Entity_GetBlueprintName(EntityID)]
+			)
+			
+		end
+		
+	end
+	
+end
+
+function BuildingList_Class:AddListeningPostEgroup(PlayerID, EgroupID, ListeningPostBP, AddonList)
+	for i=1, EGroup_CountSpawned(EgroupID) do
+		self:AddListeningPost(PlayerID, EGroup_GetSpawnedEntityAt(EgroupID,i), ListeningPostBP, AddonList)
+	end
+end
+
+function BuildingList_Class:PointerList()
+	
+	local PointerList={}
+
+	for Building_Index,Building in pairs(self.List) do
+		table.insert(PointerList,Building.Pointer)
+	end
+	
+	return PointerList
+	
+end

@@ -1,0 +1,153 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                          Dow Extensions                                            ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+--[[ integer Squad_GetMaxReinforcement(SquadID squad)
+-- calculates how many troopers can be added to the unit ]]
+function Squad_GetMaxReinforcement(SquadID)
+	local Reinforce_Capacity=Squad_GetMax(SquadID)-Squad_Count(SquadID)+Squad_CountLeaders(SquadID)
+	if Squad_IsAttached(SquadID) then Reinforce_Capacity=Reinforce_Capacity+1 end
+	return Reinforce_Capacity
+end
+
+--[[ boolean  Entity_IsCapturedByTeam( EntityID Entity, {PlayerID} Table_playerId )
+-- Returns true if all or any strategic points in a group have been captured by players in team table that lists team playerID. 
+-- This function will ignore all entities that cannot be captured and will return false if no entities in the group can be captured.]]
+function Entity_IsCapturedByTeam(EntityID, Table_playerId)
+
+	local Iscaptured=false
+	for Player_Index, Player in (Table_playerId) do
+		if Entity_IsCapturedByPlayer(EntityID, Player) then
+			Iscaptured=true
+			break
+		end
+	end
+
+	return Iscaptured
+
+end
+
+--[[ boolean  Entity_IsCapturedByTeam( EntityID Entity, PlayerID playerId )
+-- Returns true if the strategic point is captured by a player in the same team as PlayerID
+-- Return nil if entities cannot be captured.]]
+function Entity_IsCapturedByPlayerTeam(EntityID,PlayerID)
+	if EntityID==nil then return end
+	if not Entity_IsStrategicPoint(EntityID) then return end
+	if Entity_GetWorldOwner(EntityID) then return false end
+	return (Player_GetTeam(Entity_GetPlayerOwner(EntityID))==Player_GetTeam(PlayerID))
+end
+
+--[[ boolean  Egroup_IsCapturedByPlayerTeam( EGroupID EgroupID, PlayerID playerId, boolean AllCaptured )
+-- Returns true if 
+-- AllCaptured=true => all of the strategic point are captured by players in the same team as PlayerID
+-- AllCaptured=false => one or more of the strategic point is captured by player in the same team as PlayerID
+-- Return nil if non entities can be captured.]]
+function Egroup_IsCapturedByPlayerTeam(EgroupID, PlayerID, AllCaptured)
+	
+	local CaptureStatusAll=true
+	local CaptureStatusSingle=false
+	
+	for i=1,EGroup_CountSpawned(EgroupID) do
+		
+		local tmpStatus=Entity_IsCapturedByPlayerTeam(EGroup_GetSpawnedEntityAt(EgroupID,i),PlayerID)
+		
+		if tmpStatus~=nil then
+			CaptureStatusAll=CaptureStatusAll and tmpStatus
+			CaptureStatusSingle=CaptureStatusSingle or tmpStatus
+		end
+		
+	end
+	
+	if AllCaptured then
+		return CaptureStatusAll
+	else
+		return CaptureStatusSingle
+	end
+	
+end
+
+function Entity_GetPlayerStartHQ(PlayerID)
+	
+	local egtmp=EgroupMgr:New("ToolsDow")
+	
+	Player_GetAllEntitiesNearPos( PlayerID, egtmp.Name, Player_GetStartPosition(PlayerID), 1.5 )
+	
+	if EGroup_CountSpawned(egtmp.ID)==0 then
+		print("Warning: Entity_GetPlayerStartHQ() :no headquarter found")
+		return nil
+	end
+	
+	if EGroup_CountSpawned(egtmp.ID)>1 then
+		print("Warning: Entity_GetPlayerStartHQ() : more than 1 entity found, returning first")
+	end
+	
+	local HQID=EGroup_GetSpawnedEntityAt(egtmp.ID,1)
+	
+	EGroup_Destroy(egtmp.ID)
+	
+	return HQID
+
+end
+
+function EGroup_AddPlayerStartHQ(GroupName, PlayerID)
+	EGroup_Add(EGroup_FromName(GroupName), Entity_GetPlayerStartHQ(PlayerID))
+end
+
+function Player_GrantResearchList(PlayerID,Research_List)
+	for Research_Index, Research_Name in pairs(Research_List) do
+		Player_GrantResearch( PlayerID,  Research_Name)
+	end
+end
+
+function Squad_GetMaxFromName2(BluePrint)
+	if Squad_GetMaxFromName2_Def[BluePrint]~=nil then
+		return Squad_GetMaxFromName2_Def[BluePrint]
+	else
+		return Squad_GetMaxFromName(BluePrint)
+	end
+end
+
+--[[Void  EGroup_CreateFromEGroup( String newGroupName, String fromGroupName, String blueprint )
+
+	Creates an egroup (if one doesn't exist) and adds to it squads that have a specified blueprint that are part of a different group. 
+
+	If the group being created already exists, it will be appended to. Squads will not be removed from the from group.]]
+	
+function SGroup_CreateFromSGroup( newGroupName, fromGroupName, blueprint )
+
+	local newGroupid=SGroup_CreateIfNotFound(newGroupName)
+
+	local function AddFiltered( sgroupid, itemindex, squadID )
+		if Squad_GetBlueprintName(squadID)==blueprint then
+			SGroup_Add(newGroupid,squadID)
+		end
+	end
+	SGroup_ForEach(SGroup_FromName(fromGroupName), AddFiltered)
+
+end
+
+function Sgroup_RemoveSgroup( GroupName, GroupToRemoveName)
+	
+	local GroupNameid=SGroup_FromName(GroupName)
+
+	local function Remove( sgroupid, itemindex, squadID )
+		SGroup_Remove(GroupNameid,squadID)
+	end
+	SGroup_ForEach(SGroup_FromName(GroupToRemoveName), Remove)
+	
+end
+
+function SGroup_CreateFromSGroupPlayer( newGroupName, fromGroupName, PlayerID )
+
+	local newGroupid=SGroup_CreateIfNotFound(newGroupName)
+
+	local function AddFiltered( sgroupid, itemindex, squadID )
+		if Squad_GetPlayerOwner(squadID).id==PlayerID.id then
+			SGroup_Add(newGroupid,squadID)
+		end
+	end
+	SGroup_ForEach(SGroup_FromName(fromGroupName), AddFiltered)
+
+end

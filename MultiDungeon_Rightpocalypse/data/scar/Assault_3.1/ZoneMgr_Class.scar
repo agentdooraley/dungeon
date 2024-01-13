@@ -1,0 +1,267 @@
+if ZoneMgr_Class==nil then 
+	ZoneMgr_Class={}
+end
+ZoneMgr_Class.DebugON=0
+
+local ZoneMgr_Metatable={
+	__index=ZoneMgr_Class
+}
+
+--[[ ZoneMgr tables Definition
+
+PlayerID: player for the zone
+
+GetStatus: object with IsActive() and ForceCapture() functions
+
+ReinforcementMgr: ReinforcementMgr object
+
+CaptureMgrList:
+
+DefendMgrList:
+
+RepairMgrList:
+
+BuildingMgrList:
+]]
+function ZoneMgr_Class:New(PlayerID, ZoneParams, GetStatus, ReinforcementMgrPointer)
+	
+	local NewZoneMgr={
+		PlayerID=PlayerID,
+		
+		ZoneParams=ZoneParams,
+		
+		GetStatus=GetStatus,
+		ReinforcementMgrPointer=ReinforcementMgrPointer,
+		
+		ZoneStatus=false,
+		
+		CaptureMgrList={},
+		CaptureWaveList={},
+		DefendMgrList={},
+		RepairMgrList={},
+		BuildingMgrList={},
+	}
+	
+	setmetatable(NewZoneMgr, ZoneMgr_Metatable)
+	
+	return NewZoneMgr
+
+end
+
+function ZoneMgr_Class.Reload(ZoneMgr)
+	
+	setmetatable(ZoneMgr, ZoneMgr_Metatable)
+
+	_G[ZoneMgr.GetStatus.ReloadClass].Reload(ZoneMgr.GetStatus)
+	
+	for CaptureMgr_Index, CaptureMgr in pairs(ZoneMgr.CaptureMgrList) do 
+		CaptureMgr_Class.Reload(CaptureMgr)
+	end
+	
+	for DefendMgr_Index, DefendMgr in pairs(ZoneMgr.DefendMgrList) do
+		DefendMgr_Class.Reload(DefendMgr)
+	end
+
+	for RepairMgr_Index, RepairMgr in pairs(ZoneMgr.RepairMgrList) do
+		RepairMgr_Class.Reload(RepairMgr)
+	end
+
+	for BuildingMgr_Index, BuildingMgr in pairs(ZoneMgr.BuildingMgrList) do
+		BuildingMgr_Class.Reload(BuildingMgr)
+	end
+	
+end
+
+function ZoneMgr_Class:AddCaptureMgr(CaptureMgr)
+	table.insert(self.CaptureMgrList,CaptureMgr)
+end
+
+function ZoneMgr_Class:AddDefendMgr(DefendMgr)
+	table.insert(self.DefendMgrList,DefendMgr)
+end
+
+function ZoneMgr_Class:AddRepairMgr(RepairMgr)
+	table.insert(self.RepairMgrList,RepairMgr)
+end
+
+function ZoneMgr_Class:AddBuildingMgr(BuildingMgr)
+	table.insert(self.BuildingMgrList,BuildingMgr)
+end
+
+function ZoneMgr_Class:InitLiveStatus()
+	
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:InitLiveStatus(), Time=" .. World_GetGameTime()) end
+	
+	self.ZoneStatus=self.GetStatus:IsActive()
+	
+	if self.ZoneParams.OnInit~=nil then
+		CustomFunctions[self.ZoneParams.OnInit](self)
+	end
+	
+end
+
+function ZoneMgr_Class:UpdateLiveStatus()
+
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:UpdateLiveStatus(), Time=" .. World_GetGameTime()) end
+
+	for CaptureMgr_Index, CaptureMgr in pairs(self.CaptureMgrList) do 
+		CaptureMgr:UpdateLiveStatus()
+	end
+	
+	for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+		DefendMgr:UpdateLiveStatus()
+	end
+
+	for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+		RepairMgr:UpdateLiveStatus()
+	end
+
+	for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+		BuildingMgr:UpdateLiveStatus()
+	end
+	
+	local NewZoneStatus=self.GetStatus:IsActive()
+	
+	if NewZoneStatus~=self.ZoneStatus then
+		
+		--zone has been lost
+		if NewZoneStatus==false then
+			
+			local ReinforcementMgr=PointerTable.Get(self.ReinforcementMgrPointer)
+			
+			if self.DebugON>0 then print(tostring(self) .. " ZoneMgr_Class:UpdateLiveStatus(), Zone lost, Time=" .. World_GetGameTime()) end
+			
+			for CaptureMgr_Index, CaptureMgr in pairs(self.CaptureMgrList) do 
+				CaptureMgr:CancelReinforcement(ReinforcementMgr)
+			end
+			
+			for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+				DefendMgr:CancelReinforcement(ReinforcementMgr)
+			end
+			
+			for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+				RepairMgr:CancelReinforcement(ReinforcementMgr)
+			end
+			
+			for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+				BuildingMgr:CancelReinforcement(ReinforcementMgr)
+			end
+			
+			if self.ZoneParams.OnLoose~=nil then
+				CustomFunctions[self.ZoneParams.OnLoose](self)
+			end
+			
+		-- zone has been captured
+		else
+			
+			if self.DebugON>0 then print(tostring(self) .. " ZoneMgr_Class:UpdateLiveStatus(), Zone taken, Time=" .. World_GetGameTime()) end
+			
+			if self.ZoneParams.OnCapture~=nil then
+				CustomFunctions[self.ZoneParams.OnCapture](self)
+			end
+			
+		end
+		
+		self.ZoneStatus=NewZoneStatus
+		
+	end
+	
+end
+
+function ZoneMgr_Class:RequireReinforcement()
+
+	if self.ZoneStatus then
+		
+		local ReinforcementMgr=PointerTable.Get(self.ReinforcementMgrPointer)
+		
+		if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:RequireReinforcement(), DefendMgr, Time=" .. World_GetGameTime()) end
+		for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+			DefendMgr:RequireReinforcement(ReinforcementMgr)
+		end
+		
+		if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:RequireReinforcement(), CaptureMgr, Time=" .. World_GetGameTime()) end
+		for CaptureMgr_Index, CaptureMgr in pairs(self.CaptureMgrList) do 
+			CaptureMgr:RequireReinforcement(ReinforcementMgr)
+		end
+		
+		if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:RequireReinforcement(), RepairMgr, Time=" .. World_GetGameTime()) end
+		for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+			RepairMgr:RequireReinforcement(ReinforcementMgr)
+		end
+		
+		if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:RequireReinforcement(), BuildingMgr, Time=" .. World_GetGameTime()) end
+		for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+			BuildingMgr:RequireReinforcement(ReinforcementMgr)
+		end
+		
+	end
+	
+end
+
+function ZoneMgr_Class:DoOrders()
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:DoOrders(), CaptureMgr, Time=" .. World_GetGameTime()) end
+	for CaptureMgr_Index, CaptureMgr in pairs(self.CaptureMgrList) do 
+		CaptureMgr:DoOrders()
+	end
+	
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:DoOrders(), DefendMgr, Time=" .. World_GetGameTime()) end
+	for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+		DefendMgr:DoOrders()
+	end
+	
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:DoOrders(), BuildingMgr, Time=" .. World_GetGameTime()) end
+	for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+		BuildingMgr:DoOrders()
+	end
+	
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:DoOrders(), RepairMgr, Time=" .. World_GetGameTime()) end
+	for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+		RepairMgr:DoOrders()
+	end
+end
+
+function ZoneMgr_Class:ForceStartCreation(StartCapture,StartBuild)
+
+	if self.DebugON>0 then print(tostring(self) .. " ZoneMgr_Class:ForceStartCreation(), Time=" .. World_GetGameTime()) end
+
+	if StartCapture then self.GetStatus:ForceCapture() end
+
+	if StartBuild then
+	
+		for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+			BuildingMgr:ForceStartCreation()
+		end
+		
+		for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+			DefendMgr:ForceStartCreation()
+		end
+		
+		for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+			RepairMgr:ForceStartCreation()
+		end
+		
+	end
+	
+end
+
+function ZoneMgr_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+
+	if self.DebugON>1 then print(tostring(self) .. " ZoneMgr_Class:DoSpecAbility, Time=" .. World_GetGameTime()) end
+
+	for CaptureMgr_Index, CaptureMgr in pairs(self.CaptureMgrList) do 
+		CaptureMgr:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	end
+	
+	for DefendMgr_Index, DefendMgr in pairs(self.DefendMgrList) do
+		DefendMgr:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	end
+
+--~ 	for RepairMgr_Index, RepairMgr in pairs(self.RepairMgrList) do
+--~ 		RepairMgr:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+--~ 	end
+
+--~ 	for BuildingMgr_Index, BuildingMgr in pairs(self.BuildingMgrList) do
+--~ 		BuildingMgr:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+--~ 	end
+	
+end

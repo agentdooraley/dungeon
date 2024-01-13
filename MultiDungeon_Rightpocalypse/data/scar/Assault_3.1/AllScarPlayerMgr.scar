@@ -1,0 +1,513 @@
+
+if AllScarPlayerMgr==nil then 
+	AllScarPlayerMgr={
+		PlayerList={},
+		PlayerCount=0,
+		UnderRun=2, -- 1 : run each frame, 2 : run 1 frame on two, 3 : 1 frame on three,...
+		UnderRunCounter=1,
+	}
+end
+AllScarPlayerMgr.DebugON=0
+
+function AllScarPlayerMgr.AddPlayerMgr(PlayerMgr)
+	AllScarPlayerMgr.PlayerCount=AllScarPlayerMgr.PlayerCount+1
+	local PlayerName="Player"..AllScarPlayerMgr.PlayerCount
+	AllScarPlayerMgr.PlayerList[PlayerName]=PlayerMgr
+end
+
+function AllScarPlayerMgr.DoNextStep()
+
+	HiddingMgr.Update()
+
+	if AllScarPlayerMgr.UnderRunCounter==1 then
+		
+		for PlayerMgrIndex,PlayerMgr in pairs(AllScarPlayerMgr.PlayerList) do
+			PlayerMgr:UpdateLiveStatus()
+		end
+		
+		AllScarPlayerMgr.CurrentPlayer=next(AllScarPlayerMgr.PlayerList,AllScarPlayerMgr.CurrentPlayer)
+		
+		if AllScarPlayerMgr.CurrentPlayer==nil then return end
+		
+		if Player_IsAlive(AllScarPlayerMgr.PlayerList[AllScarPlayerMgr.CurrentPlayer].PlayerID) then
+			AllScarPlayerMgr.PlayerList[AllScarPlayerMgr.CurrentPlayer]:DoNextStep()
+		else
+			if AllScarPlayerMgr.DebugON>1 then 
+				print("AllScarPlayerMgr.DoNextStep() Player Dead=" .. 
+				tostring(AllScarPlayerMgr.PlayerList[AllScarPlayerMgr.CurrentPlayer].PlayerID.id) ..
+				" Time=" .. World_GetGameTime()
+				) 
+			end
+			AllScarPlayerMgr.PlayerList[AllScarPlayerMgr.CurrentPlayer]=nil
+		end
+		
+	end
+	
+	AllScarPlayerMgr.UnderRunCounter=AllScarPlayerMgr.UnderRunCounter+1
+	if AllScarPlayerMgr.UnderRunCounter>AllScarPlayerMgr.UnderRun then
+		AllScarPlayerMgr.UnderRunCounter=1
+	end
+	
+end
+
+function AllScarPlayerMgr.ForceStartCreation()
+
+	for Player_Index,PlayerMgr in pairs(AllScarPlayerMgr.PlayerList) do
+		PlayerMgr:ForceStartCreation()
+	end
+	
+end
+
+function AllScarPlayerMgr.InitLiveStatus()
+
+	for Player_Index,PlayerMgr in pairs(AllScarPlayerMgr.PlayerList) do
+		PlayerMgr:InitLiveStatus()
+	end
+	
+end
+
+
+
+function AllScarPlayerMgr.ResetAIs()
+	if AllScarPlayerMgr.DebugON>0 then print(print("Enable all AIs")) end
+	Cpu_EnableAll(true)
+	for Player_Index,PlayerMgr in pairs(AllScarPlayerMgr.PlayerList) do
+		if AllScarPlayerMgr.DebugON>0 then print("Locking AI for player :" .. PlayerMgr.PlayerID.id) end
+		Cpu_Enable(PlayerMgr.PlayerID,false)
+	end
+end
+
+function AllScarPlayerMgr.ImportGameParams_Step1(GameParams)
+
+	--
+	-- Apply default params
+	--
+
+	local function ApplyDefaultTable(Data,DefaultData)
+		
+		-- do not apply default table if is a list that already has some data in it.
+		if (Data[1]~=nil) and (DefaultData[1]~=nil) then return end
+		
+		for DefaultIndex,DefaultSubData in pairs(DefaultData) do
+			
+			if Data[DefaultIndex]==nil then
+				Data[DefaultIndex]=DefaultSubData
+			elseif type(DefaultSubData)=="table" then
+				ApplyDefaultTable(Data[DefaultIndex],DefaultSubData)
+			end
+			
+		end
+		
+	end
+
+	local function ApplyDefault(Data)
+		if type(Data)=="table" then
+			if Data.Default~=nil then
+				if type(Data.Default)=="table" then
+					local DefaultData=Data.Default
+					Data.Default=nil
+					for Index,SubData in pairs(Data) do
+						ApplyDefaultTable(SubData,DefaultData)
+					end
+				end
+			end
+			for Index,SubData in pairs(Data) do
+				ApplyDefault(SubData)
+			end
+		end
+	end
+
+	ApplyDefault(GameParams)
+	
+	--
+	-- Remove groups (used to set units imported from ME depending on game level)
+	--
+	
+	for SgroupIndex,SgroupName in pairs(GameParams.InitRemove.SgroupList) do
+		if SGroup_Exists(SgroupName) then 
+			if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Step1() Removing Sgroup=" .. SgroupName) end
+			SGroup_DestroyAllSquads(SgroupName) 
+		else
+			print("WARNING: AllScarPlayerMgr.ImportGameParams_Step1() Remove Sgroup does not exist=" .. SgroupName)
+		end
+	end
+	
+	for EgroupIndex,EgroupName in pairs(GameParams.InitRemove.EgroupList) do
+		if EGroup_Exists(EgroupName) then
+			if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Step1() Removing Egroup=" .. EgroupName) end
+			EGroup_DestroyAllEntities(EgroupName)
+		else
+			print("WARNING: AllScarPlayerMgr.ImportGameParams_Step1() Remove Egroup does not exist=" .. EgroupName)
+		end
+	end
+	
+	--
+	-- Overwrite special abilities
+	--
+	for UnitBP,UnitData in pairs(GameParams.SpecAbilityOverwrite) do
+		
+		for SpecAbility_Name,SpecAbility_Data in pairs(UnitData) do
+			
+			for ParamName,ParamData in pairs(SpecAbility_Data) do
+				SpecAbilityMgr.CastAbilityList[UnitBP][SpecAbility_Name][ParamName]=ParamData
+			end
+			
+		end
+		
+	end
+	
+	return GameParams
+	
+end
+	
+function AllScarPlayerMgr.ImportGameParams_Step2(GameParams)
+
+	--
+	-- Import buildings
+	--
+	
+	for BuildingListDef_Name,BuildingListDef_Table in pairs(GameParams.BuildingListDef) do
+		
+		local BuildingList=BuildingList_Class:New()
+		
+		for BuildingImportIndex,BuildingImport in pairs(BuildingListDef_Table) do
+			
+			if BuildingImport.EgroupName==nil then
+				
+				if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Step2() EgroupName not defined, Skipping, Index=" .. BuildingListDef_Name .. "." .. BuildingImportIndex) end
+				
+			elseif BuildingImport.StartMarker==nil then
+				
+				if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Step2() StartMarker not defined, Skipping, Index=" .. BuildingListDef_Name .. "." .. BuildingImportIndex) end
+				
+			elseif StartMarker_GetPlayerID(BuildingImport.StartMarker)==nil then
+				
+				if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Step2() Playermarker " .. BuildingImport.StartMarker .. "empty (player not created), Skipping, Index=" .. BuildingListDef_Name .. "." .. BuildingImportIndex) end
+				
+			elseif BuildingImport.Method=="AddEntityEgroup" then
+				
+				if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Step2() AddEntityEgroup=" .. tostring(BuildingImport.EgroupName)) end
+				
+				BuildingList:AddEntityEgroup(
+					EGroup_FromName(BuildingImport.EgroupName), 
+					BuildingImport.FullAddonList, 
+					BuildingImport.FullFillList,
+					StartMarker_GetPlayerID(BuildingImport.StartMarker)
+				)
+				
+			elseif BuildingImport.Method=="AddListeningPostEgroup" then
+				
+				if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Step2() AddListeningPostEgroup=" .. tostring(BuildingImport.EgroupName) .. ", PlayerId.id=" .. tostring(StartMarker_GetPlayerID(BuildingImport.StartMarker).id)) end
+				
+				BuildingList:AddListeningPostEgroup(
+					StartMarker_GetPlayerID(BuildingImport.StartMarker), 
+					EGroup_FromName(BuildingImport.EgroupName), 
+					BuildingImport.ListeningPostBP, BuildingImport.AddonList
+				)
+				
+			else
+				
+				print(" ImportGameParams_Step2() WARNNING: BuildingListDef unknown method=" .. tostring(BuildingImport.Method) .. " in table Index=" .. BuildingListDef_Name .. "." .. BuildingImportIndex)
+				
+			end
+			
+		end
+		
+		GameParams.BuildingListDef[BuildingListDef_Name]=BuildingList
+		
+	end
+	
+	--
+	-- Import players
+	--
+	for Player_Index,PlayerParams in pairs(GameParams.PlayerList) do
+		
+		if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Step2() Checking Player Marker=" .. PlayerParams.StartMarker) end
+		
+		local PlayerID=StartMarker_GetPlayerID(PlayerParams.StartMarker)
+		
+		if PlayerID~=nil then
+			print("Importing player ID=" .. PlayerID.id)
+			local PlayerMgr=AllScarPlayerMgr.ImportGameParams_Player(PlayerID, PlayerParams, GameParams.BuildingListDef)
+			
+			if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Step2() AddPlayerMgr") end
+			AllScarPlayerMgr.AddPlayerMgr(PlayerMgr)
+		end
+		
+		GameParams.PlayerList[Player_Index]=nil
+		
+	end
+	
+end
+
+
+-- create player, returns PlayerMgr
+function AllScarPlayerMgr.ImportGameParams_Player(PlayerID, PlayerParams, BuildingListDef)
+
+	local PlayerMgr=ScarPlayerMgr_Class:New(PlayerID)
+	local CreatePosList={}
+	local ReinforcementMgrList={}
+	local BuildingMgrList={}
+	local RepairMgrList={}
+	local DefendWaveDefFromMapList={}
+	local DefendMgrList={}
+	local ZoneMgrList={}
+
+	--
+	-- Researches
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import Player_GrantResearchList") end
+	Player_GrantResearchList(PlayerID,PlayerParams.GrantResearchList)
+	
+	--
+	-- ReinforcementMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import ReinforcementMgrList") end
+	for ReinforcementMgr_Index,ReinforcementMgr_Data in pairs(PlayerParams.ReinforcementMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() ReinforcementMgr_Index=" .. tostring(ReinforcementMgr_Index)) end
+		
+		ReinforcementMgrList[ReinforcementMgr_Index]=
+			ReinforceMgr_Class:New(ReinforcementMgr_Index,ReinforcementMgr_Data.IncomeRate,ReinforcementMgr_Data.MaxMoney,ReinforcementMgr_Data.Delay,ReinforcementMgr_Data.Cost,ReinforcementMgr_Data.StartMoney)
+	end
+
+	--
+	-- BuildingMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import BuildingMgrList") end
+	for BuildingMgr_Index, BuildingMgr_Data in (PlayerParams.BuildingMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() BuildingMgr_Index=" .. tostring(BuildingMgr_Index)) end
+		
+		local BuildingMgr=BuildingMgr_Class:New()
+		
+		for BuildingList_Index,BuildingList_Name in pairs(BuildingMgr_Data) do
+			BuildingMgr:AddBuildingList(BuildingListDef[BuildingList_Name])
+		end
+		
+		BuildingMgrList[BuildingMgr_Index]=BuildingMgr
+		
+	end
+	
+	--
+	-- CreatePos
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import CreatePosList") end
+	for CreatePos_Index,CreatePos in pairs(PlayerParams.CreatePosList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() CreatePos_Index=" .. tostring(CreatePos_Index)) end
+		
+		local CreatePos_Tmp=CreatePos_Class:New()
+		
+		for AddCreatePos_Index,AddCreatePos in pairs(CreatePos) do
+			
+			if AddCreatePos.Method=="NewFixedPosMarkerName" then
+				CreatePos_Tmp:AddFixedPos(Marker_GetPosition(Marker_FromName(AddCreatePos.MarkerName,AddCreatePos.MarkerType)))
+			elseif AddCreatePos.Method=="BuildingFromEgroup" then
+				CreatePos_Tmp:AddBuildingFromEgroup(AddCreatePos.EgroupName)
+			elseif AddCreatePos.Method=="BPFromBuildingList" then
+				CreatePos_Tmp:AddBPFromBuildingList(BuildingListDef[AddCreatePos.BuildingListName], AddCreatePos.BP)
+			elseif AddCreatePos.Method=="NewStratPointEgroup" then
+				CreatePos_Tmp:AddStratPointFromEgroup(AddCreatePos.EgroupName,PlayerID)
+			else
+				print("ImportGameParams_Player() WARNNING: unknown CreatePosList method=" .. tostring(AddCreatePos.Method))
+			end
+		end
+		
+		CreatePosList[CreatePos_Index]=CreatePos_Tmp.Pointer
+	end
+	
+	--
+	-- RepairMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import RepairMgrList") end
+	for RepairMgr_Index,RepairMgr_Data in pairs(PlayerParams.RepairMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() RepairMgr_Index=" .. tostring(RepairMgr_Index)) end
+		
+		if type(RepairMgr_Data.RepairData.CreatePos)=="string" then
+			RepairMgr_Data.RepairData.CreatePos=CreatePosList[RepairMgr_Data.RepairData.CreatePos]
+		end
+		
+		local BuildingList=BuildingList_Class:New()
+		for BuildingList_Index,BuildingList_Name in pairs(RepairMgr_Data.BuildingList) do
+			BuildingList:AddBuildingList(BuildingListDef[BuildingList_Name])
+		end
+		
+		RepairMgrList[RepairMgr_Index]=
+			RepairMgr_Class:NewFromSgroup(
+				PlayerID, 
+				SGroup_FromName(RepairMgr_Data.SgroupName), 
+				RepairMgr_Data.RepairData, 
+				BuildingList:PointerList(), 
+				RepairMgr_Data.RepairFactor
+			)
+		
+	end
+	
+	--
+	-- DefendMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import DefendMgrList") end
+	for DefendMgr_Index,DefendMgr_Data in pairs(PlayerParams.DefendMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() DefendMgr_Index=" .. tostring(DefendMgr_Index)) end
+
+		local ResurList={}
+		for Resur_Index,Resur_Data in pairs(DefendMgr_Data.CreationGroupList) do 
+			ResurList[Resur_Index]=CreatePosList[Resur_Data] 
+		end
+		
+		DefendMgrList[DefendMgr_Index]=DefendMgr_Class:New(
+			PlayerID, 
+			DefendMgr_Class:WaveDefFromMap(
+				DefendMgr_Data.DefendSquadGroupList, 
+				PlayerParams.MapUnitsParams.StanceGroupList,
+				PlayerParams.MapUnitsParams.LeaderGroupList,
+				PlayerParams.MapUnitsParams.AttachList,
+				PlayerParams.MapUnitsParams.WeaponGroupList,
+				PlayerParams.MapUnitsParams.EntrenchWeaponGroupList,
+				ResurList,
+				DefendMgr_Data.StartHiddenList
+				), 
+			DefendMgr_Data.WaveParams			
+		)
+		
+	end
+	
+	--
+	-- ZoneMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import ZoneMgrList") end
+	for ZoneMgr_Index,ZoneMgr_Data in pairs(PlayerParams.ZoneMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() ZoneMgr_Index=" .. tostring(ZoneMgr_Index)) end
+		
+		local ZoneMgrStatus
+		if ZoneMgr_Data.ZoneStatus.Method=="NewStatusByEgroup" then
+			ZoneMgrStatus=ZoneStatus_ByEgroup_Class:New(PlayerID,EGroup_FromName(ZoneMgr_Data.ZoneStatus.EgroupName))
+		else
+			print("ImportGameParams_Player() WARNNING: unknown ZoneStatus method=" .. ZoneMgr_Data.ZoneStatus.Method)				
+		end
+		
+		local ZoneMgr=ZoneMgr_Class:New(PlayerID, ZoneMgr_Data.ZoneParams, ZoneMgrStatus, ReinforcementMgrList[ZoneMgr_Data.ReinforcementMgr].Pointer)
+		
+		for BuildingMgr_Index, BuildingMgr_Name in (ZoneMgr_Data.ZoneBuildingMgrList) do
+			if BuildingMgrList[BuildingMgr_Name]==nil then print("AllScarPlayerMgr.ImportGameParams_Player(), WARNING: Building manager is Nil, Index=" .. BuildingMgr_Name) end
+			ZoneMgr:AddBuildingMgr(BuildingMgrList[BuildingMgr_Name])
+		end
+		
+		for RepairMgr_Index,RepairMgr_Name in pairs(ZoneMgr_Data.ZoneRepairMgrList) do
+			if RepairMgrList[RepairMgr_Name]==nil then print("AllScarPlayerMgr.ImportGameParams_Player(), WARNING: Repair manager is Nil, Index=" .. RepairMgr_Name) end
+			ZoneMgr:AddRepairMgr(RepairMgrList[RepairMgr_Name])
+		end
+		
+		for DefendMgr_Index,DefendMgr_Name in pairs(ZoneMgr_Data.ZoneDefendMgrList) do
+			if DefendMgrList[DefendMgr_Name]==nil then print("AllScarPlayerMgr.ImportGameParams_Player(), WARNING: Defend manager is Nil, Index=" .. DefendMgr_Name) end
+			ZoneMgr:AddDefendMgr(DefendMgrList[DefendMgr_Name])
+		end
+		
+		ZoneMgrList[ZoneMgr_Index]=ZoneMgr
+		
+		PlayerMgr:AddZoneMgr(ZoneMgr,ZoneMgr_Data.StartBuild, ZoneMgr_Data.StartCapture,ZoneMgr_Index)
+		
+	end
+	
+	--
+	-- CaptureMgr
+	--
+	
+	if AllScarPlayerMgr.DebugON>0 then print("AllScarPlayerMgr.ImportGameParams_Player() Import CaptureMgrList") end
+	for CaptureMgr_Index,CaptureMgr_Data in pairs(PlayerParams.CaptureMgrList) do
+		
+		if AllScarPlayerMgr.DebugON>1 then print("AllScarPlayerMgr.ImportGameParams_Player() CaptureMgr_Index=" .. tostring(CaptureMgr_Index)) end
+		
+		for Squad_Index, Squad_Data in pairs(CaptureMgr_Data.WaveDef) do
+			if CreatePosList[Squad_Data.CreatePos]==nil then
+				print("AllScarPlayerMgr.ImportGameParams_Player(), ERROR: CreatePos is Nil, CreatePos=" .. tostring(Squad_Data.CreatePos) .. 
+					" SquadIndex=" .. tostring(Squad_Index) .. " CaptureMgr=" .. tostring(CaptureMgr_Index) )
+			end
+			Squad_Data.CreatePos=CreatePosList[Squad_Data.CreatePos]
+		end
+		
+		local CaptureMgr=CaptureMgr_Class:New(
+			PlayerID, 
+			CaptureMgr_Data.WaveDef, 
+			CaptureMgr_Data.WaveParams, 
+			CaptureMgr_Data.TargetEgName,
+			CaptureMgr_Data.LaunchParams,
+			CaptureMgr_Data.NextTargetEgName
+		)
+		
+		if CaptureMgr_Data.WaveDefFromMap~=nil then
+			CaptureMgr:AddWaveDefFromMap(
+				CaptureMgr_Data.WaveDefFromMap, 
+				PlayerParams.MapUnitsParams.LeaderGroupList,
+				PlayerParams.MapUnitsParams.AttachList,
+				PlayerParams.MapUnitsParams.WeaponGroupList,
+				PlayerParams.MapUnitsParams.EntrenchWeaponGroupList
+			)
+		end
+
+		
+		ZoneMgrList[CaptureMgr_Data.ZoneMgr]:AddCaptureMgr(CaptureMgr)
+		
+	end
+	
+	return PlayerMgr
+	
+end
+
+function AllScarPlayerMgr.PrintAll()
+
+	print(" ")
+	print("================================================")
+	print(" Start of Assault Code Data Dump, Time=" .. tostring(World_GetGameTime()) )
+	print("================================================")
+	print(" ")
+	print(" Dumping AllScarPlayerMgr table")
+	print(" ")
+	
+
+	fullprint( "AllScarPlayerMgr",AllScarPlayerMgr )
+
+	print(" ")
+	print(" Dumping hidden HiddingMgr table")
+	print(" ")
+	
+	fullprint( "AllScarPlayerMgr.HiddingTable", HiddingMgr.GetHiddingTable() )
+	
+	print(" ")
+	print(" Checking global PointerTable")
+	print(" ")
+	
+	for Pointer,Object in pairs(PointerTable.GetHiddenTable()) do
+		if type(Object)=="table" then 
+			if Object.Pointer~=Pointer then
+				print("ERROR - Bad pointer link for " .. tostring(Object) .. " : Pointer=" .. tostring(Pointer) .. " Object.Pointer=" .. tostring(Pointer) )
+			end
+		end
+	end
+	
+	print(" ")
+	print("================================================")
+	print(" End of Assault Code Data Dump, Time=" .. tostring(World_GetGameTime()) )
+	print("================================================")
+	print(" ")
+	
+end
+
+function AllScarPlayerMgr.Reload()
+	
+	for PlayerMgrIndex,PlayerMgr in pairs(AllScarPlayerMgr.PlayerList) do
+		ScarPlayerMgr_Class.Reload(PlayerMgr)
+	end
+	
+end

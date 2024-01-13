@@ -1,0 +1,504 @@
+if SpecAbilityMgr==nil then 
+	SpecAbilityMgr={
+		CastAbilityList={},
+		sg_01=SgroupMgr:New("SpecAbilityMgr"),
+		sg_02=SgroupMgr:New("SpecAbilityMgr"),
+		eg_01=EgroupMgr:New("SpecAbilityMgr"),	
+		CastMode={ Sgroup=1, Position=2, Self=3 },
+	}
+end
+SpecAbilityMgr.DebugON=0
+
+function SpecAbilityMgr.AddAbility(SquadBP,AbilityName,AbilityParams,AbilityFunction)
+	
+	if SpecAbilityMgr.CastAbilityList[SquadBP]==nil then
+		SpecAbilityMgr.CastAbilityList[SquadBP]={}
+	end
+	
+	local SquadAbilities=SpecAbilityMgr.CastAbilityList[SquadBP]
+	
+	if SquadAbilities[AbilityName]==nil then
+		SquadAbilities[AbilityName]=AbilityParams
+		SquadAbilities[AbilityName].AbilityName=AbilityName
+	end
+	
+	SquadAbilities[AbilityName].CastAbility=AbilityFunction
+	
+end
+
+
+function SpecAbilityMgr.DoSpecAbility(Squad,Friend_Sampling,Ennemy_Sampling)
+	
+	if (Squad.ID~=nil) then
+		
+		SpecAbilityMgr.DoSpecAbilityBP(Squad_GetBlueprintName(Squad.ID), Squad.ID ,Squad, Friend_Sampling, Ennemy_Sampling)
+		
+		if (Squad.AttachID~=nil) then
+			if Squad_IsAttached(Squad.ID) then
+				SpecAbilityMgr.DoSpecAbilityBP(Squad_GetAttachedBlueprintName(Squad.ID), Squad.ID, Squad, Friend_Sampling, Ennemy_Sampling)
+			else
+				SpecAbilityMgr.DoSpecAbilityBP(Squad_GetBlueprintName(Squad.AttachID), Squad.AttachID, Squad, Friend_Sampling, Ennemy_Sampling)
+			end
+		end
+		
+	else
+		
+		if (Squad.AttachID~=nil) then
+			SpecAbilityMgr.DoSpecAbilityBP(Squad_GetBlueprintName(Squad.AttachID), Squad.AttachID, Squad, Friend_Sampling, Ennemy_Sampling)
+		end
+		
+	end
+	
+	
+end
+
+function SpecAbilityMgr.DoSpecAbilityBP(BP, SquadID, Squad, Friend_Sampling, Ennemy_Sampling)
+
+	-- skip if squad cannot cast abilities
+	if SpecAbilityMgr.CastAbilityList[BP]~=nil then
+		
+		for SpecAbility_Index,SpecAbility in pairs(SpecAbilityMgr.CastAbilityList[BP]) do
+			
+			-- check if time is set
+			if Squad.CastAbilityAllowTime[SpecAbility_Index]==nil then Squad.CastAbilityAllowTime[SpecAbility_Index]=0 end
+			
+			-- check if delay is ok
+			if Squad.CastAbilityAllowTime[SpecAbility_Index]<World_GetGameTime() then
+				if SpecAbilityMgr.DebugON>1 then print("SpecAbilityMgr.DoAbility. " .. BP .. " trying to cast " .. SpecAbility_Index) end
+				if SpecAbility:CastAbility(SquadID,Squad,Friend_Sampling,Ennemy_Sampling) then
+					if SpecAbilityMgr.DebugON>1 then print("SpecAbilityMgr.DoAbility... Cast Success") end
+					Squad.CastAbilityAllowTime[SpecAbility_Index]=World_GetGameTime()+SpecAbility.MinDelay
+					return true 
+				elseif SpecAbility.FalseDelay~=nil then
+					Squad.CastAbilityAllowTime[SpecAbility_Index]=World_GetGameTime()+SpecAbility.FalseDelay
+					return false
+				end
+				
+			end
+			
+		end
+		
+	end
+
+	return false
+	
+end
+
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+-- self.ArmorFilterList
+function SpecAbilityMgr:GenericDoSpecAbilityToSquad(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	local Position=Squad_GetPosition(SquadID)
+
+	-- check if there is a chance to find adequate ennemy
+	if Ennemy_Sampling:SurroundingValue(Squad_GetPosition(SquadID), self.HealthRange)<self.HealthMin then return false end
+	
+	--search for close ennemy squads near squad
+	local Player1ID=Squad_GetPlayerOwner(SquadID)
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	for i=0,World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetRelationship(Player1ID,Player2ID)==R_ENEMY then
+			Player_GetAllSquadsNearPos( Player2ID, SpecAbilityMgr.sg_01.Name, Position, self.HealthRange )
+		end
+	end
+
+	--search for closest unit with acceptable armor and health
+	local MinDistance=-1
+	local MinSquadID
+	for i=1, SGroup_CountSpawned(SpecAbilityMgr.sg_01.ID) do
+		local Squad2ID=SGroup_GetSpawnedSquadAt(SpecAbilityMgr.sg_01.ID,i)
+		
+		if Squad_GetHealth(Squad2ID)<=self.HealthMin then
+		elseif (MinDistance>=0) and (MinDistance<=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))) then
+		elseif self.ArmorFilterList==nil then 
+			MinDistance=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))
+			MinSquadID=Squad2ID
+		else
+			for Armor_Index,ArmorFilter in pairs(self.ArmorFilterList) do
+				if Squad_HasArmourType(Squad2ID,ArmorFilter) then
+					if self.DebugON>1 then print("Armour found=" .. ArmorFilter) end
+					MinDistance=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))
+					MinSquadID=Squad2ID
+					break
+				end
+			end
+		end
+	end
+	
+	-- exit if no unit found
+	if MinDistance<0 then return false end
+	
+	-- try to launch abilty
+	if self.DebugON>0 then print("SpecAbilityMgr.GenericDoSpecAbilityToSquad... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " on target=" .. Squad_GetBlueprintName(MinSquadID) .. " ,Time=" .. World_GetGameTime()) end
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	SGroup_Clear(SpecAbilityMgr.sg_02.ID)
+	SGroup_Add(SpecAbilityMgr.sg_02.ID,MinSquadID)
+	
+	local AbilityStatus=Cmd_CastAbilitySGroup( SpecAbilityMgr.sg_01.Name, self.AbilityName, SpecAbilityMgr.sg_02.Name ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(Squad_GetPosition(MinSquadID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			DebugSymbole.Add(Squad_GetPosition(MinSquadID),5,self.AbilityName,DebugSymbole.Color.Red)
+			print("Failed SpecAbility")
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+-- self.ArmorFilterList
+function SpecAbilityMgr:GenericDoSpecAbilityToSquadPos(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	local Position=Squad_GetPosition(SquadID)
+
+	-- check if there is a chance to find adequate ennemy
+	if Ennemy_Sampling:SurroundingValue(Squad_GetPosition(SquadID), self.HealthRange)<self.HealthMin then return false end
+	
+	--search for close ennemy squads near squad
+	local Player1ID=Squad_GetPlayerOwner(SquadID)
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	for i=0,World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetRelationship(Player1ID,Player2ID)==R_ENEMY then
+			Player_GetAllSquadsNearPos( Player2ID, SpecAbilityMgr.sg_01.Name, Position, self.HealthRange )
+		end
+	end
+
+	--search for closest unit with acceptable armor and health
+	local MinDistance=-1
+	local MinSquadID
+	for i=1, SGroup_CountSpawned(SpecAbilityMgr.sg_01.ID) do
+		local Squad2ID=SGroup_GetSpawnedSquadAt(SpecAbilityMgr.sg_01.ID,i)
+		
+		if Squad_GetHealth(Squad2ID)<=self.HealthMin then
+		elseif (MinDistance>=0) and (MinDistance<=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))) then
+		elseif self.ArmorFilterList==nil then 
+			MinDistance=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))
+			MinSquadID=Squad2ID
+		else
+			for Armor_Index,ArmorFilter in pairs(self.ArmorFilterList) do
+				if Squad_HasArmourType(Squad2ID,ArmorFilter) then
+					if self.DebugON>1 then print("Armour found=" .. ArmorFilter) end
+					MinDistance=World_DistancePointToPoint(Position,Squad_GetPosition(Squad2ID))
+					MinSquadID=Squad2ID
+					break
+				end
+			end
+		end
+	end
+	
+	-- exit if no unit found
+	if MinDistance<0 then return false end
+	
+	-- try to launch abilty
+	if self.DebugON>0 then print("SpecAbilityMgr.GenericDoSpecAbilityToSquadPos... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " on target=" .. Squad_GetBlueprintName(MinSquadID) .. " ,Time=" .. World_GetGameTime()) end
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	SGroup_Clear(SpecAbilityMgr.sg_02.ID)
+	SGroup_Add(SpecAbilityMgr.sg_02.ID,MinSquadID)
+	
+	local AbilityStatus=Cmd_CastAbilityPos( SpecAbilityMgr.sg_01.Name, self.AbilityName, SGroup_GetPosition(SpecAbilityMgr.sg_02.ID) ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(Squad_GetPosition(MinSquadID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			DebugSymbole.Add(Squad_GetPosition(MinSquadID),5,self.AbilityName,DebugSymbole.Color.Red)
+			print("Failed SpecAbility")
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+function SpecAbilityMgr:GenericDoSpecAbilityToEntity(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	local Position=Squad_GetPosition(SquadID)
+
+	-- check if there is a chance to find adequate ennemy
+	if Ennemy_Sampling:SurroundingValue(Squad_GetPosition(SquadID), self.HealthRange)<self.HealthMin then return false end
+	
+	--search for close ennemy entities near squad
+	local Player1ID=Squad_GetPlayerOwner(SquadID)
+	EGroup_Clear(SpecAbilityMgr.eg_01.ID)
+	for i=0,World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetRelationship(Player1ID,Player2ID)==R_ENEMY then
+			Player_GetAllEntitiesNearPos( Player2ID, SpecAbilityMgr.eg_01.Name, Position, self.HealthRange )
+		end
+	end
+
+	--search for closest unit with acceptable armor and health
+	local MinDistance=-1
+	local MinEntityID
+	for i=1, EGroup_CountSpawned(SpecAbilityMgr.eg_01.ID) do
+		local Entity2ID=EGroup_GetSpawnedEntityAt(SpecAbilityMgr.eg_01.ID,i)
+		if Entity_GetHealth(Entity2ID)<=self.HealthMin then
+		elseif (MinDistance>=0) and (MinDistance<=World_DistancePointToPoint(Position,Entity_GetPosition(Entity2ID))) then
+		else
+			MinDistance=World_DistancePointToPoint(Position,Entity_GetPosition(Entity2ID))
+			MinEntityID=Entity2ID
+		end
+	end
+	
+	-- exit if no unit found
+	if MinDistance<0 then return false end
+	
+	-- try to launch abilty
+	if self.DebugON>0 then print("SpecAbilityMgr.GenericDoSpecAbilityToEntity... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " on target=" .. Entity_GetBlueprintName(MinEntityID) .." ,Time=" .. World_GetGameTime()) end
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+--~ 	EGroup_Clear(SpecAbilityMgr.eg_01.ID)
+--~ 	EGroup_Add(SpecAbilityMgr.eg_01.ID,MinEntityID)
+	
+	local AbilityStatus=Cmd_CastAbilityPos( SpecAbilityMgr.sg_01.Name, self.AbilityName, Entity_GetPosition(MinEntityID) ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(Entity_GetPosition(MinEntityID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			DebugSymbole.Add(Entity_GetPosition(MinEntityID),5,self.AbilityName,DebugSymbole.Color.Red)
+			print("Failed SpecAbility")
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+-- self.ArmorFilterList
+function SpecAbilityMgr:GenericDoSpecAbilityToSquadOrEntity(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+	if SpecAbilityMgr.GenericDoSpecAbilityToSquad(self,SquadID,Squad,Friend_Sampling,Ennemy_Sampling) then
+		return true
+	elseif SpecAbilityMgr.GenericDoSpecAbilityToEntity(self,SquadID,Squad,Friend_Sampling,Ennemy_Sampling) then
+		return true
+	end
+	return false
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+function SpecAbilityMgr:GenericDoSpecAbilityToSelf(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	if (Ennemy_Sampling:SurroundingValue(Squad_GetPosition(SquadID), self.HealthRange)<self.HealthMin) then return false end
+	
+	if self.DebugON>0 then print("SpecAbilityMgr.DoAbility... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " ,Time=" .. World_GetGameTime()) end
+	
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	
+	local AbilityStatus=Cmd_CastAbilitySelf( SpecAbilityMgr.sg_01.Name, self.AbilityName ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(Squad_GetPosition(SquadID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			print("Failed SpecAbility")
+			DebugSymbole.Add(Squad_GetPosition(SquadID),5,self.AbilityName,DebugSymbole.Color.Red)
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.HealthRange
+-- self.HealthMin
+function SpecAbilityMgr:GenericDoSpecAbilityToSelfPos(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	if (Ennemy_Sampling:SurroundingValue(Squad_GetPosition(SquadID), self.HealthRange)<self.HealthMin) then return false end
+	
+	if self.DebugON>0 then print("SpecAbilityMgr.DoAbility... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " ,Time=" .. World_GetGameTime()) end
+	
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	
+	local AbilityStatus=Cmd_CastAbilityPos( SpecAbilityMgr.sg_01.Name, self.AbilityName, Squad_GetPosition(SquadID) ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(Squad_GetPosition(SquadID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			print("Failed SpecAbility")
+			DebugSymbole.Add(Squad_GetPosition(SquadID),5,self.AbilityName,DebugSymbole.Color.Red)
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.HealthFilter
+-- self.MinRange 
+-- self.SearchRange 
+-- self.MinCosAngle
+-- self.HealthRange
+-- self.HealthMin
+-- self.MaxEnnemies
+function SpecAbilityMgr:GenericDoSpecAbilityJump(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+	
+	local SquadPosition=Squad_GetPosition(SquadID)
+	
+	local TargetPosition=Ennemy_Sampling:GetMaxValue(SquadPosition, self.SearchRange, "Infantry")
+	if TargetPosition==nil then return false end
+	
+	TargetPosition=Ennemy_Sampling:InterpMaxLocal(TargetPosition,"Infantry")
+
+	-- check if distance is enough
+	local Dist1=World_DistancePointToPoint(TargetPosition,SquadPosition)
+	if Dist1<self.MinRange then return false end
+
+	-- check if ennemy density is not too high
+	if Ennemy_Sampling:SurroundingValue(TargetPosition, self.HealthRange, "Total")>self.MaxEnnemies then return false end
+
+	-- check if ennemy density is enough
+	if Ennemy_Sampling:SurroundingValue(TargetPosition, self.HealthRange, self.HealthFilter)<self.HealthMin then return false end
+	
+	-- check if ennemy is in angle 
+	if Squad.CurrentOrder==nil then
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.Attack then
+		
+		local AttackPosition=Squad.CurrentOrder.Position
+		
+		local Dist2=World_DistancePointToPoint(AttackPosition,SquadPosition)
+		
+		-- forbids a jump far from the target.
+		if Dist2>self.SearchRange then 
+			return false		
+		-- allows any jump in proximity of target, check angle otherwise
+		elseif Dist2>self.MinRange then
+			
+			local CosAngle=(
+				(TargetPosition.x-SquadPosition.x)*(AttackPosition.x-SquadPosition.x)+
+				(TargetPosition.z-SquadPosition.z)*(AttackPosition.z-SquadPosition.z)
+				)/Dist1/Dist2
+			
+			if CosAngle<self.MinCosAngle then return false end
+			
+		end
+		
+	end
+	
+	if self.DebugON>0 then print("SpecAbilityMgr.DoAbility... Jumping, Squad=" .. tostring(Squad) .. " ,Time=" .. World_GetGameTime()) end
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	if self.DebugON>0 then 
+		DebugSymbole.Add(TargetPosition,self.HealthRange,"JumpingToPos",DebugSymbole.Color.Green)
+	end
+	Cmd_JumpToPos( SpecAbilityMgr.sg_01.Name, TargetPosition ) 
+	return true
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+-- self.SearchRange
+-- self.HealthRange
+-- self.HealthMin
+-- self.MinDistance
+function SpecAbilityMgr:GenericDoSpecAbilityArea(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+	
+	local Position=Ennemy_Sampling:GetMaxValue(Squad_GetPosition(SquadID), self.SearchRange)
+	if Position==nil then return false end
+	
+	Position=Ennemy_Sampling:InterpMaxLocal(Position)
+	
+	-- check if distance is within range but not too close
+	local Dist=World_DistancePointToPoint(Squad_GetPosition(SquadID),Position)
+	if Dist<self.MinDistance or Dist>self.SearchRange then return false end
+	
+	-- check if there is a chance to find adequate ennemy
+	if Ennemy_Sampling:SurroundingValue_Max(Position, self.HealthRange)<self.HealthMin then return false end
+	
+	--search for close ennemy squads near position
+	local Player1ID=Squad_GetPlayerOwner(SquadID)
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	for i=0,World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetRelationship(Player1ID,Player2ID)==R_ENEMY then
+			Player_GetAllSquadsNearPos( Player2ID, SpecAbilityMgr.sg_01.Name, Position, self.HealthRange )
+		end
+	end
+	if SGroup_GetTotalHealthCurrent(SpecAbilityMgr.sg_01.Name)< self.HealthMin then return false end
+	
+	if self.DebugON>0 then print("SpecAbilityMgr.DoAbility... Casting ".. self.AbilityName ..", Squad=" .. tostring(Squad) .. " ,Time=" .. World_GetGameTime()) end
+	SGroup_Clear(SpecAbilityMgr.sg_02.ID)
+	SGroup_Add(SpecAbilityMgr.sg_02.ID,SquadID)
+	
+	local AbilityStatus=Cmd_CastAbilityPos( SpecAbilityMgr.sg_02.Name, self.AbilityName, SGroup_GetPosition(SpecAbilityMgr.sg_01.ID) ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(SGroup_GetPosition(SpecAbilityMgr.sg_01.ID),self.HealthRange,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			print("Failed SpecAbility")
+			DebugSymbole.Add(SGroup_GetPosition(SpecAbilityMgr.sg_01.ID),self.HealthRange,self.AbilityName,DebugSymbole.Color.Red)
+		end
+	end
+	
+	return AbilityStatus
+	
+end
+
+--
+-- Object parameters (need to exist for function to work)
+-- self.AbilityName
+function SpecAbilityMgr:GenericDoSpecAbilityBrokenMorale(SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+
+	if not Squad_IsMoraleBroken(SquadID) then return false end
+
+	if not Squad_HasLeader(SquadID) then return false end
+
+	if self.DebugON>0 then print("SpecAbilityMgr.DoAbility... Casting " .. self.AbilityName .. ", Squad=" .. tostring(Squad) .. " ,Time=" .. World_GetGameTime()) end
+
+	SGroup_Clear(SpecAbilityMgr.sg_01.ID)
+	SGroup_Add(SpecAbilityMgr.sg_01.ID,SquadID)
+	
+	local AbilityStatus=Cmd_CastAbilitySelf( SpecAbilityMgr.sg_01.Name, self.AbilityName ) 
+	
+	if self.DebugON>0 then 
+		if AbilityStatus then 
+			DebugSymbole.Add(SGroup_GetPosition(SpecAbilityMgr.sg_01.ID),5,self.AbilityName,DebugSymbole.Color.Green)
+		else
+			print("Failed SpecAbility")
+			DebugSymbole.Add(SGroup_GetPosition(SpecAbilityMgr.sg_01.ID),5,self.AbilityName,DebugSymbole.Color.Red)
+		end
+	end
+	
+	return AbilityStatus
+
+end

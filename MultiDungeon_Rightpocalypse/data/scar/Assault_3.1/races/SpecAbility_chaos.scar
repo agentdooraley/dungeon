@@ -1,0 +1,154 @@
+
+local DebugON=0
+
+-- ===================================================================================
+--
+-- chaos_squad_raptor
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_squad_raptor", "jump",
+	{
+		DebugON=DebugON,
+		MinDelay=60,
+		HealthFilter="Infantry", MinRange=20, SearchRange=50, MinCosAngle=0.5, HealthRange=7.5, HealthMin=2500, MaxEnnemies=20000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityJump
+)
+
+-- SpecAbilityMgr.AddAbility( "chaos_squad_raptor", "chaos_speed_fiend",
+
+SpecAbilityMgr.AddAbility( "chaos_squad_raptor", "chaos_furious_rage",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- chaos_marine_squad
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_marine_squad", "chaos_frag_grenades",
+	{
+		DebugON=DebugON,
+		MinDelay=75, HealthRange=20, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "chaos_marine_squad", "chaos_furious_rage",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- chaos_squad_bloodthirster
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_squad_bloodthirster", "jump",
+	{
+		DebugON=DebugON,
+		MinDelay=60,
+		HealthFilter="Total", MinRange=20, SearchRange=50, MinCosAngle=0.5, HealthRange=7.5, HealthMin=10000, MaxEnnemies=40000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityJump
+)
+
+-- ===================================================================================
+--
+-- chaos_squad_khorne_berserker
+--
+-- ===================================================================================
+
+--SpecAbilityMgr.AddAbility( "chaos_squad_khorne_berserker", "squad_fear_ext", -- Hard coded ability - cannot be casted
+
+-- ===================================================================================
+--
+-- chaos_squad_rhino
+--
+-- ===================================================================================
+
+--SpecAbilityMgr.AddAbility( "chaos_squad_rhino", "chaos_smoke_launchers",
+
+-- ===================================================================================
+--
+-- chaos_squad_daemon_prince
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_squad_daemon_prince", "chaos_fear_roar",
+	{
+		DebugON=DebugON,
+		MinDelay=60, HealthRange=15, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+SpecAbilityMgr.AddAbility( "chaos_squad_daemon_prince", "chaos_daemon_strength",
+	{
+		DebugON=DebugON,
+		MinDelay=200, HealthRange=30, HealthMin=15000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+--SpecAbilityMgr.AddAbility( "chaos_squad_daemon_prince", "chaos_symbol_of_chaos",
+
+-- ===================================================================================
+--
+-- chaos_squad_sorcerer
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_squad_sorcerer", "chaos_chains_of_torment",
+	{
+		DebugON=DebugON,
+		MinDelay=80, HealthRange=40, HealthMin=5000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "chaos_squad_sorcerer", "chaos_corruption",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=12.5, HealthMin=10000, SearchRange=40, MinDistance=10,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)
+
+SpecAbilityMgr.AddAbility( "chaos_squad_sorcerer", "chaos_doombolt",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=40, HealthMin=5000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+-- ===================================================================================
+--
+-- chaos_squad_lord
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "chaos_squad_lord", "chaos_daemon_strength",
+	{
+		DebugON=DebugON,
+		MinDelay=200, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+--SpecAbilityMgr.AddAbility( "chaos_squad_lord", "chaos_symbol_of_chaos",
+

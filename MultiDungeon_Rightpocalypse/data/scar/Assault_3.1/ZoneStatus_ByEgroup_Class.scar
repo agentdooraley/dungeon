@@ -1,0 +1,36 @@
+
+if ZoneStatus_ByEgroup_Class==nil then
+	ZoneStatus_ByEgroup_Class={
+	}
+end
+
+local ZoneStatus_ByEgroup_Metatable={
+	__index=ZoneStatus_ByEgroup_Class,
+}
+
+function ZoneStatus_ByEgroup_Class:New(PlayerID,EgroupID)
+
+	local NewZoneStatus={ 
+		ReloadClass="ZoneStatus_ByEgroup_Class",
+		StatusGroupID=EgroupID,
+		StatusGroupName=EGroup_GetName(EgroupID),
+		PlayerID=PlayerID
+	}
+	
+	setmetatable(NewZoneStatus,ZoneStatus_ByEgroup_Metatable)
+	
+	return NewZoneStatus
+	
+end
+
+function ZoneStatus_ByEgroup_Class.Reload(ZoneStatus)
+	setmetatable(ZoneStatus,ZoneStatus_ByEgroup_Metatable)
+end
+
+function ZoneStatus_ByEgroup_Class:IsActive()
+	return Egroup_IsCapturedByPlayerTeam(self.StatusGroupID, self.PlayerID, false)
+end
+
+function ZoneStatus_ByEgroup_Class:ForceCapture()
+	EGroup_SetPlayerOwner( EGroup_GetName(self.StatusGroupID), self.PlayerID)
+end

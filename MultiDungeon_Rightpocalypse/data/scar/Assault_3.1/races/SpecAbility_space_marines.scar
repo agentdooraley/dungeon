@@ -1,0 +1,158 @@
+
+local DebugON=0
+
+-- ===================================================================================
+--
+-- space_marine_squad_force_commander
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_force_commander", "marines_battlecry",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=20, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_force_commander", "marines_orbital_bombardment",
+	{
+		DebugON=DebugON,
+		MinDelay=240, HealthRange=12.5, HealthMin=10000, SearchRange=40, MinDistance=10,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)
+
+
+--[[SpecAbilityMgr.AddAbility( "space_marine_squad_force_commander_advance_sp_wg", "marines_battlecry",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=20, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_force_commander_advance_sp_wg", "marines_orbital_bombardment",
+	{
+		DebugON=DebugON,
+		MinDelay=240, HealthRange=12.5, HealthMin=10000, SearchRange=40, MinDistance=10,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)]]
+
+-- ===================================================================================
+--
+-- space_marine_squad_assault
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_assault", "jump",
+	{
+		DebugON=DebugON,
+		MinDelay=45,
+		HealthFilter="Infantry", MinRange=20, SearchRange=50, MinCosAngle=0.5, HealthRange=7.5, HealthMin=2500, MaxEnnemies=20000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityJump
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_assault", "marines_melta_bombs",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=18, HealthMin=1000, 
+		ArmorFilterList={"tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquadOrEntity
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_assault", "marines_rally",
+	{
+		DebugON=DebugON,
+		MinDelay=122,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityBrokenMorale
+)
+
+-- ===================================================================================
+--
+-- space_marine_squad_tactical
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_tactical", "marines_frag_grenades",
+	{
+		DebugON=DebugON,
+		MinDelay=75, HealthRange=25, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_tactical", "marines_rally",
+	{
+		DebugON=DebugON,
+		MinDelay=122,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityBrokenMorale
+)
+
+-- ===================================================================================
+--
+-- space_marine_squad_land_raider
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_land_raider", "marines_machine_spirit",
+	{
+		DebugON=DebugON,
+		MinDelay=195, HealthRange=20, HealthMin=10000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- space_marine_squad_chaplain
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_chaplain", "marines_demoralize",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=30, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+-- ===================================================================================
+--
+-- space_marine_squad_librarian
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_librarian", "marines_smite",
+	{
+		DebugON=DebugON,
+		MinDelay=60, HealthRange=25, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_librarian", "marines_weaken_resolve",
+	{
+		DebugON=DebugON,
+		MinDelay=60, HealthRange=25, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "space_marine_squad_librarian", "marines_word_of_emperer",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=20, HealthMin=10000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+

@@ -1,0 +1,201 @@
+
+if HiddingMgr==nil then
+	HiddingMgr={}
+end
+HiddingMgr.DebugON=0
+
+local Table_Coef=1000
+local Table_Rate=10
+local HiddingTable={}
+
+local TeamHiddingTable_Metatable={
+	__index=function(TableIN,NPos)
+		
+		local Y=math.floor(NPos/Table_Coef)
+		if NPos/Table_Coef-Y>0.5 then Y=Y+1 end
+		local X=NPos-Y*Table_Coef
+		
+		TableIN[NPos]={
+			Position=Util_ScarPos( X*Table_Rate, Y*Table_Rate ),
+			List={},
+		}
+		return TableIN[NPos]
+		
+	end,
+}
+
+local HiddingTable_Metatable={
+	__index=function(TableIN,NewTeam)
+		TableIN[NewTeam]={}
+		setmetatable(TableIN[NewTeam],TeamHiddingTable_Metatable)
+		return TableIN[NewTeam]
+	end,
+}
+setmetatable(HiddingTable,HiddingTable_Metatable)
+
+local HiddenSquadList={}
+local HiddenSquadUpdateTime=0
+
+local FXTable
+
+
+function HiddingMgr.GetHiddingTable()
+	return HiddingTable
+end
+
+--
+--
+--
+
+function HiddingMgr.Update()
+
+	if HiddingMgr.DebugON>2 then print("HiddingMgr.Update()") end
+
+	for TeamNbr,TeamData in pairs(HiddingTable) do
+		
+		for PlayerNbr=0,World_GetPlayerCount()-1 do
+			
+			local PlayerID=World_GetPlayerAt(PlayerNbr)
+			
+			if Player_GetTeam(PlayerID)~=TeamNbr then 
+				
+				local ShowSquadList={}
+				
+				for HiddingPositionIndex,HiddingPositionData in pairs(TeamData) do
+					if Player_CanSeePosition(PlayerID,HiddingPositionData.Position) then
+						
+						local HiddenSquadIndex=1
+						while HiddenSquadIndex<=table.getn(HiddingPositionData.List) do
+							
+							local HiddenSquadPointer=HiddingPositionData.List[HiddenSquadIndex]
+							
+							if PointerTable.Get(HiddenSquadPointer)~=nil then 
+								
+								if HiddingMgr.DebugON>1 then 
+									print("HiddingMgr.Update() - HiddenSquad visible - BP=" .. PointerTable.Get(HiddenSquadPointer).CreationParams.bp) 
+								end
+								
+								if not ShowSquadList[HiddenSquadPointer] then
+									ShowSquadList[HiddenSquadPointer]=true
+								end
+								
+								HiddenSquadIndex=HiddenSquadIndex+1
+								
+							-- pointer to squad is lost (player dead)
+							else
+								
+								if HiddingMgr.DebugON>1 then 
+									print("HiddingMgr.Update() - lost pointer found (player dead)")
+								end
+								
+								table.remove(HiddingPositionData.List,HiddenSquadIndex)
+								
+								HiddenSquadList[HiddenSquadPointer]=nil
+								
+							end
+							
+						end
+						
+						if table.getn(HiddingPositionData.List)==0 then
+							if HiddingMgr.DebugON>1 then print("HiddingMgr.Update() - removing empty hiding point") end
+							TeamData[HiddingPositionIndex]=nil
+						end
+						
+					end
+					
+				end
+				
+				for ShowSquadPointer,ShowSquadStatus in pairs(ShowSquadList) do 
+					PointerTable.Get(ShowSquadPointer):ShowHidden()
+				end
+				
+			end
+			
+		end
+	end
+	
+	if (World_GetGameTime()-HiddenSquadUpdateTime>1.0) then
+		HiddingMgr.ShowFXTable() 
+		HiddenSquadUpdateTime=World_GetGameTime()
+	end
+	
+end
+
+function HiddingMgr.ShowFXTable() 
+	for SquadPointer,SquadPosition in pairs(HiddenSquadList) do
+		World_FXEvent("data:Art/Events/Assault/HiddenSquadMarker",SquadPosition) 
+	end
+end
+
+function HiddingMgr.DrawScanPoints()
+
+	local ShowSquadList={}
+
+	for TeamNbr,TeamData in pairs(HiddingTable) do
+		
+		for HiddingPositionIndex,HiddingPositionData in pairs(TeamData) do
+			
+			local Position=deepcopy(HiddingPositionData.Position)
+			
+			World_FXEvent( "data:Art/Events/markers/artillery_strike_marker",  Util_ScarPos( Position.x, Position.z )  ) 
+			
+			for HiddenSquadIndex,HiddenSquadPointer in ipairs(HiddingPositionData.List) do
+				ShowSquadList[HiddenSquadPointer]=true
+			end
+			
+		end
+		
+	end
+	
+end
+
+--
+--
+--
+
+function HiddingMgr.AddHiddenSquad(Squad,Position)
+
+	if HiddingMgr.DebugON>0 then print("HiddingMgr.AddHiddenSquad(), BP=" .. Squad.CreationParams.bp) end
+	
+	local N0=math.floor(Position.x/Table_Rate)+math.floor(Position.z/Table_Rate)*Table_Coef
+	
+	local TeamNbr=Player_GetTeam(Squad.PlayerID)
+	
+	for N1=N0-Table_Coef,N0+2*Table_Coef,Table_Coef do
+		for N2=N1-1,N1+2 do
+			table.insert(HiddingTable[TeamNbr][N2].List,Squad.Pointer)
+		end
+	end
+	
+	HiddenSquadList[Squad.Pointer]=Position
+	
+end
+
+function HiddingMgr.RemoveHiddenSquad(Squad,Position)
+
+	if HiddingMgr.DebugON>0 then print("HiddingMgr.RemoveHiddenSquad(), BP=" .. Squad.CreationParams.bp) end
+	
+	local N0=math.floor(Position.x/Table_Rate)+math.floor(Position.z/Table_Rate)*Table_Coef
+	
+	local TeamNbr=Player_GetTeam(Squad.PlayerID)
+	
+	for N1=N0-Table_Coef,N0+2*Table_Coef,Table_Coef do
+		for N2=N1-1,N1+2 do
+			for i=table.getn(HiddingTable[TeamNbr][N2].List),1,-1 do
+				if HiddingTable[TeamNbr][N2].List[i]==Squad.Pointer then
+					
+					table.remove(HiddingTable[TeamNbr][N2].List,i)
+					
+					if table.getn(HiddingTable[TeamNbr][N2].List)==0 then
+						HiddingTable[TeamNbr][N2]=nil
+					end
+					
+				end
+			end
+		end
+	end
+
+	HiddenSquadList[Squad.Pointer]=nil
+	
+end
+

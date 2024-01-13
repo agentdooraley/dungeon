@@ -1,0 +1,566 @@
+--------------------------------------------
+-- Initial Daynight mod idea by Fuggles
+-- Revamped from 1.0 to 4.1 by Gambit
+-- Addon1: Irregular cycles
+-- Addon2: "Pitch Black" Edition
+--------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("World_Race_Entities.scar")
+
+-- Global var, so that not to conflict with the Remove Fog of War wincon
+WC_DayNight_Enabled = true
+
+--NOTE: For Night Lords race, set the following to true, so that they get NO sight modifiers because of night!! A BOOST??
+--See line "(Day_Night_Night_Lords and race == "night_lords_race") then end", IF you want to add different modifs for this...
+	Day_Night_Night_Lords = false
+
+--Use this if you want very long days, interrupted by random, short-duration Pitch Black nights!
+--Note that Pitch Black is a special condition that always uses random values, the player cannot meddle with that.
+	Pitch_Black_Enabled = true
+	Percentage_To_Have_PB = 10
+
+--Enable this, if you want a different duration of day and night, randomly choosing which lasts longer.
+--Has no effect if a Pitch Black cycle occurs - which is a special condition left to its own randomness.
+--But it WILL affect all other non-PB cycles, so if you have manual setting below, you may want to set this to false as well.
+	Irregular_Cycle_Enabled = true
+	Percentage_To_Have_IC = 33
+
+--Change Set_Day_Night_Stats_Manually to "true", to set your own values - but you MUST comply to the guidelines.
+--If set to "false", the cycles' specifics and the shading will be calculated randomly, automatically.
+--So BETTER SET TO "false" for optimum experience, as automatic calculation is highly "sophisticated".
+	Set_Day_Night_Stats_Manually = false
+
+--The following 3 factors are only used if Set_Day_Night_Stats_Manually = true.
+--1] Duration of each phase of the day in seconds. A full day/night cycle will be double that value. INTEGER, better be MULTIPLE OF 10!!
+	Day_Night_Duration_Value = 300
+--2] The duration of shifting interval of vision. The shifting has 5 phases, each phase lasting Day_Night_Shifting_Pace_Interval_Value/5.
+--Thus, this MUST BE a) INTEGER LESS than ((Day_Night_Duration_Value/2) - (Day_Night_Shifting_Pace_Interval_Value/5)),
+--AND b) The Day_Night_Shifting_Pace_Interval_Value/5 MUST BE MULTIPLE OF Day_Night_Duration_Value!!
+	Day_Night_Shifting_Pace_Interval_Value = 50
+--3] The effect of Night, to the vision. 1 means no vision hindrance, 0 close to total darkness. MUST be < 1 and > 0.
+	Day_Night_Intensity_Value = 0.5
+--NOTE1: The LOWEST values for a REALLY short cycle, are 12 for duration, 5 for interval. Avoid such radical values, and use the instructions.
+--NOTE2: If Pitch Black is enabled, AND OCCUR, the values of the PB cycle are calculated automatically, and manual values above do NOT apply.
+--NOTE3: If Irregular Circles are enabled, they WILL modify the manual values. Disable it as well, to get a cycle as described by your values.
+
+
+----------------------------------------------------------------------------------------------------------------------------
+--Global Arrays
+Day_Night_Sight_modifiers = {{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}}}
+Day_Night_Number_Of_Player_Entities = {}
+
+
+--Create all modifiers for all races ONCE, at game initiation.
+function day_night_modifier_creation()
+--In case of previously detected unsupported races (after a save->load), do not create the modifiers.
+if Day_Night_Problem_Test == 1 then return end
+for player=1, World_GetPlayerCount() do
+	local playerID = World_GetPlayerAt(player-1)
+	if Player_IsAlive(playerID) then
+		local race = Player_GetRaceName(playerID)
+		local all_entities = Global_RaceEntities[race]
+		local inf = table.getn(all_entities.infantry_list)
+		local bld = table.getn(all_entities.building_list)
+		local veh = table.getn(all_entities.vehicle_list)
+		local air = table.getn(all_entities.aircraft_list)
+		local spc = table.getn(all_entities.special_list)
+		if (inf==0 and bld==0 and veh==0 and air==0 and spc==0) then
+			print("NO DAY/NIGHT INFO for the race: "..race.."  !!!")
+			Day_Night_Problem_Test = 1
+			Day_Night_Condition_Variables[5] = Day_Night_Problem_Test
+		else
+			local entity_list = {}
+			if inf~=0 then entity_list = all_entities.infantry_list end
+			if bld~=0 then
+				for i=1, bld do
+					table.insert(entity_list, all_entities.building_list[i])
+				end
+			end
+			if veh~=0 then
+				for i=1, veh do
+					table.insert(entity_list, all_entities.vehicle_list[i])
+				end
+			end
+			if air~=0 then
+				for i=1, air do
+					table.insert(entity_list, all_entities.aircraft_list[i])
+				end
+			end
+			if spc~=0 then
+				for i=1, spc do
+					table.insert(entity_list, all_entities.special_list[i])
+				end
+			end
+			Day_Night_Number_Of_Player_Entities[player] = table.getn(entity_list)
+			for modifier=1, 2 do
+				for entity=1, Day_Night_Number_Of_Player_Entities[player] do
+					-- if (Day_Night_Night_Lords and race == "night_lords_race") then end
+					Day_Night_Sight_modifiers[player][modifier][entity] =
+					Modifier_Create(MAT_EntityType, "sight_radius_modifier", MUT_Multiplication, false, Day_Night_Sight_Multipliers[modifier], entity_list[entity])
+				end
+			end
+		end
+	end
+end
+if Day_Night_Problem_Test == 1 then
+	print("Unsupported race(s) found. Day and Night Condition disabled.")
+end
+end
+
+
+function daynight_Set()
+-- Global table that saves the variables so that on load to be properly restored. All 9 are integers.
+-- In order of appearance: Day_Cycle_Duration(1), Day_Half_Circle(2), Day_Night_Clock()3, Day_Night_Duration(4), Day_Night_Problem_Test(5),
+--						   Day_Night_Status(6), Night_Cycle_Duration(7), Night_Half_Circle(8), Pitch_Black_Mode(9).
+Day_Night_Condition_Variables = {0,0,0,0,0,0,0,0,0}
+
+Day_Night_Duration = 0
+Day_Cycle_Duration = 0
+Night_Cycle_Duration = 0
+Day_Night_Shifting_Pace_Interval = 0
+Day_Night_Intensity = 0
+Pitch_Black_Mode = 0
+Irregular_Cycle_Intervals = 0
+Irregular_Cycle_Type = 0
+
+-- A switch that checks if info for all races is included.
+Day_Night_Problem_Test = 0
+Day_Night_Condition_Variables[5] = Day_Night_Problem_Test
+
+--See to the configuration of the day/night cycle.
+if Pitch_Black_Enabled and World_GetRand(1,100) <= Percentage_To_Have_PB then
+	--See to the configuration of the "Pitch Black" day/night cycle!!
+	local factor = World_GetRand(36,80)
+	Day_Cycle_Duration = factor * 10
+	local temp = nil
+	repeat
+		Day_Night_Shifting_Pace_Interval = World_GetRand(1,10)
+		temp = Day_Night_Duration/Day_Night_Shifting_Pace_Interval
+	until temp == math.floor(temp)
+	Night_Cycle_Duration = 2*World_GetRand(7,10)*Day_Night_Shifting_Pace_Interval
+	Day_Night_Intensity = 1 - (10/World_GetRand(10,15))
+	Day_Night_Condition_Variables[1] = Day_Cycle_Duration
+	Day_Night_Condition_Variables[7] = Night_Cycle_Duration
+else
+	Pitch_Black_Enabled = false
+	--See to the configuration of the "standard" day/night cycle.
+	if Set_Day_Night_Stats_Manually then
+		Day_Night_Duration = Day_Night_Duration_Value
+		Day_Night_Shifting_Pace_Interval = Day_Night_Shifting_Pace_Interval_Value/5
+		Day_Night_Intensity = Day_Night_Intensity_Value
+	else
+		local factor = World_GetRand(6,36)
+		Day_Night_Duration = factor * 10
+		local temp = nil
+		repeat
+			Day_Night_Shifting_Pace_Interval = World_GetRand(1,factor)
+			temp = Day_Night_Duration/Day_Night_Shifting_Pace_Interval
+		until temp == math.floor(temp)
+		Day_Night_Intensity = 1.1 - (10/World_GetRand(12,30))
+	end
+end
+Day_Night_Condition_Variables[4] = Day_Night_Duration
+-- Unfortunately, the engine does not save boolean :(
+if Pitch_Black_Enabled then 
+	Pitch_Black_Mode = 1
+end
+Day_Night_Condition_Variables[9] = Pitch_Black_Mode
+
+--Calculate day and night durations for non-Pitch Black cycles
+if not Pitch_Black_Enabled then
+	--Calculate in intervals the shift in the cycle, if needed
+	if Irregular_Cycle_Enabled and World_GetRand(1,100) <= Percentage_To_Have_IC then
+		Irregular_Cycle_Intervals =
+		World_GetRand(5,math.floor(Day_Night_Duration/(2*Day_Night_Shifting_Pace_Interval))+World_GetRand(5,16))*Day_Night_Shifting_Pace_Interval
+		--The intervals will either lengthen day, or night.
+		if World_GetRand(1,2) == 1 then
+			--Lengthens Day
+			Night_Cycle_Duration = Day_Night_Duration - Day_Night_Shifting_Pace_Interval
+			Day_Cycle_Duration = Day_Night_Duration - Day_Night_Shifting_Pace_Interval + Irregular_Cycle_Intervals
+		else
+			--Lengthens Night
+			Day_Cycle_Duration = Day_Night_Duration - Day_Night_Shifting_Pace_Interval
+			Night_Cycle_Duration = Day_Night_Duration - Day_Night_Shifting_Pace_Interval + Irregular_Cycle_Intervals
+		end
+		Day_Night_Condition_Variables[1] = Day_Cycle_Duration
+		Day_Night_Condition_Variables[7] = Night_Cycle_Duration
+	else
+		--Both of equal time duration
+		Day_Cycle_Duration = Day_Night_Duration-Day_Night_Shifting_Pace_Interval
+		Night_Cycle_Duration = Day_Cycle_Duration
+		Day_Night_Condition_Variables[1] = Day_Cycle_Duration
+		Day_Night_Condition_Variables[7] = Night_Cycle_Duration
+	end
+end
+
+--Half-cycle notifiers, for day and night. Day half is NOT used in Pitch Black version, so that player NOT to know when the shift happens.
+if (Day_Cycle_Duration/(2*Day_Night_Shifting_Pace_Interval)) == math.floor(Day_Cycle_Duration/(2*Day_Night_Shifting_Pace_Interval)) then
+	Day_Half_Circle = Day_Cycle_Duration/2 + 4*Day_Night_Shifting_Pace_Interval
+	Day_Night_Condition_Variables[2] = Day_Half_Circle
+else
+	Day_Half_Circle = (Day_Cycle_Duration + Day_Night_Shifting_Pace_Interval)/2 + 3*Day_Night_Shifting_Pace_Interval
+	Day_Night_Condition_Variables[2] = Day_Half_Circle
+end
+if Pitch_Black_Enabled then
+	--Not half, indicate situation immediately after darkness has fallen.
+	Night_Half_Circle = 7*Day_Night_Shifting_Pace_Interval
+	Day_Night_Condition_Variables[8] = Night_Half_Circle
+else
+	if (Night_Cycle_Duration/(2*Day_Night_Shifting_Pace_Interval)) == math.floor(Night_Cycle_Duration/(2*Day_Night_Shifting_Pace_Interval)) then
+		Night_Half_Circle = Night_Cycle_Duration/2 + 4*Day_Night_Shifting_Pace_Interval
+		Day_Night_Condition_Variables[8] = Night_Half_Circle
+	else
+		Night_Half_Circle = (Night_Cycle_Duration + Day_Night_Shifting_Pace_Interval)/2 + 3*Day_Night_Shifting_Pace_Interval
+		Day_Night_Condition_Variables[8] = Night_Half_Circle
+	end
+end
+
+--Create the modifiers.
+local day_Night_Intensity_grading = 1 - (1-Day_Night_Intensity) / 5
+Day_Night_Sight_Multipliers = {day_Night_Intensity_grading, 1/day_Night_Intensity_grading}
+day_night_modifier_creation()
+
+--In case of unsupported races, do not initiate any rule.
+if Day_Night_Problem_Test == 1 then return end
+
+--Chose if we start at day or night.
+if Pitch_Black_Enabled then
+	--Always start at day.
+	Day_Night_Status = 1
+else
+	Day_Night_Status = World_GetRand(1,2)
+end
+Day_Night_Condition_Variables[6] = Day_Night_Status
+Day_Night_Clock = Day_Night_Shifting_Pace_Interval
+Day_Night_Condition_Variables[3] = Day_Night_Clock
+
+--Initiation time of the cycle.
+if Pitch_Black_Enabled then
+	Day_Night_Random_Initiation_Time = World_GetRand(240, 480)
+else
+	if Day_Night_Status == 1 then
+		Day_Night_Random_Initiation_Time = World_GetRand(5, Day_Cycle_Duration-8*Day_Night_Shifting_Pace_Interval)
+	else
+		Day_Night_Random_Initiation_Time = World_GetRand(5, Night_Cycle_Duration-8*Day_Night_Shifting_Pace_Interval)
+	end
+end
+
+--Notify, if we have "Pitch Black" occurrence!
+if Pitch_Black_Enabled then
+	local sIcon = "player_donation"
+	local sSound = "event_cue_notifications_wincon/MidDay"
+	local message1 = "Day and Night: Unnatural Lighting..."
+	local message2 = "The Locale is usually bright, due to multiple celestial light sources. Will it be so... indefinitely ?"
+	EventCue_DoEvent(sIcon, sSound, message1, message2)
+end
+
+--Console info, reporting the specifics of the cycle that occurred
+--[[print("-------- Day and Night Condition Specifics --------")
+if Pitch_Black_Enabled then
+	print("Pitch Black!")
+else
+	if Day_Night_Status == 1 then print("Cycle initiates at DAY time") else print("Cycle initiates at NIGHT time") end
+end
+if Pitch_Black_Enabled then
+	print("Next Pitch Black will happen after: "..Day_Night_Random_Initiation_Time.." secs")
+else
+	print("Day Duration: "..Day_Cycle_Duration.." secs")
+end
+print("Night Duration: "..Night_Cycle_Duration.." secs")
+print("Shift Duration: "..Day_Night_Shifting_Pace_Interval.." secs (x5 for dawning/dusking)")
+print("Shade Grading: "..Day_Night_Intensity)
+print("-----------------------------------------------------------")]]
+
+print("Day and Night rule active! The locale is governed by a light cycle.")
+--Initiate the rules based on conditions
+if Day_Night_Status == 1 then
+	--We start the game at Daytime.
+	if not Pitch_Black_Enabled then
+		--Notify in standard games only
+		Day_Night_Condition_Variables[6] = 1
+		local sIcon = "player_donation"
+		local sSound = "event_cue_notifications_wincon/MidDay"
+		local message1 = "Day and Night: Day Cycle"
+		local message2 = "The Locale is bright, but soon darkness will fall!!"
+		EventCue_DoEvent(sIcon, sSound, message1, message2)
+	end
+	Rule_AddIntervalDelay(set_world_vision, Day_Night_Shifting_Pace_Interval, Day_Night_Random_Initiation_Time)
+else
+	--We start the game at Night time.
+	Rule_AddOneShot(set_world_vision_night, 0.2)
+	Rule_AddIntervalDelay(set_world_vision, Day_Night_Shifting_Pace_Interval, Day_Night_Random_Initiation_Time)
+end
+
+-- Darken the minimap when we start. Do not do so for Night Lords if need be.
+local playerRaceName = Player_GetRaceName(World_GetPlayerAt(Tut_GetLocalPlayerIndex()))
+if Day_Night_Night_Lords and playerRaceName == "night_lords_race" then
+	return
+else
+	FOW_Reset()
+end
+end
+
+
+function set_shading_entity(phase)
+	if Day_Night_Status == 2 then
+	--Destroy the entity responsible for shading
+		if phase == 1 then
+			Entity_Destroy(DayNight_Entity5)
+		elseif phase == 2 then
+			Entity_Destroy(DayNight_Entity4)
+		elseif phase == 3 then
+			Entity_Destroy(DayNight_Entity3)
+		elseif phase == 4 then
+			Entity_Destroy(DayNight_Entity2)
+		elseif phase == 5 then
+			Entity_Destroy(DayNight_Entity1)
+		end
+	else
+	--Create the entity responsible for shading
+		if phase == 1 then
+			for player=1, World_GetPlayerCount() do
+				local playerID = World_GetPlayerAt(player-1)
+				if Player_IsAlive(playerID) then
+					DayNight_Entity1 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+					Entity_SetWorldOwner(DayNight_Entity1)
+					Entity_Spawn(DayNight_Entity1)
+					break		
+				end
+			end
+		elseif phase == 2 then
+			for player=1, World_GetPlayerCount() do
+				local playerID = World_GetPlayerAt(player-1)
+				if Player_IsAlive(playerID) then
+					DayNight_Entity2 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+					Entity_SetWorldOwner(DayNight_Entity2)
+					Entity_Spawn(DayNight_Entity2)
+					break		
+				end
+			end
+		elseif phase == 3 then
+			for player=1, World_GetPlayerCount() do
+				local playerID = World_GetPlayerAt(player-1)
+				if Player_IsAlive(playerID) then
+					DayNight_Entity3 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+					Entity_SetWorldOwner(DayNight_Entity3)
+					Entity_Spawn(DayNight_Entity3)
+					break		
+				end
+			end
+		elseif phase == 4 then
+			for player=1, World_GetPlayerCount() do
+				local playerID = World_GetPlayerAt(player-1)
+				if Player_IsAlive(playerID) then
+					DayNight_Entity4 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+					Entity_SetWorldOwner(DayNight_Entity4)
+					Entity_Spawn(DayNight_Entity4)
+					break		
+				end
+			end
+		elseif phase == 5 then
+			for player=1, World_GetPlayerCount() do
+				local playerID = World_GetPlayerAt(player-1)
+				if Player_IsAlive(playerID) then
+					DayNight_Entity5 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+					Entity_SetWorldOwner(DayNight_Entity5)
+					Entity_Spawn(DayNight_Entity5)
+					break		
+				end
+			end
+		end
+	end
+end	
+	
+
+
+function set_world_vision()
+-- Not global, since we may use Change Players.
+local night_lords_Case = Day_Night_Night_Lords and (Player_GetRaceName(World_GetPlayerAt(Tut_GetLocalPlayerIndex())) == "night_lords_race")
+--Day to Night / Night to Day SHIFTING phase.
+if (Day_Night_Clock == Day_Night_Shifting_Pace_Interval or Day_Night_Clock == 2*Day_Night_Shifting_Pace_Interval or
+Day_Night_Clock == 3*Day_Night_Shifting_Pace_Interval or Day_Night_Clock == 4*Day_Night_Shifting_Pace_Interval or
+Day_Night_Clock == 5*Day_Night_Shifting_Pace_Interval) then
+	--Spawn/Despawn the entity responsible for shading, and perform the vision shifting
+	set_shading_entity(Day_Night_Clock/Day_Night_Shifting_Pace_Interval)
+	vision_shifting()
+	--Change the phase immediately after the last vision shifting.
+	if Day_Night_Clock == 5*Day_Night_Shifting_Pace_Interval then
+		if Day_Night_Status == 1 then Day_Night_Status = 2 else Day_Night_Status = 1 end
+		Day_Night_Condition_Variables[6] = Day_Night_Status
+	end
+	Day_Night_Clock = Day_Night_Clock + Day_Night_Shifting_Pace_Interval
+	Day_Night_Condition_Variables[3] = Day_Night_Clock
+--DURING Day or Night phases.
+else
+	Day_Night_Clock = Day_Night_Clock + Day_Night_Shifting_Pace_Interval
+	Day_Night_Condition_Variables[3] = Day_Night_Clock
+	--Notify at At Mid-Day or Mid-Night. RESET clock, at cycle's end. Re-calculate day duration, for Pitch Black.
+	if Day_Night_Status == 1 then
+		if Day_Night_Clock == Day_Half_Circle then
+			--Do NOT notify for midday in case of a Pitch Black situation.
+			if Pitch_Black_Mode == 0 then
+				local sIcon = "player_donation"
+				local sSound = "event_cue_notifications_wincon/MidDay"
+				local message1 = "Day and Night: Midday"
+				local message2 = "The light is at its brightest, in the locale. It's like Midday."
+				EventCue_DoEvent(sIcon, sSound, message1, message2)
+			end
+		elseif Day_Night_Clock == Day_Cycle_Duration then
+			--Reset the clock
+			Day_Night_Clock = Day_Night_Shifting_Pace_Interval
+			Day_Night_Condition_Variables[3] = Day_Night_Clock
+		end
+	else
+		if Day_Night_Clock == Night_Half_Circle then
+			local sIcon, sSound, messageVar = "", "", ""
+			if Pitch_Black_Mode == 1 then
+				sIcon = "player_donation"
+				sSound = "event_cue_notifications_wincon/PitchBlack"
+				messageVar1 = "Day and Night: Total Darkness!"
+				messageVar2 = "There is almost TOTAL light absence, it's Pitch-Black !!"
+				-- Re-darken the minimap at Pitch-Black! Do not do so for Night Lords if need be.
+				if not night_lords_Case then
+					FOW_Reset()
+				end
+			else
+				sIcon = "player_donation"
+				sSound = "event_cue_notifications_wincon/MidNight"
+				messageVar1 = "Day and Night: Midnight"
+				messageVar2 = "The darkness is as its thickest, in the locale. It's like Midnight."
+			end
+			EventCue_DoEvent(sIcon, sSound, messageVar1, messageVar2)
+		elseif Day_Night_Clock == Night_Cycle_Duration then
+			Day_Night_Clock = Day_Night_Shifting_Pace_Interval
+			Day_Night_Condition_Variables[3] = Day_Night_Clock
+			if Pitch_Black_Mode == 1 then
+				--Set a new random day duration that complies to the rules (multiple of the interval)
+				local temp = nil
+				repeat
+					Day_Cycle_Duration = World_GetRand(36, 100) * 10
+					temp = Day_Cycle_Duration/Day_Night_Shifting_Pace_Interval
+				until temp == math.floor(temp)
+				Day_Night_Condition_Variables[1] = Day_Cycle_Duration
+				--Console info, reporting the specifics of the cycle that occurred
+				--[[print("-------- Day and Night Condition Specifics --------")
+				print("Next Pitch Black will happen after: "..Day_Cycle_Duration.." secs")
+				print("-----------------------------------------------------------")]]
+			end
+		end
+		-- Re-darken the minimap EVERY CYCLE at Pitch-Black! Do not do so for Night Lords if need be.
+		if Pitch_Black_Mode == 1 and not night_lords_Case then
+			FOW_Reset()
+		end
+	end
+end
+end
+
+
+--In case we start night, it applies the maximum vision hindrance modifiers on game init. Obviously, it is called only once and IF needed.
+function set_world_vision_night()
+--Create full shading on init.
+for player=1, World_GetPlayerCount() do
+	local playerID = World_GetPlayerAt(player-1)
+	if Player_IsAlive(playerID) then
+		DayNight_Entity1 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+		Entity_SetWorldOwner(DayNight_Entity1)
+		Entity_Spawn(DayNight_Entity1)
+		DayNight_Entity2 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+		Entity_SetWorldOwner(DayNight_Entity2)
+		Entity_Spawn(DayNight_Entity2)
+		DayNight_Entity3 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+		Entity_SetWorldOwner(DayNight_Entity3)
+		Entity_Spawn(DayNight_Entity3)
+		DayNight_Entity4 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+		Entity_SetWorldOwner(DayNight_Entity4)
+		Entity_Spawn(DayNight_Entity4)
+		DayNight_Entity5 = Entity_Create( "fx_darkness_shading", playerID, World_Pos( 0, 0, 0))
+		Entity_SetWorldOwner(DayNight_Entity5)
+		Entity_Spawn(DayNight_Entity5)
+		break		
+	end
+end
+--Apply modifiers.
+local day_Night_Player_Modifier = nil
+for player=1, World_GetPlayerCount() do
+	local playerID = World_GetPlayerAt(player-1)
+	if Player_IsAlive(playerID) then
+		local race = Player_GetRaceName(playerID)
+		if not(Day_Night_Night_Lords and race == "night_lords_race") then
+			--Apply total Night once (all modifiers).
+			for i=1, 5 do
+				for entity=1, Day_Night_Number_Of_Player_Entities[player] do
+					day_Night_Player_Modifier = Modifier_ApplyToPlayer(Day_Night_Sight_modifiers[player][1][entity], playerID)
+				end
+			end
+		end
+	end
+end
+Day_Night_Condition_Variables[6] = 2
+local sIcon = "player_donation"
+local sSound = "event_cue_notifications_wincon/MidNight"
+local message1 = "Day and Night: Night Cycle"
+local message2 = "The Locale is shadowy and bleak, but soon the light will return!"
+EventCue_DoEvent(sIcon, sSound, message1, message2)
+end
+
+
+function vision_shifting()
+--Create/Remove shading accordingly.
+--Denote the transition, once.
+if (Day_Night_Clock == 2*Day_Night_Shifting_Pace_Interval) then
+	if Day_Night_Status == 1 then
+		local sIcon = "player_donation"
+		local sSound = "event_cue_notifications_wincon/NightFalls"
+		local message1 = "Day and Night: Dusk"
+		local message2 = "Night gradually falls on the Locale!"
+		EventCue_DoEvent(sIcon, sSound, message1, message2)
+	else
+		local sIcon = "player_donation"
+		local sSound = "event_cue_notifications_wincon/DayBrakes"
+		local message1 = "Day and Night: Dawn"
+		local message2 = "Day gradually breaks on the Locale!"
+		EventCue_DoEvent(sIcon, sSound, message1, message2)
+	end
+end
+local day_Night_Player_Modifier = nil
+for player=1, World_GetPlayerCount() do
+	local playerID = World_GetPlayerAt(player-1)
+	if Player_IsAlive(playerID) then
+		local race = Player_GetRaceName(playerID)
+		if not(Day_Night_Night_Lords and race == "night_lords_race") then
+			if Day_Night_Status == 1 then
+				--Day to Night shading. Apply day modifier (1).
+				for entity=1, Day_Night_Number_Of_Player_Entities[player] do
+					day_Night_Player_Modifier = Modifier_ApplyToPlayer(Day_Night_Sight_modifiers[player][1][entity], playerID)
+				end
+			else
+				--Night to Day shading. Apply night modifier (2).
+				local modifier = Day_Night_Clock / Day_Night_Shifting_Pace_Interval
+				for entity=1, Day_Night_Number_Of_Player_Entities[player] do
+					day_Night_Player_Modifier = Modifier_ApplyToPlayer(Day_Night_Sight_modifiers[player][2][entity], playerID)
+				end
+			end
+		end
+	end
+end
+end
+
+function day_night_restore_variables()
+	Day_Cycle_Duration = Day_Night_Condition_Variables[1]
+	Day_Half_Circle = Day_Night_Condition_Variables[2]
+	Day_Night_Clock = Day_Night_Condition_Variables[3]
+	Day_Night_Duration = Day_Night_Condition_Variables[4]
+	Day_Night_Problem_Test = Day_Night_Condition_Variables[5]
+	Day_Night_Status = Day_Night_Condition_Variables[6]
+	Night_Cycle_Duration = Day_Night_Condition_Variables[7]
+	Night_Half_Circle = Day_Night_Condition_Variables[8]
+	Pitch_Black_Mode = Day_Night_Condition_Variables[9]
+end
+
+
+Scar_AddInit(daynight_Set)
+--On load, restore array contents and re-set player modifiers.
+Scar_AddLoad(day_night_restore_variables)
+Scar_AddLoad(day_night_modifier_creation)

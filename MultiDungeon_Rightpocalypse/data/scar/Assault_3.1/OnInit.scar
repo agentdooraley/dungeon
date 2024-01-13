@@ -1,0 +1,185 @@
+
+OnInit={
+	DebugON=0,
+}
+
+function OnInit.Step1()
+	
+	-- Scar starting message - shows code version
+	print("===============================================")
+	print("  ")
+	print("              ASSAULT MAP SCAR CODE (DARK40K)")
+	print("                      " .. Assault_map_version)
+	print("  ")
+	print("==============================================")
+
+	W40k_ShowSystemMessage("Assault Map initializing - Step 1 - Please wait")
+	print("Assault Map initializing - Step 1 - Please wait")
+	
+	--locks all CPUs during init
+	Cpu_EnableAll(false)
+
+	-- start groups creations
+	SgroupMgr:StartCreation(SGroup_Create)
+	EgroupMgr:StartCreation(EGroup_Create)
+
+	-- init DebugSymbole
+	DebugSymbole.Init()
+	
+	--despawns all units except HQs
+	local egtmp=EgroupMgr:New("OnInit_Step1")
+	for i=0, World_GetPlayerCount()-1 do
+		local PlayerID=World_GetPlayerAt(i)
+		-- GAMBIT: I stopped this for races that have global builders and heavy SCaR behind them - orelse, FSE!
+		-- Previously, the "SGroup_DeSpawn(SGroup_GetName(Player_GetSquads(PlayerID)))" was applying to ALL races.
+		local racename = Player_GetRaceName(PlayerID)
+		if  racename ~=" khorne_marine_race" and racename ~= "tyranid_race"
+		and racename ~= "tyranids_race" and racename ~= "xenos_hunters_race" then
+			SGroup_DeSpawn(SGroup_GetName(Player_GetSquads(PlayerID)))
+		end
+		EGroup_Clear(egtmp.ID)
+		EGroup_AddGroup(egtmp.ID,Player_GetEntities(PlayerID))
+		EGroup_Remove(egtmp.ID,Entity_GetPlayerStartHQ(PlayerID))
+		EGroup_DeSpawn(egtmp.Name)
+	end
+	
+	-- launch map intro if it exists
+	if MapIntro~=nil then MapIntro() end
+	
+	-- start level extraction (assumes player1 is human and last player is computer)
+	print("Starting level extraction")
+	GameLevel.Start(World_GetPlayerAt(0),World_GetPlayerAt(World_GetPlayerCount()-1))
+
+	
+end
+
+function OnInit.Step2()
+
+	W40k_HideSystemMessage("Assault Map initializing - Step 1 - Please wait")
+	W40k_ShowSystemMessage("Assault Map initializing - Step 2 - Please wait")
+	print("Assault Map initializing - Step 2 - Please wait")
+
+	-- 1st step level extraction
+	print("Level extraction Step1")
+	GameLevel.Step1()
+end
+
+function OnInit.Step3()
+
+	W40k_HideSystemMessage("Assault Map initializing - Step 2 - Please wait")
+	W40k_ShowSystemMessage("Assault Map initializing - Step 3 - Please wait")
+	print("Assault Map initializing - Step 3 - Please wait")
+
+	-- finish level extraction
+	print("Level extraction Step2")
+	GameLevel.Step2()
+
+	-- loading map data
+	print("Initializing map")
+
+	-- respawns hidden units
+	for i=0, World_GetPlayerCount()-1 do
+		local PlayerID=World_GetPlayerAt(i)
+		SGroup_ReSpawn(SGroup_GetName(Player_GetSquads(PlayerID)))
+		EGroup_ReSpawn(EGroup_GetName(Player_GetEntities(PlayerID)))
+	end
+
+	InitMapStart()
+
+	-- check if test map mode is on
+	CheckTestMapMode(TestMapMode,TestMapGroup)
+	
+	print("Loading map definition - step 1")
+	OnInit.GameParams=AllScarPlayerMgr.ImportGameParams_Step1(SetLevel(World_GetPlayerCount()-3,GameLevel.level,GetGameParams()))
+	
+end
+
+function OnInit.Step4()
+
+	W40k_HideSystemMessage("Assault Map initializing - Step 3 - Please wait")
+	W40k_ShowSystemMessage("Assault Map initializing - Step 4 - Please wait")
+	print("Assault Map initializing - Step 4 - Please wait")
+
+	print("Loading map definition - step 2")
+
+	AllScarPlayerMgr.ImportGameParams_Step2(OnInit.GameParams)
+	
+	OnInit.GameParams=nil
+	
+end
+
+function OnInit.Step5()
+
+	W40k_HideSystemMessage("Assault Map initializing - Step 4 - Please wait")
+	W40k_ShowSystemMessage("Assault Map initializing - Step 5 - Please wait")
+	print("Assault Map initializing - Step 5 - Please wait")
+	
+	print("Creating starting squads and building")
+	AllScarPlayerMgr.ForceStartCreation()
+	
+end
+
+function OnInit.Step6()
+
+	W40k_HideSystemMessage("Assault Map initializing - Step 5 - Please wait")
+	W40k_ShowSystemMessage("Assault Map initializing - Step 6 - Please wait")
+	print("Assault Map initializing - Step 6 - Please wait")
+	
+	print("Init Live status")
+	AllScarPlayerMgr.InitLiveStatus()
+	
+	print("Restarting AIs")
+	AllScarPlayerMgr.ResetAIs()
+	
+	print("Trying call to InitMapEnd()")
+	if InitMapEnd~=nil then InitMapEnd() end
+	
+	if OnInit.DebugON>1 then AllScarPlayerMgr.PrintAll() end	
+	
+	Rule_Add(AllScarPlayerMgr.DoNextStep)
+end
+
+
+function OnInit.Step7()
+	W40k_HideSystemMessage("Assault Map initializing - Step 6 - Please wait")
+	W40k_ShowSystemMessage("Init Done, Level=" .. GameLevel.levelname)
+	print("  ")
+	print("===============================================")
+	print("  ")
+	print("       Init Done, Level=" .. GameLevel.levelname)
+	print("  ")
+	print("===============================================")
+	print("  ")
+end
+
+function OnInit.Step8()
+	W40k_HideSystemMessage("Init Done, Level=" .. GameLevel.levelname)
+end
+
+function OnInit.StepMgr()
+
+	if OnInit.Counter==1 then 
+		OnInit.Step2() 
+	elseif OnInit.Counter==2 then 
+		OnInit.Step3() 
+	elseif OnInit.Counter==3 then
+		OnInit.Step4() 
+	elseif OnInit.Counter==4 then 
+		OnInit.Step5() 
+	elseif OnInit.Counter==5 then 
+		OnInit.Step6() 
+	elseif OnInit.Counter==6 then 
+		OnInit.Step7() 
+	elseif World_GetGameTime()>30 then 
+		OnInit.Step8() 
+		Rule_Remove(OnInit.StepMgr) 
+	end
+	OnInit.Counter=OnInit.Counter+1
+	
+end
+
+function OnInit.Start()
+	OnInit.Counter=0
+	Rule_Add(OnInit.StepMgr)
+	OnInit.Step1()
+end

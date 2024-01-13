@@ -1,0 +1,366 @@
+MapSampling_Class={
+	Table_Coef=1000,
+	Table_Rate=10,
+	SamplingTable_metatable={
+		__index=function () 
+			return { 
+				Total=0,
+				Building=0,
+				Squad=0,
+				Infantry=0,
+				Vehicule=0,
+			}
+		end,
+	},
+}
+
+local MapSampling_Metatable={
+	__index=MapSampling_Class
+}
+
+function MapSampling_Class:New()
+
+	local SamplingTable={}
+	setmetatable(SamplingTable,MapSampling_Class.SamplingTable_metatable)
+
+	local MapSampling_Class_Object={
+		SamplingTable=SamplingTable,
+	}
+	
+	setmetatable(MapSampling_Class_Object, MapSampling_Metatable)
+	
+	return MapSampling_Class_Object
+	
+end
+
+function MapSampling_Class:AddHealth_SgroupID(SgroupID, ViewPlayerID)
+
+	local SquadInview=true
+
+	for i=1, SGroup_CountSpawned(SgroupID) do
+		
+		local SquadID=SGroup_GetSpawnedSquadAt(SgroupID,i)
+		
+		if ViewPlayerID~=nil then 
+			SquadInview=Player_CanSeeSquad(ViewPlayerID,SquadID,false)
+		else
+			SquadInview=true
+		end
+		
+		if SquadInview then
+			
+			local Position=Squad_GetPosition(SquadID)
+			local Health=Squad_GetHealth(SquadID)
+			local BP=Squad_GetBlueprintName(SquadID)
+			
+			local X0=math.floor(Position.x/MapSampling_Class.Table_Rate)
+			local Y0=math.floor(Position.z/MapSampling_Class.Table_Rate)
+			local X1=X0+1
+			local Y1=Y0+1
+			
+			local DX=Position.x/MapSampling_Class.Table_Rate-X0
+			local DY=Position.z/MapSampling_Class.Table_Rate-Y0
+			
+			local I00=X0+Y0*MapSampling_Class.Table_Coef
+			local I10=X1+Y0*MapSampling_Class.Table_Coef
+			local I01=X0+Y1*MapSampling_Class.Table_Coef
+			local I11=X1+Y1*MapSampling_Class.Table_Coef
+			
+			local T00=self.SamplingTable[I00]
+			local T10=self.SamplingTable[I10]
+			local T01=self.SamplingTable[I01]
+			local T11=self.SamplingTable[I11]
+			
+			if rawget(self.SamplingTable, I00)==nil then self.SamplingTable[I00]=T00 end
+			if rawget(self.SamplingTable, I01)==nil then self.SamplingTable[I01]=T01 end
+			if rawget(self.SamplingTable, I10)==nil then self.SamplingTable[I10]=T10 end
+			if rawget(self.SamplingTable, I11)==nil then self.SamplingTable[I11]=T11 end
+			
+			local V00=(1-DX)*(1-DY)*Health
+			local V10=DX*(1-DY)*Health
+			local V01=(1-DX)*DY*Health
+			local V11=DX*DY*Health	
+			
+			T00.Total=T00.Total+V00
+			T01.Total=T01.Total+V01
+			T10.Total=T10.Total+V10
+			T11.Total=T11.Total+V11
+			
+			T00.Building=T00.Building+V00
+			T01.Building=T01.Building+V01
+			T10.Building=T10.Building+V10
+			T11.Building=T11.Building+V11
+			
+			if CST_BPType[BP]==CST_BPType_Infantry then
+				T00.Infantry=T00.Infantry+V00
+				T01.Infantry=T01.Infantry+V01
+				T10.Infantry=T10.Infantry+V10
+				T11.Infantry=T11.Infantry+V11
+			elseif CST_BPType[BP]==CST_BPType_Vehicule then
+				T00.Vehicule=T00.Vehicule+V00
+				T01.Vehicule=T01.Vehicule+V01
+				T10.Vehicule=T10.Vehicule+V10
+				T11.Vehicule=T11.Vehicule+V11
+			end
+			
+		end
+		
+	end	
+end
+
+function MapSampling_Class:AddHealth_EgroupID(EgroupID,ViewPlayerID)
+
+	local SquadInview
+
+	for i=1, EGroup_CountSpawned(EgroupID) do
+		
+		local EntityID=EGroup_GetSpawnedEntityAt(EgroupID,i)
+		
+		if ViewPlayerID~=nil then 
+			SquadInview=Player_CanSeeEntity(ViewPlayerID,EntityID) 
+		else
+			SquadInview=true
+		end
+		
+		if SquadInview then
+			
+			local Position=Entity_GetPosition(EntityID)
+			local Health=Entity_GetHealth(EntityID)
+			
+			local X0=math.floor(Position.x/MapSampling_Class.Table_Rate)
+			local Y0=math.floor(Position.z/MapSampling_Class.Table_Rate)
+			local X1=X0+1
+			local Y1=Y0+1
+			
+			local DX=Position.x/MapSampling_Class.Table_Rate-X0
+			local DY=Position.z/MapSampling_Class.Table_Rate-Y0
+			
+			local I00=X0+Y0*MapSampling_Class.Table_Coef
+			local I10=X1+Y0*MapSampling_Class.Table_Coef
+			local I01=X0+Y1*MapSampling_Class.Table_Coef
+			local I11=X1+Y1*MapSampling_Class.Table_Coef
+			
+			local T00=self.SamplingTable[I00]
+			local T10=self.SamplingTable[I10]
+			local T01=self.SamplingTable[I01]
+			local T11=self.SamplingTable[I11]
+			
+			if rawget(self.SamplingTable, I00)==nil then self.SamplingTable[I00]=T00 end
+			if rawget(self.SamplingTable, I01)==nil then self.SamplingTable[I01]=T01 end
+			if rawget(self.SamplingTable, I10)==nil then self.SamplingTable[I10]=T10 end
+			if rawget(self.SamplingTable, I11)==nil then self.SamplingTable[I11]=T11 end
+			
+			local V00=(1-DX)*(1-DY)*Health
+			local V10=DX*(1-DY)*Health
+			local V01=(1-DX)*DY*Health
+			local V11=DX*DY*Health	
+			
+			T00.Total=T00.Total+V00
+			T01.Total=T01.Total+V01
+			T10.Total=T10.Total+V10
+			T11.Total=T11.Total+V11
+			
+			T00.Squad=T00.Squad+V00
+			T01.Squad=T01.Squad+V01
+			T10.Squad=T10.Squad+V10
+			T11.Squad=T11.Squad+V11
+			
+		end
+	end	
+end
+
+-- Add health of a player's units to sampling map
+function MapSampling_Class:AddHealth_PlayerID(PlayerID, ViewPlayerID)
+	self:AddHealth_SgroupID(Player_GetSquads(PlayerID), ViewPlayerID)
+	self:AddHealth_EgroupID(Player_GetEntities(PlayerID), ViewPlayerID)
+end
+
+-- get biggest threat 
+-- returns table={ Position=, Value=)
+--[[ old Code function MapSampling_Class:GetMaxValue(Position,Range)
+	
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+	local X0=math.floor(XC)
+	local Y0=math.floor(YC)
+	
+	local NX=(math.ceil(Range/MapSampling_Class.Table_Rate))
+	local NY=(math.ceil(Range/MapSampling_Class.Table_Rate))
+	
+	local MaxRange=(Range/MapSampling_Class.Table_Rate)^2
+	
+	local MaxValue=0
+	local MaxX
+	local MaxY
+	
+	for X=X0-NX,X0+NX do
+		for Y=Y0-NY,Y0+NY do
+			if ((X-XC)^2+(Y-YC)^2)<=MaxRange then
+				if self.SamplingTable[X+Y*MapSampling_Class.Table_Coef]>MaxValue then
+					MaxValue=self.SamplingTable[X+Y*MapSampling_Class.Table_Coef]
+					MaxX=X
+					MaxY=Y
+				end
+			end
+		end
+	end
+	
+	if MaxValue==0 then return end
+
+	return Util_ScarPos( MaxX*MapSampling_Class.Table_Rate, MaxY*MapSampling_Class.Table_Rate ) 
+	
+end]]
+function MapSampling_Class:GetMaxValue(Position,Range,Type)
+	
+	if Type==nil then Type="Total" end
+	
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+
+	local R=Range/MapSampling_Class.Table_Rate
+	
+	local MaxValue=0
+	local MaxN=0
+
+	for Y=math.ceil(YC-R),math.floor(YC+R) do
+		local DX=math.sqrt(R^2-(Y-YC)^2)
+		local N0=Y*MapSampling_Class.Table_Coef
+		for N=N0+math.ceil(XC-DX),N0+math.floor(XC+DX) do
+			if self.SamplingTable[N][Type]>MaxValue then
+				MaxValue=self.SamplingTable[N][Type]
+				MaxN=N
+			end
+		end
+	end
+
+	if MaxValue==0 then return end
+	
+	local YMAX=math.floor(MaxN/MapSampling_Class.Table_Coef)
+	if MaxN/MapSampling_Class.Table_Coef-YMAX>0.5 then YMAX=YMAX+1 end
+
+	local XMAX=MaxN-YMAX*MapSampling_Class.Table_Coef
+	
+	return Util_ScarPos( XMAX*MapSampling_Class.Table_Rate, YMAX*MapSampling_Class.Table_Rate ) 
+	
+end
+
+
+-- try to find largest threat by interpolation 
+-- returns table={ Position=, Value=TotalHealth in the area)
+function MapSampling_Class:InterpMaxLocal(Position,Type)
+	
+	if Type==nil then Type="Total" end
+
+	-- get closest grid point
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+	local X0=math.floor(XC)
+	local Y0=math.floor(YC)
+	if XC-X0>0.5 then X0=X0+1 end
+	if YC-Y0>0.5 then Y0=Y0+1 end
+	
+	-- compute health barycenter
+	local XM=0
+	local YM=0
+	local SM=0
+	local V
+	for X=X0-1,X0+1 do
+		for Y=Y0-1,Y0+1 do
+			V=self.SamplingTable[X+Y*MapSampling_Class.Table_Coef][Type]
+			XM=XM+X*V
+			YM=YM+Y*V
+			SM=SM+V
+		end
+	end
+	
+	if SM~=0 then
+		return Util_ScarPos( XM/SM*MapSampling_Class.Table_Rate, YM/SM*MapSampling_Class.Table_Rate ) 
+	end
+	
+end
+
+--[[ Old code function MapSampling_Class:SurroundingValue(Position, Range)
+	
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+	local X0=math.floor(XC)
+	local Y0=math.floor(YC)
+	
+	local NX=(math.ceil(Range/MapSampling_Class.Table_Rate))+1
+	local NY=(math.ceil(Range/MapSampling_Class.Table_Rate))+1
+	
+	local MaxRange=(Range/MapSampling_Class.Table_Rate)^2
+	
+	local TotalValue=0
+	
+	for X=X0-NX,X0+NX do
+		for Y=Y0-NY,Y0+NY do
+			if ((X-XC)^2+(Y-YC)^2)<=MaxRange then
+				TotalValue=TotalValue+self.SamplingTable[X+Y*MapSampling_Class.Table_Coef]
+			end
+		end
+	end
+	
+	return TotalValue
+	
+end]]
+function MapSampling_Class:SurroundingValue(Position, Range,Type)
+	
+	if Type==nil then Type="Total" end
+
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+
+	local R=Range/MapSampling_Class.Table_Rate
+	
+	local TotalValue=0
+
+	for Y=math.ceil(YC-R),math.floor(YC+R) do
+		local DX=math.sqrt(R^2-(Y-YC)^2)
+		local N0=Y*MapSampling_Class.Table_Coef
+		for N=N0+math.ceil(XC-DX),N0+math.floor(XC+DX) do
+			TotalValue=TotalValue+self.SamplingTable[N][Type]
+		end
+	end
+	
+	return TotalValue
+	
+end
+
+function MapSampling_Class:SurroundingValue_Max(Position, Range,Type)
+	
+	if Type==nil then Type="Total" end
+	
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+
+	local R=Range/MapSampling_Class.Table_Rate
+	
+	local TotalValue=0
+
+	for Y=math.floor(YC-R),math.ceil(YC+R) do
+		local DX=R^2-(Y-YC)^2
+		if DX>0 then DX=math.sqrt(DX) else DX=0 end
+		local N0=Y*MapSampling_Class.Table_Coef
+		for N=N0+math.floor(XC-DX),N0+math.ceil(XC+DX) do
+			TotalValue=TotalValue+self.SamplingTable[N][Type]
+		end
+	end
+	
+	return TotalValue
+	
+end
+
+function MapSampling_Class:CloseValue(Position,Type)
+	
+	if Type==nil then Type="Total" end
+	
+	local XC=Position.x/MapSampling_Class.Table_Rate
+	local YC=Position.z/MapSampling_Class.Table_Rate
+	local X0=math.floor(XC)
+	local Y0=math.floor(YC)
+	if XC-X0>0.5 then X0=X0+1 end
+	if YC-Y0>0.5 then Y0=Y0+1 end
+	return self.SamplingTable[X0+Y0*MapSampling_Class.Table_Coef][Type]
+end
+

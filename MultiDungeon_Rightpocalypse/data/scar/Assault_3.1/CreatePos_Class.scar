@@ -1,0 +1,169 @@
+
+if CreatePos_Class==nil then
+	CreatePos_Class={
+		List={},
+		Count=0,
+	}
+end
+
+local CreatePos_Metatable={
+	__index=CreatePos_Class
+}
+
+for CreatePos_Index,CreatePos in pairs(CreatePos_Class.List) do
+	setmetatable(CreatePos,CreatePos_Metatable)
+end
+
+function CreatePos_Class.Get(Pointer)
+	return CreatePos_Class.List[Pointer]
+end
+
+function CreatePos_Class:New()
+	
+	local NewCreatePos={
+		FixedPosList={},
+		FixedPosCount=0,
+		BuildingPointerList={},
+		BuildingPointerCount=0,
+		StratPointList={},
+		StratPointCount=0,
+	}
+	
+	setmetatable(NewCreatePos, CreatePos_Metatable)
+	
+	CreatePos_Class.Count=CreatePos_Class.Count+1
+	CreatePos_Class.List[CreatePos_Class.Count]=NewCreatePos
+	
+	CreatePos_Class.Pointer=CreatePos_Class.Count
+	
+	return NewCreatePos
+
+end
+
+function CreatePos_Class:NewFixedPos(Position)
+	local NewCreatePos=CreatePos_Class:New()
+	NewCreatePos:AddFixedPos(Position)
+	return NewCreatePos
+end
+
+function CreatePos_Class:NewBuildingFromEgroup(EgroupName)
+	local NewCreatePos=CreatePos_Class:New()
+	NewCreatePos:AddBuildingFromEgroup(EgroupName)
+	return NewCreatePos
+end
+
+function CreatePos_Class:NewStratPointFromEgroup(EgroupName,PlayerID)
+	local NewCreatePos=CreatePos_Class:New()
+	NewCreatePos:AddStratPointFromEgroup(EgroupName,PlayerID)
+	return NewCreatePos
+end
+
+function CreatePos_Class:AddFixedPos(Position)
+	self.FixedPosCount=self.FixedPosCount+1
+	self.FixedPosList[self.FixedPosCount]=Position
+end
+
+function CreatePos_Class:AddBuilding(Building)
+	self.BuildingPointerCount=self.BuildingPointerCount+1
+	self.BuildingPointerList[self.BuildingPointerCount]=Building.Pointer
+end
+
+function CreatePos_Class:AddStratPoint(PointID,PlayerID)
+	self.StratPointCount=self.StratPointCount+1
+	self.StratPointList[self.StratPointCount]={PointID=PointID,PlayerID=PlayerID}
+end
+
+function CreatePos_Class:AddBuildingFromEntityID(EntityID)
+	if Building_Class.Building_List.Get(EntityID.id)~=nil then
+		self:AddBuilding(Building_Class.Building_List.Get(EntityID.id))
+	end
+end
+
+function CreatePos_Class:AddFixedPosList(PositionList)
+	for Position_Index,Position in pairs(PositionList) do
+		self:AddFixedPos(Position)
+	end
+end
+
+function CreatePos_Class:AddBuildingFromEgroup(EgroupName)
+
+	local EgroupID=EGroup_FromName(EgroupName)
+	for i=1,EGroup_CountSpawned(EgroupID) do
+		self:AddBuildingFromEntityID(EGroup_GetSpawnedEntityAt(EgroupID,i))
+	end
+end
+
+function CreatePos_Class:AddStratPointFromEgroup(EgroupName,PlayerID)
+	local EgroupID=EGroup_FromName(EgroupName)
+	for i=1,EGroup_CountSpawned(EgroupID) do
+		self:AddStratPoint(EGroup_GetSpawnedEntityAt(EgroupID,i),PlayerID)
+	end
+end
+
+function CreatePos_Class:AddBPFromBuildingList(BuildingList, BP)
+	
+	for Building_Index, Building in pairs(BuildingList.List) do
+		if Building.BuildingBP==BP then
+			self:AddBuilding(Building)
+		end
+	end
+	
+end
+
+function CreatePos_Class:ClosestActivePos(Position)
+	
+	local Pos
+	local Dist
+	for FixedPos_Index,FixedPos in pairs(self.FixedPosList) do
+		local TmpDist=World_DistancePointToPoint(FixedPos,Position)
+		if Dist==nil then
+			Pos=FixedPos
+			Dist=TmpDist
+		elseif TmpDist<Dist then
+			Pos=FixedPos
+			Dist=TmpDist
+		end
+	end
+
+	for Building_Index, BuildingPointer in pairs(self.BuildingPointerList) do
+		if PointerTable.Get(BuildingPointer):IsFunctional() then
+			local TmpDist=World_DistancePointToPoint(Position, PointerTable.Get(BuildingPointer).Position)
+			if (Dist==nil) then
+				Pos=PointerTable.Get(BuildingPointer).Position
+				Dist=TmpDist
+			elseif TmpDist<Dist then
+				Pos=PointerTable.Get(BuildingPointer).Position
+				Dist=TmpDist
+			end
+		end
+	end
+	
+	for Strat_Index, Strat_Data in pairs(self.StratPointList) do
+		if not Entity_GetWorldOwner(Strat_Data.PointID) then
+			if  Player_GetRelationship(Strat_Data.PlayerID, Entity_GetPlayerOwner(Strat_Data.PointID))==R_ALLY then
+				local TmpPos=Entity_GetPosition(Strat_Data.PointID)
+				local TmpDist=World_DistancePointToPoint(TmpPos,Position)
+				if Dist==nil then
+					Pos=TmpPos
+					Dist=TmpDist
+				elseif TmpDist<Dist then
+					Pos=TmpPos
+					Dist=TmpDist
+				end
+			end
+		end
+	end
+	
+	return Pos
+end
+
+function CreatePos_Class:CanProvidePos()
+
+	if next(self.FixedPosList)~=nil then return true end
+	
+	for Building_Index, BuildingPointer in pairs(self.BuildingPointerList) do
+		if PointerTable.Get(BuildingPointer):IsFunctional() then return true end
+	end
+
+end
+

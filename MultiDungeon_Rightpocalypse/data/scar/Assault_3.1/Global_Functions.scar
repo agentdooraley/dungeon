@@ -1,0 +1,207 @@
+
+-- returns true if Level with Nplayers is coded in LevelKey, otherwise false
+-- Level is 1-5
+-- Nplayers is >1
+-- Code format is Level <code for 1 player> x <code for 2 players> x <code for 3 players> ...
+-- if code for Nplayers does not exist then code for largest number of players is used
+-- <code for n players> is made of level numbers (1-5), numbers can be unsorted and "_" caracter can be used for easier readability
+-- example:
+-- "Level__3__x_2___x1____" => true for 1 player in hard, 2 players standard, 3 or more players easy
+-- "Level5x43x2x1" => true for 1 player insane, 2 players hard and advanced, 3 players standard, 4 or more players easy
+function CheckLevel(NPlayers,Level,Key)
+
+	--return value : set to false means not found
+	local IsValidLevel=true
+	
+	-- Remove beginning of Key
+	local LevelKey=string.sub(Key,6,-1)
+
+	-- find begining of nplayer section
+	local pos_start=1
+	for i=1,NPlayers-1 do
+		local pos_new=string.find(LevelKey,"x",pos_start,true)
+		if pos_new==nil then break end
+		pos_start=pos_new+1
+	end
+	
+	if pos_start~=nil then
+		
+		-- find end of nplayer section
+		local pos_end=string.find(LevelKey,"x",pos_start,true)
+		if pos_end==nil then 
+			pos_end=string.len(LevelKey) 
+		else
+			pos_end=pos_end-1
+		end
+		
+		LevelKey=string.sub(LevelKey,pos_start,pos_end)
+		IsValidLevel=(string.find(LevelKey,tostring(Level),1,true)~=nil)
+		
+	else
+		IsValidLevel=false
+	end
+	
+	return IsValidLevel
+	
+end
+
+-- returns simplified LevelTable with only selected level data
+-- Level is 1-5
+-- Nplayers is >1
+function SetLevel(NPlayers,Level,LevelTable)
+
+	--check if data is a table
+	if type(LevelTable)=="table" then
+		
+		local NewTable={}
+		
+		for LevelTable_Key,LevelTable_Data in pairs(LevelTable) do
+			
+			--check if Key is level
+			-- if not then return scanned key
+			if string.sub(tostring(LevelTable_Key),1,5)~="Level" then
+				NewTable[LevelTable_Key]=SetLevel(NPlayers,Level,LevelTable_Data)
+			elseif CheckLevel(NPlayers,Level,LevelTable_Key) then
+				
+				if type(LevelTable_Data)=="table" then
+					
+					for SubLevelTable_Key,SubLevelTable_Data in pairs(LevelTable_Data) do
+						NewTable[SubLevelTable_Key]=SetLevel(NPlayers,Level,SubLevelTable_Data)
+					end
+					
+				else
+					return SetLevel(NPlayers,Level,LevelTable_Data)
+				end
+				
+			end
+			
+		end
+		
+		return NewTable
+		
+	end
+	
+	return LevelTable
+	
+end
+
+--
+-- Message when attack is launched (list in bottom right view)
+--
+function SendAttackWarning(PlayerID,AttackName,NbrUnits,AttackHealth)
+
+	local PlayerName=Player_GetDisplayName(PlayerID)[1]
+	
+	local EventMsgTxt=
+	"Player: " .. PlayerName ..
+	"\nTarget: " ..  tostring(AttackName) ..
+	"\nNbr of units: " .. tostring(NbrUnits) ..
+	"\nEstimated total HP: " .. tostring(math.floor(AttackHealth/100)*100)
+	
+	EventCue_DoEvent (
+		"warning", 
+		"/event_cue_notifications/cheats!",
+		"Warning: " .. PlayerName .. " launches Counter-Attack",
+		EventMsgTxt)
+
+end
+
+--
+-- Show an intel message randomly from a list
+--
+function ShowMessage(LaunchMessage)
+
+	if LaunchMessage==nil then return end
+
+	if LaunchMessage.Probability~=nil then
+		if World_GetRand(1,100)>LaunchMessage.Probability then
+			return
+		end
+	end
+	
+	if LaunchMessage.PlayAll==true then
+		for Msg_Index,Msg in ipairs(LaunchMessage.List) do
+			Actor_PlaySpeech(Msg.Actor, Msg.MsgID )
+			if Msg.MsgPath~=nil then
+				Sound_Play( Msg.MsgPath )
+			end
+		end
+	else
+		local MsgNbr=World_GetRand(1,table.getn(LaunchMessage.List))
+		Actor_PlaySpeech(LaunchMessage.List[MsgNbr].Actor, LaunchMessage.List[MsgNbr].MsgID )
+		if LaunchMessage.List[MsgNbr].MsgPath~=nil then
+			Sound_Play( LaunchMessage.List[MsgNbr].MsgPath )
+		end
+	end
+	
+end
+
+--
+-- Test map mode manager
+--
+-- set if TestMapMode=True
+-- => Turns sg_Start_TestMap group into invulnerable if it exists
+-- => removes fog of war 
+-- removed if TestMapMode not true or is not set
+-- => destroys sg_Start_TestMap group if it exists
+function CheckTestMapMode(TestMapMode,TestMapGroup)
+	if (TestMapMode==true) and (TestMapGroup~=nil)then
+		print "TESTMAPMODE IS ACTIVE"
+		--FOW_RevealAll()		
+		if SGroup_Exists(TestMapGroup) then
+			SGroup_SetHealthInvulnerable(TestMapGroup,true)
+			
+			sg_Start_TestMap_Moral_ID=SGroup_Create("sg_Start_TestMap_Moral")
+			local Sgroup_ID=SGroup_FromName(TestMapGroup)
+			for i=1, SGroup_Count(Sgroup_ID) do
+				local Squad_ID=SGroup_GetSpawnedSquadAt(Sgroup_ID,i)
+				if Squad_HasMorale(Squad_ID) then
+					SGroup_Add(sg_Start_TestMap_Moral_ID,Squad_ID)
+				end
+			end
+			SGroup_SetMoraleInvulnerable(SGroup_GetName(sg_Start_TestMap_Moral_ID),true)
+		end
+	else
+		if TestMapGroup~=nil then 
+			if SGroup_Exists(TestMapGroup) then
+				SGroup_DestroyAllSquads(TestMapGroup)
+			end
+		end
+	end
+end
+
+function StartMarker_GetPlayerID(MarkerName)
+	for i=World_GetPlayerCount()-1,0,-1 do
+		local PlayerID=World_GetPlayerAt(i)
+		if Marker_InProximity(Marker_FromName(MarkerName,"basic_marker"),Player_GetStartPosition(PlayerID)) then
+			return PlayerID
+		end
+	end
+end
+
+function StartMarker_IsPlayerAlive(MarkerName)
+	return (StartMarker_GetPlayerID(MarkerName)~=nil)
+end
+
+function StartMarker_GetHQ(MarkerName, PlayerID)
+
+	local egtmp=EgroupMgr:New("ToolsDow")
+	
+	Player_GetAllEntitiesNearMarker( PlayerID, egtmp.Name, MarkerName )
+	
+	if EGroup_CountSpawned(egtmp.ID)==0 then
+		print("Warning: StartMarker_GetHQ() :no headquarter found")
+		return nil
+	end
+	
+	if EGroup_CountSpawned(egtmp.ID)>1 then
+		print("Warning: StartMarker_GetHQ() : more than 1 entity found, returning first")
+	end
+	
+	local HQID=EGroup_GetSpawnedEntityAt(egtmp.ID,1)
+	
+	EGroup_Destroy(egtmp.ID)
+	
+	return HQID
+	
+end

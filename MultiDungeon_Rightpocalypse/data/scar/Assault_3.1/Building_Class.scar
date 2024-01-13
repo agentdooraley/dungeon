@@ -1,0 +1,270 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                             Building Class                                         ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+if Building_Class==nil then 
+	Building_Class={}
+end
+Building_Class.DebugON=0
+Building_Class.Building_List=NewPointerTable()
+
+local Building_Metatable={
+	__index=Building_Class
+}
+
+--[[ create a building object with resurection capability
+
+PlayerID
+BuildingBP
+Position
+AddonList: table, list of strings naming addons to be added upon rebuild
+RelatedPointID: ID of strat point for listening points
+
+-- ]]
+function Building_Class:New(PlayerID, BuildingBP, Position, AddonList,RelatedPointID, FillList)
+	
+	if FillList==nil then FillList={} end
+	
+	local NewBuilding={
+		PlayerID=PlayerID,
+		BuildingBP=BuildingBP,
+		CreationParams=CreationParams,
+		Tracker_eg=EgroupMgr:New("BuildingCls"),
+		Position=Position,
+		AddonList=AddonList,
+		FillSquad={},
+		RelatedPointID=RelatedPointID,
+		CanBeRepaired=(NoRepairBuildingList[BuildingBP]~=true),
+		UnderRepairStatus=false,
+	}
+	setmetatable(NewBuilding, Building_Metatable)
+	
+	-- save a global pointer to the object
+	NewBuilding.Pointer=PointerTable.Add(NewBuilding)
+	
+	for SquadIndex,SquadParams in pairs(FillList) do 
+		NewBuilding.FillSquad[SquadIndex]=Squad_Class:NewEmpty(PlayerID, SquadParams, STANCE_StandGround, NewBuilding.Pointer)
+		NewBuilding.FillSquad[SquadIndex]:SetOrder_StoreInBuilding(NewBuilding)
+	end
+
+	if NewBuilding.AddonList==nil then NewBuilding.AddonList={} end
+	
+	if self.DebugON>0 then 
+		if RelatedPointID==nil then
+			print("Building_Class:New() Building " ..  BuildingBP .. " Trackername=" .. NewBuilding.Tracker_eg.Name ) 
+		else
+			print("Building_Class:New() Building " ..  BuildingBP .. " RelatedPointID.id=" .. RelatedPointID.id .. " Trackername=" .. NewBuilding.Tracker_eg.Name ) 
+		end
+	end
+	
+	return NewBuilding
+end
+
+function Building_Class.Reload(Building)
+	
+	setmetatable(Building,Building_Metatable)
+	PointerTable.Add(Building,Building.Pointer)
+
+	if Building.EntityID~=nil then 
+		Building_Class.Building_List.Add(Building,Building.EntityID.id)
+	end
+	
+	for SquadIndex,Squad in pairs(Building.FillSquad) do
+		Squad_Class.Reload(Squad)
+	end
+	
+end
+
+function Building_Class:NewExisting(EntityID, AddonList, RelatedPointID, FillList)
+
+	if self.DebugON>0 then 
+		if RelatedPointID==nil then
+			print("Building_Class:NewExisting() Building " ..  Entity_GetBlueprintName(EntityID) .. " EntityID.id=" .. EntityID.id ) 
+		else
+			print("Building_Class:NewExisting() Building " ..  Entity_GetBlueprintName(EntityID) .. " EntityID.id=" .. EntityID.id .. " RelatedPointID.id=" .. RelatedPointID.id) 
+		end
+	end
+
+	if Building_Class.Building_List.Get(EntityID.id)~=nil then
+		print(tostring(self) .. " Building_Class:NewExisting() WARNING:" .. EntityID.id .. " Allready exist, returning existing object, Time=" .. World_GetGameTime())
+		return Building_Class.Building_List.Get(EntityID.id)
+	end
+	
+	local NewBuilding=Building_Class:New(
+		Entity_GetPlayerOwner(EntityID), 
+		Entity_GetBlueprintName(EntityID), 
+		Entity_GetPosition(EntityID), 
+		AddonList,
+		RelatedPointID,
+		FillList)
+	EGroup_Add(NewBuilding.Tracker_eg.ID,EntityID)
+	NewBuilding.EntityID=EntityID
+	Building_Class.Building_List.Add(NewBuilding,EntityID.id)
+	return NewBuilding
+end
+
+function Building_Class:IsFunctional()
+	if self:IsAlive() then
+		return (Entity_GetBuildingProgress(self.EntityID)==1.0)
+	else
+		return false
+	end
+end
+
+function Building_Class:UpdateLiveStatus()
+
+	if EGroup_Count(self.Tracker_eg.ID)==0 then
+		if self.EntityID~=nil then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:UpdateLiveStatus() Building " .. self.BuildingBP .. " is dead ID.id=" .. tostring(self.EntityID.id) .. ",Time=" .. World_GetGameTime()) end
+			Building_Class.Building_List.Clear(self.EntityID.id)
+			self.EntityID=nil
+		end
+	end
+	
+	for SquadIndex,Squad in pairs(self.FillSquad) do
+		Squad:UpdateLiveStatus()
+	end
+	
+end
+
+function Building_Class:IsAlive()
+	return (self.EntityID~=nil)
+end
+
+function Building_Class:DoOrders()
+	for SquadIndex,Squad in pairs(self.FillSquad) do
+		Squad:DoOrders()
+	end
+end
+
+function Building_Class:NeedRepair()
+	if self:IsAlive() then
+		if self.CanBeRepaired then
+			return (self:GetDamage()>0)
+		else
+			return (self:GetDamage()>0) and (Entity_GetBuildingProgress(self.EntityID)<1.0)
+		end
+	else
+		return false
+	end
+end
+
+function Building_Class:UnderRepair()
+	return self.UnderRepairStatus
+end
+
+function Building_Class:SetUnderRepairStatus(Newstatus)
+	self.UnderRepairStatus=Newstatus
+end
+
+--Warning: does not check if unit is alive
+function Building_Class:GetDamage()
+	return Entity_GetHealthMax(self.EntityID)-Entity_GetHealth(self.EntityID)
+end
+
+function Building_Class:CanRebuild()
+	if self:IsAlive() then return false end
+	if self.RelatedPointID~=nil then	
+		if not Entity_IsCapturedByPlayer( self.RelatedPointID, self.PlayerID ) then
+			return false
+		end
+	end
+	return true
+end
+
+function Building_Class:RequireReinforcement(ReinforcementMgr)
+
+	local CurrentQueryNbr=ReinforcementMgr:GetClosestQueryNbr(self)
+
+	if self:CanRebuild() then
+		if CurrentQueryNbr==nil then
+			ReinforcementMgr:Require(self, "ReBuild","")
+		elseif ReinforcementMgr:GetQuery(CurrentQueryNbr).Type~="ReBuild" then
+			ReinforcementMgr:RemoveAllQueries(self)
+			ReinforcementMgr:Require(self, "ReBuild","")
+		end
+	elseif self:IsFunctional() then
+		if CurrentQueryNbr==nil then
+			for SquadIndex,Squad in pairs(self.FillSquad) do
+				if not Squad:IsAlive() then
+					ReinforcementMgr:Require(self, "BuildingTroop",SquadIndex)
+					break
+				end
+			end
+		end
+	end
+end
+
+function Building_Class:CancelReinforcement(ReinforcementMgr)
+	ReinforcementMgr:RemoveAllQueries(self)
+end
+
+function Building_Class:DoReinforce(ReinforceType, ReinforceData)
+	if ReinforceType=="ReBuild" then
+		if self:CanRebuild() then
+			return self:Rebuild()
+		else
+			print("Warning Building_Class: Cannot rebuild")
+			return false
+		end
+	elseif ReinforceType=="BuildingTroop" then
+		
+		if self:IsFunctional() then
+			return self.FillSquad[ReinforceData]:Create(self.Position, true)
+		else
+			return false
+		end
+		
+	else
+		print("Warning Building_Class: ReinforceType unknown =" .. ReinforceType)
+		return false
+	end
+end
+
+function Building_Class:Rebuild(FullStatus)
+	if self:IsAlive() then
+		print(tostring(self) .. " Building_Class:Rebuild() WARNING:" .. self.EntityID.id .. " building is alive, Time=" .. World_GetGameTime())
+		return false
+	end
+	
+	self.EntityID=Entity_Create(self.BuildingBP,self.PlayerID,self.Position)
+	
+	if self.EntityID==nil then 
+		print(tostring(self) .. " Building_Class:Rebuild() WARNING: Failed creating building, Time=" .. World_GetGameTime())
+		return false 
+	end
+
+	Building_Class.Building_List.Add(self,self.EntityID.id)
+	
+	EGroup_Add(self.Tracker_eg.ID,self.EntityID)
+	Entity_Spawn(self.EntityID)
+	if self.AddonList~=nil then
+		for addon_index, addon_name in pairs( self.AddonList ) do
+			Entity_ForceAddOn( self.EntityID, addon_name)
+		end
+	end
+
+	if FullStatus==true then
+		for SquadIndex,Squad in pairs(self.FillSquad) do
+			Squad:Create(self.Position, true)
+		end
+	else
+		Entity_ResetConstructionState(self.EntityID)
+	end
+
+	return true
+end
+
+function Building_Class:ForceRebuildEgroup(EgroupName)
+	local EgroupID=EGroup_FromName(EgroupName)
+	for i=1,EGroup_CountSpawned(EgroupID) do
+		local EntityID=EGroup_GetSpawnedEntityAt(EgroupID,i)
+		if Building_Class.Building_List.Get(EntityID.id)~=nil then
+			if Building_Class.Building_List.Get(EntityID.id):CanRebuild() then
+				Building_Class.Building_List.Get(EntityID.id):Rebuild(true)
+			end
+		end
+	end
+end

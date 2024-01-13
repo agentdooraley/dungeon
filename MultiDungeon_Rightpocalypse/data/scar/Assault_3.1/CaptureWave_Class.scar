@@ -1,0 +1,392 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                             CaptureWave Class                                      ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+if CaptureWave_Class==nil then 
+	CaptureWave_Class={
+		ClassType="CaptureWave_Class",
+		sg_01=SgroupMgr:New("CaptureWave_Class"),
+	}
+end
+CaptureWave_Class.DebugON=0 -- 0 => no debug, 1=> low debug, 2=> full debug
+
+local CaptureWave_Metatable={
+	__index=CaptureWave_Class
+}
+
+--[[ create a wave that attacks and capture a destination
+
+PlayerID
+
+WaveDef: wave definition table
+{	{
+	bp=, 
+	size=,
+	CreatePos=, CreatePos_Class internal pointer to CreatePos object
+	[attachbp=],
+	[leader=],
+	[weapons_list=] 
+}, ...}
+
+WaveParams: table
+{
+	SuccessDelay: delay in seconds after success when the squad suicides
+	MinCaptureDistance: min distance to send a squad to capture available point
+}
+
+TargetEGName: EgroupName containing points to capture
+
+NextTargetEgName: Egroup containing list of next targets to capture
+
+-- ]]
+function CaptureWave_Class:New(PlayerID, WaveDef, WaveParams, TargetEgName, NextTargetEgName)
+	
+	if self.DebugON>0 then
+		print(tostring(self) .. " CaptureWave_Class:New() Target=" .. tostring(TargetEgName) ..", Time=" .. World_GetGameTime())
+	end
+	
+	local NewWave={
+		PlayerID=PlayerID,
+		WaveDef=WaveDef,
+		WaveParams=WaveParams,
+		TargetEgName=TargetEGName,
+		TargetEgID=EGroup_FromName(TargetEgName),
+		SquadList={},
+		SquadCounter=0,
+	}
+	-- create object
+	setmetatable(NewWave, CaptureWave_Metatable)
+	
+	-- save a global pointer to the object
+	NewWave.Pointer=PointerTable.Add(NewWave)
+	
+	if NextTargetEgName~=nil then
+		NewWave.NextTargetEgName=NextTargetEgName
+		NewWave.NextTargetEgID=EGroup_FromName(NextTargetEgName)
+	end
+	
+	if self.DebugON>0 then fullprint("	NewWave=(" .. tostring(NewWave) .. ")", NewWave) end
+	
+	-- create all squads
+	NewWave:Create()
+	
+	return NewWave
+end
+
+function CaptureWave_Class.Reload(Wave)
+	
+	setmetatable(Wave,CaptureWave_Metatable)
+	PointerTable.Add(Wave,Wave.Pointer)
+	
+	for squad_index,squad in pairs(Wave.SquadList) do 
+		Squad_Class.Reload(squad)
+	end
+	
+end
+
+function CaptureWave_Class.CheckMetatable(Object)
+	return getmetatable(Object)==CaptureWave_Metatable
+end
+
+function CaptureWave_Class:AddSquad(Squad)
+
+	self.SquadCounter=self.SquadCounter+1
+	self.SquadList[self.SquadCounter]=Squad
+	
+	-- match orders with current ones if wave has a target, otherwise set to attack current position
+	if self.TargetPos~=nil then
+		Squad:SetOrder_Attack(self.TargetPos,self.WaveParams.DistMax)
+	elseif Squad:GetPosition()~=nil then
+		Squad:SetOrder_Attack(Squad:GetPosition(),self.WaveParams.DistMax)
+	end
+	
+	return self.SquadCounter
+	
+end
+
+function CaptureWave_Class:ForceAddSquad(SquadID)
+	local NewSquad=Squad_Class:NewExisting(SquadID, STANCE_Attack, self.Pointer)
+	self:AddSquad(NewSquad)
+end
+
+function CaptureWave_Class:Create()
+
+	local TargetPosition=EGroup_GetPosition(self.TargetEgID)
+
+	for squad_index,squad_def in pairs(self.WaveDef) do
+		local SquadCreatePos=CreatePos_Class.Get(squad_def.CreatePos):ClosestActivePos(TargetPosition)
+		if SquadCreatePos~=nil then
+			self:AddSquad(Squad_Class:New(self.PlayerID, squad_def, SquadCreatePos, true, STANCE_Attack, self.Pointer))
+		end
+	end
+	
+	self:UpdateLiveStatus()
+
+end
+
+function CaptureWave_Class:AddSquadsAtPosition(WaveDef,CreatePosition)
+
+	for squad_index,squad_def in pairs(WaveDef) do
+		
+		local NewSquad=Squad_Class:New(self.PlayerID, squad_def, CreatePosition, true, STANCE_Attack, self.Pointer)
+		self:AddSquad(NewSquad)
+		
+	end
+	
+end
+
+-- return closest valid target available from Pos
+-- return nil otherwise
+function CaptureWave_Class:GetClosestTarget(TargetEgID)
+	
+	local Min_distance=-1
+	local TargetID=0
+	
+	SGroup_Clear(self.sg_01.ID)
+	for squad_index,squad in pairs(self.SquadList) do SGroup_Add(self.sg_01.ID,squad:GetID()) end 
+	local Pos=SGroup_GetPosition(self.sg_01.ID)
+	
+	for i=1,EGroup_CountSpawned(TargetEgID) do
+		local Tmp_TargetID=EGroup_GetSpawnedEntityAt(TargetEgID,i)
+		if not Entity_IsCapturedByPlayerTeam(Tmp_TargetID,self.PlayerID) then 
+			local Tmp_distance=World_DistancePointToPoint(Pos,Entity_GetPosition(Tmp_TargetID))
+			if (Min_distance<0) or (Tmp_distance<Min_distance) then
+				Min_distance=Tmp_distance
+				TargetID=Tmp_TargetID
+			end
+		end
+	end
+	
+	if Min_distance<0 then
+		return
+	else
+		return TargetID
+	end
+	
+end
+
+-- return closest index of squad that can capture at Pos
+-- return nil otherwise
+function CaptureWave_Class:GetClosestCanCaptureSquadIndex(Pos, MinDistance)
+	
+	local MinTmp=MinDistance
+	local SquadIndexTmp=-1
+	
+	for squad_index,squad in pairs(self.SquadList) do 
+		if squad:CanCapture() then
+			local Distance=World_DistancePointToPoint(Pos, Squad_GetPosition(squad:GetID()))
+			if Distance<MinTmp then
+				MinTmp=Distance
+				SquadIndexTmp=squad_index
+			end
+		end
+	end
+	
+	if MinTmp<MinDistance then
+		return SquadIndexTmp
+	end
+end
+
+function CaptureWave_Class:Suicide()
+	for squad_index,squad in pairs(self.SquadList) do 
+		squad:Suicide() 
+	end
+	self.SquadList={}
+	self.TotalHP=0
+	self.UnitCount=0
+end
+
+function CaptureWave_Class:RequireReinforcement(ReinforceMgr)
+	-- tell squads to make their reinforcement requirements to the ReinforceMgr
+	for squad_index,squad in pairs(self.SquadList) do 
+		squad:RequireReinforcement(ReinforceMgr) 
+	end
+end
+
+function CaptureWave_Class:CancelReinforcement(ReinforcementMgr)
+	for squad_index,squad in pairs(self.SquadList) do 
+		squad:CancelReinforcement(ReinforcementMgr) 
+	end
+	ReinforcementMgr:RemoveAllQueries(self)
+end
+
+-- return false if attack is dead (no more troops)
+function CaptureWave_Class:IsAlive()
+	return next(self.SquadList)~=nil 
+end
+
+function CaptureWave_Class:CanCapture()
+	for squad_index,squad in pairs(self.SquadList) do
+		if squad:CanCapture() then return true end
+	end
+	return false
+end
+
+function CaptureWave_Class:UpdateLiveStatus()
+	for squad_index,squad in pairs(self.SquadList) do 
+		squad:UpdateLiveStatus() 
+		if not squad:IsAlive() then
+			self.SquadList[squad_index]=nil
+		end
+	end
+	
+	self.TotalHP=0
+	self.UnitCount=0
+	for squad_index,squad in pairs(self.SquadList) do 
+		self.TotalHP=self.TotalHP+squad:GetHealth()
+		self.UnitCount=self.UnitCount+1
+	end
+	if self.MaxHP==nil then
+		self.MaxHP=self.TotalHP
+	elseif self.TotalHP>self.MaxHP then
+		self.MaxHP=self.TotalHP
+	end
+	
+end
+
+function CaptureWave_Class:GetHealth()
+	return self.TotalHP
+end
+
+function CaptureWave_Class:GetAvgHealth()
+	return self.TotalHP/self.MaxHP
+end
+
+function CaptureWave_Class:GetCount()
+	return self.UnitCount
+end
+
+-- must be called on live wave
+function CaptureWave_Class:DoOrders()
+	
+	if not self:IsAlive() then return end
+	
+	--update squads orders
+	self:UpdateOrders()
+	
+	--Make squad do their orders
+	for squad_index,squad in pairs(self.SquadList) do squad:DoOrders() end
+	
+end
+
+function CaptureWave_Class:UpdateOrders()
+
+	-- check if current TargetID is still a valid objective (not owned by team) for wave owner
+	local IsValidTarget=(not Entity_IsCapturedByPlayerTeam(self.TargetID, self.PlayerID)) and (self.TargetID~=nil)
+	
+	-- if target is not valid (i.e. owned by team) then search for a new one (closest target not owned by team)
+	-- IsValidTarget is false if no target was found
+	-- suicide wave if no target for long time (>WaveParams.SuccessDelay)
+	if not IsValidTarget then
+		
+		-- if a squad was assigned for capture => reset orders to attack its current position 
+		if self.CaptureSquadIndex~=nil then
+			if self.SquadList[self.CaptureSquadIndex]~=nil then
+				if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: Reseting CaptureSquad to attack mode, Time=" .. World_GetGameTime()) end
+				self.SquadList[self.CaptureSquadIndex]:SetOrder_Attack(self.SquadList[self.CaptureSquadIndex]:GetPosition(),self.WaveParams.DistMax)
+			end
+		end
+		self.CaptureSquadIndex=nil
+		
+		--search for a new target and check if it is valid (not nil)
+		self.TargetID=self:GetClosestTarget(self.TargetEgID)
+		IsValidTarget=(self.TargetID~=nil)
+		
+		-- Still no valid target: all objectives are taken, wait for delay before trying NextTarget Egroup
+		if not IsValidTarget then
+			
+			if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: no target found Time=" .. World_GetGameTime()) end
+			
+			-- if wave assault success has just happened
+			if self.SuccessTime==nil then
+				
+				-- set counter before trying next target
+				self.SuccessTime=World_GetGameTime()
+				
+			-- if more WaveParams.SuccessDelay since wave access assault => try to find next target if possible, otherwise wave suicides
+			elseif (World_GetGameTime()-self.SuccessTime>self.WaveParams.SuccessDelay) then
+				
+				-- try to find next target if group is defined
+				if self.NextTargetEgID~=nil then
+					self.TargetID=self:GetClosestTarget(self.NextTargetEgID)
+					IsValidTarget=(self.TargetID~=nil)
+				end
+				
+				-- no new target => suicide
+				if not IsValidTarget then
+					self:Suicide()
+					return false
+				end
+				
+			end
+			
+		end
+		
+		-- new target found: reset success counter and assign orders to squads
+		if IsValidTarget then 
+		
+			if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: New TargetID.id=" .. self.TargetID.id .. " Time=" .. World_GetGameTime()) end
+			
+			self.SuccessTime=nil
+			
+			self.TargetPos=Entity_GetPosition(self.TargetID)
+			for squad_index,squad in pairs(self.SquadList) do squad:SetOrder_Attack(self.TargetPos,self.WaveParams.DistMax) end
+			
+		end
+		
+	end
+	
+	-- end function if no target
+	if not IsValidTarget then return true end
+	
+	-- update CaptureSquadIndex (not nil if a squad is assigned to capture) 
+	if not Entity_StrategicPointHasStructure(self.TargetID) then
+		
+		-- update CaptureSquadIndex: check if Squad is alive and can capture
+		if self.CaptureSquadIndex~=nil then				
+			if self.SquadList[self.CaptureSquadIndex]~=nil then
+				if not self.SquadList[self.CaptureSquadIndex]:CanCapture() then
+					if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: Capture squad cannot capture anymore, Time=" .. World_GetGameTime()) end
+					self.SquadList[self.CaptureSquadIndex]:SetOrder_Attack(self.TargetPos,self.WaveParams.DistMax)
+					self.CaptureSquadIndex=nil
+				end
+			else
+				if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: Capture squad dead, Time=" .. World_GetGameTime()) end
+				self.CaptureSquadIndex=nil
+			end
+		end
+		
+		-- if no squad is assigned then find closest squad that can capture and assign capture order
+		if self.CaptureSquadIndex==nil then	
+			
+			self.CaptureSquadIndex=self:GetClosestCanCaptureSquadIndex(self.TargetPos, self.WaveParams.MinCaptureDistance)
+			
+			if self.CaptureSquadIndex~=nil then
+				
+				if self.DebugON>0 then print(tostring(self) .. " CaptureWave_Class: New Capture Squad=" .. self.SquadList[self.CaptureSquadIndex].ID.id .. ", Time=" .. World_GetGameTime()) end
+				
+				self.SquadList[self.CaptureSquadIndex]:SetOrder_Capture(self.TargetID,self.WaveParams.DistMax)
+			else
+				if self.DebugON>1 then print(tostring(self) .. " CaptureWave_Class: No squad can capture, Time=" .. World_GetGameTime()) end
+			end
+		end
+		
+	-- strat point cannot be taken (building on it)
+	else
+		if self.CaptureSquadIndex~=nil then	 
+			if self.SquadList[self.CaptureSquadIndex]~=nil then
+				self.SquadList[self.CaptureSquadIndex]:SetOrder_Attack(self.TargetPos,self.WaveParams.DistMax)
+			end
+			self.CaptureSquadIndex=nil
+		end
+	end
+
+end
+
+function CaptureWave_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	for squad_index,squad in pairs(self.SquadList) do 
+		squad:DoSpecAbility(Friend_Sampling,Ennemy_Sampling) 
+	end
+end
