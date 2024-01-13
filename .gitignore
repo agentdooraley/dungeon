@@ -1,0 +1,9 @@
+*
+!*/
+!/MultiDungeon_Rightpocalypse/data/attrib/**
+!/MultiDungeon_Rightpocalypse/data/scar/**
+!/MultiDungeon_Rightpocalypse/data/defprofile/**
+!/MultiDungeon_Rightpocalypse/data/game/**
+
+!MultiDungeon_Rightpocalypse.module
+!.gitignore

@@ -1,0 +1,20 @@
+[global]
+
+UIName = MultiDungeon Rightpocalypse 
+Description = The Right project, developed by the Dungeon mod team (agent007412 McGuaire, Tauker The Hole and Lesnoy Gay-babay )
+DllName = WXPMod
+;; DllName = WXPMod_DCMod
+Playable = 1
+ModFolder = MultiDungeon_Rightpocalypse 
+ModVersion = 0.2a
+TextureFE = Art/UI/Textures/Title_winter_assault.tga
+TextureIcon =
+
+DataFolder.1 = Data
+//ArchiveFile.1 = UA_Core_1.73
+
+RequiredMod.1 = DXP2
+RequiredMod.2 = W40k
+
+
+
