@@ -1,0 +1,33 @@
+-- Race-Specific Themes script.
+-- Created by Kasrkin84, Titlams and Gambit.
+-- Re-coded by Gambit to V2.1 (24/03/2018)
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("World_Race_Themes.scar")
+
+-- Switch, so that other SCaR code, to optionally
+-- integrate the Race-Specific Themes code.
+RaceSpecificAudioEnabledSwitch = 1
+
+-- This is the function that enables Race-Specific Audio.
+-- Can be called from any place and any time, to update the 
+-- themes playlist, based on the current player's race.
+
+function RaceSpecificAudio()
+	local min_Silence = 5
+	local max_Silence = 5
+	local race_name = Player_GetRaceName(World_GetPlayerAt(Tut_GetLocalPlayerIndex()))
+	local play_list = Global_RaceThemes[race_name]
+	Sound_PlaylistClear( PC_Music )
+	if play_list ~= nil then
+		print("Audio Themes List set for "..race_name)
+	else
+		print("Audio Themes for the "..race_name..", are NOT defined. Using DEFAULT.")
+		play_list = Global_RaceThemes["default_generic_themes"]
+	end
+	Playlist_Manager( PC_Music, play_list, false, true, {min_Silence, max_Silence} )
+end
+
+Scar_AddInit(RaceSpecificAudio)
+Scar_AddLoad(RaceSpecificAudio)

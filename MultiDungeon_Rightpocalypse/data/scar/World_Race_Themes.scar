@@ -1,0 +1,277 @@
+-----------------------------------------------------------------------
+-----------------------------------------------------------------------
+-- This is an import, used by the Race-Specific Themes Win Condition --
+-- Put and arrange all tracks in each specific race, as you desire ! --
+-----------------------------------------------------------------------
+
+Global_RaceThemes =
+{
+
+-- Chaos Marines
+chaos_marine_race = {
+	"mu_ig_str_chaos",
+	"music_theme_chaos_01",
+	"music_main_title",
+	
+	-- new themes
+	"music_vindication",
+	"music_excessum_alighiero",
+	"music_dark_calculation",
+	"music_black_legion_hymn",
+	"music_orchestrated_catastrophe",
+	"music_reprieve_and_reprisal",
+	"music_chaos_approaches",
+	"music_blasphemers_march",
+	"music_heresy_unbound",
+	"music_path_to_damnation",
+	
+	-- shared
+	"music_gathering",
+	"music_retribution",
+	"music_elite_med_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	},
+
+-- Dark Eldar
+dark_eldar_race = {
+	"mu_ig_rac_darkeldar",
+	"mu_ig_rac_darkeldar_perc_brass",
+	"mu_ig_rac_darkeldar_perc_str",
+	"mu_ig_str_darkeldar",
+	"mu_ig_str_darkeldar_perc_brass",
+	"mu_ig_str_darkeldar_perc_str",
+	
+	-- new themes
+	"menu_dark_eldar1",
+	"music_lord_of_chaos",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_med_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-- Eldar
+eldar_race = {
+	"mu_ig_str_eldar",
+	"mu_ig_str_eldar_perc_brass",
+	"mu_ig_str_eldar_perc_str",
+	
+	-- new themes
+	"music_blood_lust",
+	"music_sundering",
+	"music_widowmaker",
+	"music_murderous_prowess",
+	"music_dragonflame",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-- Imperial Guard
+guard_race = {
+	"mu_ig_str_impgd",
+	"mu_ig_str_impgd_perc_brass",
+	"mu_ig_str_impgd_perc_str",
+	"music_imperial_guard_theme",
+	"music_imperial_guard_theme_orch",
+	"copy of music_main_title",
+	
+	-- new themes
+	"music_imperial_creed",
+	"music_blood_of_man",
+	"music_into_the_breach",
+	"music_helghast_march",
+	"music_blood_and_skulls",
+	
+	-- shared
+	"music_warhammer40ktheme",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-- Necrons
+necron_race = {
+	"mu_ig_rac_necron",
+	"mu_ig_rac_necron_perc",
+	"mu_ig_rac_necron_brass",
+	"mu_ig_str_necron",
+	"mu_ig_str_necron_perc_brass",
+	"mu_ig_str_necron_perc_str",
+	"music_necron_theme",
+	
+	-- new themes
+	"music_the_attack_begins",
+	"music_times_up",
+	"music_times_up_reprise",
+	"music_you_betray_me",
+	
+	-- shared
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-- Orks
+ork_race = {
+	"mu_ig_str_ork",
+	"mu_ig_str_ork_perc_brass",
+	"mu_ig_str_ork_perc_str",
+	"music_ork_theme",
+	
+	--new themes
+	"music_ere_we_go",
+	"music_storm_fire",
+	"music_orks",
+	"music_rise_of_the_waaagh",
+	"music_kill_things_take_stuff",
+	"music_waaagh_skarblitz",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-- Sisters of Battle
+sisters_race = {
+	"mu_ig_rac_sisters",
+	"mu_ig_rac_sisters_perc_str",
+	"mu_ig_rac_sisters_perc_voice",
+	"mu_ig_str_sisters",
+	"mu_ig_str_sisters_perc_str",
+	"mu_ig_str_sisters_perc_voice",
+	
+	-- new themes
+	"music_temple_damnation",
+	"menu_sisters2",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+	
+-- Space Marines
+space_marine_race = {
+	"mu_ig_str_spacemarine",
+	"mu_ig_str_spacemarine_perc",
+	"mu_ig_str_spacemarine_perc_str",
+	"music_dawnofwartheme",
+	"music_force_commander_theme",
+	"music_theme_spacemarines_01",
+	
+	-- new themes
+	"music_1000_ships_underworld",
+	"music_tyrianis",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+	
+-- Tau Empire
+tau_race = {
+	"mu_ig_rac_tau",
+	"mu_ig_rac_tau_perc_brass",
+	"mu_ig_str_tau",
+	"mu_ig_str_tau_perc_brass",
+	"mu_ig_str_tau_perc_str",
+	
+	-- new themes
+	"music_china5",
+	"music_china6",
+	"music_china7",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+-------------- Custom Races --------------
+
+-- Tyranids
+tyranids_race = {
+	"music_swamp",
+	"music_intruders",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
+
+}
