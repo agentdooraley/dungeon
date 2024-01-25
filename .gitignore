@@ -4,6 +4,7 @@
 !/MultiDungeon_Rightpocalypse/data/scar/**
 !/MultiDungeon_Rightpocalypse/data/defprofile/**
 !/MultiDungeon_Rightpocalypse/data/game/**
+!/MultiDungeon_Rightpocalypse/locale/**
 
 !MultiDungeon_Rightpocalypse.module
 !.gitignore
