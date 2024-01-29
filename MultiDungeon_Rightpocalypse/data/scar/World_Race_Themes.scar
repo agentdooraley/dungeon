@@ -273,5 +273,57 @@ tyranids_race = {
 	"music_asimov",
 	"music_coming_of_chaos",
 	},
+	
+inquisition_daemonhunt_race = {
+	"mu_ig_rac_sisters",
+	"mu_ig_rac_sisters_perc_str",
+	"mu_ig_rac_sisters_perc_voice",
+	"mu_ig_str_sisters",
+	"mu_ig_str_sisters_perc_str",
+	"mu_ig_str_sisters_perc_voice",
+	
+	-- new themes
+	"music_temple_damnation",
+	"menu_sisters2",
+	
+	-- shared
+	"music_invasion_theme",
+	"music_warhammer40ktheme",
+	"music_eldarthemev2",
+	"music_gathering",
+	"music_retribution",
+	"music_elite_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	"music_coming_of_chaos",
+	},
 
+daemons_race = {
+	"mu_ig_str_chaos",
+	"music_theme_chaos_01",
+	"music_main_title",
+	
+	-- new themes
+	"music_vindication",
+	"music_excessum_alighiero",
+	"music_dark_calculation",
+	"music_black_legion_hymn",
+	"music_orchestrated_catastrophe",
+	"music_reprieve_and_reprisal",
+	"music_chaos_approaches",
+	"music_blasphemers_march",
+	"music_heresy_unbound",
+	"music_path_to_damnation",
+	
+	-- shared
+	"music_gathering",
+	"music_retribution",
+	"music_elite_med_combat",
+	"music_elite_odyssey_combat",
+	"music_sentius",
+	"music_velocitron",
+	"music_asimov",
+	},
 }
