@@ -300,7 +300,7 @@ inquisition_daemonhunt_race = {
 	"music_coming_of_chaos",
 	},
 
-daemons_race = {
+deamons_race = {
 	"mu_ig_str_chaos",
 	"music_theme_chaos_01",
 	"music_main_title",
