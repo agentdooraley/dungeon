@@ -1,0 +1,93 @@
+----------------------------------------
+-- File: 'rvarnatactic.ai'
+-- Edited by Gambit @ 29.10.2020
+
+class 'RvarnaTactic' (TauInfantryTactic)
+
+Rvarna = {}
+
+function RvarnaTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("XV107 R'varna Battlesuit Tactic")
+
+	self.Ranged_Upgrade = math.random(0,1)	  -- Choose either overcharge, or drones
+	self.lastAddonTry = g_iGMT
+end
+
+
+function RvarnaTactic:AutoBuildAddOn( addonSlot )
+	for e in self.squad_ai:GetEntities() do
+		local buildChannel = build_manager:GetBuildChannelFromID(e:GetID())
+		if buildChannel ~= nil then
+			local addOnID = buildChannel:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
+			if (buildChannel:IsBuilding() == 0 and buildChannel:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
+				buildChannel:BuildAddOn(addOnID)
+				return
+			end
+		end
+	end
+	return
+end
+
+
+function RvarnaTactic:InitAbilities()
+
+	-- Init ability ID's
+	if Rvarna.overcharge == nil then
+		Rvarna.overcharge = cpu_manager.stats:GetAbilityID( "tau_rvarna_nova_overcharge" )
+		Rvarna.mark = cpu_manager.stats:GetAbilityID( "tau_rvarna_mark_squad" )
+	end
+end
+
+
+function RvarnaTactic:DoAbilities()
+
+	local was_recently_hurt = self.squad_ai:WasRecentlyHurt()
+	local health = self.squad_ai:GetHealthPercentage()
+
+	if self.squad_ai:IsInCombat() or was_recently_hurt then
+
+		if self.squad_ai:CanDoAbility(Rvarna.mark) then
+			-- Get closest squad in range
+			local iRange = self.squad_ai:GetAbilityRange(Rvarna.mark)
+			local oSquad = cpu_manager.cpu_player:FindFirstEnemy(self.squad_ai:GetPosition(), iRange, 1)
+			if oSquad ~= nil then
+				-- Get stats
+				local oStats = oSquad:GetStats()
+				if oStats ~= nil then
+					-- Check unit type
+					local eClass = oStats:GetClass()
+					if (eClass == UnitStatsAI.UC_VehicleLow or eClass == UnitStatsAI.UC_VehicleMed or
+						eClass == UnitStatsAI.UC_VehicleHigh or eClass == UnitStatsAI.UC_Commander or
+						eClass == UnitStatsAI.UC_MonsterHigh or oSquad:GetNumTroopers() >= 4) then
+						-- Use mark ability on squad
+						self.squad_ai:DoSpecialAbilitySquad(Rvarna.mark, oSquad:GetSquad())
+					end
+				end	
+			end
+		end
+
+		if health > 0.35 and self.squad_ai:CanDoAbility(Rvarna.overcharge) and self.squad_ai:IsAttacking() then
+			if not was_recently_hurt or health > 0.7 then
+				if resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Power) > 150 then
+					self.squad_ai:DoSpecialAbility(Rvarna.overcharge)
+				end
+			end
+		end		
+	end
+
+	-- Check to addon every 10+ secs
+	if g_iGMT > self.lastAddonTry + 10 then
+		self.lastAddonTry = g_iGMT
+		-- Check available resources and health, before performing any upgrade
+		local iReq = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+		local iPow = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+		if iReq > 200 and iPow > 200 and health > 0.35 then
+			if self.Ranged_Upgrade == 0 then
+				self:AutoBuildAddOn(0)
+			else
+				self:AutoBuildAddOn(1); self:AutoBuildAddOn(2)
+			end
+		end
+	end
+end

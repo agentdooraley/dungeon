@@ -1,0 +1,184 @@
+----------------------------------------
+-- File: 'tyranidstrategyinfo.ai'
+-- Edited by Thudmeizer  @ 14.11.2016
+
+BuildBaseStrategyInfo = 
+{	
+	tyranids_race =
+	{
+		post_builder = 2,
+		flag_capture = 4,
+
+		--reserve this amount for building units/buildings (not for use in upgrading/ reinforcing)
+		req_reserve = 100,
+		
+		--need at least this at all times
+		squad_cap_threshold = 2,
+
+		--need at least this at all times
+		support_cap_threshold = 3,
+
+		--used to calculate wants for engineers
+		Engineers =
+		{
+			--number of engineers we're aiming for
+			want = 3,
+			tier1 = 4,
+			tier2 = 5,
+			tier3 = 5,
+			tier4 = 5,
+                        max = 7,
+		},
+
+		-- Is used to modify the army strength in the build programs (Allows faster balancing adjustments)
+		ArmyStrengthModifier = 1.0,
+		
+               -- Item-Syntax: Min. Tier, Min. Requisition, Min. Power, Min. ArmyStrength, Object-Count, Object-Type, Object-Name
+		BuildPrograms =
+		{
+			-- Allround strategy
+			{
+				{ 1, 0, 0, 0, 4,	"Unit",		"tyranids_squad_spinegaunt" },
+				{ 1, 150, 0, 0, 2,	"Unit",		"tyranids_squad_lictor" },
+				{ 1, 450, 0, 0, 1,	"Building",	"tyranids_hq" },
+				{ 1, 180, 0, 0, 1,	"Building",	"tyranids_warrior_hive" },
+				{ 1, 220, 0, 0, 1,	"Building",	"tyranids_digest_pool" },
+				{ 1, 150, 0, 750, 1,	"Building",	"tyranids_biomorph_hive" },
+				{ 1, 0, 105, 0, 100,	"TurretAddon",	"tyranids_list_post_addon_1" },
+				{ 1, 0, 15, 0, 2,	"Unit",		"tyranids_squad_hormagaunt_max" },
+				{ 1, 100, 300, 0, 1,	"Addon",	"tyranids_hq_addon_1" },	
+
+				{ 2, 180, 150, 0, 1,	"Unit",		"tyranids_squad_lictor_alpha" },
+				{ 2, 280, 0, 0, 1,	"Unit",		"tyranids_squad_warrior" },
+				{ 2, 0, 120, 1, 1, "Research", "tyranids_lictor_upgrade_research_1" },				
+				{ 2, 0, 150, 1, 1, "Research",	"tyranids_lictor_upgrade_research_2" },				
+				{ 2, 150, 0, 0, 6,	"Building",	"tyranids_digest_pool" },
+				{ 2, 140, 0, 0, 1,	"Building",	"tyranids_turret" },				
+				{ 2, 400, 0, 200, 1,	"Building",	"tyranids_carnifex_hive" },
+				{ 2, 280, 500, 0, 1,	"Unit",		"tyranids_squad_carnifex_skiller" },	
+				{ 2, 0, 60, 500, 50,	"TurretAddon",	"tyranids_turret_bioacid_addon" },
+				{ 2, 0, 320, 750, 25,	"TurretAddon",	"tyranids_list_post_addon_2" },
+				{ 2, 550, 550, 400, 1,	"Addon",	"tyranids_hq_addon_2" },
+
+				{ 3, 290, 0, 0, 1,	"Building",	"tyranids_xeno_hive" },
+				{ 3, 0, 320, 500, 50,	"TurretAddon",	"tyranids_list_post_addon_2" },
+				{ 3, 0, 100, 200, 50,	"TurretAddon",	"tyranids_turret_launcher_addon" },
+				{ 3, 0, 200, 200, 50,	"TurretAddon",	"tyranids_turret_production_addon" },
+				{ 3, 0, 200, 200, 50,	"TurretAddon",	"tyranids_structure_production_addon" },
+				{ 3, 0, 80, 200, 50,	"TurretAddon",	"tyranids_structure_sight_addon" },
+				{ 3, 0, 100, 200, 50,	"TurretAddon",	"tyranids_structure_regeneration_addon" },
+				{ 3, 700, 150, 700, 2,	"Building",	"tyranids_hq" },
+				{ 3, 550, 550, 1000, 1,"Research",	"tyranids_arrival3_research" },
+
+				{ 4, 0, 500, 250, 25,	"TurretAddon",	"tyranids_structure_shield_addon" },
+				{ 4, 700, 0, 600, 1,	"Building",	"tyranids_turret_bioacid" },
+				{ 4, 0, 320, 800, 100,	"TurretAddon",	"tyranids_list_post_addon_2" },
+				{ 4, 635, 0, 1000, 1,	"Building",	"tyranids_relic_hive" },
+				{ 4, 700, 0, 1100, 2,	"Building",	"tyranids_turret_bioacid" },
+				{ 4, 1000, 1000, 1250, 1,"Research",	"tyranids_assimilation_research" },
+				
+				{ 5, 1200, 0, 250, 1,	"Building",	"tyranids_biotitan_hive" },
+				{ 5, 600, 130, 500, 50,	"TurretAddon",	"tyranids_titanchamber_addon_1" },
+				{ 5, 750, 250, 550, 50,	"TurretAddon",	"tyranids_titanchamber_addon_2" },
+				{ 5, 3000, 0, 1000, 1,	"Building",	"tyranids_capillary_tower" },
+				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+			        { 5, 8000, 4000, 1500, 1,"Research", 	"tyranids_apocalypse_research" },
+
+				{ 6, 180, 0, 0, 1,	"Unit",		"tyranids_squad_lictor_alpha" },
+				{ 6, 440, 0, 0, 1,	"Unit",		"tyranids_squad_hive_tyrant" },
+				{ 6, 11000, 0, 0, 1,	"Unit",		"tyranids_squad_swarmlord" },
+				{ 6, 9000, 0, 3000, 3,	"Building",	"tyranids_capillary_tower" }
+			},
+		},
+
+		SquadLimits =
+		{
+			standard =
+			{
+				tyranids_squad_ripperswarm = 5,
+				tyranids_squad_ripperswarm_global = 2,
+				tyranids_squad_spinegaunt = 4,
+				tyranids_squad_spinegaunt_max = 2,
+				tyranids_squad_hormagaunt = 5,
+				tyranids_squad_hormagaunt_max = 4,
+				tyranids_squad_termagant = 1,
+				tyranids_squad_termagant_max = 1,
+				tyranids_squad_gaunt_won = 2,
+				tyranids_squad_genestealer = 2,
+				tyranids_squad_genestealer_max = 2,
+				tyranids_squad_spore_cluster = 2,
+				tyranids_squad_spore_cluster_max = 2,
+				tyranids_squad_spore_cluster_spam = 2,
+				tyranids_squad_lictor = 20,
+				tyranids_squad_ravener = 3,
+				tyranids_squad_warrior = 5,
+				tyranids_squad_zoanthropes = 5,
+				tyranids_squad_biovores = 3,
+				tyranids_squad_gargoyle = 4,
+				tyranids_squad_tyrant_guard = 2,
+				tyranids_squad_broodlord = 2,
+				tyranids_squad_carnifex = 10,
+				tyranids_squad_carnifex_khazi = 1,
+				tyranids_squad_carnifex_skiller = 6,
+				tyranids_squad_carnifex_tervigon = 5,
+				tyranids_squad_carnifex_uber = 2,
+				tyranids_squad_trygon = 10,
+				tyranids_squad_hierophant = 10,
+				tyranids_squad_hierophant_max = 10,
+			}
+		}
+	},
+}
+
+BuildOrderStrategyInfo = 
+{
+	tyranids_race =
+	{
+		Basic =
+		{
+			{ "flag_capture" }, { "flag_capture" },
+			{ "flag_capture" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_genestealer" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "post_builder" },
+			{ "building", "tyranids_gaunt_hive" },
+            { "building", "tyranids_warrior_hive" }
+		},
+		 
+		QuickStart =
+		{
+			{ "flag_capture" }, { "flag_capture" },
+			{ "flag_capture" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "post_builder" },
+			{ "building", "tyranids_gaunt_hive" }
+		},
+		 
+		LargeMap =
+		{
+			{ "flag_capture" }, { "flag_capture" },
+			{ "flag_capture" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "squad", "tyranids_squad_ripperswarm" },
+			{ "post_builder" },
+			{ "building", "tyranids_gaunt_hive" }
+		}
+	},
+}
+
+AttackStrategyInfo = 
+{
+	tyranids_race =
+	{
+		MinArmyStrength = 200,
+	},
+}

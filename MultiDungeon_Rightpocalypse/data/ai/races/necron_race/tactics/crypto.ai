@@ -1,0 +1,26 @@
+----------------------------------------
+-- File: 'warriortactic.ai'
+-- Edited by Thudmeizer	@ 10.03.2016
+
+class 'CryptoTactic' (NecronInfantryTactic)
+
+Crypto = {}
+
+function CryptoTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Crypto Tactic")
+end
+
+
+function CryptoTactic:Reinforce()
+	
+	-- Always try to reinforce
+	if (not self.squad_ai:IsReinforcing()) then
+			
+		if (self.squad_ai:CanReinforce( true, 0 )) then
+			self.squad_ai:DoReinforce( true, 0 )
+		elseif (self.squad_ai:CanReinforce( false, 0 )) then
+			self.squad_ai:DoReinforce( false, 0 )
+		end	
+	end
+end

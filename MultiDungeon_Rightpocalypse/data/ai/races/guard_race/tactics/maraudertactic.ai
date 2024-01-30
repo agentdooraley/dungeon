@@ -1,0 +1,34 @@
+----------------------------------------
+-- File: 'maraudertactic.ai'
+-- Edited by Thudmeizer @ 22.03.2008
+
+class 'MarauderTactic' (GuardVehicleTactic)
+
+Marauder = {}
+
+function MarauderTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Marauder Tactic")
+end
+
+function MarauderTactic:InitAbilities()
+
+	-- Init ability ID's
+
+	if (Marauder.incendiary_id == nil) then
+		Marauder.incendiary_id = cpu_manager.stats:GetAbilityID( "guard_incendiary_bombs" )
+	end
+end
+
+function MarauderTactic:DoAbilities()
+
+	-- Check if we're in close combat - Incendiary
+	local oEnemySquad = Ability.Filters.Ability.EntityFilters.CloseBaseEntityEnemy(self.squad_ai:GetPosition(), 0, 1)
+	if (oEnemySquad ~= nil) then
+	
+		-- Check if we can drop Incendiary Bombs
+		if (self.squad_ai:CanDoAbility(Marauder.incendiary_id)) then
+			self.squad_ai:DoSpecialAbility(Marauder.incendiary_id) 
+		end
+	end
+end

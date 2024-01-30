@@ -1,0 +1,238 @@
+----------------------------------------------------------------------------------------------
+-- default.lua
+-- This file loads the default behaviour for AI
+-- Edited by Aliaska_RuS
+----------------------------------------------------------------------------------------------
+import( 'Core/cpu_manager.ai' )
+----
+--globals
+cpu_manager 		= nil
+resource_module 	= nil
+build_module 		= nil
+military_module 	= nil
+debug_display 		= nil
+
+--for assertions
+iCurrentPlayer = 1000
+ai_assert = false
+
+function DebugDisplay()
+
+	if (cpu_manager.player_id ~= iCurrentPlayer) then
+		return
+        end
+		
+	dr_setautoclear("aidebug"..player_id, 0)
+
+	--cpu_manager:DisplayStats()
+	debug_display:DisplayStats()
+
+end
+
+function ClearScreen()
+	dr_clear("aidebug"..player_id)
+end
+
+function bef()
+debug.sethook( hookfunc, "cr")
+end
+
+function hookfunc(p)
+        local fn = debug.getinfo(2, 'n').name
+         if fn==nil then
+            fn=("nil")
+         end
+	    local gmt = g_iGMT
+	    local mint = math.floor( gmt / 60 )
+	    local sec = math.mod( gmt, 60 )
+	    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)
+		local txt = timestr.." ".."hk:"..p..":"..fn
+  		local log = io.open("Ai_Extended_Hook"..tostring(player_id)..".log", "a+")
+   		if (log) then
+   		 log:write("AI"..tostring(player_id), " ", txt, "\n")
+   		 log:close()
+   		end
+end
+
+
+local function AI_Think()	
+-- profile_start("AI")
+--        ProfileBeginTest()
+--	ProfileAllBegin()
+	--if something asserted, stop processing
+	if not cpu_manager.cpu_player:DoUpdate() then
+		return
+	end
+        --cpu_manager.cpu_player:DoUpdate()
+
+	--reset aitraces
+	tracing = {}
+	cpu_manager.terrain_analyzer:Update()
+	cpu_manager:Update()
+
+--         local info = gcinfo()
+--	print("AI "..AI_GetPlayerID()..":"..info)
+--        print("AI "..AI_GetPlayerID()..":"..debug.getinfo(1,"n").name)
+--        print("AI "..AI_GetPlayerID()..":"..debug.getinfo(1,"n").name)
+--	ProfileAllEnd()
+--        print(_VERSION)
+	collectgarbage(0)
+--        ProfileEndTest()
+--        ProfileTrace()
+	DebugDisplay()
+--        traceback()
+-- profile_end("AI")
+end
+
+function ProfileBeginTest()
+	T = {}
+	debug.sethook (function (event)
+	  local f = debug.getinfo(2, 'f').func
+	  local e = T[f]
+	  if e == nil then
+		local x = debug.getinfo(2, 'nS')
+		e = {name = x.name, line = x.linedefined, src= x.short_src, source = x.source, what = x.what,
+					 time = 0, count = 0}
+		T[f] = e
+	  end
+	  if event == 'call' then
+		e.time = e.time - os.clock()
+		e.count = e.count + 1
+	  else
+		e.time = e.time + os.clock()
+	  end
+	end, "r")
+end
+
+
+function ProfileEndTest()
+  
+	debug.sethook(nil, "r")   -- cannot change `T' during traversal!
+	aipushtrace("Start Profiling")
+	for k,v in T do
+		if v.count > 50 then
+			
+			aitrace( string.format( "%s | %s | %s | %d | %s | %d | %f", tostring(v.name), tostring(v.what), tostring(v.src), v.line, v.source, v.count, v.time ) )
+			
+		end
+	end
+	aipoptrace("Stop Profiling")
+	
+end
+
+function ProfileAllBegin()
+	T = {}
+	debug.sethook (function (event)
+	  local f = debug.getinfo(2, 'f').func
+	  local e = T[f]
+	  if e == nil then
+		local x = debug.getinfo(2, 'nS')
+		e = {name = x.name, line = x.linedefined, src= x.short_src, source = x.source, what = x.what,
+					 time = 0, count = 0}
+		T[f] = e
+	  end
+	  if event == 'call' then
+		e.time = e.time - os.clock()
+		e.count = e.count + 1
+	  else
+		e.time = e.time + os.clock()
+	  end
+	end, "c")
+end
+
+
+function ProfileAllEnd()
+  
+	debug.sethook(nil, "c")   -- cannot change `T' during traversal!
+	aipushtrace("Start Profiling")
+	for k,v in T do
+		if v.count > 50 then
+			
+			aitrace( string.format( "%s | %s | %s | %d | %s | %d | %f", tostring(v.name), tostring(v.what), tostring(v.src), v.line, v.source, v.count, v.time ) )
+			
+		end
+	end
+	aipoptrace("Stop Profiling")
+	
+end
+
+    function traceback ()
+      local level = 1
+      while true do
+        local info = debug.getinfo(level, "Sl")
+        if not info then break end
+        if info.what == "C" then   -- is a C function?
+          aitrace(level, "C function")
+        else   -- a Lua function
+          aitrace(string.format("[%s]:%d",
+                              info.short_src, info.currentline))
+        end
+        level = level + 1
+      end
+    end
+
+function ProfileTrace()
+    aitrace("AI Trace:"..debug.getinfo(1,"n").name)
+end
+function UpdateStats()
+--	profile_start("UpdateStats")
+	
+	cpu_manager.stats:Update()
+	
+--	profile_end("UpdateStats")
+end
+
+function UpdateManagersCPU()
+        cpu_manager:UpdateManagers()
+end
+
+
+
+function garbage()
+	--do garbage collection
+        cpu_manager.cpu_player:DoUpdate()
+	collectgarbage(0)
+end
+
+function chat()
+local cpu = AI_GetCpuPlayerFromID( AI_GetPlayerID() )
+cpu:NetSay(550001, false)
+end
+
+function think()
+ Rule_AddInterval(AI_Think, 0.124)
+end
+local function InitializeAI()
+
+	player_id = AI_GetPlayerID()
+	
+	cpu_manager = CpuManager( player_id )
+      -- if cpu_manager:ListLoader() then
+	if cpu_manager:Initialize() then
+	
+		dbAssert( build_manager ~= nil )
+		dbAssert( debug_display ~= nil )
+                print("AI Extended ver:4.2")
+                AI_Think()
+--                Rule_AddOneShot(bef,540)
+                Rule_AddOneShot(think, (cpu_manager.player_id-1000)*0.125)
+--		Rule_AddInterval(UpdateManagersCPU, 5)
+--		Rule_AddInterval(chat, 0.25)
+		Rule_AddInterval(UpdateStats, 1+(cpu_manager.player_id-1000)*0.125)
+--              Rule_AddInterval(UpdateStats, 0.125)
+--		Rule_AddInterval(garbage, 5)
+		
+	else
+		cpu_manager = nil
+		print( "failed to load ai: "..player_id )
+	end
+   --[[    else
+                cpu_manager = nil
+		print( "failed to Listload ai: "..player_id )
+       end]]
+	-- turn display on and off
+--	dr_setdisplay("aidebug"..player_id, 0.5)
+	
+end
+
+InitializeAI()

@@ -1,0 +1,2110 @@
+--Created by Aliaska_RuS Script
+UnitStrengths.ork_flash_gitz_squad = 150
+UnitStrengths.ork_squad_ard_boyz = 80
+UnitStrengths.ork_squad_armored_nob = 365
+UnitStrengths.ork_squad_armored_nob_advance_sp = 145
+UnitStrengths.ork_squad_bad_dok = 290
+UnitStrengths.ork_squad_bad_dok_advance_sp = 150
+UnitStrengths.ork_squad_bad_dok_sp_trainer = 150
+UnitStrengths.ork_squad_battle_wagon = 505
+UnitStrengths.ork_squad_battle_wagon_armageddon = 0
+UnitStrengths.ork_squad_battlefortress = 2363
+UnitStrengths.ork_squad_battlefortress_armageddon = 0
+UnitStrengths.ork_squad_bombsquigs = 30
+UnitStrengths.ork_squad_burna = 55
+UnitStrengths.ork_squad_deff_dread = 919
+UnitStrengths.ork_squad_fighta_bomba = 821
+UnitStrengths.ork_squad_fighta_bomba_noff_sp_dxp3 = 450
+UnitStrengths.ork_squad_fighta_bomba_sp_dxp3 = 821
+UnitStrengths.ork_squad_great_gargant = 18720
+UnitStrengths.ork_squad_grot = 90
+UnitStrengths.ork_squad_grot_gang = 10
+UnitStrengths.ork_squad_grot_tank = 140
+UnitStrengths.ork_squad_gun_wagon = 590
+UnitStrengths.ork_squad_honor_guard_slugga = 0
+UnitStrengths.ork_squad_kill_bursta = 2020
+UnitStrengths.ork_squad_kill_krusha = 1940
+UnitStrengths.ork_squad_killa_kan = 480
+UnitStrengths.ork_squad_killa_kan_advance_sp = 480
+UnitStrengths.ork_squad_kommandoz = 85
+UnitStrengths.ork_squad_kustim_stompa = 2870
+UnitStrengths.ork_squad_lootas = 300
+UnitStrengths.ork_squad_looted_rhino = 220
+UnitStrengths.ork_squad_looted_tank = 1043
+UnitStrengths.ork_squad_looted_tank_advance_sp = 450
+UnitStrengths.ork_squad_looted_tank_sp = 450
+UnitStrengths.ork_squad_mek_boy = 300
+UnitStrengths.ork_squad_mek_boy_advance_sp = 240
+UnitStrengths.ork_squad_nob = 95
+UnitStrengths.ork_squad_nob_advance_sp = 100
+UnitStrengths.ork_squad_nob_sp = 100
+UnitStrengths.ork_squad_nob_sp_dxp3_prisoner = 65
+UnitStrengths.ork_squad_nukklear_bomba = 1860
+UnitStrengths.ork_squad_ork_gargant = 4300
+UnitStrengths.ork_squad_shoota_boy = 35
+UnitStrengths.ork_squad_shoota_boy_advance_sp = 35
+UnitStrengths.ork_squad_shoota_boy_sp_dxp3_prisoner = 35
+UnitStrengths.ork_squad_slugga = 30
+UnitStrengths.ork_squad_slugga_advance_sp = 30
+UnitStrengths.ork_squad_slugga_sp_dxp3_prisoner = 30
+UnitStrengths.ork_squad_squiggoth = 2400
+UnitStrengths.ork_squad_squiggoth_gargantaun = 2870
+UnitStrengths.ork_squad_squiggoth_sp_long_rampage = 2400
+UnitStrengths.ork_squad_stormboy = 65
+UnitStrengths.ork_squad_stormboy_advance_sp = 45
+UnitStrengths.ork_squad_tankbusta = 85
+UnitStrengths.ork_squad_tankbusta_advance_sp = 60
+UnitStrengths.ork_squad_tankbusta_sp_dxp3_prisoner = 60
+UnitStrengths.ork_squad_trukk = 440
+UnitStrengths.ork_squad_trukk_advance_sp = 440
+UnitStrengths.ork_squad_trukk_sp_dxp3 = 285
+UnitStrengths.ork_squad_warboss = 1209
+UnitStrengths.ork_squad_warboss_advance_sp = 275
+UnitStrengths.ork_squad_warboss_sp_dxp3 = 275
+UnitStrengths.ork_squad_warboss_sp_dxp3_enemy = 275
+UnitStrengths.ork_squad_warboss_sp_md2 = 275
+UnitStrengths.ork_squad_warboss_stronghold_sp = 275
+UnitStrengths.ork_squad_wartrak = 265
+UnitStrengths.ork_squad_wartrak_advance_sp = 265
+UnitStrengths.ork_squad_wierdboy = 525
+UnitStrengths.ork_squad_wierdboy_entrenched = 0
+
+LeaderStrengths.ork_nob_leader = 100
+LeaderStrengths.ork_ard_boy_nob = 130
+LeaderStrengths.ork_honor_guard_slugga_boy = 60
+LeaderStrengths.ork_grot_gun_cart_kannon = 135
+LeaderStrengths.ork_kommando_nob = 170
+LeaderStrengths.ork_nob_leader_sp_dxp3_prisoner = 100
+LeaderStrengths.ork_stormboy_nob_leader = 95
+LeaderStrengths.ork_nob_leader_tankbustas = 100
+
+Attachments.ork_squad_nob = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_nob_advance_sp = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_honor_guard_slugga = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_tankbusta_advance_sp = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_nob_sp_dxp3_prisoner = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_tankbusta_sp_dxp3_prisoner = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_bombsquigs = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_kommandoz = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_burna = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_shoota_boy_sp_dxp3_prisoner = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_lootas = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_slugga = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_slugga_advance_sp = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_flash_gitz_squad = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_slugga_sp_dxp3_prisoner = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_ard_boyz = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_armored_nob = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_tankbusta = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_shoota_boy_advance_sp = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_grot_gang = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+Attachments.ork_squad_shoota_boy = {"ork_squad_bad_dok", "ork_squad_bad_dok_advance_sp", "ork_squad_bad_dok_sp_trainer", "ork_squad_grot_tank", "ork_squad_mek_boy", "ork_squad_mek_boy_advance_sp", "ork_squad_warboss", "ork_squad_warboss_advance_sp", "ork_squad_warboss_sp_dxp3", "ork_squad_warboss_sp_dxp3_enemy", "ork_squad_warboss_sp_md2", "ork_squad_warboss_stronghold_sp", "ork_squad_wierdboy"}
+
+OrkUnitStats =
+{
+	race = "ork_race",
+	{
+		name = "ork_flash_gitz_squad",
+		sbp_name = "ork_flash_gitz_squad",
+		ebp_name = "ork_flash_gitz",
+		class = UnitStatsAI.UC_HeavyInfantryHigh,
+		rating = 1,
+		max_range = 40,
+		potential = 
+		{
+			{
+				name = "ork_kustom_shoota_flash_gitz",
+				effectiveness = GenerateUnitEffectiveness(0.763,0.704,0.587,0.645,0.528,0.235,0.117,0.176,1.173,1.173,0.293,0.235,0.129,0.117,0,0.117,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_choppa_flash_gitz",
+				effectiveness = GenerateUnitEffectiveness(0.07,0.101,0.078,0.08,0.052,0.011,0,0,0.078,0.007,0.03,0.023,0,0,0,0.117,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_ard_boyz",
+		sbp_name = "ork_squad_ard_boyz",
+		ebp_name = "ork_ard_boy",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 30,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_ardboyz",
+				effectiveness = GenerateUnitEffectiveness(0.155,0.224,0.172,0.177,0.116,0.025,0,0,0.172,0.015,0.066,0.05,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_ard_boyz",
+				effectiveness = GenerateUnitEffectiveness(0.444,0.577,0.577,0.622,0.444,0.444,0.311,0.133,0.266,0.178,0.213,0.204,0.133,0.044,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.091,0.127,0.091,0.109,0.082,0.015,0,0,0.055,0.01,0.033,0.073,0.036,0.018,0,0,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.207,0.207,0.207,0.207,0.124,0.041,0,0,0.112,0.066,0.07,0.075,0,0,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_armored_nob",
+		sbp_name = "ork_squad_armored_nob",
+		ebp_name = "ork_armored_nob",
+		class = UnitStatsAI.UC_HeavyInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_power_claw_armored_nob",
+				effectiveness = GenerateUnitEffectiveness(1.437,1.869,1.869,2.012,1.437,1.437,1.006,0.431,0.862,0.575,0.69,0.661,0.431,0.144,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_armored_nob",
+				effectiveness = GenerateUnitEffectiveness(0.482,0.445,0.408,0.37,0.333,0.074,0,0,0.333,0.041,0.133,0.133,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_armored_nob_advance_sp",
+		sbp_name = "ork_squad_armored_nob_advance_sp",
+		ebp_name = "ork_armored_nob_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_power_claw_armored_nob",
+				effectiveness = GenerateUnitEffectiveness(1.437,1.869,1.869,2.012,1.437,1.437,1.006,0.431,0.862,0.575,0.69,0.661,0.431,0.144,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_armored_nob",
+				effectiveness = GenerateUnitEffectiveness(0.482,0.445,0.408,0.37,0.333,0.074,0,0,0.333,0.041,0.133,0.133,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_bad_dok",
+		sbp_name = "ork_squad_bad_dok",
+		ebp_name = "ork_bad_dok",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_injector",
+				effectiveness = GenerateUnitEffectiveness(0.41,0.633,0.456,0.547,0.464,0.139,0,0,0.399,0,0.159,0.228,0.061,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_baddok",
+				effectiveness = GenerateUnitEffectiveness(0.328,0.302,0.277,0.252,0.227,0.05,0,0,0.227,0.028,0.091,0.091,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_bad_dok_advance_sp",
+		sbp_name = "ork_squad_bad_dok_advance_sp",
+		ebp_name = "ork_bad_dok_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_injector",
+				effectiveness = GenerateUnitEffectiveness(0.41,0.633,0.456,0.547,0.464,0.139,0,0,0.399,0,0.159,0.228,0.061,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_baddok",
+				effectiveness = GenerateUnitEffectiveness(0.328,0.302,0.277,0.252,0.227,0.05,0,0,0.227,0.028,0.091,0.091,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_bad_dok_sp_trainer",
+		sbp_name = "ork_squad_bad_dok_sp_trainer",
+		ebp_name = "ork_bad_dok_sp_trainer",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_injector",
+				effectiveness = GenerateUnitEffectiveness(0.41,0.633,0.456,0.547,0.464,0.139,0,0,0.399,0,0.159,0.228,0.061,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_baddok",
+				effectiveness = GenerateUnitEffectiveness(0.328,0.302,0.277,0.252,0.227,0.05,0,0,0.227,0.028,0.091,0.091,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_battle_wagon",
+		sbp_name = "ork_squad_battle_wagon",
+		ebp_name = "ork_battle_wagon",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 90,
+		potential = 
+		{
+			{
+				name = "ork_battlefortress_roller",
+				effectiveness = GenerateUnitEffectiveness(1.75,1.75,1.75,0.963,0.35,0.175,0,0,0,0,0.315,0.315,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_twin_battle_wagon_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_battle_wagon_r",
+				effectiveness = GenerateUnitEffectiveness(0.325,0.325,0.325,0.325,0.195,0.78,0.65,0.26,0.195,0.143,0.125,0.338,0.188,0.065,0,0.572,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_lobba_battlewagon",
+				effectiveness = GenerateUnitEffectiveness(0.66,0.33,0.33,0.33,0.22,1.1,0.88,0.88,0.22,0.176,0.22,0.33,0.22,0.22,0,0,0,90),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlewagon",
+				effectiveness = GenerateUnitEffectiveness(0.9,0.9,0.9,0.9,0.6,2.629,1.577,0.75,0.6,0.6,0.45,1.404,0.545,0.24,0,2.629,0,55),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battle_wagon_l",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_battle_wagon_l",
+				effectiveness = GenerateUnitEffectiveness(0.325,0.325,0.325,0.325,0.195,0.78,0.65,0.26,0.195,0.143,0.125,0.338,0.188,0.065,0,0.572,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_battle_wagon_armageddon",
+		sbp_name = "ork_squad_battle_wagon_armageddon",
+		ebp_name = "ork_battle_wagon_armageddon",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 55,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_twin_battle_wagon_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlewagon",
+				effectiveness = GenerateUnitEffectiveness(0.9,0.9,0.9,0.9,0.6,2.629,1.577,0.75,0.6,0.6,0.45,1.404,0.545,0.24,0,2.629,0,55),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battle_wagon_l",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_battlefortress",
+		sbp_name = "ork_squad_battlefortress",
+		ebp_name = "ork_battlefortress",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 72,
+		potential = 
+		{
+			{
+				name = "ork_rokkit_launcher_battlefortress",
+				effectiveness = GenerateUnitEffectiveness(0.213,0.213,0.213,0.213,0.128,0.51,0.425,0.17,0.128,0.094,0.082,0.221,0.123,0.043,0,0.374,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battlefortress_front",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlefortess_l",
+				effectiveness = GenerateUnitEffectiveness(0.63,0.63,0.63,0.63,0.42,1.84,1.104,0.525,0.42,0.42,0.315,0.983,0.381,0.168,0,1.84,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_battlefortress_back",
+				effectiveness = GenerateUnitEffectiveness(0.833,0.833,0.833,0.833,0.5,0.167,0,0,0.333,0.092,0.4,0.3,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlefortess_l_melee",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.3,1.314,0.788,0.375,0.3,0.3,0.225,0.702,0.272,0.12,0,1.314,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battlefortress_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_battlefortress_roller",
+				effectiveness = GenerateUnitEffectiveness(1.75,1.75,1.75,0.963,0.35,0.175,0,0,0,0,0.315,0.315,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_battlecannon_battlefortress",
+				effectiveness = GenerateUnitEffectiveness(2.479,1.239,1.239,1.239,0.826,4.131,3.305,3.305,0.826,0.661,0.826,1.239,0.826,0.826,0,0,0,72),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battlefortress_l",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlefortess_r",
+				effectiveness = GenerateUnitEffectiveness(0.63,0.63,0.63,0.63,0.42,1.84,1.104,0.525,0.42,0.42,0.315,0.983,0.381,0.168,0,1.84,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlefortess_r_melee",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.3,1.314,0.788,0.375,0.3,0.3,0.225,0.702,0.272,0.12,0,1.314,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_battlefortress_armageddon",
+		sbp_name = "ork_squad_battlefortress_armageddon",
+		ebp_name = "ork_battlefortress_armageddon",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 40,
+		potential = 
+		{
+			{
+				name = "ork_zzzap_gun_battlefortess_l",
+				effectiveness = GenerateUnitEffectiveness(0.63,0.63,0.63,0.63,0.42,1.84,1.104,0.525,0.42,0.42,0.315,0.983,0.381,0.168,0,1.84,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_battlefortess_r",
+				effectiveness = GenerateUnitEffectiveness(0.63,0.63,0.63,0.63,0.42,1.84,1.104,0.525,0.42,0.42,0.315,0.983,0.381,0.168,0,1.84,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battlefortress_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun",
+				effectiveness = GenerateUnitEffectiveness(1.05,1.05,1.05,1.05,0.7,3.067,1.84,0.875,0.7,0.7,0.525,1.638,0.635,0.28,0,3.067,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_battlefortress_l",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_bombsquigs",
+		sbp_name = "ork_squad_bombsquigs",
+		ebp_name = "ork_bombsquig",
+		class = UnitStatsAI.UC_LightInfantryLow,
+		rating = 1,
+		max_range = 2,
+		potential = 
+		{
+			{
+				name = "tyranids_melee_termagant",
+				effectiveness = GenerateUnitEffectiveness(0.02,0.025,0.024,0.023,0.015,0.005,0,0,0.023,0.003,0.009,0.005,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "tyranids_spore_cluster",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_burna",
+		sbp_name = "ork_squad_burna",
+		ebp_name = "ork_burna_boy",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 18,
+		potential = 
+		{
+			{
+				name = "ork_burna_slugga_melee",
+				effectiveness = GenerateUnitEffectiveness(0.125,0.175,0.125,0.15,0.113,0.02,0,0,0.075,0.014,0.045,0.1,0.05,0.025,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna",
+				effectiveness = GenerateUnitEffectiveness(0.123,0.123,0.096,0.105,0.079,0.014,0,0,0.053,0.01,0.079,0.07,0.035,0.018,0,0,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_deff_dread",
+		sbp_name = "ork_squad_deff_dread",
+		ebp_name = "ork_deff_dread",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 40,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_dred_left",
+				effectiveness = GenerateUnitEffectiveness(0.625,0.625,0.625,0.625,0.375,0.125,0,0,0.25,0.069,0.3,0.225,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_dred_right",
+				effectiveness = GenerateUnitEffectiveness(0.625,0.625,0.625,0.625,0.375,0.125,0,0,0.25,0.069,0.3,0.225,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_dread_buzza_saw",
+				effectiveness = GenerateUnitEffectiveness(5.64,5.64,5.64,5.64,5.64,4.512,3.384,0.564,5.64,5.64,5.64,1.833,0.705,0.338,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_fighta_bomba",
+		sbp_name = "ork_squad_fighta_bomba",
+		ebp_name = "ork_fighta_bomba",
+		class = UnitStatsAI.UC_AirMed,
+		rating = 1,
+		max_range = 55,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_fighta_bomba_rear_gun",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.27,0.09,0,0,0.18,0.049,0.216,0.162,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba_bubble_gun",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0.14,0.187,0.051,0.224,0.168,0,0,0,0.7,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0,0.187,0.051,0.224,0.168,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_grot_bomb",
+				effectiveness = GenerateUnitEffectiveness(0.664,0.886,0.886,0.886,1.55,4.429,4.429,4.429,4.429,4.429,0.886,0.886,0.664,0.443,0,0,0,55),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_fighta_bomba_noff_sp_dxp3",
+		sbp_name = "ork_squad_fighta_bomba_noff_sp_dxp3",
+		ebp_name = "ork_fighta_bomba_noff_sp_dxp3",
+		class = UnitStatsAI.UC_AirMed,
+		rating = 1,
+		max_range = 55,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_fighta_bomba_rear_gun",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.27,0.09,0,0,0.18,0.049,0.216,0.162,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba_bubble_gun",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0.14,0.187,0.051,0.224,0.168,0,0,0,0.7,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0,0.187,0.051,0.224,0.168,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_grot_bomb_noff",
+				effectiveness = GenerateUnitEffectiveness(0.073,0.073,0.073,0.073,0.064,0.092,0.073,0.055,0.092,0.073,0.066,0.092,0.073,0.055,0,0.073,0,55),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_fighta_bomba_sp_dxp3",
+		sbp_name = "ork_squad_fighta_bomba_sp_dxp3",
+		ebp_name = "ork_fighta_bomba",
+		class = UnitStatsAI.UC_AirMed,
+		rating = 1,
+		max_range = 55,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_fighta_bomba_rear_gun",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.27,0.09,0,0,0.18,0.049,0.216,0.162,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba_bubble_gun",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0.14,0.187,0.051,0.224,0.168,0,0,0,0.7,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0,0.187,0.051,0.224,0.168,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_grot_bomb",
+				effectiveness = GenerateUnitEffectiveness(0.664,0.886,0.886,0.886,1.55,4.429,4.429,4.429,4.429,4.429,0.886,0.886,0.664,0.443,0,0,0,55),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_great_gargant",
+		sbp_name = "ork_squad_great_gargant",
+		ebp_name = "ork_great_gargant",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 120,
+		potential = 
+		{
+			{
+				name = "ork_super_battlecannon_gargant_top_left",
+				effectiveness = GenerateUnitEffectiveness(3.018,3.018,3.018,3.018,2.156,6.899,5.174,4.312,2.156,2.587,1.552,3.45,1.811,1.035,0,4.312,0,120),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_gargant_right",
+				effectiveness = GenerateUnitEffectiveness(3.512,3.512,3.512,2.809,2.809,10,9.131,4.214,5.619,3.512,5.619,3.512,2.809,2.809,0,7.726,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_super_battlecannon_gargant",
+				effectiveness = GenerateUnitEffectiveness(3.77,3.232,2.693,2.693,2.154,5.925,5.925,2.693,2.154,1.077,2.154,2.154,2.154,2.154,0,7.54,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_super_battlecannon_gargant_top",
+				effectiveness = GenerateUnitEffectiveness(3.018,3.018,3.018,3.018,2.156,6.899,5.174,4.312,2.156,2.587,1.552,3.45,1.811,1.035,0,4.312,0,120),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_bellygun_gargant",
+				effectiveness = GenerateUnitEffectiveness(0.594,0.594,0.594,0.594,0.424,1.358,1.019,0.849,0.424,0.509,0.306,0.679,0.356,0.204,0,0.849,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_grot",
+		sbp_name = "ork_squad_grot",
+		ebp_name = "ork_grot",
+		class = UnitStatsAI.UC_LightInfantryLow,
+		rating = 1,
+		max_range = 16,
+		potential = 
+		{
+			{
+				name = "ork_grot_knife",
+				effectiveness = GenerateUnitEffectiveness(0,0.011,0.011,0.011,0,0,0,0,0.011,0.001,0,0.002,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_grot_blasta",
+				effectiveness = GenerateUnitEffectiveness(0.009,0.009,0.005,0.009,0,0,0,0,0.009,0,0,0.001,0,0,0,0,0,16),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_grot_gang",
+		sbp_name = "ork_squad_grot_gang",
+		ebp_name = "ork_grot_gang",
+		class = UnitStatsAI.UC_LightInfantryLow,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_grot_knife",
+				effectiveness = GenerateUnitEffectiveness(0,0.011,0.011,0.011,0,0,0,0,0.011,0.001,0,0.002,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_shotgun",
+				effectiveness = GenerateUnitEffectiveness(0.023,0.02,0.025,0.026,0.026,0.007,0,0,0.029,0.004,0.012,0.012,0,0,0,0,0,16),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_grot",
+				effectiveness = GenerateUnitEffectiveness(0.033,0.03,0.028,0.025,0.023,0.005,0,0,0.023,0.003,0.009,0.009,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_grot_tank",
+		sbp_name = "ork_squad_grot_tank",
+		ebp_name = "ork_grot_tank",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_grot_tank",
+				effectiveness = GenerateUnitEffectiveness(0.24,0.24,0.24,0.24,0.144,0.048,0,0,0.096,0.026,0.115,0.086,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_battlecannon_grot_tank",
+				effectiveness = GenerateUnitEffectiveness(0.136,0.205,0.205,0.136,0.096,0.164,0.218,0.109,0.136,0.136,0.082,0.136,0.096,0.027,0,0.096,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_gun_wagon",
+		sbp_name = "ork_squad_gun_wagon",
+		ebp_name = "ork_gun_wagon",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 85,
+		potential = 
+		{
+			{
+				name = "ork_lobba_gunwagon",
+				effectiveness = GenerateUnitEffectiveness(0.13,0.108,0.108,0.163,0.184,0.173,0.087,0.217,0.087,0.217,0.039,0.054,0.033,0.011,0,0,0,85),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_gunwagon",
+				effectiveness = GenerateUnitEffectiveness(0.771,0.771,0.771,0.771,0.514,2.253,1.351,0.643,0.514,0.514,0.386,1.203,0.467,0.206,0,2.253,0,75),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_honor_guard_slugga",
+		sbp_name = "ork_squad_honor_guard_slugga",
+		ebp_name = "ork_honor_guard_slugga_boy",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_spanna",
+				effectiveness = GenerateUnitEffectiveness(0.165,0.238,0.183,0.188,0.123,0.027,0,0,0.183,0.016,0.071,0.053,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.08,0.112,0.08,0.096,0.072,0.013,0,0,0.048,0.009,0.029,0.064,0.032,0.016,0,0,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.055,0.05,0.046,0.042,0.038,0.008,0,0,0.038,0.005,0.015,0.015,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_kill_bursta",
+		sbp_name = "ork_squad_kill_bursta",
+		ebp_name = "ork_kill_bursta",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 100,
+		potential = 
+		{
+			{
+				name = "ork_lobba_kill_bursta",
+				effectiveness = GenerateUnitEffectiveness(0.38,0.304,0.228,0.152,0.114,0.304,0.228,0.152,0.228,0.152,0.228,0.228,0.152,0.076,0,0,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battle_wagon_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "guard_flamer_leman_russ_left",
+				effectiveness = GenerateUnitEffectiveness(0.275,0.385,0.275,0.33,0.248,0.055,0,0,0.165,0.03,0.099,0.22,0.11,0.055,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_kill_krusha",
+		sbp_name = "ork_squad_kill_krusha",
+		ebp_name = "ork_kill_krusha",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 75,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_twin_battle_wagon_r",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_lobba_kill_krusha",
+				effectiveness = GenerateUnitEffectiveness(0.145,0.131,0.116,0.102,0.145,1.308,1.017,0.581,0.145,0.145,0.145,0.509,0.363,0.218,0,0.959,0,75),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_big_shoota_twin_battle_wagon_l",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_killa_kan",
+		sbp_name = "ork_squad_killa_kan",
+		ebp_name = "ork_killa_kan",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_kan_buzza_saw",
+				effectiveness = GenerateUnitEffectiveness(3.822,3.058,2.293,2.484,1.911,1.682,1.452,0.382,3.822,3.822,2.675,1.242,0.478,0.229,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_killakan",
+				effectiveness = GenerateUnitEffectiveness(0.875,0.875,0.875,0.875,0.525,0.175,0,0,0.35,0.096,0.42,0.315,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_rokkit_launcha_killakan",
+				effectiveness = GenerateUnitEffectiveness(0.188,0.188,0.188,0.188,0.113,0.45,0.375,0.15,0.113,0.083,0.072,0.195,0.108,0.038,0,0.33,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_skorcha_dread_right",
+				effectiveness = GenerateUnitEffectiveness(0.252,0.476,0.308,0.42,0.336,0.112,0.056,0,0.56,0.031,0.101,0.28,0.196,0.084,0,0,0,16),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_killa_kan_advance_sp",
+		sbp_name = "ork_squad_killa_kan_advance_sp",
+		ebp_name = "ork_killa_kan",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_kan_buzza_saw",
+				effectiveness = GenerateUnitEffectiveness(3.822,3.058,2.293,2.484,1.911,1.682,1.452,0.382,3.822,3.822,2.675,1.242,0.478,0.229,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_killakan",
+				effectiveness = GenerateUnitEffectiveness(0.875,0.875,0.875,0.875,0.525,0.175,0,0,0.35,0.096,0.42,0.315,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_rokkit_launcha_killakan",
+				effectiveness = GenerateUnitEffectiveness(0.188,0.188,0.188,0.188,0.113,0.45,0.375,0.15,0.113,0.083,0.072,0.195,0.108,0.038,0,0.33,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_skorcha_dread_right",
+				effectiveness = GenerateUnitEffectiveness(0.252,0.476,0.308,0.42,0.336,0.112,0.056,0,0.56,0.031,0.101,0.28,0.196,0.084,0,0,0,16),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_kommandoz",
+		sbp_name = "ork_squad_kommandoz",
+		ebp_name = "ork_kommando",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 45,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_ardboyz",
+				effectiveness = GenerateUnitEffectiveness(0.155,0.224,0.172,0.177,0.116,0.025,0,0,0.172,0.015,0.066,0.05,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.321,0.321,0.321,0.321,0.192,0.064,0,0,0.173,0.103,0.128,0.128,0.038,0.019,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_slugga_nob",
+				effectiveness = GenerateUnitEffectiveness(0.26,0.24,0.22,0.2,0.18,0.04,0,0,0.18,0.022,0.12,0.072,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_kustim_stompa",
+		sbp_name = "ork_squad_kustim_stompa",
+		ebp_name = "ork_kustim_stompa",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 50,
+		potential = 
+		{
+			{
+				name = "ork_fast_megafragga_kannon_melee",
+				effectiveness = GenerateUnitEffectiveness(2.647,3.442,3.177,2.912,2.118,2.647,1.324,1.059,0,0,0.635,2.647,1.324,0.794,0,1.324,0,50),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_kustim_stompa_melee",
+				effectiveness = GenerateUnitEffectiveness(4.2,4.2,4.2,4.2,4.2,3.68,2.73,2.1,1.47,1.47,1.26,2.1,1.47,0.84,0,3.68,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_kustim_stompa",
+				effectiveness = GenerateUnitEffectiveness(1.68,1.68,1.68,1.68,1.68,1.472,1.092,0.84,0.588,0.588,0.504,0.84,0.588,0.336,0,1.472,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_fast_megafragga_kannon",
+				effectiveness = GenerateUnitEffectiveness(1.667,2.167,2,1.833,1.333,1.667,0.833,0.667,0,0,0.4,1.667,0.833,0.5,0,0,0,50),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_lootas",
+		sbp_name = "ork_squad_lootas",
+		ebp_name = "ork_lootas",
+		class = UnitStatsAI.UC_HeavyInfantryHigh,
+		rating = 1,
+		max_range = 59,
+		potential = 
+		{
+			{
+				name = "ork_choppa_flash_gitz",
+				effectiveness = GenerateUnitEffectiveness(0.07,0.101,0.078,0.08,0.052,0.011,0,0,0.078,0.007,0.03,0.023,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_deff_gun",
+				effectiveness = GenerateUnitEffectiveness(1.069,0.745,0.958,0.958,1.065,1.278,0.958,0.426,0.795,0.958,0.332,0.852,0.256,0.106,0,0.724,0,59),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_looted_rhino",
+		sbp_name = "ork_squad_looted_rhino",
+		ebp_name = "ork_looted_rhino",
+		class = UnitStatsAI.UC_VehicleLow,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_twin_wartrak",
+				effectiveness = GenerateUnitEffectiveness(0.5,0.5,0.5,0.5,0.3,0.1,0,0,0.2,0.055,0.24,0.18,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_skorcha_rhino",
+				effectiveness = GenerateUnitEffectiveness(0.252,0.476,0.308,0.42,0.336,0.112,0.056,0,0.56,0.031,0.101,0.28,0.196,0.084,0,0,0,16),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_looted_tank",
+		sbp_name = "ork_squad_looted_tank",
+		ebp_name = "ork_looted_tank",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 60,
+		potential = 
+		{
+			{
+				name = "ork_heavy_bolter_tank_front",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_heavy_bolter_tank",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_battlecannon",
+				effectiveness = GenerateUnitEffectiveness(0.819,0.819,0.696,0.614,0.491,0.819,0.655,0.368,0.655,0.819,0.287,0.655,0.409,0.049,0,0.409,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_looted_tank_advance_sp",
+		sbp_name = "ork_squad_looted_tank_advance_sp",
+		ebp_name = "ork_looted_tank_advance_sp",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 60,
+		potential = 
+		{
+			{
+				name = "ork_heavy_bolter_tank_front",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_heavy_bolter_tank",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_battlecannon",
+				effectiveness = GenerateUnitEffectiveness(0.819,0.819,0.696,0.614,0.491,0.819,0.655,0.368,0.655,0.819,0.287,0.655,0.409,0.049,0,0.409,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_looted_tank_sp",
+		sbp_name = "ork_squad_looted_tank_sp",
+		ebp_name = "ork_looted_tank_singleplayer_superlongrange",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_heavy_bolter_tank_front",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_heavy_bolter_tank",
+				effectiveness = GenerateUnitEffectiveness(1.222,1.239,1.096,0.862,0.736,0.244,0,0,0.909,0.134,0.263,0.438,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_mek_boy",
+		sbp_name = "ork_squad_mek_boy",
+		ebp_name = "ork_mek_boy",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 30,
+		potential = 
+		{
+			{
+				name = "ork_choppa_mekboy",
+				effectiveness = GenerateUnitEffectiveness(1.197,1.733,1.331,1.368,0.897,0.195,0,0,1.331,0.427,0.962,0.385,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_mekboy",
+				effectiveness = GenerateUnitEffectiveness(1.238,2.618,2.404,2.829,2.424,1.01,0.846,2.32,2.38,1.87,1.53,2.04,0.424,0.452,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_blasta",
+				effectiveness = GenerateUnitEffectiveness(0.256,0.496,0.4,0.36,0.28,0.24,0.24,0.16,0.4,0.2,0.28,0.2,0.16,0.12,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_slugga_bigmek",
+				effectiveness = GenerateUnitEffectiveness(0.936,0.864,0.792,0.72,0.648,0.144,0,0,0.648,0.079,0.432,0.259,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_mek_boy_advance_sp",
+		sbp_name = "ork_squad_mek_boy_advance_sp",
+		ebp_name = "ork_mek_boy_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 30,
+		potential = 
+		{
+			{
+				name = "ork_mega_claw_boss_sp",
+				effectiveness = GenerateUnitEffectiveness(2.439,5.159,4.737,5.574,4.777,1.99,1.667,4.573,4.69,2.68,3.35,4.02,0.836,0.89,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_blasta",
+				effectiveness = GenerateUnitEffectiveness(0.256,0.496,0.4,0.36,0.28,0.24,0.24,0.16,0.4,0.2,0.28,0.2,0.16,0.12,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_slugga_bigmek",
+				effectiveness = GenerateUnitEffectiveness(0.936,0.864,0.792,0.72,0.648,0.144,0,0,0.648,0.079,0.432,0.259,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_nob",
+		sbp_name = "ork_squad_nob",
+		ebp_name = "ork_nob",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_nob",
+				effectiveness = GenerateUnitEffectiveness(0.372,0.497,0.435,0.435,0.248,0.062,0,0,0.435,0.031,0.248,0.112,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_nobz",
+				effectiveness = GenerateUnitEffectiveness(0.783,1.018,1.018,1.096,0.783,0.783,0.548,0.235,0.783,0.235,0.626,0.391,0.235,0.078,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_nob",
+				effectiveness = GenerateUnitEffectiveness(0.26,0.24,0.22,0.2,0.18,0.04,0,0,0.18,0.022,0.12,0.072,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_nob_advance_sp",
+		sbp_name = "ork_squad_nob_advance_sp",
+		ebp_name = "ork_nob_leader_advance_sp",
+		class = UnitStatsAI.UC_HeavyInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_nob_advance_sp",
+				effectiveness = GenerateUnitEffectiveness(0.309,0.308,0.308,0.308,0.308,0.118,0.085,0.084,0.284,0.092,0.169,0.141,0.088,0.084,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_nob_leader",
+				effectiveness = GenerateUnitEffectiveness(1.1,1.43,1.43,1.54,1.1,1.1,0.77,0.33,0.66,0.44,0.77,0.506,0.33,0.11,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_nob_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.186,0.249,0.213,0.207,0.18,0.081,0.069,0.054,0.207,0.043,0.108,0.282,0.099,0.138,0,0.081,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_nob_sp",
+		sbp_name = "ork_squad_nob_sp",
+		ebp_name = "ork_nob_leader_sp",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_nob",
+				effectiveness = GenerateUnitEffectiveness(0.372,0.497,0.435,0.435,0.248,0.062,0,0,0.435,0.031,0.248,0.112,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_nob_leader",
+				effectiveness = GenerateUnitEffectiveness(1.1,1.43,1.43,1.54,1.1,1.1,0.77,0.33,0.66,0.44,0.77,0.506,0.33,0.11,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_nob_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.186,0.249,0.213,0.207,0.18,0.081,0.069,0.054,0.207,0.043,0.108,0.282,0.099,0.138,0,0.081,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_nob_sp_dxp3_prisoner",
+		sbp_name = "ork_squad_nob_sp_dxp3_prisoner",
+		ebp_name = "ork_nob_sp_dxp3_prisoner",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_nob",
+				effectiveness = GenerateUnitEffectiveness(0.372,0.497,0.435,0.435,0.248,0.062,0,0,0.435,0.031,0.248,0.112,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_nobz_sp_dxp3_prisoner",
+				effectiveness = GenerateUnitEffectiveness(0.768,0.675,0.678,0.675,0.481,0.542,0.415,0.203,0.682,0.223,0.625,0.318,0.227,0.19,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_nob",
+				effectiveness = GenerateUnitEffectiveness(0.26,0.24,0.22,0.2,0.18,0.04,0,0,0.18,0.022,0.12,0.072,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_nukklear_bomba",
+		sbp_name = "ork_squad_nukklear_bomba",
+		ebp_name = "ork_nuke_bomba",
+		class = UnitStatsAI.UC_AirMed,
+		rating = 1,
+		max_range = 120,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_fighta_bomba_rear_gun",
+				effectiveness = GenerateUnitEffectiveness(0.45,0.45,0.45,0.45,0.27,0.09,0,0,0.18,0.049,0.216,0.162,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba_bubble_gun",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0.14,0.187,0.051,0.224,0.168,0,0,0,0.7,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_fighta_bomba",
+				effectiveness = GenerateUnitEffectiveness(0.467,0.467,0.467,0.467,0.28,0.093,0,0,0.187,0.051,0.224,0.168,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_grot_bomb_nukklear",
+				effectiveness = GenerateUnitEffectiveness(2.12,1.908,1.484,1.484,1.06,1.272,1.272,1.06,1.272,1.272,0.848,1.06,0.848,0.636,0,0,0,120),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_ork_gargant",
+		sbp_name = "ork_squad_ork_gargant",
+		ebp_name = "ork_ork_gargant",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 100,
+		potential = 
+		{
+			{
+				name = "ork_zzzap_gun_gargant_head",
+				effectiveness = GenerateUnitEffectiveness(0.867,0.867,0.867,0.693,0.693,3.038,2.253,1.04,1.387,0.867,1.387,0.867,0.693,0.693,0,1.907,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_battlecannon_gargant_right",
+				effectiveness = GenerateUnitEffectiveness(1.478,2.348,0.792,0.792,0.792,1.847,1.715,1.187,0.792,0.792,0.792,0.792,0.554,0.501,0,0.923,0,72),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_battlecannon_gargant_left",
+				effectiveness = GenerateUnitEffectiveness(1.451,2.306,0.777,0.777,0.777,1.813,1.684,1.166,0.777,0.777,0.777,0.777,0.544,0.492,0,0.907,0,72),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_bellygun_gargant",
+				effectiveness = GenerateUnitEffectiveness(0.594,0.594,0.594,0.594,0.424,1.358,1.019,0.849,0.424,0.509,0.306,0.679,0.356,0.204,0,0.849,0,100),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_shoota_boy",
+		sbp_name = "ork_squad_shoota_boy",
+		ebp_name = "ork_shoota_boy",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_knife_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.061,0.082,0.062,0.058,0.073,0,0,0,0,0.071,0.024,0.008,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.321,0.321,0.321,0.321,0.192,0.064,0,0,0.173,0.103,0.128,0.128,0.038,0.019,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.207,0.207,0.207,0.207,0.124,0.041,0,0,0.112,0.066,0.07,0.075,0,0,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_shoota_boy_advance_sp",
+		sbp_name = "ork_squad_shoota_boy_advance_sp",
+		ebp_name = "ork_shoota_boy_advance_sp",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_knife_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.061,0.082,0.062,0.058,0.073,0,0,0,0,0.071,0.024,0.008,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.321,0.321,0.321,0.321,0.192,0.064,0,0,0.173,0.103,0.128,0.128,0.038,0.019,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_shoota_boy_sp_dxp3_prisoner",
+		sbp_name = "ork_squad_shoota_boy_sp_dxp3_prisoner",
+		ebp_name = "ork_shoota_boy_sp_dxp3_prisoner",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_knife_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.061,0.082,0.062,0.058,0.073,0,0,0,0,0.071,0.024,0.008,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_shoota_sp_dxp3_prisoner",
+				effectiveness = GenerateUnitEffectiveness(0.318,0.213,0.189,0.182,0.134,0.052,0.026,0,0.177,0,0.087,0.095,0.032,0.017,0,0.052,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.207,0.207,0.207,0.207,0.124,0.041,0,0,0.112,0.066,0.07,0.075,0,0,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_slugga",
+		sbp_name = "ork_squad_slugga",
+		ebp_name = "ork_slugga_boy",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.136,0.182,0.159,0.159,0.091,0.023,0,0,0.159,0.011,0.068,0.041,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.08,0.112,0.08,0.096,0.072,0.013,0,0,0.048,0.009,0.029,0.064,0.032,0.016,0,0,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.055,0.05,0.046,0.042,0.038,0.008,0,0,0.038,0.005,0.015,0.015,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_slugga_advance_sp",
+		sbp_name = "ork_squad_slugga_advance_sp",
+		ebp_name = "ork_slugga_boy_advance_sp",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_slugga_advance_sp",
+				effectiveness = GenerateUnitEffectiveness(0.153,0.166,0.136,0.123,0.111,0.044,0.008,0,0.07,0.015,0.099,0.095,0.034,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_slugga_sp_dxp3_prisoner",
+				effectiveness = GenerateUnitEffectiveness(0.059,0.08,0.08,0.072,0.056,0.01,0,0,0.056,0.009,0.048,0.12,0.025,0.016,0,0.01,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.055,0.05,0.046,0.042,0.038,0.008,0,0,0.038,0.005,0.015,0.015,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_slugga_sp_dxp3_prisoner",
+		sbp_name = "ork_squad_slugga_sp_dxp3_prisoner",
+		ebp_name = "ork_slugga_boy_sp_dxp3_prisoner",
+		class = UnitStatsAI.UC_LightInfantryHigh,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_slugga_advance_sp",
+				effectiveness = GenerateUnitEffectiveness(0.153,0.166,0.136,0.123,0.111,0.044,0.008,0,0.07,0.015,0.099,0.095,0.034,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_slugga_sp_dxp3_prisoner",
+				effectiveness = GenerateUnitEffectiveness(0.059,0.08,0.08,0.072,0.056,0.01,0,0,0.056,0.009,0.048,0.12,0.025,0.016,0,0.01,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_slugga",
+				effectiveness = GenerateUnitEffectiveness(0.055,0.05,0.046,0.042,0.038,0.008,0,0,0.038,0.005,0.015,0.015,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_squiggoth",
+		sbp_name = "ork_squad_squiggoth",
+		ebp_name = "ork_squiggoth",
+		class = UnitStatsAI.UC_MonsterHigh,
+		rating = 1,
+		max_range = 40,
+		potential = 
+		{
+			{
+				name = "ork_zzzap_gun",
+				effectiveness = GenerateUnitEffectiveness(1.05,1.05,1.05,1.05,0.7,3.067,1.84,0.875,0.7,0.7,0.525,1.638,0.635,0.28,0,3.067,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_r",
+				effectiveness = GenerateUnitEffectiveness(0.833,0.833,0.833,0.833,0.5,0.167,0,0,0.333,0.092,0.4,0.3,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_rtop",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_squiggoth_r",
+				effectiveness = GenerateUnitEffectiveness(0.48,0.4,0.4,0.4,0.24,1.04,0.768,0.16,0.24,0.176,0.154,0.768,0.273,0.16,0,0.614,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_squiggoth_gore",
+				effectiveness = GenerateUnitEffectiveness(10,10,9.403,8.815,5.877,10,9.403,8.815,10,10,1.763,9.403,5.289,1.234,0,1.998,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_ltop",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_squiggoth_l",
+				effectiveness = GenerateUnitEffectiveness(0.48,0.4,0.4,0.4,0.24,1.04,0.768,0.16,0.24,0.176,0.154,0.768,0.273,0.16,0,0.614,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_l",
+				effectiveness = GenerateUnitEffectiveness(0.833,0.833,0.833,0.833,0.5,0.167,0,0,0.333,0.092,0.4,0.3,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_squiggoth_gargantaun",
+		sbp_name = "ork_squad_squiggoth_gargantaun",
+		ebp_name = "ork_gargantuan_squiggoth",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 1,
+		max_range = 80,
+		potential = 
+		{
+			{
+				name = "ork_bellygun_stompa",
+				effectiveness = GenerateUnitEffectiveness(0.18,0.18,0.18,0.18,0.129,0.412,0.309,0.258,0.129,0.155,0.093,0.206,0.108,0.062,0,0.258,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_super_shoota_stompa",
+				effectiveness = GenerateUnitEffectiveness(1.357,2.909,2.327,1.939,1.357,0.776,0.194,0.194,1.745,0.64,0.97,0.776,0.194,0.194,0,0.194,0,80),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_gargant_left",
+				effectiveness = GenerateUnitEffectiveness(3.3,3.3,3.3,3.3,3.3,2.892,2.145,1.65,1.155,1.155,0.99,1.65,1.155,0.66,0,2.892,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_zzzap_gun_garg_squig",
+				effectiveness = GenerateUnitEffectiveness(3.36,3.36,3.36,3.36,3.36,2.944,2.184,1.68,1.176,1.176,1.008,1.68,1.176,0.672,0,2.944,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+	{
+		name = "ork_squad_squiggoth_sp_long_rampage",
+		sbp_name = "ork_squad_squiggoth_sp_long_rampage",
+		ebp_name = "ork_squiggoth",
+		class = UnitStatsAI.UC_MonsterHigh,
+		rating = 1,
+		max_range = 40,
+		potential = 
+		{
+			{
+				name = "ork_zzzap_gun",
+				effectiveness = GenerateUnitEffectiveness(1.05,1.05,1.05,1.05,0.7,3.067,1.84,0.875,0.7,0.7,0.525,1.638,0.635,0.28,0,3.067,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_r",
+				effectiveness = GenerateUnitEffectiveness(0.833,0.833,0.833,0.833,0.5,0.167,0,0,0.333,0.092,0.4,0.3,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_rtop",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_squiggoth_r",
+				effectiveness = GenerateUnitEffectiveness(0.48,0.4,0.4,0.4,0.24,1.04,0.768,0.16,0.24,0.176,0.154,0.768,0.273,0.16,0,0.614,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_squiggoth_gore",
+				effectiveness = GenerateUnitEffectiveness(10,10,9.403,8.815,5.877,10,9.403,8.815,10,10,1.763,9.403,5.289,1.234,0,1.998,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_ltop",
+				effectiveness = GenerateUnitEffectiveness(1.471,1.471,1.471,1.471,0.882,0.294,0,0,0.588,0.162,0.706,0.529,0,0,0,0,0,40),
+				range = UnitStatsAI.RT_Count,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_squiggoth_l",
+				effectiveness = GenerateUnitEffectiveness(0.48,0.4,0.4,0.4,0.24,1.04,0.768,0.16,0.24,0.176,0.154,0.768,0.273,0.16,0,0.614,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_big_shoota_twin_squig_l",
+				effectiveness = GenerateUnitEffectiveness(0.833,0.833,0.833,0.833,0.5,0.167,0,0,0.333,0.092,0.4,0.3,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_stormboy",
+		sbp_name = "ork_squad_stormboy",
+		ebp_name = "ork_stormboy",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_stormboyz",
+				effectiveness = GenerateUnitEffectiveness(0.281,0.374,0.327,0.327,0.187,0.047,0,0,0.327,0.023,0.112,0.084,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_burna_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.091,0.127,0.091,0.109,0.082,0.015,0,0,0.055,0.01,0.033,0.073,0.036,0.018,0,0,0,18),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "ork_slugga_stormboyz",
+				effectiveness = GenerateUnitEffectiveness(0.049,0.045,0.041,0.037,0.034,0.007,0,0,0.034,0.004,0.013,0.013,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_stormboy_advance_sp",
+		sbp_name = "ork_squad_stormboy_advance_sp",
+		ebp_name = "ork_stormboy_advance_sp",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 25,
+		potential = 
+		{
+			{
+				name = "ork_choppa_boyz_stormboyz_advance_sp",
+				effectiveness = GenerateUnitEffectiveness(0.256,0.371,0.285,0.292,0.192,0.042,0.009,0,0.285,0.025,0.169,0.16,0.048,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_slugga_stormboyz",
+				effectiveness = GenerateUnitEffectiveness(0.049,0.045,0.041,0.037,0.034,0.007,0,0,0.034,0.004,0.013,0.013,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_tankbusta",
+		sbp_name = "ork_squad_tankbusta",
+		ebp_name = "ork_tankbusta",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_stikkbomb",
+				effectiveness = GenerateUnitEffectiveness(0.072,0.061,0.047,0.034,0.023,0.225,0.201,0.158,0.027,0.158,0.054,0.056,0.023,0.023,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_rokkit_launcha_tankbusta",
+				effectiveness = GenerateUnitEffectiveness(0.147,0.147,0.147,0.147,0.111,0.589,0.737,0.516,0.111,0.081,0.071,0.192,0.106,0.037,0,0.737,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_tankbusta_advance_sp",
+		sbp_name = "ork_squad_tankbusta_advance_sp",
+		ebp_name = "ork_tankbusta_advance_sp",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_stikkbomb",
+				effectiveness = GenerateUnitEffectiveness(0.072,0.061,0.047,0.034,0.023,0.225,0.201,0.158,0.027,0.158,0.054,0.056,0.023,0.023,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_rokkit_launcha_tankbusta",
+				effectiveness = GenerateUnitEffectiveness(0.147,0.147,0.147,0.147,0.111,0.589,0.737,0.516,0.111,0.081,0.071,0.192,0.106,0.037,0,0.737,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_tankbusta_sp_dxp3_prisoner",
+		sbp_name = "ork_squad_tankbusta_sp_dxp3_prisoner",
+		ebp_name = "ork_tankbusta_sp_dxp3_prisoner",
+		class = UnitStatsAI.UC_HeavyInfantryMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_stikkbomb",
+				effectiveness = GenerateUnitEffectiveness(0.072,0.061,0.047,0.034,0.023,0.225,0.201,0.158,0.027,0.158,0.054,0.056,0.023,0.023,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_rokkit_launcha_tankbusta",
+				effectiveness = GenerateUnitEffectiveness(0.147,0.147,0.147,0.147,0.111,0.589,0.737,0.516,0.111,0.081,0.071,0.192,0.106,0.037,0,0.737,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_trukk",
+		sbp_name = "ork_squad_trukk",
+		ebp_name = "ork_trukk",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_trukk",
+				effectiveness = GenerateUnitEffectiveness(0.5,0.5,0.5,0.5,0.3,0.1,0,0,0.2,0.055,0.24,0.18,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_trukk_advance_sp",
+		sbp_name = "ork_squad_trukk_advance_sp",
+		ebp_name = "ork_trukk",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_trukk",
+				effectiveness = GenerateUnitEffectiveness(0.5,0.5,0.5,0.5,0.3,0.1,0,0,0.2,0.055,0.24,0.18,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_trukk_sp_dxp3",
+		sbp_name = "ork_squad_trukk_sp_dxp3",
+		ebp_name = "ork_trukk_sp_dxp3",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_big_shoota_trukk",
+				effectiveness = GenerateUnitEffectiveness(0.5,0.5,0.5,0.5,0.3,0.1,0,0,0.2,0.055,0.24,0.18,0,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss",
+		sbp_name = "ork_squad_warboss",
+		ebp_name = "ork_warboss",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_warboss_fasta_legz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_big_horns",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_claw_boss",
+				effectiveness = GenerateUnitEffectiveness(3.027,6.403,5.879,6.918,5.929,6.652,5.405,2.079,5.82,7.484,4.989,3.326,1.038,1.104,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_mission",
+				effectiveness = GenerateUnitEffectiveness(2.412,5.101,4.684,5.512,4.724,3.313,2.319,1.656,4.637,1.988,3.18,3.975,0.827,0.88,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_sp",
+				effectiveness = GenerateUnitEffectiveness(2.565,3.335,3.335,3.591,2.565,2.565,1.795,0.77,1.539,1.026,1.847,1.18,0.77,0.257,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_boss_pole",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_skullz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_mega_blasta_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.221,0.428,0.345,0.311,0.242,0.207,0.207,0.138,0.242,0.173,0.224,0.173,0.138,0.104,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_warboss_mega_eavy_armor",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_red_gob",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss_advance_sp",
+		sbp_name = "ork_squad_warboss_advance_sp",
+		ebp_name = "ork_warboss_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_warboss_fasta_legz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_big_horns",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_claw_boss",
+				effectiveness = GenerateUnitEffectiveness(3.027,6.403,5.879,6.918,5.929,6.652,5.405,2.079,5.82,7.484,4.989,3.326,1.038,1.104,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_mission",
+				effectiveness = GenerateUnitEffectiveness(2.412,5.101,4.684,5.512,4.724,3.313,2.319,1.656,4.637,1.988,3.18,3.975,0.827,0.88,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_sp",
+				effectiveness = GenerateUnitEffectiveness(2.565,3.335,3.335,3.591,2.565,2.565,1.795,0.77,1.539,1.026,1.847,1.18,0.77,0.257,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_boss_pole",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_skullz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_mega_blasta_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.221,0.428,0.345,0.311,0.242,0.207,0.207,0.138,0.242,0.173,0.224,0.173,0.138,0.104,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_warboss_mega_eavy_armor",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_red_gob",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss_sp_dxp3",
+		sbp_name = "ork_squad_warboss_sp_dxp3",
+		ebp_name = "ork_warboss_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_warboss_fasta_legz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_big_horns",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_claw_boss",
+				effectiveness = GenerateUnitEffectiveness(3.027,6.403,5.879,6.918,5.929,6.652,5.405,2.079,5.82,7.484,4.989,3.326,1.038,1.104,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_mission",
+				effectiveness = GenerateUnitEffectiveness(2.412,5.101,4.684,5.512,4.724,3.313,2.319,1.656,4.637,1.988,3.18,3.975,0.827,0.88,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_sp",
+				effectiveness = GenerateUnitEffectiveness(2.565,3.335,3.335,3.591,2.565,2.565,1.795,0.77,1.539,1.026,1.847,1.18,0.77,0.257,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_boss_pole",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_skullz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_mega_blasta_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.221,0.428,0.345,0.311,0.242,0.207,0.207,0.138,0.242,0.173,0.224,0.173,0.138,0.104,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_warboss_mega_eavy_armor",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_red_gob",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss_sp_dxp3_enemy",
+		sbp_name = "ork_squad_warboss_sp_dxp3_enemy",
+		ebp_name = "ork_warboss_advance_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_warboss_fasta_legz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_big_horns",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_mega_claw_boss",
+				effectiveness = GenerateUnitEffectiveness(3.027,6.403,5.879,6.918,5.929,6.652,5.405,2.079,5.82,7.484,4.989,3.326,1.038,1.104,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_mission",
+				effectiveness = GenerateUnitEffectiveness(2.412,5.101,4.684,5.512,4.724,3.313,2.319,1.656,4.637,1.988,3.18,3.975,0.827,0.88,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_power_claw_boss_sp",
+				effectiveness = GenerateUnitEffectiveness(2.565,3.335,3.335,3.591,2.565,2.565,1.795,0.77,1.539,1.026,1.847,1.18,0.77,0.257,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_boss_pole",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_skullz",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_mega_blasta_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.221,0.428,0.345,0.311,0.242,0.207,0.207,0.138,0.242,0.173,0.224,0.173,0.138,0.104,0,0,0,30),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_warboss_mega_eavy_armor",
+				effectiveness = GenerateUnitEffectiveness(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_warboss_red_gob",
+				effectiveness = GenerateUnitEffectiveness(0.405,0.81,0.675,0.608,0.473,0.405,0.27,0.068,0.473,0.149,0.405,0.486,0.27,0.135,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss_sp_md2",
+		sbp_name = "ork_squad_warboss_sp_md2",
+		ebp_name = "ork_warboss_sp_md2",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_power_claw_boss",
+				effectiveness = GenerateUnitEffectiveness(1.565,2.035,2.035,2.191,1.565,1.565,1.096,0.47,0.939,0.626,0.751,0.72,0.47,0.157,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_warboss_stronghold_sp",
+		sbp_name = "ork_squad_warboss_stronghold_sp",
+		ebp_name = "ork_warboss_stronghold_sp",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_power_claw_boss_mission",
+				effectiveness = GenerateUnitEffectiveness(2.412,5.101,4.684,5.512,4.724,3.313,2.319,1.656,4.637,1.988,3.18,3.975,0.827,0.88,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "ork_kustom_shoota",
+				effectiveness = GenerateUnitEffectiveness(0.395,0.316,0.277,0.316,0.277,0.158,0.079,0.04,0.237,0,0.119,0.158,0.079,0,0,0,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_shoota_warboss",
+				effectiveness = GenerateUnitEffectiveness(0.648,0.8,0.695,0.648,0.47,0.123,0,0,0.63,0.085,0.278,0.278,0,0,0,0,0,25),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_wartrak",
+		sbp_name = "ork_squad_wartrak",
+		ebp_name = "ork_wartrak",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_bomb_chucka_wartrack",
+				effectiveness = GenerateUnitEffectiveness(0.223,0.177,0.185,0.18,0.063,0.124,0.088,0.035,0.127,0.019,0.028,0.088,0.071,0.018,0,0.088,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_wartrak",
+				effectiveness = GenerateUnitEffectiveness(0.453,0.378,0.378,0.378,0.227,1.511,1.133,0.604,0.227,0.166,0.145,0.725,0.258,0.151,0,0.58,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_wartrak_advance_sp",
+		sbp_name = "ork_squad_wartrak_advance_sp",
+		ebp_name = "ork_wartrak",
+		class = UnitStatsAI.UC_VehicleMed,
+		rating = 1,
+		max_range = 35,
+		potential = 
+		{
+			{
+				name = "ork_bomb_chucka_wartrack",
+				effectiveness = GenerateUnitEffectiveness(0.223,0.177,0.185,0.18,0.063,0.124,0.088,0.035,0.127,0.019,0.028,0.088,0.071,0.018,0,0.088,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "ork_rokkit_launcher_twin_wartrak",
+				effectiveness = GenerateUnitEffectiveness(0.453,0.378,0.378,0.378,0.227,1.511,1.133,0.604,0.227,0.166,0.145,0.725,0.258,0.151,0,0.58,0,35),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},
+	{
+		name = "ork_squad_wierdboy",
+		sbp_name = "ork_squad_wierdboy",
+		ebp_name = "ork_wierdboy",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 0,
+		potential = 
+		{
+			{
+				name = "ork_wierdboy_staff",
+				effectiveness = GenerateUnitEffectiveness(0.445,0.671,0.566,0.5,0.391,0.389,0.283,0,0.399,0,0.222,0.333,0.119,0,0,0,0,0),
+				range = UnitStatsAI.RT_Melee,
+			},
+		},
+	},
+	{
+		name = "ork_squad_wierdboy_entrenched",
+		sbp_name = "ork_squad_wierdboy_entrenched",
+		ebp_name = "ork_wierdboy_entrenched",
+		class = UnitStatsAI.UC_Commander,
+		rating = 1,
+		max_range = 60,
+		potential = 
+		{
+			{
+				name = "ork_zzzap_gun_wierdboy",
+				effectiveness = GenerateUnitEffectiveness(0.748,0.748,0.748,0.598,0.748,0.898,0.748,0.449,0.598,0.598,0.299,0.374,0.299,0.224,0,0.224,0,60),
+				range = UnitStatsAI.RT_Count,
+			},
+		},
+	},
+}
