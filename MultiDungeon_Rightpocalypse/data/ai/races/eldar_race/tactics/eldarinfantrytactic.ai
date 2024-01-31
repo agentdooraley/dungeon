@@ -42,18 +42,18 @@ function EldarInfantryTactic:__init( squad_ai ) super( squad_ai )
 	end
 
 	-- Set FoF range
-	self.m_iFoFRange = 35
-	if (sSquadName == "eldar_squad_banshees" or sSquadName == "eldar_squad_striking_scorpions" or sSquadName == "eldar_harlequin_squad" or sSquadName == "eldar_warlock_attachable_squad" or sSquadName == "eldar_squad_seer_council" or sSquadName == "eldar_squad_shadowseer" or sSquadName == "eldar_squad_farseer" or sSquadName == "eldar_squad_autarch") then
-		self.m_iFoFRange = 15
-	elseif (sSquadName == "eldar_squad_fire_dragon" or sSquadName == "eldar_squad_wraithguard" or sSquadName == "eldar_squad_wraithguard_ancient" or ssSquadName == "eldar_squad_warp_spider") then
-		self.m_iFoFRange = 30
-	elseif (sSquadName == "eldar_guardian_squad" or sSquadName == "eldar_storm_guardian_squad" or sSquadName == "eldar_squad_corsairs" or sSquadName == "eldar_squad_swooping_hawk" or sSquadName == "eldar_dire_avenger_squad") then
-		self.m_iFoFRange = 35
-	elseif (sSquadName == "eldar_squad_rangers" or sSquadName == "eldar_squad_grav_platform" or sSquadName == "eldar_squad_grav_platform_brightlance") then
-		self.m_iFoFRange = 40
-	elseif (sSquadName == "eldar_squad_dark_reapers") then
-		self.m_iFoFRange = 45
-	end
+    self.m_iFoFRange = 35
+    if (sSquadName == "eldar_squad_banshees" or sSquadName == "eldar_squad_seer_council" or sSquadName == "eldar_squad_farseer") then
+        self.m_iFoFRange = 15
+    elseif (sSquadName == "eldar_squad_fire_dragon") then
+        self.m_iFoFRange = 30
+    elseif (sSquadName == "eldar_guardian_squad") then
+        self.m_iFoFRange = 35
+    elseif (sSquadName == "eldar_squad_rangers") then
+        self.m_iFoFRange = 40
+    elseif (sSquadName == "eldar_squad_dark_reapers") then
+        self.m_iFoFRange = 45
+    end
 end
 
 function EldarInfantryTactic:AddTargetAbilities()
@@ -177,77 +177,60 @@ function EldarInfantryTactic:ToggleFoF( squad_ai, state )
 
 	-- Check if the squad can handle fleet of foot
 	local id = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot" )
-	local idB = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot2" )
-	local idC = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot_laughing_god" )
-	if (not squad_ai:CanDoAbility(id)) or (not squad_ai:CanDoAbility(idB)) or (not squad_ai:CanDoAbility(idC)) then
+	if (not squad_ai:CanDoAbility(id)) then
 		return
 	end
 	
 	-- Check if it's already in desired state
-	if (squad_ai:IsUsingAbility(id) == state) or (squad_ai:IsUsingAbility(idB) == state) or (squad_ai:IsUsingAbility(idC) == state) then
+	if (squad_ai:IsUsingAbility(id) == state) then
 		return 
 	end
 	
 	-- Activate fleet of foot
 	squad_ai:DoSpecialAbility(id)
-	squad_ai:DoSpecialAbility(idB)
-	squad_ai:DoSpecialAbility(idC)
 end
 
 -- Dreddnott edit (April 16th)
 function EldarInfantryTactic:DoAbilityFoF()
 
-	-- Check if we should toggle FoF
-	local iFoFID = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot" )
-	local iFoFIDB = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot2" )
-	local iFoFIDC = cpu_manager.stats:GetAbilityID( "eldar_fleetoffoot_laughing_god" )
-	local bToggleFoF = false
-	local bToggleFoFB = false
-	local bToggleFoFC = false
+    -- Check if we should toggle FoF
+    local iFoFID = cpu_manager.stats:GetAbilityID("eldar_fleetoffoot")
+    local bToggleFoF = false
 
-	-- Check whether we're using the ability
-	local bIsUsing = self.squad_ai:IsUsingAbility(iFoFID)
-	local bIsUsingB = self.squad_ai:IsUsingAbility(iFoFIDB)
-	local bIsUsingC = self.squad_ai:IsUsingAbility(iFoFIDC)
+    -- Check whether we're using the ability
+    local bIsUsing = self.squad_ai:IsUsingAbility(iFoFID)
 
-	-- Check if we're attacking
-	local bIsAttacking = self.squad_ai:IsInStateAttackMove()
-	
-	-- Check if we are shooting or fighting in melee
-	local bIsFighting = self.squad_ai:IsAttacking()
-	
-	-- Check if we're moving normally
-	local bIsMoving = (self.squad_ai:IsInStateMove() and not bIsAttacking)
+    -- Check if we're attacking
+    local bIsAttacking = self.squad_ai:IsInStateAttackMove()
+    
+    -- Check if we are shooting or fighting in melee
+    local bIsFighting = self.squad_ai:IsAttacking()
+    
+    -- Check if we're moving normally
+    local bIsMoving = (self.squad_ai:IsInStateMove() and not bIsAttacking)
 
-	-- Check if we're in a state that should FoF regardless of enemy presence
-	local bAvoidCombat = (self.squad_ai:IsBroken() or self:IsInSubState() or self.squad_ai:IsCapturing() or bIsMoving)
+    -- Check if we're in a state that should FoF regardless of enemy presence
+    local bAvoidCombat = (self.squad_ai:IsBroken() or self:IsInSubState() or self.squad_ai:IsCapturing() or bIsMoving)
 
-	-- Check if we should slow down for enemies nearing range
-	local vSquadPos = self.squad_ai:GetPosition()
-	local oEnemy = cpu_manager.cpu_player:FindFirstEnemy(vSquadPos, self.m_iFoFRange, 1)
-	local bCloseEnemy = (oEnemy ~= nil)
-	
-	-- Helper flags
-	local bIsCharging = (bIsAttacking and bCloseEnemy)
-	local bIsDefending = (not bIsMoving and bCloseEnemy)
-	local bIsInCombat = (bIsFighting or bIsCharging or bIsDefending)
+    -- Check if we should slow down for enemies nearing range
+    local vSquadPos = self.squad_ai:GetPosition()
+    local oEnemy = cpu_manager.cpu_player:FindFirstEnemy(vSquadPos, self.m_iFoFRange, 1)
+    local bCloseEnemy = (oEnemy ~= nil)
+    
+    -- Helper flags
+    local bIsCharging = (bIsAttacking and bCloseEnemy)
+    local bIsDefending = (not bIsMoving and bCloseEnemy)
+    local bIsInCombat = (bIsFighting or bIsCharging or bIsDefending)
 
-	-- Check if FoF should be toggled
-	if ((bIsUsing and bIsInCombat and not bAvoidCombat) or (not bIsUsing and (not bIsInCombat or bAvoidCombat))) then        
-        	bToggleFoF = true
-	elseif ((bIsUsingB and bIsInCombat and not bAvoidCombat) or (not bIsUsingB and (not bIsInCombat or bAvoidCombat))) then  
-		bToggleFoFB = true
-	elseif ((bIsUsingC and bIsInCombat and not bAvoidCombat) or (not bIsUsingC and (not bIsInCombat or bAvoidCombat))) then  
-		bToggleFoFC = true
-	end
+    -- Check if FoF should be toggled
+    if ((bIsUsing and bIsInCombat and not bAvoidCombat) or
+    	(not bIsUsing and (not bIsInCombat or bAvoidCombat))) then        
+        bToggleFoF = true
+    end
 
-	-- Toggle FoF
-	if (bToggleFoF and self.squad_ai:CanDoAbility(iFoFID)) then
-		self.squad_ai:DoSpecialAbility(iFoFID)
-	elseif (bToggleFoFB and self.squad_ai:CanDoAbility(iFoFIDB)) then
-		self.squad_ai:DoSpecialAbility(iFoFIDB)
-	elseif (bToggleFoFC and self.squad_ai:CanDoAbility(iFoFIDC)) then
-		self.squad_ai:DoSpecialAbility(iFoFIDC)
-	end
+    -- Toggle FoF
+    if (bToggleFoF and self.squad_ai:CanDoAbility(iFoFID)) then
+        self.squad_ai:DoSpecialAbility(iFoFID)
+    end
 end
 

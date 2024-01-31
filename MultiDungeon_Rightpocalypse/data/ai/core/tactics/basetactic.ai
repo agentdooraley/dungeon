@@ -150,13 +150,13 @@ function BaseTactic:Update()
 	local functordestroy = function( squad_ai )		 
 	  local oUnitStats = cpu_manager.stats:GetUnitStatsFromBPID(squad_ai:GetSquad():GetID())
            if oUnitStats == nil then
-              return (squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle and not squad_ai:IsInCombat() and squad_ai:GetHealthPercentage()>0.8 and distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<10 and squad_ai:IsLocked())
+              return ((squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle or squad_ai:GetSquadName() == "Ork Squiggoth")  and not squad_ai:IsInCombat() and  distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<15 and squad_ai:IsLocked())  --squad_ai:GetHealthPercentage()>0.8 -- and not squad_ai:GetSquadName()== "guard_squad_basilisk"
            end
-	  return (((oUnitStats:GetClass()==bVehicle) or (squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle)) and not squad_ai:IsInCombat() and squad_ai:GetHealthPercentage()>0.8 and distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<10)
+	  return (((oUnitStats:GetClass()==bVehicle) or (squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle)) and not squad_ai:IsInCombat() and squad_ai:GetHealthPercentage()>0.8 and distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<10) and not squad_ai:GetSquadName()== "guard_squad_basilisk"
 	end
         self.m_aSquad = cpu_manager:FindFirstFriendly(functordestroy)
         else
-          if distance(self.base_ai:GetPosition(),self.m_aSquad:GetPosition())<10 then
+          if distance(self.base_ai:GetPosition(),self.m_aSquad:GetPosition())<15 then
              self.m_iIdleTimeDestroy = self.m_iIdleTimeDestroy + 1
           else
              self.m_iIdleTimeDestroy = 0
@@ -164,14 +164,29 @@ function BaseTactic:Update()
           end
         end
 --vehicle
-          if self.m_iIdleTimeDestroy > 240 and not cpu_manager:IsListeningPost(self.base_ai:GetBlueprintID()) and self.m_bCheckDelete==false and (not cpu_manager:IsHQ(self.base_ai:GetBlueprintID()) and cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true) >1) then
-           build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
+	--[[	if self.m_iIdleTimeDestroy > 0 then
+			print("Time to Destroy")
+			print(self.m_iIdleTimeDestroy)
+			print("List Pos")
+			--print(cpu_manager:IsListeningPost(self.base_ai:GetBlueprintID()))
+			print(self.base_ai:IsListeningPost())
+			print("Check delete")
+			print(self.m_bCheckDelete)
+			print("IsHQ")
+			--print(cpu_manager:IsHQ(self.base_ai:GetBlueprintID()))
+			print(cpu_manager:IsHQ(self.base_ai))			
+			print("NumBas")
+			print(cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true))
+		end]]
+        --  if self.m_iIdleTimeDestroy > 240 and not cpu_manager:IsListeningPost(self.base_ai:GetBlueprintID()) and self.m_bCheckDelete==false and (not cpu_manager:IsHQ(self.base_ai:GetBlueprintID()) and cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true) >1) then
+        if  (self.m_iIdleTimeDestroy > 120 and (not self.base_ai:IsListeningPost()) and self.m_bCheckDelete==false and (not cpu_manager:IsHQ(self.base_ai)) and cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true) >1) or (self.m_iIdleTimeDestroy > 60 and cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true) >2 and (not self.base_ai:IsListeningPost())) then
+		   build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
            self.m_iIdleTimeDestroy = 0
            self.m_aSquad = nil
            self.m_bCheckDelete = true
-          end
+        end
 --noconstruct
-          if ((g_iGMT>self.m_iLifeTime+120 and self.base_ai:GetHealthPercentage()==0.2) or (g_iGMT>self.m_iLifeTime+150 and self.base_ai:GetHealthPercentage()<=0.2) or (g_iGMT>self.m_iLifeTime+250 and self.base_ai:GetHealthPercentage()<=0.6) or (g_iGMT>self.m_iLifeTime+300 and self.base_ai:GetHealthPercentage()<=0.8)) and self.m_bCheckDelete==false and not self.base_ai:IsConstructionDone()  then
+          if ((g_iGMT>self.m_iLifeTime+60 and self.base_ai:GetHealthPercentage()==0.2) or (g_iGMT>self.m_iLifeTime+60 and self.base_ai:GetHealthPercentage()<=0.2) or (g_iGMT>self.m_iLifeTime+100 and self.base_ai:GetHealthPercentage()<=0.6) or (g_iGMT>self.m_iLifeTime+200 and self.base_ai:GetHealthPercentage()<=0.8)) and self.m_bCheckDelete==false and not self.base_ai:IsConstructionDone()  then
            build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
            self.m_iLifeTime = g_iGMT + 5
            self.m_bCheckDelete = true
@@ -197,7 +212,7 @@ end
 function BaseTactic:FocusEnemy()
     local oEnemyUnit = cpu_manager.cpu_player:FindFirstEnemy(self.base_ai:GetPosition(), 50, 1)
     if self.target~=nil then
-    local oEnemyUnitFar = cpu_manager.cpu_player:FindFirstInfantryEnemy(self.base_ai:GetPosition(), distance(self.base_ai:GetPosition(),self.target:GetPosition()), 1)
+		local oEnemyUnitFar = cpu_manager.cpu_player:FindFirstInfantryEnemy(self.base_ai:GetPosition(), distance(self.base_ai:GetPosition(),self.target:GetPosition()), 1)
     end
 --[[    if (oEnemyUnit ~= nil) and (oEnemyUnit:IsEngineer() or oEnemyUnit:GetHealthPercentage()<0.3 or oEnemyUnit:IsBroken()) or (oEnemyUnitFar~=nil and (oEnemyUnitFar:IsEngineer() or oEnemyUnitFar:GetHealthPercentage()<0.3 or oEnemyUnitFar:IsBroken())) then
     	self:SetTarget(oEnemyUnit:GetPosition(),Tactic.Variant.BaseAI)

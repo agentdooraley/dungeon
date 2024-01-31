@@ -49,6 +49,35 @@ function EldarSquadTactic:DoAbilities()
 	EldarInfantryTactic.DoAbilities(self)
 end
 
+function EldarSquadTactic:SetTarget( target, variant_type )
+
+    self.variant_type = variant_type
+    self.variant_type = variant_type
+       if self.variant_type==Tactic.Variant.Vector then
+    self.target = Vector3f(target)
+       elseif self.variant_type==Tactic.Variant.SquadAI then
+    self.target = target
+       elseif self.variant_type==Tactic.Variant.BaseAI then
+    self.target = target
+       end
+
+
+
+	
+	self.m_iMoveDelay = 0
+	self.last_jump = 0
+end
+
+function EldarSquadTactic:JumpAttack()
+
+	if (not cpu_manager.assassinate) then
+		Tactic.JumpAttack(self)
+	end
+end
+
+
+
+
 function EldarSquadTactic:Update()
 
 	if (self:IsComplete()) then

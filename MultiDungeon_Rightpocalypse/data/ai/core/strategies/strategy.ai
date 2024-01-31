@@ -5,12 +5,6 @@
 -- Edited by Flenser    @ 30.05.2005
 -- Edited by Arkhan     @ 22.10.2005
 -- Edited by Dark40k    @ 14.10.2008
--- Edited by Aliaska_RuS
-
-----
-
-
-
 
 --? @module AI
 --? @group Strategy
@@ -23,11 +17,6 @@ Strategy.Events =
 	OnFailure = "OnFailure",
 	OnAttack = "OnAttack"
 }
-
-Strategy.NextUpdateUnitDoProd = AI_GetPlayerID()-1000
-Strategy.RallyPoint = AI_GetPlayerID()-1000
-Strategy.bFlagUpdateObt1 = true
-Strategy.bFlagUpdateObt2 = false
 
 --? @shortdesc Ctor
 --? @args 
@@ -43,8 +32,7 @@ function Strategy:__init( info )
 	end
 	
 	self.plans = {}
-	self:ResetDemand(1)
-	self:ResetDemand(2)
+	self:ResetDemand()
 
 	self.now = 0
 	
@@ -55,8 +43,6 @@ function Strategy:__init( info )
 	self.m_iNumHQAtStartPos = 1
 	
 	self.m_aBuildingCounts = {}
-        
-        self.m_tBuildDump = {}
 end
 
 function Strategy:GetStatus( status )
@@ -70,17 +56,17 @@ end
 --? @shortdesc Reset all the demand tables
 --? @args 
 --? @result void
-function Strategy:ResetDemand(setting)
-        if setting==1 then
+function Strategy:ResetDemand()
+
 	self.unit_class_demand = {}
 	self.effectiveness_demand = {}
-	 for i = 0, UnitStatsAI.UC_Count - 1 do
+	self.squad_demand = {}
+	
+	for i = 0, UnitStatsAI.UC_Count - 1 do
 		self.unit_class_demand[ i ] = 0
 		self.effectiveness_demand[ i ] = 0
-	 end
-        else
-	self.squad_demand = {}
 	end
+	
 end
 
 --? @shortdesc Adpot control of all the plans that the strategy is running
@@ -127,11 +113,10 @@ end
 --? @args 
 --? @result void
 function Strategy:Update()
-        if Strategy.NextUpdateUnitDoProd == 32 then
+
 	--reset demands
---	self:ResetDemand()
-        Strategy.NextUpdateUnitDoProd = 0
-	end
+	self:ResetDemand()
+	
 	-- Update building count
 	self:UpdateBuildingCount()
 end
@@ -160,7 +145,7 @@ end
 --? @result void
 function Strategy:AddPlan( plan )
 
-	 table.insert(self.plans,plan)
+	table.insert( self.plans, plan )
 end
 
 function Strategy:PostEvent( event )
@@ -205,26 +190,6 @@ function Strategy:PlanExists( plan_name, plan_id )
 	return true
 end
 
---? @shortdesc Get the plans table for this strategy
---? @args 
---? @result table
-function Strategy:GetPlans()
-	return self.plans
-end
-
-function Strategy:GetPlansCount(sPlanName, iPlanID)
-        local temp = {}
-	-- Compute all plans
-	for iLoop1 in self.plans do
-	
-		-- Check plan
-		if (self.plans[iLoop1]:IsEqual(sPlanName, iPlanID)) then
-			table.insert(temp,self.plans[iLoop1])
-		end
-	end
-	return temp
-end
-
 function Strategy:GetPlan(sPlanName, iPlanID)
 
 	-- Compute all plans
@@ -263,21 +228,6 @@ function Strategy:PlanCount(sPlanName, iPlanID)
 		end
 	end
 	return count
-end
-
--- Arkhan 10.2005: Abstract method to get the building name of a specific type
-function Strategy:GetBuildingName( sType )
-	return nil
-end
-
--- Arkhan 10.2005: Now usable by all races
-function Strategy:HasBuilding( sName )
-
-	-- Get building ID
-	local iBuildingID = cpu_manager.stats:GetBuildingID(sName)
-
-	-- Count finished buildings of this type
-	return cpu_manager.player_stats:GetNumBasesByBPID(iBuildingID, true)
 end
 
 function Strategy:GetBuildingCountByName(sName, bFinished)
@@ -402,19 +352,27 @@ function Strategy:BuildPrereq( build_type, unfill )
 					if (friend ~= nil) then
 						build_pos = friend:GetStartingPosition()
 					end
-                                        if build_pos == nil then
+                    if build_pos == nil then
                                         -- Check posts
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 200)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 50)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
 				          end
-                                        end
-                                        if build_pos == nil then
+                    end
+                    if build_pos == nil then
                                         -- Check posts
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 200)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
+				    if (vPos ~= nil) then
+						build_pos = vPos
+						fClosestDistance = fDistance
+				    end
+                                        end
+					if (build_pos == nil) then
+				        local sName = self:GetBuildingName("ListeningPost")
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 50)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -422,7 +380,7 @@ function Strategy:BuildPrereq( build_type, unfill )
                                         end
 					if (build_pos == nil) then
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 150)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -430,15 +388,7 @@ function Strategy:BuildPrereq( build_type, unfill )
                                         end
 					if (build_pos == nil) then
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 150)
-				          if (vPos ~= nil) then
-						build_pos = vPos
-						fClosestDistance = fDistance
-				          end
-                                        end
-					if (build_pos == nil) then
-				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 100)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -716,14 +666,7 @@ end
 --? @shortdesc Forces the release of all resources the strategy owns
 --? @args
 --? @result void
-function Strategy:ForceReleaseAll(m)
-        if m~=nil then
-          if self.plans[m]~=nil then
-           self.plans[m]:UnlockAll()
-           table.remove(self.plans,m)
-           return
-          end
-        end
+function Strategy:ForceReleaseAll()
 
 	for i in self.plans do
 		self.plans[i]:UnlockAll()
@@ -749,40 +692,16 @@ function Strategy:ForceReleaseResource( id, res_type )
 	end
 
 end
-function Strategy:ClearBuildDump()
-   self.m_tBuildDump={}
-end
+
 --? @shortdesc Tries to build the squad, or it's prerequisites (may fail)
 --? @args int id
 --? @result void
 -- Arkhan 10.2005: No prerequisites are built any more
 function Strategy:TryBuild( build_type )
-	aitrace("try build start "..build_type.name..":")
---[[        local bBuildDump = false
-        for i in self.m_tBuildDump do
-            if self.m_tBuildDump[i]==build_type.name then
-               bBuildDump=true
-            end
-        end
-        if bBuildDump==true then aitrace("Build the queue is busy 1") return false else table.insert(self.m_tBuildDump, build_type.name) end]]
+
+	-- Dark40k 10.2008 : replaced CpuPrerequisites by CpuPrerequisites2
 	local prereq = CpuPrerequisites2( cpu_manager.cpu_player, build_type.name, build_type.btype )
 	
---[[	--Kaiser Soze 04.2007
-	if (build_type.btype == CpuPrerequisites.BT_AddOn) then
-		self:BuildPrereq( build_type )
-		blg( nil, "Want to build prereq for: "..build_type.name)
-		for i in prereq:GetUnfulfilledPrerequisites() do
-			
-			if i.prereq_fulfilled  then
-				blg( nil, "Build "..i.name)
-			else
-				blg( nil, "Can't build "..i.name)
-			end
-		end
-		return true
-	end
-	--End of Kaiser's changes]]
-
 	if prereq:PrerequisitesFulfilled() then
 		self:BuildPrereq( build_type )
 		return true
@@ -797,17 +716,14 @@ function Strategy:TryBuild( build_type )
 			
 			aitrace( i.name.." (unfulfillable)" )
 			
-			   if i.prereq_fulfilled  then
-				self:BuildPrereq( i,true )
+			-- if i.prereq_fulfilled  then
+			--	self:BuildPrereq( i )
 			--	blg( nil, "Build "..i.name)
 			--	aitrace( i.name )
-			   else
-                               --[[if i.name~="" or nil then
-                                self:TryBuild( i )
-                               end]]
+			-- else
 			--	blg( nil, "Can't build "..i.name)
 			--	aitrace( i.name.." (unfulfillable)" )
-			   end
+			-- end
 		end
 		aipoptrace( "end prereqs" )
 		return false
@@ -879,14 +795,14 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 				local iSupportCapRequirement = oUnitStats:GetSupportCapReq()
 				if ((iSquadCapRequirement > 0 and build_manager:GetSquadCapLeft() - iSquadCapRequirement < 0) or 
 					(iSupportCapRequirement > 0 and build_manager:GetSupportCapLeft() - iSupportCapRequirement < 0)) then
-					--table.remove(self.squad_demand, iLoop1)
+					table.remove(self.squad_demand, iLoop1)
 				end
 			end
 		end
 	end
 		
 	-- Check build channels
-	for oBuildChannel in build_manager:GetBuildChannelAIs() do
+	for oBuildChannel in build_manager:GetUnlockedBuildChannelAIs() do
 	
 		-- Make sure the building is complete
 		if (oBuildChannel:ConstructionDone()) then
@@ -899,7 +815,7 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 				if (iItemIndex ~= BuildChannelAI.INVALID_INDEX) then
 					
 					-- Check if the building is already building
-					if (oBuildChannel:IsBuilding() == 0) then
+					if (oBuildChannel:IsBuilding() == 0 or not bBuildNow) then
 						self.squad_demand[iLoop1][3] = true
 					end
 				end
@@ -910,49 +826,15 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 	-- Get highest demanded unit
 	local iUnitID = nil
 	local iHighestDemand = 0
-	local iUnitIDTANK = nil
-	local iHighestDemandTANK = 0
-	local iUnitIDNoLimit = nil
-	local iHighestDemandNoLimit = 0
-	local iUnitIDNoLimitTANK = nil
-	local iHighestDemandNoLimitTANK = 0
 	for iLoop1 in self.squad_demand do
-		local oUnitStats = cpu_manager.stats:GetUnitStatsFromBPID(self.squad_demand[iLoop1][1])
-	        local bVehicle = (UnitStatsAI.UC_VehicleLow or UnitStatsAI.UC_VehicleMed or UnitStatsAI.UC_VehicleHigh or UnitStatsAI.UC_MonsterMed or UnitStatsAI.UC_MonsterHigh or UnitStatsAI.UC_AirLow or UnitStatsAI.UC_AirMed or UnitStatsAI.UC_AirHigh)
-
+	
 		-- Check if unit can be built and demand is higher than last one
-		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemand) and oUnitStats:GetClass() ~= bVehicle and (oUnitStats:GetSquadCapReq() > 0 or (oUnitStats:GetSquadCapReq() >= 0 and oUnitStats:GetSupportCapReq() > 0)) then
+		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemand) then
 			iUnitID = self.squad_demand[iLoop1][1]
 			iHighestDemand = self.squad_demand[iLoop1][2]
 		end
-
-		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandTANK) and oUnitStats:GetClass() == bVehicle and (oUnitStats:GetSupportCapReq() > 0 or (oUnitStats:GetSquadCapReq() > 0 and oUnitStats:GetSupportCapReq() >= 0)) then
-			iUnitIDTANK = self.squad_demand[iLoop1][1]
-			iHighestDemandTANK = self.squad_demand[iLoop1][2]
-		end
-
-		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandNoLimit) and oUnitStats:GetClass() ~= bVehicle and oUnitStats:GetSupportCapReq() == 0 and oUnitStats:GetSquadCapReq() == 0 then
-			iUnitIDNoLimit = self.squad_demand[iLoop1][1]
-			iHighestDemandNoLimit = self.squad_demand[iLoop1][2]
-		end
-
-		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandNoLimitTANK) and oUnitStats:GetClass() == bVehicle and oUnitStats:GetSupportCapReq() == 0 and oUnitStats:GetSquadCapReq() == 0 then
-			iUnitIDNoLimitTANK = self.squad_demand[iLoop1][1]
-			iHighestDemandNoLimitTANK = self.squad_demand[iLoop1][2]
-		end
 	end
-        local tableitem =
-        {
-                iUnitID = iUnitID,
-                iHighestDemand = iHighestDemand,
-                iUnitIDTANK = iUnitIDTANK,
-                iHighestDemandTANK = iHighestDemandTANK,
-                iUnitIDNoLimit = iUnitIDNoLimit,
-                iHighestDemandNoLimit = iHighestDemandNoLimit,
-                iUnitIDNoLimitTANK = iUnitIDNoLimitTANK,
-                iHighestDemandNoLimitTANK = iHighestDemandNoLimitTANK
-        }
-	return tableitem
+	return iUnitID, iHighestDemand
 end
 
 --begin Project QuickStart code

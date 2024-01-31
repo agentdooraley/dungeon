@@ -3,7 +3,6 @@
 -- Edited by Thudmeizer @ 08.02.2005
 -- Edited by LarkinVB   @ 15.08.2005
 -- Created by Corsix    @ 04.02.2005
--- Edited by Aliaska_RuS
 
 import ("Plans/BuildPlan.ai")
 
@@ -49,8 +48,8 @@ function BuildNotifiedAddOnPlan:ObtainBuilder()
 	dbAssert( enemy ~= nil )
 	local bias_pos = enemy:GetStartingPosition()   
    dbAssert ( bias_pos ~= nil )
-   local uManager = build_manager:GetUnlockedBuildChannelAIs()
-   for build_channel in uManager do
+   
+   for build_channel in build_manager:GetUnlockedBuildChannelAIs() do
 	  
 	  -- Don't queue
 	  if (build_channel:IsBuilding() == 0) then

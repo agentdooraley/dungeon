@@ -42,8 +42,8 @@ UnitStrengths.eldar_squad_dark_reapers = 250
 UnitStrengths.eldar_squad_striking_scorpions = 190
 UnitStrengths.eldar_squad_swooping_hawk = 200
 UnitStrengths.eldar_squad_corsairs = 110
-UnitStrengths.eldar_squad_fire_dragon = 280
-UnitStrengths.eldar_squad_warp_spider = 300
+UnitStrengths.eldar_squad_fire_dragon = 170
+UnitStrengths.eldar_squad_warp_spider = 170
 UnitStrengths.eldar_harlequin_squad = 200
 UnitStrengths.eldar_squad_shining_spears = 280
 UnitStrengths.eldar_squad_wraithguard = 400
@@ -92,7 +92,7 @@ LeaderStrengths.eldar_dire_avenger_squad = 0
 LeaderStrengths.eldar_squad_fire_dragon = 75
 LeaderStrengths.eldar_squad_striking_scorpions = 75
 LeaderStrengths.eldar_squad_swooping_hawk = 75
-LeaderStrengths.eldar_squad_warp_spider = 75
+LeaderStrengths.eldar_squad_warp_spider = 200
 LeaderStrengths.eldar_squad_shining_spears = 75
 LeaderStrengths.eldar_harlequin_squad = 75
 LeaderStrengths.eldar_squad_wraithguard = 75
@@ -353,6 +353,7 @@ EldarUnitStats =
 		sbp_name = "eldar_squad_dark_reapers",
 		ebp_name = "eldar_dark_reapers",
 		class = UnitStatsAI.UC_HeavyInfantryMed,
+		max_range = 30,		
 		rating = 6,
 		potential =
 		{
@@ -444,6 +445,7 @@ EldarUnitStats =
 		ebp_name = "eldar_warp_spider",
 		class = UnitStatsAI.UC_HeavyInfantryMed,
 		rating = 7,
+		max_range = 16,		
 		potential =
 		{
 			{

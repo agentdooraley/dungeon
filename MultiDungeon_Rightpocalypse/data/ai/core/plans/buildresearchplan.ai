@@ -1,7 +1,6 @@
 ----------------------------------------
 -- File: 'buildresearchplan.ai'
 -- Edited by LarkinVB @   15.08.2005
--- Edited by Aliaska_RuS
 
 import ("Plans/BuildPlan.ai")
 
@@ -25,8 +24,8 @@ function BuildResearchPlan:__init( research_id, wait_on_builder) super( CpuPlaye
 end
 
 function BuildResearchPlan:ObtainBuilder()
-        local uManager = build_manager:GetUnlockedBuildChannelAIs()
-	for build_channel in uManager do
+
+	for build_channel in build_manager:GetUnlockedBuildChannelAIs() do
 
 		--don't queue
 		if build_channel:IsBuilding() == 0 then
@@ -75,7 +74,7 @@ function BuildResearchPlan:BuildResearch()
 		self.builder:BuildResearch( self.item_id )
 
 		--change state
-		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingStateAddon, true )
+		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingState, true )
 		
 		dlg( "research", "Do research :"..self.item_name )
 		return

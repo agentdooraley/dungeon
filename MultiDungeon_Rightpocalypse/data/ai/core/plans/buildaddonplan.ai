@@ -1,4 +1,3 @@
--- Edited by Aliaska_RuS
 import ("Plans/BuildPlan.ai")
 
 class 'BuildAddOnPlan' (BuildPlan)
@@ -15,8 +14,8 @@ function BuildAddOnPlan:__init( addon_id ) super(  CpuPlayer.CT_BuildAddOns )
 end
 
 function BuildAddOnPlan:ObtainBuilder()
-	local uManager = build_manager:GetUnlockedBuildChannelAIs()
-	for build_channel in uManager do
+	
+	for build_channel in build_manager:GetUnlockedBuildChannelAIs() do
 
 		--don't queue
 		if( build_channel:IsBuilding() == 0 ) then
@@ -49,7 +48,7 @@ end
 function BuildAddOnPlan:Retry()
 	if (self.builder:CanAddToQueue( BuildChannelAI.PQ_AddOn, self.item_id ) == BuildChannelAI.CANBUILD_Ok) then
 		self.builder:BuildAddOn( self.item_id )
-		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingStateAddon )
+		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingState )
 	end
 end
 
@@ -60,7 +59,7 @@ function BuildAddOnPlan:BuildAddOn()
 		self.builder:BuildAddOn( self.item_id )
 
 		--change state
-		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingStateAddon )
+		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingState )
 		return
 	end
 	

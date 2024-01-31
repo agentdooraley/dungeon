@@ -207,7 +207,7 @@ function eldar_race:GetInfo(sType)
        elseif (sType == "InvisibleBuildings") then
            return true
        elseif (sType == "HarassingLeader") then
-           return "eldar_squad_autarch"
+           return "eldar_squad_farseer"
        elseif (sType == "AutoConstructBuildings") then
        return false
        end

@@ -166,7 +166,7 @@ function InfantryTactic:HarrasingAttack()
 	end
 
 	-- Check for closest enemy building and closest enemy engineer on building
-	local iMaxAttackDistance = 250
+	local iMaxAttackDistance = 550
 	local oEnemyBuilding = cpu_manager.cpu_player:FindFirstBaseEnemy(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance, 1)
 	if (oEnemyBuilding ~= nil) then
         local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oEnemyBuilding:GetPosition(), 35, 1)
@@ -294,7 +294,7 @@ function InfantryTactic:BeginHoldState()
 	end
 	
 	-- Check distance
-	if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and 
+	if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
                         self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
@@ -470,7 +470,7 @@ function InfantryTactic:BeginRetreatState()
 	end
 	
 	-- Check distance
-	if (iDistance > sqr(40) and 
+	if (iDistance > sqr(25) and 
                 self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
@@ -587,7 +587,7 @@ function InfantryTactic:BeginAttackState()
 	end
 
 		-- Check distance
-		if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and 
+		if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
                                 self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 		
 			-- Check for a close transporter
@@ -607,7 +607,7 @@ function InfantryTactic:BeginAttackState()
 	if (not self.squad_ai:IsAttacking() and not self.squad_ai:IsInStateAttackMove()) then
 	
 		-- Check distance
-		if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
+		if (iDistance > sqr(30) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
 			self.squad_ai:GetHealthPercentage() > 0.6 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 2) then
 		
 			-- Check for a close transporter
@@ -737,12 +737,12 @@ function InfantryTactic:Reinforce()
 	if (self.squad_ai:IsReinforcing()) then
 		return
 	end
-	
+	--[[
 	-- If I am broken, don't upgrade!
 	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken()) then
 		return
 	end
-	
+	]]
 	-- Don't reinforce squads in critical condition
 	if (self.squad_ai:GetNumTroopers() <= self.squad_ai:GetMaxTroopers() / 4 and self.squad_ai:IsUnderAttack()) then
 		return
@@ -880,7 +880,7 @@ function InfantryTactic:MoveToDisengage(bDanceflag)
 		
 			-- Try to enter transporter
 			oTransporterTactic:LoadSquadDisengage(self.squad_ai, self:GetUnitStrength(), bDanceflag)
-			self.m_iMoveDelay = g_iGMT - 3
+			self.m_iMoveDelay = g_iGMT - 4
 			return true
 	end
 
@@ -1029,7 +1029,7 @@ function InfantryTactic:CheckForDeath(bCheck)
 	local bIsBuilding = (self.squad_ai:IsEngineer() and self.squad_ai:IsBuilding() ~= 0)
 	if (bIsBuilding) then
 		fHealthThresh = 0.2
-	elseif (self:IsCommander() or self.squad_ai:GetMaxTroopers() == 1) then
+	elseif (self:IsCommander() and self.squad_ai:GetMaxTroopers() == 1) then
                if iAlliedStrength==0 then
                   iAlliedStrength=1
                end
@@ -1041,7 +1041,7 @@ function InfantryTactic:CheckForDeath(bCheck)
 	else 
 		local iSquadSize = self.squad_ai:GetNumTroopers()
 		local iSquadMax = self.squad_ai:GetMaxTroopers()
-		fHealthThresh = (1.0 - (iSquadSize / iSquadMax))*(vPosThreat/iAlliedStrength)
+		fHealthThresh = (1.0 - ( iSquadSize/ iSquadMax))*(vPosThreat/iAlliedStrength)
 	end
 
 	-- Check health threshold

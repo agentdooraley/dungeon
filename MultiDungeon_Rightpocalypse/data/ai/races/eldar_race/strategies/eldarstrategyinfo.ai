@@ -23,9 +23,6 @@ BuildBaseStrategyInfo =
 		Engineers =
 		{
 			--number of engineers we're aiming for
-		Engineers =
-		{
-			--number of engineers we're aiming for
 			want = 3,
 			tier1 = 4,
 			tier2 = 5,
@@ -42,60 +39,44 @@ BuildBaseStrategyInfo =
 		{
 			-- Allround strategy
 			{
-				{ 1, 0, 0, 0, 0,	"Restrict",	"eldar_squad_jetbikes" },
+				{ 1, 150, 80, 0, 1,	"Unit",		"eldar_squad_farseer" },				
+				{ 1, 50, 50, 0, 1,	 "Research",	"eldar_fleet_of_foot_research" },
 				{ 1, 360, 0, 0, 1,	"Building",	"eldar_hq" },
 				{ 1, 360, 0, 0, 1,	"Building",	"eldar_aspect_portal" },
-				{ 1, 120, 0, 0, 1,	"Building",	"eldar_warp_generator" },
-				{ 1, 120, 0, 0, 2,	"Building",	"eldar_warp_generator" },
-				{ 1, 560, 130, 0, 1,	"Unit",		"eldar_squad_autarch" },
-			    { 1, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_dark_reapers" },
-				{ 1, 200, 0, 0, 2,	"Unit",	"eldar_squad_dark_reapers" },				
-			    { 1, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_banshees" },
-			    { 1, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_direavengers" },
-				{ 1, 200, 0, 0, 1,	"Unit",	"eldar_squad_rangers" },
-				{ 1, 200, 0, 0, 3,	"Unit",	"eldar_dire_avenger_squad" },
+				{ 1, 160, 0, 0, 1,	"Building",	"eldar_warp_generator" },
+				{ 1, 25, 75, 600, 1,	 "Research",	"eldar_plasma_grenade_research" },				
+				{ 1, 160, 0, 750, 1,	"Building",	"eldar_warp_generator" },
+				{ 1, 160, 0, 1000, 1,	"Building",	"eldar_warp_generator" },							
+			    { 1, 100, 50, 0, 100,	"Addon",	"eldar_aspect_stone_dark_reapers" },
+				{ 1, 200, 40, 0, 3,	"Unit",	"eldar_squad_dark_reapers" },
+				{ 1, 200, 60, 0, 1,	"Unit",	"eldar_squad_rangers" },				
 				{ 1, 90, 80, 0, 100,	"TurretAddon",	"eldar_list_post_addon_1" },
-				{ 1, 200, 100, 0, 1,	"Building",	"eldar_support_portal" },
-				{ 1, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_vyper" },
-				{ 1, 150, 300, 0, 1,	"Unit",	"eldar_squad_vypers" },
-                { 1, 400, 300,  500, 1,	"Building",	"eldar_soul_shrine" },
+                { 1, 300, 200,  1000, 1,	"Building",	"eldar_soul_shrine" },
 
-				{ 2, 100, 100, 0, 1,	"Research",	"eldar_craftworld_iyanden" },
-				{ 2, 0, 0, 0, 0,	"Restrict",	"eldar_storm_guardian_squad" },
 				{ 2, 200, 100, 0, 1,	"Building",	"eldar_support_portal" },
-				{ 2, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_wraithlord" },
-				{ 2, 1265, 470, 0, 2,	"Unit",		"eldar_squad_wraithlord" },
+				{ 2, 0, 150, 0, 100,	"Addon",	"eldar_aspect_stone_wraithlord" },
+				{ 2, 200, 470, 0, 3,	"Unit",		"eldar_squad_wraithlord" },
 				{ 2, 100, 0, 0,	1,	"Building",	"eldar_aspect_portal" },
 			    { 2, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_dark_reapers" },
 				{ 2, 90, 80, 0, 100,	"TurretAddon",	"eldar_list_post_addon_1" },
 				{ 2, 100, 0, 0, 1,	"Building",	"eldar_webway_gate" },
 				{ 2, 100, 0, 400, 2,	"Building",	"eldar_webway_gate" },
 			    { 2, 210, 30, 0, 4,	"Unit",		"eldar_squad_dark_reapers" },
-			    { 2, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_scorpions" },
-				{ 2, 210, 30, 0, 3,	"Unit",		"eldar_squad_striking_scorpions" },
-			    { 2, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_swooping_hawk" },
-				{ 2, 150, 0, 0, 5,	"Building",	"eldar_warp_generator" },
 				{ 2, 100, 0, 0, 3,	"Building",	"eldar_webway_gate" },
-				{ 2, 210, 30, 0, 3,	"Unit",		"eldar_squad_swooping_hawk" },
-			    { 2, 100, 45, 0, 1,	"Unit",		"eldar_squad_shining_spears" },
-			    { 2, 110, 45, 0, 6,	"Unit",		"eldar_squad_grav_platform_brightlance" },
-			    { 2, 50, 0, 250, 100,	"Addon",	"eldar_aspect_stone_nightwing" },
-			    { 3, 560, 200, 500, 2,	"Building",	"eldar_hq" },
-				{ 2, 100, 230, 0, 3,	"Unit",		"eldar_squad_nightwing" },
 				{ 2, 20, 80, 500, 80,	"TurretAddon",	"eldar_support_platform_addon" },
-				{ 2, 35, 120, 0, 25,	"TurretAddon",	"eldar_support_platform_addon_shadow_weaver" },
 				{ 2, 240, 160, 0, 100,	"TurretAddon",	"eldar_list_post_addon_2" },
 				{ 2, 150, 0, 0, 6,	"Building",	"eldar_warp_generator" },
 			    { 2, 300, 60, 0, 1,	"Unit",		"eldar_squad_farseer" },
 				{ 2, 280, 50, 0, 1,	"Unit",		"eldar_squad_autarch" },
-				{ 2, 700, 900, 1500, 1,	"Research",	"eldar_tier2_research" },
+			    { 2, 75, 75, 0, 100,	"Addon",	"eldar_aspect_stone_warp_spider" },		
+				{ 2, 280, 100, 0, 2,	"Unit",	"eldar_squad_warp_spider" },				
+				{ 2, 500, 500, 1500, 1,	"Research",	"eldar_tier2_research" },
 
 				{ 3, 0, 0, 0, 0,	"Restrict",	"eldar_squad_dark_reapers" },
 				{ 3, 0, 0, 0, 0,	"Restrict",	"eldar_dire_avenger_squad" },
-				{ 3, 0, 0, 0, 0,	"Restrict",	"eldar_squad_dark_reapers" },
 			    { 3, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_warp_spider" },
 				{ 3, 200, 100, 0, 3,	"Building",	"eldar_support_portal" },
-				{ 3, 320, 100, 0, 5,	"Unit",	"eldar_squad_warp_spider" },
+				{ 3, 280, 100, 0, 2,	"Unit",	"eldar_squad_warp_spider" },
 				{ 3, 195, 105, 0, 1,	"Unit",		"eldar_squad_seer_council" },
 				{ 3, 165, 300, 0, 3,	"Unit",		"eldar_squad_nightspinner" },
 			    { 3, 50, 0, 250, 100,	"Addon",	"eldar_aspect_stone_fire_dragon" },
@@ -106,14 +87,14 @@ BuildBaseStrategyInfo =
 				{ 3, 35, 110, 1400, 40,	"TurretAddon",	"eldar_support_platform_addon_vibrocannon" },
 				{ 3, 760, 300, 500, 3,	"Building",	"eldar_hq" },
 				{ 3, 150, 0, 0, 8,	"Building",	"eldar_warp_generator" },
-				{ 3, 1200, 1500, 2000, 1, "Research",	"eldar_annihilate_the_enemy" },
+				{ 3, 1000, 1000, 2000, 1, "Research",	"eldar_annihilate_the_enemy" },
 
 				{ 4, 0, 0, 0, 0,	"Restrict",	"eldar_squad_laughing_god" },
-				{ 4, 0, 0, 0, 0,	"Restrict",	"eldar_squad_fire_dragon" },
+				{ 4, 500, 1000, 0, 2,	"Unit",		"eldar_squad_scorpion" },				
 				{ 4, 960, 400, 500, 4,	"Building",	"eldar_hq" },
 				{ 4, 150, 150, 1750, 1,	"Building",	"eldar_laughing_god_shrine" },
 			    { 4, 50, 0, 0, 100,	"Addon",	"eldar_aspect_stone_wraithguard" },
-				{ 4, 1000, 400, 0, 2,	"Unit",		"eldar_squad_wraithguard" },
+				{ 4, 500, 400, 0, 2,	"Unit",		"eldar_squad_wraithguard" },
 				{ 4, 420, 180, 250, 2,	"Building",	"eldar_support_portal_super" },
 				{ 4, 200, 400, 0, 1,	"Unit",		"eldar_squad_shadowseer" },
 				{ 4, 420, 300, 0, 2,	"Building",	"eldar_support_platform_uberturret_sp_dxp3" },
@@ -153,20 +134,19 @@ BuildBaseStrategyInfo =
 		{
 			standard = 
 			{
-				eldar_guardian_squad = 3,
-				eldar_storm_guardian_squad = 6,
-				eldar_dire_avenger_squad = 5,
-				eldar_squad_rangers = 10,
+				eldar_guardian_squad = 4,
+				eldar_dire_avenger_squad = 2,
+				eldar_squad_rangers = 1,
 				eldar_squad_banshees = 2,
 				eldar_squad_dark_reapers = 4,
 				eldar_squad_striking_scorpions = 3,
 				eldar_squad_swooping_hawk = 4,
 				eldar_squad_corsairs = 1,
-				eldar_squad_fire_dragon = 5,
-				eldar_squad_warp_spider = 5,
+				eldar_squad_fire_dragon = 3,
+				eldar_squad_warp_spider = 2,
 				eldar_harlequin_squad = 1,
-				eldar_squad_wraithguard = 6,
-				eldar_squad_wraithguard_ancient = 6,
+				eldar_squad_wraithguard = 1,
+				eldar_squad_wraithguard_ancient = 1,
 				eldar_warlock_attachable_squad = 5,
 				eldar_squad_grav_platform = 3,
 				eldar_squad_grav_platform_brightlance = 6,
@@ -180,7 +160,7 @@ BuildBaseStrategyInfo =
 				eldar_squad_war_walker = 1,
 				eldar_squad_wraithlord = 5,
 				eldar_squad_nightspinner = 5,
-				eldar_squad_fire_prism = 10,
+				eldar_squad_fire_prism = 2,
 				eldar_squad_wraithwalker = 1,
 				eldar_squad_wraithking = 5,
 				eldar_squad_avatar = 1,
@@ -196,8 +176,7 @@ BuildBaseStrategyInfo =
 			}
 		},
 	 },
-  },
-}
+ }
 
 BuildOrderStrategyInfo = 
 {
@@ -207,13 +186,13 @@ BuildOrderStrategyInfo =
 		{
 			{ "flag_capture" }, { "flag_capture" },
 			{ "flag_capture" }, 
+			{ "building", "eldar_aspect_portal", false },			
 			{ "squad", "eldar_squad_bonesinger" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "research", "eldar_plasma_grenade_research"},
+			{ "squad", "eldar_guardian_squad" },
+			{ "squad", "eldar_guardian_squad" },
 			{ "post_builder" },
 			{ "building", "eldar_warp_generator", true },
-			{ "squad", "eldar_squad_bonesinger" }
+			{ "squad", "eldar_guardian_squad" }
 		},
 		
 		QuickStart =
@@ -259,6 +238,6 @@ AttackStrategyInfo =
 {
 	eldar_race =
 	{
-		MinArmyStrength = 350,
+		MinArmyStrength = 700,
 	},
 }
