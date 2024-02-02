@@ -6,11 +6,6 @@
 -- Edited by Arkhan	@ 06.01.2006
 -- Edited by Aliaska_RuS
 
-----
-
-
-
-
 class 'AttackStrategy' (Strategy)
 
 -- Settings
@@ -201,8 +196,8 @@ function AttackStrategy:UpdateStrategicObjective()
 					
 						-- Check if the owner is an enemy
 						if (cpu_manager.player_stats:IsEnemy(oPlayer)) then
-							table.insert(vEnemyCriticalPositions,oStrategicPoint:GetEntity():GetPosition())
-							table.insert(oCriticalOwner,oPlayer)
+							table.insert(vEnemyCriticalPositions, oStrategicPoint:GetEntity():GetPosition())
+							table.insert(oCriticalOwner, oPlayer)
 						end
 					end
 				end
@@ -331,7 +326,7 @@ function AttackStrategy:CheckAttackSituation()
 		if (oUnit:IsValid() and (oUnit:WasRecentlyHurt() or oUnit:IsInCombat())) then
 		
 			-- Store unit data
-			table.insert(aUnits,{ oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
+			table.insert(aUnits, { oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
 		end
 	end
 	
@@ -532,7 +527,7 @@ function AttackStrategy:HelpAllyInNeed()
 			oPlayer:GetPlayerID() ~= cpu_manager.player_id) then
 			
 			-- Add start position
-			table.insert(aAlliedStartPositions,oPlayer:GetStartingPosition())
+			table.insert(aAlliedStartPositions, oPlayer:GetStartingPosition())
 		end		
 	end
 	
@@ -667,7 +662,7 @@ function AttackStrategy:ChooseTarget()
 	
 	-- Don't attack if I don't have enough units available
 	local iMinArmyPower = self.info.MinArmyStrength + (cpu_manager:GetTierLevel() - 1) * cpu_manager:MinArmyStrengthPerTier()
-	if (iSquadCount < 2) then
+	if (iMyArmyStrength < iMinArmyPower or iSquadCount < 2) then
          	aitrace("AttackStrategy: No change...")
 		return
 	end
@@ -730,7 +725,7 @@ function AttackStrategy:ChooseTarget()
 		end
 	end
 	local fRatio = cpu_manager:GetAttackRatio()
-    if (iMyArmyStrength < fRatio * iEnemyArmyStrength) then
+    if (iMyArmyStrength < fRatio * iEnemyArmyStrength and iMyArmyStrength < 1000) then
     	return
     end
 	
@@ -1080,17 +1075,10 @@ function AttackStrategy:ChooseTarget()
 		sActionType = "Support allied base "..tostring(self.m_aAllies[tSupportBase.iAlly].oPlayer:GetPlayerID())
 		self.m_oEnemy = cpu_manager:FindCommonEnemyPlayer()
 	end
+
 	-- Try to attack enemy base
 	if (tBestBase.iEnemy > 0 and tBestBase.iPoints > iPoints) then
-         if resource_manager:GetNumOwnedPowerGenerators()>0 then
-           for slag_heap in resource_manager:GetSlagHeaps() do
-               local slag = cpu_manager.cpu_player:FindFirstBaseEnemy(slag_heap:GetPosition(),5,1)
-               if slag~=nil then
-                  tBestBase.iNeedPower = cpu_manager:GetArmyStrengthAtPos(slag_heap:GetPosition(), 40, true)
-                  tBestBase.vPosition = slag_heap:GetPosition()
-               end
-           end
-         end
+	
 		-- Set target (Attacking an enemy base gets a bonus of 10 points in tier 2+)
 		iRequiredPower = tBestBase.iNeedPower
 		iPoints = tBestBase.iPoints
@@ -1302,9 +1290,9 @@ function AttackStrategy:AnalyseBattleField()
 			
 			-- Add baseinfo object to ally or enemy section
 			if (oPlayerInfo.bEnemy) then
-				table.insert(self.m_aEnemies,oPlayerInfo)
+				table.insert(self.m_aEnemies, oPlayerInfo)
 			else
-				table.insert(self.m_aAllies,oPlayerInfo)
+				table.insert(self.m_aAllies, oPlayerInfo)
 			end
 			
 			-- Store main base position of current player

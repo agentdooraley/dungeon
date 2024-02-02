@@ -511,7 +511,7 @@ function CpuManager:Initialize()
 	-- Medium priority
 	self:AddStrategy( "BuildOrderStrategy", 4 )
 	self:AddStrategy( "AttackStrategy", 8 )
-	self:AddStrategy( "AttackStrategy2", 9 )
+	self:AddStrategy( "AttackStrategy2", 8 )
 	self:AddStrategy( "DefendStrategy", 12 )
 
 	-- Add build base strategy, although it's not updated until build order strategy is finished
@@ -1698,8 +1698,8 @@ function CpuManager:Update()
 			self.strategies[iLoop1]:Update()
 			aipoptrace(sName)
 		end
-		aitrace("CpuManager: Update plans...", true)
 		foreach_bind( self.strategies, self.DoStrategyDeleteOldPlans, self )
+		aitrace("CpuManager: Update plans...", true)
 	        -- Update the strategy plans
 		for iLoop1 in self.strategies do
 		
@@ -1708,7 +1708,6 @@ function CpuManager:Update()
 			self.strategies[iLoop1]:DoWants()
 			self.strategies[iLoop1]:DoPlans()
 		end
-
 	end
 		
 	-- Skips every second round in mid and late game
@@ -1759,13 +1758,15 @@ function CpuManager:Update()
 				if (iTransportType > 0 and oTactic:ReadyToTransport()) then
 					table.insert(self.m_aActiveTransporters, { oTactic, oUnit:GetPosition(), iTransportType })
 				end
-				
+                                --local tpos=oUnit:GetPosition()
+				--mylib.scar_dostring("Ping_Position(Util_ScarPos("..tostring(tpos.x)..","..tostring(tpos.z).."),false, attack)")
 				-- Check for deepstrikers
 				if (oTactic:CanDeepStrike()) then
 					table.insert(aDeepStrikeSquads, oTactic)
 				end
 			end
 		end
+                --print(table.maxn(aUnitTactics))
 		self.m_iActiveTransporterCount = table.getn(self.m_aActiveTransporters)
 		
 		-- Update unit tactics

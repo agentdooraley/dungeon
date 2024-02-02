@@ -142,7 +142,7 @@ function EngineerTactic:GoToNextPost()
 	-- Try to reach a save position if HQ is attacked
 	self.m_bBusy = false
 	local vEngineerPos = self.squad_ai:GetPosition()
-	if (self.squad_ai:WasRecentlyHurt()) then
+	if (self.squad_ai:GetHealthPercentage()<0.5 and cpu_manager.cpu_player:FindFirstEnemy(vEngineerPos, 35, 1)) then
 		local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vEngineerPos, cpu_manager.start_pos, true, true)
 		if (vBasePos ~= nil) then
 			self:ValidMove(vBasePos)
@@ -164,7 +164,8 @@ function EngineerTactic:GoToNextPost()
 	  end
          end
               local necronrace = cpu_manager.player_stats:GetPlayerRaceName() == "necron_race"
-              if not cpu_manager:IsListeningPost(oBuildingToFinish:GetID()) and (self.m_numEngineerOnBuild < 1 and not necronrace) and ((g_iGMT < 120 and not necronrace) or cpu_manager:IsHQ(oBuildingToFinish:GetID())) and distance(oBuildingToFinish:GetPosition(), self.squad_ai:GetPosition())<50 then
+              --if not cpu_manager:IsListeningPost(oBuildingToFinish:GetID()) and (self.m_numEngineerOnBuild < 1 and not necronrace) and ((g_iGMT < 120 and not necronrace) or cpu_manager:IsHQ(oBuildingToFinish:GetID())) and distance(oBuildingToFinish:GetPosition(), self.squad_ai:GetPosition())<70 then
+              if cpu_manager:IsHQ(oBuildingToFinish:GetID()) and distance(oBuildingToFinish:GetPosition(), self.squad_ai:GetPosition())<60 then
 		aitrace("EngineerTactic: Help finishing a building...")
 		self.squad_ai:DoFinishBuilding(oBuildingToFinish)
 		self.m_vDestination = oBuildingToFinish:GetPosition()

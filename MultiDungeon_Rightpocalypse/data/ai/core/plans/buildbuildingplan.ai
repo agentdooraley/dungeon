@@ -675,7 +675,6 @@ function BuildBuildingPlan:Update()
 			Plan.SetState(self, "Wanting to build: "..self.item_name, BuildBuildingPlan.BuildBuilding)
 		end
 	end
-
 	-- retry or quit building if big generator is not progressing
 	if (self.builder ~= nil and cpu_manager:IsBiggerGenerator(self.item_id) and 
 		self.started_building and g_iGMT > self.m_iPlanStart + 10 and self.builder:IsBuilding() == self.item_id and 
@@ -698,7 +697,25 @@ function BuildBuildingPlan:Update()
 			self.builder = nil
 			self:SetComplete(true)		
 		end
-        end
+        	-- Check if builder is lazy
+	elseif (self.builder ~= nil and self.builder:IsIdle() and self.started_building and self.m_iPlanStart > 5) then
+		
+		-- Reactivate builder
+		aitrace("BuildBuildingPlan: Builder lazy, send him to work again")
+		if (self.building ~= nil) then
+			self.builder:DoFinishBuilding(self.building)
+                end
+
+        elseif (self.builder ~= nil and self.started_building and self.builder:IsIdle() and not self.builder:IsBuildProgressing() and not self.builder:GetTactic():IsMoving()) then
+	local build_time = 60
+               if (g_iGMT > self.m_iPlanStart + build_time + 10) then
+			aitrace("BuildBuildingPlan: Builder stuck, shift position")
+			if (g_iGMT >= self.shift_move + 8) then 
+				aitrace("BuildBuildingPlan: Builder stuck, set shift state")
+				Plan.SetState(self, "Shifting builder for: "..self.item_name, BuildBuildingPlan.ShiftState)
+			end
+                end
+	end
 
 	Plan.Update( self )
 end

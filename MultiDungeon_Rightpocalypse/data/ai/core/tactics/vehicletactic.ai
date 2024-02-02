@@ -78,7 +78,7 @@ function VehicleTactic:LoadSquad(oSquad, iSquadStrength, vTargetemp)
 		oSquad:DoDefault(oEntity)
 		break
 	end
-	self.m_iMoveDelay = g_iGMT - 4
+	self.m_iMoveDelay = g_iGMT - 3
 end
 
 
@@ -95,12 +95,14 @@ function VehicleTactic:LoadSquadDisengage(oSquad, iSquadStrength, bDanceFlag)
         self.m_fDisengageDance = bDanceFlag
 
 	-- Load squad
+        if distance(self.squad_ai:GetPosition(),oSquad:GetPosition())>10 then
 	cpu_manager:DoMove(self.squad_ai, oSquad:GetPosition(), false, "Load troops and RUN!!!")
+        end
 	for oEntity in self.squad_ai:GetEntities() do
 		oSquad:DoDefault(oEntity)
 		break
 	end
-	self.m_iMoveDelay = g_iGMT - 4
+	self.m_iMoveDelay = g_iGMT - 3
 end
 
 function VehicleTactic:UnloadTroops(iDistance)
@@ -111,8 +113,7 @@ function VehicleTactic:UnloadTroops(iDistance)
 	end
 	
 	-- Check if we should unload the troops
-	if (self.squad_ai:WasRecentlyHurt() or self.squad_ai:GetHealthPercentage() < 0.3 or self.m_bNeedRepair or
-		self.squad_ai:IsInCombat() or (self.squad_ai:IsLocked() and iDistance < sqr(35)) or iDistance < sqr(15)) or (not self:IsMoving() and (not self.m_fDisengage or self.m_fDisengageDance)) then
+	if (self.squad_ai:WasRecentlyHurt() or self.squad_ai:GetHealthPercentage() < 0.3 or self.m_bNeedRepair or (self.squad_ai:IsLocked() and iDistance < sqr(35)) or iDistance < sqr(15)) or (not self:IsMoving() and (not self.m_fDisengage or self.m_fDisengageDance)) then
 	
 		-- Unload all troops
 		self.squad_ai:DoStop()

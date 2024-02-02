@@ -342,7 +342,7 @@ oEnemyTable[1][1]:GetEntity():GetID() then
         end
         if oEnemyTable[enemytemp][3]==false then
           oEnemyBuildingChange = cpu_manager:GetClassBuilding(oEnemyTemp:GetBaseName())==(effectivtemp)
-          if oEnemyBuildingChange and (oEnemyTemp:IsAttacking() or oEnemyTemp:HasGuns()) and not oEnemyChange and oEnemyTemp:GetHealthPercentage()>=0.02 then
+          if oEnemyBuildingChange and (oEnemyTemp:IsAttacking() or oEnemyTemp:HasGuns()) and not oEnemyChange and (oEnemyTemp:GetHealthPercentage()>=0.02) and (oEnemyTemp:GetHealthPercentage()< 1) and oEnemyTemp:IsValid() then
            self:SetTarget(oEnemyTemp:GetEntity(), Tactic.Variant.BaseAI)
            self.squad_ai:DoDefault(oEnemyTemp:GetEntity())
            bGo = false
@@ -540,7 +540,7 @@ function Tactic:SetTarget( target, variant_type )
 
 	self.variant_type = variant_type
        if self.variant_type==Tactic.Variant.Vector then
-	self.target = Vector3f(target)
+	self.target = target
        elseif self.variant_type==Tactic.Variant.SquadAI then
 	self.target = target
        elseif self.variant_type==Tactic.Variant.BaseAI then

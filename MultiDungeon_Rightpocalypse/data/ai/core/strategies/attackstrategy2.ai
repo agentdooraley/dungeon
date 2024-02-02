@@ -6,11 +6,6 @@
 -- Edited by Arkhan	@ 06.01.2006
 -- Edited by Aliaska_RuS
 
-----
-
-
-
-
 class 'AttackStrategy2' (Strategy)
 
 -- Settings
@@ -58,12 +53,10 @@ function AttackStrategy2:Update()
 	Strategy.Update(self)
 
 	-- Check last update
-	if (g_iGMT < self.m_iNextUpdate or g_iGMT < CpuManager.AISettings.iAttackDelay * 60) or 
-           ((AttackStrategy.m_vAttackPosition.x==0 and AttackStrategy.m_vAttackPosition.z==0 and AttackStrategy.m_vAttackPosition.x==0) 
-            and (AttackStrategy2.m_vAttackPosition.x==0 and AttackStrategy2.m_vAttackPosition.z==0 and AttackStrategy2.m_vAttackPosition.x==0)) then
+	if (g_iGMT < self.m_iNextUpdate or g_iGMT < CpuManager.AISettings.iAttackDelay * 60) then
 		return
 	end
-	self.m_iNextUpdate = g_iGMT + 3
+	self.m_iNextUpdate = g_iGMT + 1
 
         if self.m_vAttackPosition.x ~= 0 or self.m_vAttackPosition.y ~= 0 or self.m_vAttackPosition.z ~= 0 then
         AttackStrategy2.m_vAttackPosition = self.m_vAttackPosition
@@ -335,7 +328,7 @@ function AttackStrategy2:CheckAttackSituation()
 		if (oUnit:IsValid() and (oUnit:WasRecentlyHurt() or oUnit:IsInCombat())) then
 		
 			-- Store unit data
-			table.insert(aUnits,{ oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
+			table.insert(aUnits, { oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
 		end
 	end
 	
@@ -536,7 +529,7 @@ function AttackStrategy2:HelpAllyInNeed()
 			oPlayer:GetPlayerID() ~= cpu_manager.player_id) then
 			
 			-- Add start position
-			table.insert(aAlliedStartPositions,oPlayer:GetStartingPosition())
+			table.insert(aAlliedStartPositions, oPlayer:GetStartingPosition())
 		end		
 	end
 	
@@ -693,7 +686,7 @@ function AttackStrategy2:ChooseTarget()
 	local vMyBasePosition	= self.m_aAllies[self.m_iMyself].Base.vPosition
 	local sMyRace			= self.m_aAllies[self.m_iMyself].sRace
 	local fMinEnemyBaseDist = 0
-
+	
 	-- Set force attack factor
 	local iForceAttackStrength = cpu_manager:GetTierLevel() * cpu_manager:MinArmyStrengthPerTier() * 2
 	
@@ -1081,15 +1074,7 @@ function AttackStrategy2:ChooseTarget()
 
 	-- Try to attack enemy base
 	if (tBestBase.iEnemy > 0 and tBestBase.iPoints > iPoints) then
-	 if resource_manager:GetNumOwnedPowerGenerators()>0 then
-           for slag_heap in resource_manager:GetSlagHeaps() do
-               local slag = cpu_manager.cpu_player:FindFirstBaseEnemy(slag_heap:GetPosition(),5,1)
-               if slag~=nil then
-                  tBestBase.iNeedPower = cpu_manager:GetArmyStrengthAtPos(slag_heap:GetPosition(), 40, true)
-                  tBestBase.vPosition = slag_heap:GetPosition()
-               end
-           end
-         end
+	
 		-- Set target
 		iRequiredPower = tBestBase.iNeedPower
 		iPoints = tBestBase.iPoints
@@ -1296,9 +1281,9 @@ function AttackStrategy2:AnalyseBattleField()
 			
 			-- Add baseinfo object to ally or enemy section
 			if (oPlayerInfo.bEnemy) then
-				table.insert(self.m_aEnemies,oPlayerInfo)
+				table.insert(self.m_aEnemies, oPlayerInfo)
 			else
-				table.insert(self.m_aAllies,oPlayerInfo)
+				table.insert(self.m_aAllies, oPlayerInfo)
 			end
 			
 			-- Store main base position of current player

@@ -294,7 +294,7 @@ function InfantryTactic:BeginHoldState()
 	end
 	
 	-- Check distance
-	if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
+	if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and 
                         self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
@@ -470,7 +470,7 @@ function InfantryTactic:BeginRetreatState()
 	end
 	
 	-- Check distance
-	if (iDistance > sqr(25) and 
+	if (iDistance > sqr(40) and 
                 self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
@@ -587,7 +587,7 @@ function InfantryTactic:BeginAttackState()
 	end
 
 		-- Check distance
-		if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
+		if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and 
                                 self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 		
 			-- Check for a close transporter
@@ -607,7 +607,7 @@ function InfantryTactic:BeginAttackState()
 	if (not self.squad_ai:IsAttacking() and not self.squad_ai:IsInStateAttackMove()) then
 	
 		-- Check distance
-		if (iDistance > sqr(30) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
+		if (iDistance > sqr(40) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
 			self.squad_ai:GetHealthPercentage() > 0.6 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 2) then
 		
 			-- Check for a close transporter
@@ -880,7 +880,7 @@ function InfantryTactic:MoveToDisengage(bDanceflag)
 		
 			-- Try to enter transporter
 			oTransporterTactic:LoadSquadDisengage(self.squad_ai, self:GetUnitStrength(), bDanceflag)
-			self.m_iMoveDelay = g_iGMT - 4
+			self.m_iMoveDelay = g_iGMT - 3
 			return true
 	end
 

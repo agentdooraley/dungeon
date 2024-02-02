@@ -13,7 +13,7 @@ function ResourcePlan:__init() super( CpuPlayer.CT_Resourcing )
 	self.builder = nil
 	
 	self.m_iNextUpdate = 0
-
+	
 	self.garrison_id = nil
 
 	--find a garrison building
@@ -42,15 +42,19 @@ end
 
 function ResourcePlan:FindStrategicPoint()
 
-        local uManager = resource_manager:GetStrategicPointAIs()
-	for oStrategicPoint in uManager do
-
+	-- Find best strategic point to capture
+	for iLoop1 in CapturePlan.OrderedStratPoints do
+	
+		-- Get strategic point
+		local oStrategicPoint = CapturePlan.OrderedStratPoints[iLoop1][1]
+		
 		-- Get position
 		local vPosition = oStrategicPoint:GetPosition()
-		local vPosThreat, iAlliedStrength, iMyStrength = cpu_manager:GetArmyStrengthAtPos(vPosition, 20, true)
+		local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vPosition, 35, true)
 		-- We're the owner, but no post
-		if (not oStrategicPoint:HasListeningPost() and
-		    not oStrategicPoint:IsStrategicObjective() and oStrategicPoint:GetCaptureProgress()>0.4 and not oStrategicPoint:IsTagged()) and ((iMyStrength>vPosThreat) or (oStrategicPoint:Owner() == cpu_manager.player_id) and (oStrategicPoint:GetCaptureProgress()==1)) then
+		if (((oStrategicPoint:Owner() == cpu_manager.player_id)) and not oStrategicPoint:HasListeningPost() and
+			not oStrategicPoint:IsStrategicObjective() and not oStrategicPoint:IsLocked() and (iAlliedStrength>vPosThreat or vPosThreat==0)) then
+			
 			-- Check threat on path
 			if (not cpu_manager:HasThreatOnPath(cpu_manager.start_pos, vPosition, 25)) then
 				return oStrategicPoint
@@ -81,8 +85,7 @@ function ResourcePlan:ObtainFlagAndBuilder()
 	end
 
 	-- Get one of our strategic points without a post
-        local strat_pt = self:FindStrategicPoint()
-
+	local strat_pt = self:FindStrategicPoint()
 	if (strat_pt == nil) then
 		aitrace( "ResourcePlan: Can't find strategic point to build a post on" )
 		return
@@ -114,8 +117,12 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		elseif (can_build == SquadAI.CANBUILD_Error) then
 			can_build_error = true
 		elseif (can_build == SquadAI.CANBUILD_Ok) then 
+		
 			local squad_pos = oSquad:GetPosition()
-                               if oSquad:IsBuilding()==0 then
+		
+			if (oSquad:CanBuildAt( self.garrison_id, build_pos ) and 
+				not cpu_manager:HasThreatOnPath(squad_pos, build_pos, 30)) then
+		
 				if (self.builder == nil) then
 				
 					-- Set builder
@@ -132,10 +139,12 @@ function ResourcePlan:ObtainFlagAndBuilder()
 						iBuilderIndex = iLoop1
 					end
 				end
-                               end
+			end	
 		end
 	end
+
 	if self.builder ~= nil then
+	
 		-- Found builder
 		table.remove(aBuilders, iBuilderIndex)
 		Plan.LockResource( self, strat_pt )
@@ -143,17 +152,9 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		Plan.LockResource( self, self.builder )
 		Plan.SetNeeds( self, "No needs", Plan.NeedsFulfilled )
 		self.capturing_flag:TagFlagForEngineer( true )
-               if (self.capturing_flag:Owner() == cpu_manager.player_id) and (self.capturing_flag:GetCaptureProgress()==1) and self.builder:CanBuild( self.garrison_id )==SquadAI.CANBUILD_NoResources then
 		if (not cpu_manager:JumpBuilder( self.builder, build_pos )) then
 			cpu_manager:DoMove( self.builder, build_pos , false, "Go to post")
 		end
-               elseif (self.capturing_flag:Owner() == cpu_manager.player_id) and (self.capturing_flag:GetCaptureProgress()==1) then
-                self.builder:DoBuildBuilding( self.garrison_id, build_pos )
-               else
-		if (not cpu_manager:JumpBuilder( self.builder, build_pos )) then
-			cpu_manager:DoMove( self.builder, build_pos , false, "Go to post")
-		end
-               end
 		return
 	end
 	
@@ -206,8 +207,7 @@ function ResourcePlan:BuildPost()
 	end
 
 	-- Enemy recaptured the flag!
-        local vPosThreat, iAlliedStrength, iMyStrength = cpu_manager:GetArmyStrengthAtPos(self.capturing_flag:GetPosition(), 35, true)
-	if (not self.capturing_flag:FinishedCapturing()) and vPosThreat>iMyStrength*1.2 then
+	if (not self.capturing_flag:FinishedCapturing()) then
 		aitrace("ResourcePlan: Enemy recaptured flag...", true)
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
@@ -223,7 +223,7 @@ function ResourcePlan:BuildPost()
 	local build_pos = self.capturing_flag:GetPosition()
 	
 	-- Check if building can be built
-	if (not self.builder:CanBuildAt(self.garrison_id, build_pos)) and self.capturing_flag:GetCaptureProgress()==(1 or 0) then
+	if (not self.builder:CanBuildAt(self.garrison_id, build_pos)) then
 		aitrace("ResourcePlan: Can't build post for unknown reasons...", true)
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
@@ -236,13 +236,13 @@ function ResourcePlan:BuildPost()
 		return
 	end
 	
-        if (self.builder:IsBuilding() == 0) then
+--        if (self.builder:IsBuilding() == 0) then
 	      -- Try to build post
 	      self.builder:DoBuildBuilding( self.garrison_id, build_pos )
 --        else
 --              self:SetComplete( true )
---              return
-        end
+--           return
+--        end
 	
 	Plan.SetState( self, "Building Garrison at "..vec2str(build_pos), ResourcePlan.BuildingListeningPost )
 
@@ -272,7 +272,7 @@ function ResourcePlan:BuildingListeningPost()
 	-- Search unfinished post
 	local oBuilding = build_manager:FindUnfinishedBuilding(self.garrison_id)
 	local vFlagPos = self.capturing_flag:GetPosition()
-	if (oBuilding ~= nil and distance(oBuilding:GetPosition(), vFlagPos) < 100) then
+	if (oBuilding ~= nil and distance_sqr(oBuilding:GetPosition(), vFlagPos) < 100) then
 	
 		-- Try to jump if possible
 		if (distance_sqr(self.builder:GetPosition(), vFlagPos) > sqr(40) and cpu_manager:JumpBuilder(self.builder, vFlagPos)) then
@@ -284,7 +284,7 @@ function ResourcePlan:BuildingListeningPost()
 	if (self.builder:IsBuilding() == 0) then
 	
 		-- Check for building
---[[		if (oBuilding ~= nil) then
+		--[[if (oBuilding ~= nil) then
 		
 			-- Check for auto-construct buildings
 			if (cpu_manager:AutoConstructBuildings()) then
@@ -336,9 +336,9 @@ function ResourcePlan:FreeResources()
 	-- Check capturing flag
 	if (self.capturing_flag ~= nil) then
 		self:UnlockResource(self.capturing_flag)
+                self.capturing_flag:TagFlagForEngineer( false )
 		self.capturing_flag = nil	
 	end
-
 end
 
 function ResourcePlan:Update()
@@ -346,6 +346,7 @@ function ResourcePlan:Update()
 	if (self:IsComplete()) then
 		return
 	end
+	
 	aitrace("ResourcePlan: Update...", true)
 	
 	-- Check if builder is valid
@@ -403,5 +404,6 @@ function ResourcePlan:Update()
 			end
 		end
 	end
+	
 	Plan.Update(self)
 end

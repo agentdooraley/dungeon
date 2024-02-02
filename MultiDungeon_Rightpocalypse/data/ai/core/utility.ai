@@ -3,9 +3,9 @@
 -- Edited by Thudmeizer @ 31.10.2007
 -- Edited by LarkinVB   @ 25.04.2005
 -- Edited by Arkhan     @ 06.01.2006
-
-----
-
+--self.m_oAttackPlan,i
+---- equalVector3f
+--for i=1,AttackStrategy.iMaxAttackPoints do
 VALUE_NEVER_BUILD		= -400000
 VALUE_LOCK_BUILD		= -200000
 
@@ -31,6 +31,7 @@ tracing = {}
 
 -- ATTENTION : these have to be set to false for release, otherwise there will be lag !!!
 g_bAITrace = false
+g_bAITracet = false
 g_bDebugMode = false
 
 function aitrace( msg, bAILog, bReset )
@@ -73,7 +74,46 @@ function aitrace( msg, bAILog, bReset )
 		end
 	end
 end
-
+function aitracet( msg, bAILog, bReset )
+        if msg==nil then
+           return
+        end
+	if (g_bAITracet or (bAILog and g_bDebugMode)) then
+	
+		for i = 0, stack_trace_num-1 do
+			msg = ("   "..msg)
+		end
+	
+		table.insert(tracing, msg)	
+	    local gmt = g_iGMT
+	    local mint = math.floor( gmt / 60 )
+	    local sec = math.mod( gmt, 60 )
+	    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)
+		local txt = timestr.." "..msg
+		
+		if (g_bAITracet) then
+			local log = io.open("Ai_Extended"..tostring(player_id)..".log", "a+")
+			if (log) then
+				log:write("AI"..tostring(player_id), " ", txt, "\n")
+				log:close()
+			end
+		else
+			if (bReset) then
+				local log = io.open("AI_Log.txt", "w+")
+				if (log) then
+					log:write("AI"..tostring(player_id), " ", txt, "\n")
+					log:close()
+				end
+			else
+				local log = io.open("AI_Log.txt", "a+")
+				if (log) then
+					log:write("AI"..tostring(player_id), " ", txt, "\n")
+					log:close()
+				end		
+			end
+		end
+	end
+end
 function aitraceinit( msg )
 
 	if g_bAITrace then
@@ -502,6 +542,18 @@ function ModIsPresent(module_file, iswa)
     else
         return false
     end
+end
+
+function equalVector3f(vector1, vector2, radius)
+  if vector1.x==vector2.x and vector1.y==vector2.y and vector1.z==vector2.z then
+   return true
+  end
+  if radius~=nil then
+   if distance(vector1, vector2)<radius then
+    return true
+   end
+  end
+ return false
 end
 
 function getTableSize(t)

@@ -208,7 +208,7 @@ function BuildOrderStrategy:WaitOnNextPlan()
          self.capture_flag = self.capture_flag + 1
 		end
 		aipoptrace("Capture Plan - MidCapture")
-	    --end Project Midcapture code
+	   -- end Project Midcapture code
 	
 	elseif current_build_order[1] == "post_builder" then
 
