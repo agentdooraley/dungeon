@@ -3,40 +3,48 @@
 -- Edited by Thudmeizer @ 31.10.2007
 -- Edited by LarkinVB   @ 25.04.2005
 -- Edited by Arkhan     @ 06.01.2006
-
+--self.m_oAttackPlan,i
+---- equalVector3f
+--for i=1,AttackStrategy.iMaxAttackPoints do
 VALUE_NEVER_BUILD		= -400000
 VALUE_LOCK_BUILD		= -200000
 
 -- above this should never be built
 VALUE_TOO_MANY_REQS		= -150000
 VALUE_NO_BUILD			= -100000
-VALUE_CAP			= -50000
+VALUE_CAP				= -50000
 VALUE_RESOURCE_RATE		= -25000
 VALUE_BUILD_TIME		= -10000
-
-VALUE_PER_TIER			= -200
-
+VALUE_NO_ATTACH			= -5000
 
 VALUE_PROMOTE_BUILD		= 200000
-INT_MAX				= 100000
+INT_MAX					= 100000
+
+DOW_VERSION= "DoW"
+--HEROE WARGEAR
+HeroeWargearNameIndex = 1
+HeroeWargearReqIndex = 2
+HeroeWargearPowIndex = 3
 
 stack_trace_num = 0
 tracing = {}
 
-g_bAITrace = false 
-
-g_bDebugMode = false 
+-- ATTENTION : these have to be set to false for release, otherwise there will be lag !!!
+g_bAITrace = false
+g_bAITracet = false
+g_bDebugMode = false
 
 function aitrace( msg, bAILog, bReset )
-
+        if msg==nil then
+           return
+        end
 	if (g_bAITrace or (bAILog and g_bDebugMode)) then
 	
 		for i = 0, stack_trace_num-1 do
 			msg = ("   "..msg)
 		end
 	
-		table.insert(tracing, msg)
-		
+		table.insert(tracing, msg)	
 	    local gmt = g_iGMT
 	    local mint = math.floor( gmt / 60 )
 	    local sec = math.mod( gmt, 60 )
@@ -44,7 +52,7 @@ function aitrace( msg, bAILog, bReset )
 		local txt = timestr.." "..msg
 		
 		if (g_bAITrace) then
-			local log = io.open("c:\\"..tostring(player_id).."aitrace.txt", "a+")
+			local log = io.open("Ai_Extended"..tostring(player_id)..".log", "a+")
 			if (log) then
 				log:write("AI"..tostring(player_id), " ", txt, "\n")
 				log:close()
@@ -63,6 +71,67 @@ function aitrace( msg, bAILog, bReset )
 					log:close()
 				end		
 			end
+		end
+	end
+end
+function aitracet( msg, bAILog, bReset )
+        if msg==nil then
+           return
+        end
+	if (g_bAITracet or (bAILog and g_bDebugMode)) then
+	
+		for i = 0, stack_trace_num-1 do
+			msg = ("   "..msg)
+		end
+	
+		table.insert(tracing, msg)	
+	    local gmt = g_iGMT
+	    local mint = math.floor( gmt / 60 )
+	    local sec = math.mod( gmt, 60 )
+	    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)
+		local txt = timestr.." "..msg
+		
+		if (g_bAITracet) then
+			local log = io.open("Ai_Extended"..tostring(player_id)..".log", "a+")
+			if (log) then
+				log:write("AI"..tostring(player_id), " ", txt, "\n")
+				log:close()
+			end
+		else
+			if (bReset) then
+				local log = io.open("AI_Log.txt", "w+")
+				if (log) then
+					log:write("AI"..tostring(player_id), " ", txt, "\n")
+					log:close()
+				end
+			else
+				local log = io.open("AI_Log.txt", "a+")
+				if (log) then
+					log:write("AI"..tostring(player_id), " ", txt, "\n")
+					log:close()
+				end		
+			end
+		end
+	end
+end
+function aitraceinit( msg )
+
+	if g_bAITrace then
+	
+		for i = 0, stack_trace_num-1 do
+			msg = ("   "..msg)
+		end
+	
+		table.insert(tracing,msg)	
+	    local gmt = cpu_manager.cpu_player:GetGameTime() / 8
+	    local mint = math.floor( gmt / 60 )
+	    local sec = math.mod( gmt, 60 )
+	    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)
+		local txt = timestr.." "..msg		
+		local log = io.open("Ai_Extended"..tostring(player_id)..".log", "w+")
+		if (log) then
+			log:write("AI"..tostring(player_id), " ", txt, "\n")
+			log:close()
 		end
 	end
 end
@@ -85,7 +154,7 @@ function dbAssert( b )
 		local line = debug_info.currentline
 		local name = debug_info.name
 
-		local msg = "Assertion failed at "..source..", line "..line
+		local msg = "Assertion failed at "..source..", line "..line..",name"..name
 
 		aitrace(msg)
 		--aitimelog( "d:\\assert.log", msg)
@@ -129,6 +198,37 @@ function foreach_bind( tbl, func, ... )
 
 end
 
+--KaiserSoze
+--Counts the number of item that doesn't return nil
+function foreach_bindCount( tbl, func, ... )
+
+	local ret_val = nil
+	local answer=0
+	
+	local arg_count = arg.n
+	for i in tbl do
+		if( arg_count == 0) then
+			ret_val = func( tbl[i] )
+		elseif( arg_count == 1) then
+			ret_val = func( arg[1], tbl[i] )
+		elseif( arg_count == 2) then
+			ret_val = func( arg[1], arg[2], tbl[i] )
+		elseif( arg_count == 3) then
+			ret_val = func( arg[1], arg[2], arg[3], tbl[i] )
+		elseif( arg_count == 4) then
+			ret_val = func( arg[1], arg[2], arg[3], arg[4], tbl[i] )
+		end
+		
+		if( ret_val ~= nil ) then
+			answer = answer+1
+			ret_val= nil
+		end
+	end
+	
+	return answer
+
+end
+
 function distance( vec1, vec2 )
 	return (vec1 - vec2):Length()
 end
@@ -160,7 +260,7 @@ function profile_start( name )
     if g_profile then
 	   aiprofile_start( cpu_manager.cpu_player, name )
 	elseif a_profile then
-	   aitimelog("d:\\trace.log", "START "..name )  
+	   aitimelog("f:\\games\\trace.log", "START "..name )  
 	end
 
 end
@@ -170,7 +270,7 @@ function profile_end(name)
 	if g_profile then
 		aiprofile_end( cpu_manager.cpu_player, name )
 	elseif a_profile then
-	   aitimelog("d:\\trace.log", "END "..name )  
+	   aitimelog("f:\\logs\\trace.log", "END "..name )  
 	end
 
 end
@@ -230,7 +330,7 @@ function aitimelog( logfile, msg )
    local mint = math.floor( gmt / 60 )
    local sec = math.mod( gmt, 60 )
    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)
-   
+   if log~=nil then
    if player_id == nil then 
 	  log:write("AI"," ", timestr, tostring(msg) , "\n") 
    else 
@@ -238,7 +338,7 @@ function aitimelog( logfile, msg )
    end 
 
   log:close() 
-
+   end
 end
 
 function dlg( fl, msg )
@@ -259,48 +359,46 @@ function clg( pos1, pos2 )
    end
 
    --only log single AI
-   if cpu_manager.player_id ~= 1001 then
-	  --return
+   if cpu_manager.player_id ~= iCurrentPlayer then
+	  return
    end
 
    dcircle( pos1, 20, "yellow", nil, false )
    dcircle( pos2, 20, "green", nil, false )
 end
 
-
-
 function blg( squad, msg )
 
-   if true then
-      return
-   end
+--   if true then
+--      return
+--   end
       
    if squad == nil then
-	  aitimelog( "d:\\logs\\prereq"..player_id..".log", msg )
+	  aitimelog( "d:\\logs\\prereq"..player_id..".txt", msg )
 	  return
    end
 
-   --only log single AI
-   if cpu_manager.player_id ~= 1001 then
+   --[[only log single AI
+   if true or cpu_manager.player_id ~= iCurrentPlayer then
 	  return
-   end
+   end]]
       
    local is_eng = squad:IsEngineer()   
    local tactic = squad:GetTactic()
 
    if is_eng and 
 	  ( tactic:IsAttacker() or tactic:IsDefender() ) then
-	  aitimelog( "d:\\logs\\build"..player_id..".log", "ATTACKER/DEFENDER" )
+	  aitimelog( "d:\\logs\\build"..player_id..".txt", "ATTACKER/DEFENDER" )
    end
 
    if is_eng and squad:IsInStateAttackMove() then
-      aitimelog( "d:\\logs\\build"..player_id..".log", "ATTACKE MOVE" )
+      aitimelog( "d:\\logs\\build"..player_id..".txt", "ATTACKE MOVE" )
    end
       
    if is_eng then  
-	  aitimelog( "d:\\logs\\build"..player_id..".log", msg )
+	  aitimelog( "d:\\logs\\build"..player_id..".txt", msg )
    else
-	  aitimelog( "d:\\logs\\squad"..player_id..".log", msg )
+	  aitimelog( "d:\\logs\\squad"..player_id..".txt", msg )
 	end
 
 end
@@ -312,7 +410,7 @@ function dcircle( pos, radius, color, text, clear )
    dbAssert( radius ~= nil )
 
    --only display single AI
-   if cpu_manager.player_id ~= 1004 then
+   if cpu_manager.player_id ~= iCurrentPlayer then
 	  return
    end
 
@@ -359,6 +457,10 @@ function GenerateUnitEffectiveness( light_low, light_med, light_high, heavy_med,
 	build_med = build_low or 0 -- returns larger number
 	build_high = build_high or 0 -- returns larger number
 
+	air_low = air_low or 0 -- returns larger number
+	air_med = air_med or 0 -- returns larger number
+	air_high = air_high or 0 -- returns larger number
+
 	effectiveness = {}
 	
 	effectiveness[ UnitStatsAI.UC_LightInfantryLow ] 	= light_low
@@ -378,6 +480,7 @@ function GenerateUnitEffectiveness( light_low, light_med, light_high, heavy_med,
 	effectiveness[ UnitStatsAI.UC_AirLow ]		 	= air_low
 	effectiveness[ UnitStatsAI.UC_AirMed ] 			= air_med
 	effectiveness[ UnitStatsAI.UC_AirHigh ] 		= air_high
+--        effectiveness[ UnitStatsAI.UC_Count ] 		        = count
 
 	return effectiveness
 end
@@ -439,4 +542,33 @@ function ModIsPresent(module_file, iswa)
     else
         return false
     end
+end
+
+function equalVector3f(vector1, vector2, radius)
+  if vector1.x==vector2.x and vector1.y==vector2.y and vector1.z==vector2.z then
+   return true
+  end
+  if radius~=nil then
+   if distance(vector1, vector2)<radius then
+    return true
+   end
+  end
+ return false
+end
+
+function getTableSize(t)
+    local count = 0
+    for _, __ in pairs(t) do
+        count = count + 1
+    end
+    return count
+end
+
+function getTableSizeRound(t)
+    local count = 0
+    for _, __ in pairs(t) do
+        count = count + 1
+    end
+    count=count+1
+    return count
 end

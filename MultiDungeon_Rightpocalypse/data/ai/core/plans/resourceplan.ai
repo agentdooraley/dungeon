@@ -2,6 +2,7 @@
 -- File: 'resourceplan.ai'
 -- Edited by LarkinVB	@ 31.12.2005
 -- Edited by Arkhan		@ 14.01.2006
+-- Edited by Aliaska_RuS
 
 class 'ResourcePlan' (Plan)
 
@@ -49,14 +50,13 @@ function ResourcePlan:FindStrategicPoint()
 		
 		-- Get position
 		local vPosition = oStrategicPoint:GetPosition()
-		
+		local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vPosition, 35, true)
 		-- We're the owner, but no post
-		if (oStrategicPoint:Owner() == cpu_manager.player_id and not oStrategicPoint:HasListeningPost() and
-			not oStrategicPoint:IsStrategicObjective() and not oStrategicPoint:IsLocked() and
-			not (cpu_manager:CloseEnemyUnits(vPosition, 35) and cpu_manager.terrain_analyzer:HasThreat(vPosition, 35))) then
+		if (((oStrategicPoint:Owner() == cpu_manager.player_id)) and not oStrategicPoint:HasListeningPost() and
+			not oStrategicPoint:IsStrategicObjective() and not oStrategicPoint:IsLocked() and (iAlliedStrength>vPosThreat or vPosThreat==0)) then
 			
 			-- Check threat on path
-			if (not cpu_manager:HasThreatOnPath(cpu_manager.start_pos, vPosition, 30)) then
+			if (not cpu_manager:HasThreatOnPath(cpu_manager.start_pos, vPosition, 25)) then
 				return oStrategicPoint
 			end		
 		end
@@ -66,11 +66,14 @@ end
 
 function ResourcePlan:ObtainFlagAndBuilder()
 
-	-- Check last update
-	if (g_iGMT < self.m_iNextUpdate and g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+	-- Check last update  
+	if (g_iGMT < self.m_iNextUpdate) then
 		return
 	end
-	self.m_iNextUpdate = g_iGMT + 10
+	self.m_iNextUpdate = g_iGMT + 1/10
+        if (self.builder ~= nil and self.capturing_flag ~= nil) then
+           return
+        end
 
 	aitrace("ResourcePlan: ObtainFlagAndBuilder...")
 	
@@ -149,6 +152,9 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		Plan.LockResource( self, self.builder )
 		Plan.SetNeeds( self, "No needs", Plan.NeedsFulfilled )
 		self.capturing_flag:TagFlagForEngineer( true )
+		if (not cpu_manager:JumpBuilder( self.builder, build_pos )) then
+			cpu_manager:DoMove( self.builder, build_pos , false, "Go to post")
+		end
 		return
 	end
 	
@@ -205,12 +211,12 @@ function ResourcePlan:BuildPost()
 		aitrace("ResourcePlan: Enemy recaptured flag...", true)
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-			self:SetComplete( true )
-		else
+--		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+--			self:SetComplete( true )
+--		else
 			Plan.SetState( self, "Build another listening post", ResourcePlan.FindFlag )
 			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-		end
+--		end
 		return
 	end
 	
@@ -221,17 +227,22 @@ function ResourcePlan:BuildPost()
 		aitrace("ResourcePlan: Can't build post for unknown reasons...", true)
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-			self:SetComplete( true )
-		else
+--		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+--			self:SetComplete( true )
+--		else
 			Plan.SetState( self, "Build another listening post", ResourcePlan.FindFlag )
 			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-		end
+--		end
 		return
 	end
 	
-	-- Try to build post
-	self.builder:DoBuildBuilding( self.garrison_id, build_pos )
+--        if (self.builder:IsBuilding() == 0) then
+	      -- Try to build post
+	      self.builder:DoBuildBuilding( self.garrison_id, build_pos )
+--        else
+--              self:SetComplete( true )
+--           return
+--        end
 	
 	Plan.SetState( self, "Building Garrison at "..vec2str(build_pos), ResourcePlan.BuildingListeningPost )
 
@@ -273,7 +284,7 @@ function ResourcePlan:BuildingListeningPost()
 	if (self.builder:IsBuilding() == 0) then
 	
 		-- Check for building
-		if (oBuilding ~= nil) then
+		--[[if (oBuilding ~= nil) then
 		
 			-- Check for auto-construct buildings
 			if (cpu_manager:AutoConstructBuildings()) then
@@ -288,18 +299,18 @@ function ResourcePlan:BuildingListeningPost()
 				self.builder:DoFinishBuilding(oBuilding)
 				return
 			end
-		end
+		end]]
 		
 		-- Job finished
 		aitrace("ResourcePlan: Job finished!!!")
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-			self:SetComplete( true )
-		else
+	--	if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+	--		self:SetComplete( true )
+	--	else
 			Plan.SetState( self, "Build another listening post", ResourcePlan.FindFlag )
 			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-		end
+	--	end
 	end
 end
 
@@ -325,6 +336,7 @@ function ResourcePlan:FreeResources()
 	-- Check capturing flag
 	if (self.capturing_flag ~= nil) then
 		self:UnlockResource(self.capturing_flag)
+                self.capturing_flag:TagFlagForEngineer( false )
 		self.capturing_flag = nil	
 	end
 end
@@ -340,12 +352,12 @@ function ResourcePlan:Update()
 	-- Check if builder is valid
 	if (self.builder ~= nil and not self.builder:IsValid()) then
 		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-			self:SetComplete( true )
-		else
+	--	if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+	--		self:SetComplete( true )
+	--	else
 			Plan.SetState( self, "Find Flag", ResourcePlan.FindFlag )
 			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-		end
+	--	end
 		return
 	end
 	
@@ -356,12 +368,12 @@ function ResourcePlan:Update()
 		local oTactic = self.builder:GetTactic()
 		oTactic:ValidMove(cpu_manager.start_pos)
 		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-			self:SetComplete( true )
-		else
+--		if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+--			self:SetComplete( true )
+--		else
 			Plan.SetState( self, "Find Flag", ResourcePlan.FindFlag )
 			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-		end
+--		end
 		return
 	end
 	
@@ -370,11 +382,11 @@ function ResourcePlan:Update()
 		
 		-- Check threat
 		local vFlagPos = self.capturing_flag:GetPosition()
-		if (cpu_manager:CloseEnemyUnits(vFlagPos, 35) and cpu_manager.terrain_analyzer:HasThreat(vFlagPos, 35)) then
+		if (cpu_manager:CloseEnemyUnits(vFlagPos, 35)) and (self.builder:GetHealthPercentage()<0.5) then
 		
 			-- Abort if target threat too dangerous
 			local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vFlagPos, 35)
-			if (iEnemyStrength > iAlliedStrength) then
+			if (iEnemyStrength > iAlliedStrength*1.2) then
 			
 				-- Unlock and retreat builder
 				if (self.builder ~= nil) then
@@ -382,12 +394,12 @@ function ResourcePlan:Update()
 					oTactic:ValidMove(cpu_manager.start_pos)
 					self:FreeResources()
 				end
-				if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
-					self:SetComplete( true )
-				else
+--				if (g_iGMT > DefendChokePointPlan.HarassingTime * 60) then
+--					self:SetComplete( true )
+--				else
 					Plan.SetState( self, "Find Flag", ResourcePlan.FindFlag )
 					Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
-				end
+--				end
 				return
 			end
 		end

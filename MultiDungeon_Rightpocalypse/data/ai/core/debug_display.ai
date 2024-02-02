@@ -2,6 +2,9 @@
 -- File: 'debug_display.ai'
 -- Edited by Dark40k @ 14.10.2008
 
+--
+
+
 
 --------------------------------------------------------------------------------------------------------------
 -- DEBUGGINGDISPLAY ------------------------------------------------------------------------------------------
@@ -12,13 +15,13 @@ class 'DebuggingDisplay'
 function DebuggingDisplay:__init( )
 	
 	--draw color circles for debug purposes
-	self.dcircle = false
+	--self.dcircle = true
 
-	self.debug_display_height = 0.02
+	self.debug_display_height = 0.0003
 	self.debug_view = 0
 
 	--enable debug display according to self.debug_view
-	self.debug = false 
+	self.debug = false
 
 end
 
@@ -31,19 +34,15 @@ function DebuggingDisplay:DisplayStats()
 	if (self.debug == false) then
 		return 
 	end
-	
+		
 	dr_clear("aidebug"..cpu_manager.player_id)
 
 	if self.debug_view == 0 then
 		self:PrintSummary()
---	elseif self.debug_view == 8 then
---		self:PrintPlayerAssets()
 	elseif self.debug_view == 1 then
 		self:PrintStrategiesSummary()
 	elseif self.debug_view == 2 then
 		self:PrintTacticsSummary()
---	elseif self.debug_view == 7 then
---		self:PrintTerrainAnalyzerSummary()
 	elseif self.debug_view == 3 then
 		self:PrintDemands()
 	elseif self.debug_view == 4 then
@@ -52,6 +51,10 @@ function DebuggingDisplay:DisplayStats()
 		self:PrintAvgEffectiveness()
 	elseif self.debug_view == 6 then
 		self:PrintEnemySquads()
+	elseif self.debug_view == 7 then
+		self:PrintTerrainAnalyzerSummary()
+	elseif self.debug_view == 8 then
+		self:PrintPlayerAssets()
 	end
 
 end
@@ -426,10 +429,10 @@ end
 
 function DebuggingDisplay:PrintSummary()
 
-	local xval	= 0.05
+	local xval	= 0.01
 	local yval	= self.debug_display_height
-	local xstep	= 0.03
-	local ystep	= 0.03
+	local xstep	= 0.01
+	local ystep	= 0.01
 
 	local tab = 0.065
 	
@@ -602,17 +605,18 @@ end
 
 function DebuggingDisplay:PrintPlayerAssets()
 	local yval = self.debug_display_height
-	
+
 	yval = self:PrintPlayerSquads(yval)	
-	yval = self:PrintPlayerBases(yval + 0.06)	
+--  yval = self:PrintPlayerBases(yval + 0.06)	
 --	yval = self:PrintMilitaryManager(yval + 0.06)
 
 end
 
 function DebuggingDisplay:PrintPlayerSquads(yval)
 
-	local ystep	= 0.03
-	local xcol = {0.02,0.22,0.28,0.36,0.60,0.72,0.84,0.92,0.98,1.06,1.14}
+
+	local ystep	= 0.025
+	local xcol = {0.02,0.22,0.28,0.34,0.51,0.61,0.69,0.75,0.91,0.99,1.03}
 	
 --	local player_stats = self.stats:GetPlayerStats()
 	local player_stats = cpu_manager.cpu_player:GetPlayerStats()
@@ -634,11 +638,8 @@ function DebuggingDisplay:PrintPlayerSquads(yval)
 	self:Print( xcol[4], yval, "IS(idle,geer,rang,r-frce,brok,hurt,inf,det)")
 	self:Print( xcol[5], yval, "DO(build/prog,capt,fight)")	
 	self:Print( xcol[6], yval, "MV(m-type,stance)")	
-	self:Print( xcol[7], yval, "<location>" )
-	self:Print( xcol[8], yval, "GOAL:" )
-	self:Print( xcol[9], yval, "name" )
-	self:Print( xcol[10], yval, "(type)" )
-	self:Print( xcol[11], yval, "<location>" )
+	--self:Print( xcol[7], yval, "<location>" )
+	self:Print( xcol[7], yval, "GOAL:" )
 	yval = yval + ystep
 
 	for squad_ai in player_stats:GetSquads() do
@@ -697,10 +698,11 @@ function DebuggingDisplay:PrintPlayerSquads(yval)
 			
 			self:Print(xcol[6],yval,"M("..tmpstr..","..tmpstr2.."/"..squad_ai:GetMeleeStance()..")")
 			
-			pos = squad_ai:GetPosition()
-			self:Print(xcol[7],yval,"<"..math.floor(pos.x+0.5)..","..math.floor(pos.y+0.5)..","..math.floor(pos.z+0.5)..">")
+			--pos = squad_ai:GetPosition()
+			--self:Print(xcol[7],yval,"<"..math.floor(pos.x+0.5)..","..math.floor(pos.y+0.5)..","..math.floor(pos.z+0.5)..">")
 
-			self:Print(xcol[8],yval,"("..squad_ai:GetStateName()..")")
+			tmpstr3 = squad_ai:GetStateName()
+			self:Print(xcol[7],yval,"("..string.format("%4.4s", tmpstr3)..")")
 --			self:Print(xcol[3],yval,"("..math.floor((squad_ai:GetHealthPercentage()*100)+0.5).."/"..math.floor(squad_ai:GetProRatedCost())..")")
 
 		else
@@ -906,7 +908,7 @@ function DebuggingDisplay:PrintStrategiesSummary()
 		local strategy = cpu_manager.strategies[i]
 		
 		self:Print(xcol[1],yval,strategy:GetName().."("..strategy:GetStatus()..")")
-		self:Print(xcol[2],yval,"P("..tostring(strategy:GetPlanCount())..")")
+		self:Print(xcol[2],yval,"P("..tostring(strategy:PlanCount())..")")
 --		self:Print(xcol[3],yval,"D("..tostring(strategy:GetDebugInfo())..")")
 
 		local tmpstr = ""

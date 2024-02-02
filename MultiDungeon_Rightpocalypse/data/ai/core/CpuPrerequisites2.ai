@@ -1,6 +1,8 @@
 ----------------------------------------
 -- File: 'cpuprerequisites2.ai'
 -- Edited by Dark40k @ 14.10.2008
+-- Edited by Thudmeizer @ 06.01.2016
+-- Edited by Aliaska_RuS
 
 -- class created to workaround problem where for some special Addons or Units,
 -- CpuPrerequisites would return a false answer and show message 
@@ -62,6 +64,7 @@ function CpuPrerequisites2:__init( CpuPlayer, BuildName, BuildType )
 				table.insert(self.UnfulfilledPrerequisites, {name="No PQ_Research channel available for : " ..  BuildName})
 			end
 		elseif BuildType==CpuPrerequisites.BT_Building then
+			local PlayerStats=CpuPlayer:GetStats()
 			if not CpuPrerequisites2:TestBuilder(CpuPlayer:GetMilitaryManager(), PlayerStats:GetResearchID(BuildName)) then
 				table.insert(self.UnfulfilledPrerequisites, {name="No Builder channel available for : " ..  BuildName})
 			end
