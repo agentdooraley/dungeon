@@ -82,7 +82,7 @@ function FarSeerTactic:DoAbilities()
  	else
 		Ability.DoAbilityPos( self.squad_ai, FarSeer.eldritchstorm_id, Ability.Filters.CloseEnemy, 12 ) 
 		Ability.DoAbilityTarget( self.squad_ai, FarSeer.storm_id, Ability.Filters.CloseInfantryEnemy, 8 ) 
-		Ability.DoAbilityTarget( self.squad_ai, FarSeer.mind_war_id, Ability.Filters.CloseCommanderEnemy, 1 )		
+		Ability.DoAbilityTarget( self.squad_ai, FarSeer.mind_war_id, Ability.Filters.CloseCommanderEnemy, 1 or ability.Filters.CloseInfantryEnemy, 1 )		
 	end
 
 	-- Check if I should enable/disable fleet of foot
