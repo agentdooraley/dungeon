@@ -1,5 +1,5 @@
 ----------------------------------------
--- File: 'Bonesingertactic.ai'
+-- File: 'bonesingertactic.ai'
 -- Edited by Thudmeizer		@ 13.09.2016
 
 class 'BonesingerTactic' (EngineerTactic)
@@ -9,8 +9,6 @@ Bonesinger = {}
 function BonesingerTactic:__init( squad_ai ) super( squad_ai )
 
 	self:SetName("Bonesinger Tactic")
-	self.m_iLastJump = g_iGMT
-
 end
 
 function BonesingerTactic:IsAffectedByMorale()
@@ -43,27 +41,6 @@ end
 
 function BonesingerTactic:DoAbilities()
 
-	local vMyPos = self.squad_ai:GetPosition()
-	local range = self.squad_ai:GetAbilityRange(Bonesinger.Wraithtomb_id)
-	local turrets = {"chaos_turret_bolter", "eldar_support_platform_scatterlaser", "guard_turret_heavy_bolter", "necron_turret", "ork_waagh_banner", "sisters_turret_flamer", "space_marine_turret_bolter"}
-	local hqs = {"chaos_hq", "dark_eldar_hq", "eldar_hq", "guard_hq", "monolith", "ork_hq", "sisters_hq", "space_marine_hq", "tau_hq"}
-	local lps={"chaos_listening_post", "dark_eldar_listening_post", "eldar_listening_post", "guard_listening_post", "ork_gork_totem", "sisters_listening_post", "space_marine_listening_post", "tau_listening_post" }
-
-	local oBuilding_ai
-	local aEnemyHQPosition
-	local iDistance= nil
-	local iJumpRange = sqr(self.squad_ai:GetJumpDistance())
-	--print("JumpRange")
-	--print(iJumpRange)
-	local findString = function (input, table)
-        for _, str in ipairs(table) do
-            if str == input then
-                return true
-            end
-        end
-        return false
-    end
-
 	-- Activate the Wraithtomb
 	Ability.DoAbilityTargetEntity(self.squad_ai, Bonesinger.wraithtomb_id, Ability.EntityFilters.CloseBaseEntityEnemy, 1)
 
@@ -83,78 +60,15 @@ function BonesingerTactic:DoAbilities()
         	self.squad_ai:DoSpecialAbilityEntity(Bonesinger.song_id, oBuildingB:GetEntity())
     	end
 
-	if self.squad_ai:CanDoAbility(Bonesinger.Wraithtomb_id) and self.squad_ai:IsUnderAttack() then
-		--cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemyBuilding:GetPosition()), true, "AttackState")
-        Ability.DoAbilityTargetEntity( self.squad_ai, Bonesinger.Wraithtomb_id, Ability.EntityFilters.CloseBaseEntityEnemy, 1)
-    end
+	-- Run if safe
+	if ((not self.squad_ai:IsInCombat() and self.squad_ai:IsInStateMove()) or self.stateID ~= Tactic.StateID.NoState) then
 
-	for oPlayer in cpu_manager.stats:GetPlayerStats() do
+		-- If I am safe I can run
+		if (self.squad_ai:CanDoAbility( Bonesinger.foot_id )) then
+			self.squad_ai:DoSpecialAbility( Bonesinger.foot_id )
+		elseif (self.squad_ai:CanDoAbility(Bonesinger.run_id)) then
+			self.squad_ai:DoSpecialAbility(Bonesinger.run_id)
 
-			if (cpu_manager.player_stats:IsEnemy(oPlayer) and not oPlayer:IsPlayerDead()) then
-				for oBuilding in oPlayer:GetBases() do	
-										-- Check for valid building
-					if (oBuilding:IsValid()) then
-						if (findString(oBuilding:GetBaseName(),hqs) or findString(oBuilding:GetBaseName(),turrets)) or findString(oBuilding:GetBaseName(),lps)  then-- and distance_sqr(vMyPos, oBuilding:GetPosition())< iDistance then
-						
-							if iDistance == nil then
-								if (oBuilding:IsConstructionDone()) then
-									--if distance_sqr(oBuilding:GetPosition(),position) <= 10000 then
-										oBuilding_ai = oBuilding
-										aEnemyHQPosition = oBuilding_ai:GetPosition()
-										iDistance = distance_sqr(vMyPos, aEnemyHQPosition)
-									--end
-								end
-							elseif distance_sqr(vMyPos, oBuilding_ai:GetPosition()) < iDistance then
-								if (oBuilding:IsConstructionDone()) then
-									--if distance_sqr(oBuilding:GetPosition(),position) <= 10000 then
-										oBuilding_ai = oBuilding
-										aEnemyHQPosition = oBuilding_ai:GetPosition()
-										iDistance = distance_sqr(vMyPos, aEnemyHQPosition)
-									--end
-								end
-							end
-						end
-					end
-				end
-			end
-	end
-	--print("iDistance")
-	--print(iDistance)
-	
-	if oBuilding_ai ~= nil then
-		local vJumpPosition = oBuilding_ai:GetPosition()
-		--local vMoveToJumpPos = oBuilding_ai:GetPosition()
-		if self.squad_ai:CanDoAbility(Bonesinger.Wraithtomb_id) and self.squad_ai:CanJump() and self.squad_ai:IsIdle()  then
-		--[[
-			if iDistance >  iJumpRange then
-				if vMyPos.x < vMoveToJumpPos.x then
-					vMoveToJumpPos.x = vMoveToJumpPos.x + math.sqrt(iJumpRange)
-				else
-					vMoveToJumpPos.x = vMoveToJumpPos.x - math.sqrt(iJumpRange)
-				end
-				if vMyPos.z < vMoveToJumpPos.z then
-					vMoveToJumpPos.z = vMoveToJumpPos.z + math.sqrt(iJumpRange)
-				else
-					vMoveToJumpPos.z = vMoveToJumpPos.z - math.sqrt(iJumpRange)
-				end
-				
-				cpu_manager:DoMove(self.squad_ai, Vector3f(vMoveToJumpPos), false, "Move") ]]
-				
-			vJumpPosition.x = vJumpPosition.x + (math.random(-1, 1)*25)
-			vJumpPosition.z = vJumpPosition.z + (math.random(-1, 1)*25)	
-			iDistance = distance_sqr(vMyPos, vJumpPosition)	
-			if (iDistance >  1500) and iDistance <= iJumpRange   then -- and self.squad_ai:CanJumpToPosition(vJumpPosition)) or iDistance <= iJumpRange   then
-				self.squad_ai:DoJump(vJumpPosition)	
-				if (iDistance <  1000) then
-					self.squad_ai:DoSpecialAbilityEntity( Bonesinger.Wraithtomb_id, oBuilding_ai:GetEntity() )				
-				end
-				--self.squad_ai:DoSpecialAbilityEntity( Bonesinger.wraith_id, oBuilding_ai:GetEntity() )
-				--cpu_manager:DoMove(self.squad_ai, Vector3f(oBuilding_ai:GetPosition()), false, "Move") 
-				--cpu_manager:DoMove(self.squad_ai, Vector3f(vJumpPosition), false, "Move") 
-			--	self.squad_ai:DoSpecialAbilityEntity( Bonesinger.wraith_id, oBuilding_ai:GetEntity() )
-			else
-				self.squad_ai:DoSpecialAbilityEntity( Bonesinger.Wraithtomb_id, oBuilding_ai:GetEntity() )
-			end
 		end
 	end
 end
