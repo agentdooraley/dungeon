@@ -133,7 +133,7 @@ function BuildUnitPlan:BuildUnit()
 		cpu_manager:OnEvent( CpuManager.Events.BuildSquad, self.item_id )
 
 		--change state
-		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingStateAddon, true )
+		Plan.SetState( self, "Building a "..self.item_name, BuildPlan.BuildingState, true )
 		return
 	end
 	

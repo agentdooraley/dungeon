@@ -87,7 +87,7 @@ function GuardianTactic:Reinforce()
 	end
 
 	-- Always try to get the leader first
-	if (self.squad_ai:CanReinforce(true, 0)) and g_iGMT >= 60 then
+	if squad:GetNumTroopers() >= 5 and g_iGMT >= 60 then
 		self.squad_ai:DoReinforce(true, 0)
 		return
 	end
