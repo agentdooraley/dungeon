@@ -632,18 +632,6 @@ function EldarBuildBaseStrategy:BuildFlexible()
 		self:DynamicBuild("eldar_warp_generator", 6 * self:GetBuildingCountByName("eldar_hq"), 3, 500, 0, 0, 0)
 
 		-- Dynamically regulate quantity of defensive buildings based on how many strats/crits/relics we have through the tiers so we avoid cluttering/bottlenecking on maps with limited points
-		if (self.tierLevel >= 2 and (iRequisition >= 1500 and iPower >= 1500)) then
-    			if (resource_manager:GetNumOwnedStrategicPoints() < 4) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasRelic()) then
-				self:DynamicBuild("eldar_support_platform_scatterlaser", 2, 2, 200, 100, 0, 0)
-				--self:DynamicBuild("eldar_support_platform_cannon_sp", 2 * self:GetBuildingCountByName("eldar_hq"), 2, 300, 200, 0, 0)
-				self:DynamicBuild("eldar_support_platform_scatterlaser", 4, 3, 200, 100, 0, 0)
-   			end
-		else
-   			if (resource_manager:GetNumOwnedStrategicPoints() > 3) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasRelic()) then
-				self:DynamicBuild("eldar_support_platform_scatterlaser", 3, 2, 200, 100, 0, 0)
-				self:DynamicBuild("eldar_support_platform_scatterlaser", 6, 3, 200, 100, 0, 0)
-			end
-		end
 
 		if (self.tierLevel >= 4 and (iRequisition >= 2500 and iPower >= 2500)) then
     			if (resource_manager:GetNumOwnedStrategicPoints() > 4) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasRelic()) then
