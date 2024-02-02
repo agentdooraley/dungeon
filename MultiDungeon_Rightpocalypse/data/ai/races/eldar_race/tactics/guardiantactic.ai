@@ -87,15 +87,8 @@ function GuardianTactic:Reinforce()
 	end
 
 	-- If there are no ressources available, don't upgrade!
-	local iRequisition = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition)
-	-- Try for leader
-	if (not self.squad_ai:IsReinforcing()) or iRequisition < 800 then
-		if (self.squad_ai:CanReinforce(false, 0)) then
-
-			-- Don't reinforce more than 7 guards without a leader
-			if ((self.squad_ai:HasLeader() or self.squad_ai:HasSquadAttached("guard_squad_commissar") or self.squad_ai:HasSquadAttached("guard_squad_priest") and g_iGMT >= 120) or self.squad_ai:GetNumTroopers() < 5) then
-				self.squad_ai:DoReinforce(false, 0)
-			end
-		end
+	if (self.squad_ai:CanReinforce(true, 0)) and g_iGMT >= 45 then
+		self.squad_ai:DoReinforce(true, 0)
+		return
 	end
 end
