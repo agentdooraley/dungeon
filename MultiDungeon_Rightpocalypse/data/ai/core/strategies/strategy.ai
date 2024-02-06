@@ -28,7 +28,7 @@ Strategy.NextUpdateUnitDoProd = AI_GetPlayerID()-1000
 Strategy.RallyPoint = AI_GetPlayerID()-1000
 Strategy.bFlagUpdateObt1 = true
 Strategy.bFlagUpdateObt2 = false
-
+ 
 --? @shortdesc Ctor
 --? @args 
 --? @result void
@@ -55,8 +55,6 @@ function Strategy:__init( info )
 	self.m_iNumHQAtStartPos = 1
 	
 	self.m_aBuildingCounts = {}
-        
-        self.m_tBuildDump = {}
 end
 
 function Strategy:GetStatus( status )
@@ -132,6 +130,9 @@ function Strategy:Update()
 --	self:ResetDemand()
         Strategy.NextUpdateUnitDoProd = 0
 	end
+        if Strategy.RallyPoint<g_iGMT then
+        Strategy.RallyPoint = g_iGMT + 5
+        end
 	-- Update building count
 	self:UpdateBuildingCount()
 end
@@ -210,19 +211,6 @@ end
 --? @result table
 function Strategy:GetPlans()
 	return self.plans
-end
-
-function Strategy:GetPlansCount(sPlanName, iPlanID)
-        local temp = {}
-	-- Compute all plans
-	for iLoop1 in self.plans do
-	
-		-- Check plan
-		if (self.plans[iLoop1]:IsEqual(sPlanName, iPlanID)) then
-			table.insert(temp,self.plans[iLoop1])
-		end
-	end
-	return temp
 end
 
 function Strategy:GetPlan(sPlanName, iPlanID)
@@ -335,11 +323,9 @@ end
 --? @shortdesc Builds creates a plan to build a prerequisite
 --? @args CpuPrerequisites.BuildType build_type
 --? @result void
-function Strategy:BuildPrereq( build_type, unfill )
+function Strategy:BuildPrereq( build_type )
 	aitrace("build prereq start"..build_type.name..":")
-        if unfill==nil then
-           unfill=false
-        end
+
 	-- Check build type
 	if (build_type.btype == CpuPrerequisites.BT_Squad) then
 
@@ -375,7 +361,7 @@ function Strategy:BuildPrereq( build_type, unfill )
 		-- Add building plan
 		local id = cpu_manager.stats:GetBuildingID( build_type.name )
 --		if (self:PlanExists("Build Building Plan", id) == false) or id == cpu_manager.stats:GetBuildingID(self:GetBuildingName("BiggerGenerator")) or id == cpu_manager.stats:GetBuildingID(self:GetBuildingName("Generator")) then
-                if ((self:GetBuildingCountByBPID(id, false) + self:GetBuildingCountByBPID(id, true) + self:PlanCount("Build Building Plan", id) < 1) and unfill ) or ((self:PlanCount("Build Building Plan", id) < 3) and not unfill)  then
+                if self:PlanCount("Build Building Plan", id) < 3 then
 			local start_pos = cpu_manager.start_pos
 			local build_pos = nil
                         
@@ -716,14 +702,7 @@ end
 --? @shortdesc Forces the release of all resources the strategy owns
 --? @args
 --? @result void
-function Strategy:ForceReleaseAll(m)
-        if m~=nil then
-          if self.plans[m]~=nil then
-           self.plans[m]:UnlockAll()
-           table.remove(self.plans,m)
-           return
-          end
-        end
+function Strategy:ForceReleaseAll()
 
 	for i in self.plans do
 		self.plans[i]:UnlockAll()
@@ -749,22 +728,14 @@ function Strategy:ForceReleaseResource( id, res_type )
 	end
 
 end
-function Strategy:ClearBuildDump()
-   self.m_tBuildDump={}
-end
+
 --? @shortdesc Tries to build the squad, or it's prerequisites (may fail)
 --? @args int id
 --? @result void
 -- Arkhan 10.2005: No prerequisites are built any more
 function Strategy:TryBuild( build_type )
 	aitrace("try build start "..build_type.name..":")
---[[        local bBuildDump = false
-        for i in self.m_tBuildDump do
-            if self.m_tBuildDump[i]==build_type.name then
-               bBuildDump=true
-            end
-        end
-        if bBuildDump==true then aitrace("Build the queue is busy 1") return false else table.insert(self.m_tBuildDump, build_type.name) end]]
+
 	local prereq = CpuPrerequisites2( cpu_manager.cpu_player, build_type.name, build_type.btype )
 	
 --[[	--Kaiser Soze 04.2007
@@ -797,17 +768,14 @@ function Strategy:TryBuild( build_type )
 			
 			aitrace( i.name.." (unfulfillable)" )
 			
-			   if i.prereq_fulfilled  then
-				self:BuildPrereq( i,true )
+			-- if i.prereq_fulfilled  then
+			--	self:BuildPrereq( i )
 			--	blg( nil, "Build "..i.name)
 			--	aitrace( i.name )
-			   else
-                               --[[if i.name~="" or nil then
-                                self:TryBuild( i )
-                               end]]
+			-- else
 			--	blg( nil, "Can't build "..i.name)
 			--	aitrace( i.name.." (unfulfillable)" )
-			   end
+			-- end
 		end
 		aipoptrace( "end prereqs" )
 		return false

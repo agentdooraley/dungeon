@@ -93,8 +93,8 @@ CpuManager.StrategicTransitions =
 {
 	BuildOrderStrategy = 
 	{
-		OnSuccess = { "BuildBaseStrategy", 1, "adopt" },
-		OnFailure = { "BuildBaseStrategy", 1, "override" }
+		OnSuccess = { "BuildBaseStrategy", 10, "adopt" },
+		OnFailure = { "BuildBaseStrategy", 10, "override" }
 	},
 	BuildBaseStrategy =	
         {
@@ -157,7 +157,7 @@ function CpuManager:__init( cpu_player_id )
 	self.terrain_analyzer =    self.cpu_player:GetTerrainAnalyzer()
 	self.start_pos =           self.cpu_player:GetStartingPosition()
 	
-	math.randomseed(math.mod(os.time(), 1000) + (self.player_id - 1000))
+	math.randomseed(math.mod(os.time(), 1000) + (self.player_id - 1000) * 10000)
 	
 	dbAssert( self.start_pos ~= nil )
 	
@@ -511,7 +511,7 @@ function CpuManager:Initialize()
 	-- Medium priority
 	self:AddStrategy( "BuildOrderStrategy", 4 )
 	self:AddStrategy( "AttackStrategy", 8 )
-	self:AddStrategy( "AttackStrategy2", 8 )
+	self:AddStrategy( "AttackStrategy2", 9 )
 	self:AddStrategy( "DefendStrategy", 12 )
 
 	-- Add build base strategy, although it's not updated until build order strategy is finished
@@ -844,7 +844,7 @@ end
 function CpuManager:UpdateCriticalRange()
 
 	-- Calculate basic critical range
-	self.m_iCriticalRange = 40 + self:GetTierLevel() * self:CriticalRangeIncreasePerTier()
+	self.m_iCriticalRange = 50 + self:GetTierLevel() * self:CriticalRangeIncreasePerTier()
 
 	-- Get the distance of the fourth closest strategic point and the critical count
 	local iMinDistance1 = -1
@@ -1011,6 +1011,7 @@ function CpuManager:UpdateBuildersAndCapturers()
 end
 
 function CpuManager:GetAvailableBuilders()
+
 	-- Update builder list
 	if (not self:UpdateBuildersAndCapturers()) then
 	
@@ -1682,6 +1683,7 @@ function CpuManager:Update()
 	end
 
 	self:UpdateObjectTable()
+	
 	-- Skips every second round in mid and late game
 	if (iAIMode == 1 or (g_iGMT < (DefendChokePointPlan.HarassingTime + 3) * 60)) then
 	      if g_iGMT > self.m_iNextUpdatePlans then
@@ -1698,8 +1700,9 @@ function CpuManager:Update()
 			self.strategies[iLoop1]:Update()
 			aipoptrace(sName)
 		end
-		foreach_bind( self.strategies, self.DoStrategyDeleteOldPlans, self )
 		aitrace("CpuManager: Update plans...", true)
+		foreach_bind( self.strategies, self.DoStrategyDeleteOldPlans, self )
+
 	        -- Update the strategy plans
 		for iLoop1 in self.strategies do
 		
@@ -1708,6 +1711,7 @@ function CpuManager:Update()
 			self.strategies[iLoop1]:DoWants()
 			self.strategies[iLoop1]:DoPlans()
 		end
+
 	end
 		
 	-- Skips every second round in mid and late game
@@ -1758,15 +1762,13 @@ function CpuManager:Update()
 				if (iTransportType > 0 and oTactic:ReadyToTransport()) then
 					table.insert(self.m_aActiveTransporters, { oTactic, oUnit:GetPosition(), iTransportType })
 				end
-                                --local tpos=oUnit:GetPosition()
-				--mylib.scar_dostring("Ping_Position(Util_ScarPos("..tostring(tpos.x)..","..tostring(tpos.z).."),false, attack)")
+				
 				-- Check for deepstrikers
 				if (oTactic:CanDeepStrike()) then
 					table.insert(aDeepStrikeSquads, oTactic)
 				end
 			end
 		end
-                --print(table.maxn(aUnitTactics))
 		self.m_iActiveTransporterCount = table.getn(self.m_aActiveTransporters)
 		
 		-- Update unit tactics

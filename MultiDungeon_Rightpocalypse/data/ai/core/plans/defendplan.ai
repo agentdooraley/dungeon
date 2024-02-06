@@ -100,6 +100,7 @@ function DefendPlan:GetArmyStrength()
 	-- Calculate army strength
 	local iArmyStrength = 0
 	local vArmyPosition = Vector3f(0, 0, 0)
+	local iCount = 0
 	for iLoop1 in self.defend_units do
 	
 		-- Get unit
@@ -114,13 +115,14 @@ function DefendPlan:GetArmyStrength()
 			
 			-- Add unit position to army position
 			local vUnitPosition = oUnit:GetPosition()
-			vArmyPosition.x = vArmyPosition.x + iUnitStrength * vUnitPosition.x
-			vArmyPosition.z = vArmyPosition.z + iUnitStrength * vUnitPosition.z
+	                vArmyPosition.x = vArmyPosition.x + vUnitPosition.x
+			vArmyPosition.z = vArmyPosition.z + vUnitPosition.z
+			iCount = iCount + 1
 		end
 	end
 	if (iArmyStrength > 0) then
-		vArmyPosition.x = vArmyPosition.x / iArmyStrength
-		vArmyPosition.z = vArmyPosition.z / iArmyStrength
+		vArmyPosition.x = vArmyPosition.x / iCount
+		vArmyPosition.z = vArmyPosition.z / iCount
 	end
 	
 	-- Get closest valid position to army center
@@ -209,7 +211,8 @@ function DefendPlan:ObtainForce()
 	-- Find the forces and defend
 	local oSupportDetector = nil
 --        military_manager:Update()
-	for oSquad in military_manager:GetUnlockedSquads() do
+        local uManager = military_manager:GetSquads()
+	for oSquad in uManager do
                if AttackStrategy.m_vAttackPosition.x~=0 or AttackStrategy.m_vAttackPosition.z ~=0 or AttackStrategy2.m_vAttackPosition.x~=0 or AttackStrategy2.m_vAttackPosition.z ~=0 then
 	        if self.m_iEnemyStrength*1.1<self.m_iArmyStrength then
                    break
@@ -418,9 +421,10 @@ function DefendPlan:Defending()
 	end
 
 	cpu_manager:DeepStrikeToPos(vDetectorTarget, true)
-
+--[[
 	-- Deepstrike if I can
-	for build_channel in build_manager:GetBuildChannelAIs() do
+        local uManager = build_manager:GetBuildChannelAIs()
+	for build_channel in uManager do
 
                 local name = build_channel:GetEntity()
 		local id = build_channel:GetBlueprintID()
@@ -472,7 +476,7 @@ function DefendPlan:Defending()
 				build_channel:DoDeepStrikeToPos(pos)
 			end
 		end
-	end
+	end]]
 	
 	-- Move support detector
 	if (self.m_oSupportDetector ~= nil) then

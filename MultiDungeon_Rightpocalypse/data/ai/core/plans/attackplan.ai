@@ -181,6 +181,7 @@ function AttackPlan:GetArmyStrength()
 	local iArmyStrength = 0
 	local vArmyPosition = Vector3f(0, 0, 0)
 	self.m_bBaseBuster = false
+	local iCount = 0
 	for iLoop1 in self.attack_units do
 	
 		-- Get unit
@@ -195,9 +196,9 @@ function AttackPlan:GetArmyStrength()
 			
 			-- Add unit position to army position
 			local vUnitPosition = oUnit:GetPosition()
-			vArmyPosition.x = vArmyPosition.x + iUnitStrength * vUnitPosition.x
-			vArmyPosition.z = vArmyPosition.z + iUnitStrength * vUnitPosition.z
-			
+			vArmyPosition.x = vArmyPosition.x + vUnitPosition.x
+			vArmyPosition.z = vArmyPosition.z + vUnitPosition.z
+			iCount = iCount + 1
 			-- Check for a commander or vehicle
 			local oStats = oUnit:GetStats()
 			if (oStats ~= nil) then
@@ -212,8 +213,8 @@ function AttackPlan:GetArmyStrength()
 		end
 	end
 	if (iArmyStrength > 0) then
-		vArmyPosition.x = vArmyPosition.x / iArmyStrength
-		vArmyPosition.z = vArmyPosition.z / iArmyStrength
+		vArmyPosition.x = vArmyPosition.x / iCount
+		vArmyPosition.z = vArmyPosition.z / iCount
 	end
 	
 	-- Get closest valid position to army center
@@ -316,7 +317,8 @@ function AttackPlan:ObtainForce()
 	
 	-- Find the forces and gather them at your own base
 	local oSupportDetector = nil
-	for oSquad in military_manager:GetUnlockedSquads() do
+        local uManager = military_manager:GetUnlockedSquads()
+	for oSquad in uManager do
 	        if self.m_iAttackPower > self.m_iRequiredArmyPower*1.2 and AttackStrategy2.m_vAttackPosition.x==0 and AttackStrategy2.m_vAttackPosition.z==0 then
                    break
                 end
@@ -570,8 +572,9 @@ function AttackPlan:Attacking()
 	
 		-- Set time
 		self.m_iTargetChange = g_iGMT
-
+--[[
 		-- In addition, deepstrike if I can
+                local uManager = build_manager:GetBuildChannelAIs()
 		for build_channel in build_manager:GetBuildChannelAIs() do
 
                        local name = build_channel:GetEntity()
@@ -623,7 +626,7 @@ function AttackPlan:Attacking()
 
 				end			
 			end		
-		end
+		end]]
 	else
 
 		-- Check if it is time to stop a critical timer

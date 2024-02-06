@@ -6,6 +6,11 @@
 -- Edited by Arkhan	@ 06.01.2006
 -- Edited by Aliaska_RuS
 
+----
+
+
+
+
 class 'AttackStrategy' (Strategy)
 
 -- Settings
@@ -196,8 +201,8 @@ function AttackStrategy:UpdateStrategicObjective()
 					
 						-- Check if the owner is an enemy
 						if (cpu_manager.player_stats:IsEnemy(oPlayer)) then
-							table.insert(vEnemyCriticalPositions, oStrategicPoint:GetEntity():GetPosition())
-							table.insert(oCriticalOwner, oPlayer)
+							table.insert(vEnemyCriticalPositions,oStrategicPoint:GetEntity():GetPosition())
+							table.insert(oCriticalOwner,oPlayer)
 						end
 					end
 				end
@@ -326,7 +331,7 @@ function AttackStrategy:CheckAttackSituation()
 		if (oUnit:IsValid() and (oUnit:WasRecentlyHurt() or oUnit:IsInCombat())) then
 		
 			-- Store unit data
-			table.insert(aUnits, { oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
+			table.insert(aUnits,{ oUnit:GetPosition(), 3 * oUnit:GetTactic():GetUnitStrength() })
 		end
 	end
 	
@@ -527,7 +532,7 @@ function AttackStrategy:HelpAllyInNeed()
 			oPlayer:GetPlayerID() ~= cpu_manager.player_id) then
 			
 			-- Add start position
-			table.insert(aAlliedStartPositions, oPlayer:GetStartingPosition())
+			table.insert(aAlliedStartPositions,oPlayer:GetStartingPosition())
 		end		
 	end
 	
@@ -662,7 +667,7 @@ function AttackStrategy:ChooseTarget()
 	
 	-- Don't attack if I don't have enough units available
 	local iMinArmyPower = self.info.MinArmyStrength + (cpu_manager:GetTierLevel() - 1) * cpu_manager:MinArmyStrengthPerTier()
-	if (iMyArmyStrength < iMinArmyPower or iSquadCount < 2) then
+	if (iSquadCount < 2) then
          	aitrace("AttackStrategy: No change...")
 		return
 	end
@@ -725,7 +730,7 @@ function AttackStrategy:ChooseTarget()
 		end
 	end
 	local fRatio = cpu_manager:GetAttackRatio()
-    if (iMyArmyStrength < fRatio * iEnemyArmyStrength and iMyArmyStrength < 1000) then
+    if (iMyArmyStrength < fRatio * iEnemyArmyStrength) then
     	return
     end
 	
@@ -1290,9 +1295,9 @@ function AttackStrategy:AnalyseBattleField()
 			
 			-- Add baseinfo object to ally or enemy section
 			if (oPlayerInfo.bEnemy) then
-				table.insert(self.m_aEnemies, oPlayerInfo)
+				table.insert(self.m_aEnemies,oPlayerInfo)
 			else
-				table.insert(self.m_aAllies, oPlayerInfo)
+				table.insert(self.m_aAllies,oPlayerInfo)
 			end
 			
 			-- Store main base position of current player

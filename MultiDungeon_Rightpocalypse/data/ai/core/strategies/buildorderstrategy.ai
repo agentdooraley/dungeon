@@ -13,7 +13,6 @@
 class 'BuildOrderStrategy' (Strategy)
 
 BuildOrderStrategy.mid_capture_flag = {}
-BuildOrderStrategy.mid_capture_flag_rush = {}
 BuildOrderStrategy.mid_capture_flag_random = math.random(1,3)
 
 function BuildOrderStrategy:__init( info ) super( info )
@@ -122,7 +121,7 @@ function BuildOrderStrategy:WaitOnNextPlan()
 		-- the exact midpoint a strat point can be and still be suitable
 		local tolerance = 30
 		if map_size == "small" then
-			tolerance = 15
+			local tolerance = 15
 		end
       local mid_pos = Vector3f()
       local base_pos = cpu_manager.start_pos
@@ -144,8 +143,8 @@ function BuildOrderStrategy:WaitOnNextPlan()
 					if not cpu_manager:IsFriendly( strat_ai:Owner() ) and 
 						not strat_ai:HasListeningPost() and not strat_ai:IsRelic() and
 						not strat_ai:IsBeingCaptured() and
-						not cpu_manager:HasThreatOnPath( base_pos, strat_ai:GetEntity():GetPosition(), 40 ) and not cpu_manager:FindClosestFriendlyBase(strat_ai:GetEntity():GetPosition(),30) then
-						if not cpu_manager.terrain_analyzer:HasThreat( strat_ai:GetEntity():GetPosition(), 35 ) and 
+						not cpu_manager:HasThreatOnPath( base_pos, strat_ai:GetEntity():GetPosition(), 40 ) and not cpu_manager:FindClosestFriendlyBase(strat_ai:GetEntity():GetPosition(),40) then
+						if not cpu_manager.terrain_analyzer:HasThreat( strat_ai:GetEntity():GetPosition(), 40 ) and 
 							not strat_ai:HasWeapons() then
                             local strat_pos = strat_ai:GetEntity():GetPosition()
                             if self.is_capturing_pos ~= nil then
@@ -198,7 +197,6 @@ function BuildOrderStrategy:WaitOnNextPlan()
 				aitrace("Starting Capture Plan for the midway strategic point")
             plan = CapturePlan( strategic_flag_pos , true)
              table.insert(BuildOrderStrategy.mid_capture_flag, strategic_flag)
-             table.insert(BuildOrderStrategy.mid_capture_flag_rush, strategic_flag_pos)
              table.insert(self.is_capturing_pos,strategic_flag_pos)
 			end
          self.capture_flag = self.capture_flag + 1
@@ -208,7 +206,7 @@ function BuildOrderStrategy:WaitOnNextPlan()
          self.capture_flag = self.capture_flag + 1
 		end
 		aipoptrace("Capture Plan - MidCapture")
-	   -- end Project Midcapture code
+	    --end Project Midcapture code
 	
 	elseif current_build_order[1] == "post_builder" then
 

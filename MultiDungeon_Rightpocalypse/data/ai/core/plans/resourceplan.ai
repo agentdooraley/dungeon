@@ -336,7 +336,6 @@ function ResourcePlan:FreeResources()
 	-- Check capturing flag
 	if (self.capturing_flag ~= nil) then
 		self:UnlockResource(self.capturing_flag)
-                self.capturing_flag:TagFlagForEngineer( false )
 		self.capturing_flag = nil	
 	end
 end
