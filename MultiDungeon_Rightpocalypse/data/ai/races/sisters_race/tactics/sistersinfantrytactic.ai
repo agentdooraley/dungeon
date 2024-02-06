@@ -134,3 +134,4 @@ function SistersInfantryTactic:Reinforce()
             		self.squad_ai:DoReinforce(false, 0)
 		end
 	end
+end	
