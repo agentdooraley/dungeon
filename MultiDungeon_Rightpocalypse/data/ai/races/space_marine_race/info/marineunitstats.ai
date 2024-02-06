@@ -42,7 +42,7 @@ UnitStrengths.space_marine_squad_veteran_stronghold_sp = 50
 
 -- Skirmish
 UnitStrengths.space_marine_squad_servitor = 0
-UnitStrengths.space_marine_squad_scout = 45
+UnitStrengths.space_marine_squad_scout = 90
 UnitStrengths.space_marine_squad_tactical = 170
 UnitStrengths.space_marine_squad_tactical_bike = 160
 UnitStrengths.space_marine_squad_assault = 175

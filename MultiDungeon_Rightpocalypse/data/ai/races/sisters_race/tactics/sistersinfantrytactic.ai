@@ -124,3 +124,13 @@ function SistersInfantryTactic:CheckDance(oSquad)
 	end
 	return true
 end
+
+function SistersInfantryTactic:Reinforce()
+
+	if (not self.squad_ai:IsReinforcing() and g_iGMT >= 40) then
+        	if (self.squad_ai:CanReinforce(true, 0)) then            
+            		self.squad_ai:DoReinforce(true, 0)
+       		elseif (self.squad_ai:CanReinforce(false, 0)) then
+            		self.squad_ai:DoReinforce(false, 0)
+		end
+	end
