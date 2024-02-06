@@ -39,7 +39,7 @@ UnitStrengths.tau_xv202_mako_titan_squad_clone_sp = 0
 
 -- Skirmish
 UnitStrengths.tau_builder_squad = 0
-UnitStrengths.tau_stealth_team_squad = 70
+UnitStrengths.tau_stealth_team_squad = 50
 UnitStrengths.tau_breacher_squad = 120
 UnitStrengths.tau_fire_warrior_squad = 250
 UnitStrengths.tau_pathfinder_squad = 95
