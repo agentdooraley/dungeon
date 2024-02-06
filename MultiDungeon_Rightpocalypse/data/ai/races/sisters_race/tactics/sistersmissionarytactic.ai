@@ -15,14 +15,14 @@ function SistersMissionaryTactic:IsAttacker()
 
 	-- Check for infiltrators
 	local bNeedSupportDetector = (cpu_manager:EnemyHasUnitInfiltrators() or cpu_manager:EnemyHasBaseInfiltrators())
-		return (cpu_manager:GetTierLevel() >= 2 or bNeedSupportDetector)
+		return (cpu_manager:GetTierLevel() >= 1 or bNeedSupportDetector)
 end
 
 function SistersMissionaryTactic:IsDefender()
 
 	-- Check for infiltrators
 	local bNeedSupportDetector = (cpu_manager:EnemyHasUnitInfiltrators() or cpu_manager:EnemyHasBaseInfiltrators())
-		return (cpu_manager:GetTierLevel() >= 2 or bNeedSupportDetector)
+		return (cpu_manager:GetTierLevel() >= 1 or bNeedSupportDetector)
 end
 
 -- Missionary is allowed to retreat even directly after a jump
@@ -118,7 +118,7 @@ function SistersMissionaryTactic:Update()
 	end
 
 	-- Try to attach to melee in tier 2+
-	if (cpu_manager:GetTierLevel() >= 2 or self.squad_ai:WasRecentlyHurt()) then
+	if (cpu_manager:GetTierLevel() >= 1 or self.squad_ai:WasRecentlyHurt()) then
 	
 		if (self:TryAttachSquad(true, true, 50, 100, nil) ~= nil) then
 			return

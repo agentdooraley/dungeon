@@ -135,3 +135,10 @@ function SistersInfantryTactic:Reinforce()
 		end
 	end
 end	
+
+function SistersInfantryTactic:JumpAttack()
+
+	if (not cpu_manager.assassinate) then
+		Tactic.JumpAttack(self)
+	end
+end

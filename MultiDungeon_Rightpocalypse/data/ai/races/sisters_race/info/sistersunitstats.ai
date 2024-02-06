@@ -29,7 +29,7 @@ UnitStrengths.sisters_squad_honor_guard = 80
 -- Skirmish
 UnitStrengths.sisters_squad_servitor = 70
 UnitStrengths.sisters_squad_saint_cherub = 40
-UnitStrengths.sisters_squad_missionary = 90
+UnitStrengths.sisters_squad_missionary = 120
 UnitStrengths.sisters_squad_battle_sister = 100
 UnitStrengths.sisters_squad_seraphim = 110
 UnitStrengths.sisters_squad_retributor = 70
