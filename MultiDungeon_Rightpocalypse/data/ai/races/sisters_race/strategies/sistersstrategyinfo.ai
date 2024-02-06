@@ -52,7 +52,7 @@ BuildBaseStrategyInfo =
 				{ 1, 450, 0, 0, 1,	"Building",	"sisters_hq" },			
 				
 				 
-				{ 1, 175, 50, 800, 1,	"Building",	"sisters_sanctuary" },
+				{ 1, 175, 50, 1200, 1,	"Building",	"sisters_sanctuary" },
 				{ 1, 50, 25, 0, 1,	"Research",	"sisters_leader_range_upgrade"},
 				--{ 1, 25, 75, 700, 1,	"Research",	"sisters_phosphor_grenades_research"},
 				{ 1, 25, 0, 0, 1,	"TurretAddon",	"addon_sisters_holy_icon" },				
@@ -176,7 +176,7 @@ BuildBaseStrategyInfo =
 				{ 1, 450, 0, 0, 1,	"Building",	"sisters_hq" },			
 				
 				 
-				{ 1, 175, 50, 0, 1,	"Building",	"sisters_sanctuary" },
+				{ 1, 175, 50, 1200, 1,	"Building",	"sisters_sanctuary" },
 				{ 1, 50, 25, 0, 1,	"Research",	"sisters_leader_range_upgrade"},
 				--{ 1, 25, 75, 700, 1,	"Research",	"sisters_phosphor_grenades_research"},
 				{ 1, 25, 0, 0, 1,	"TurretAddon",	"addon_sisters_holy_icon" },				
