@@ -37,7 +37,7 @@ function SistersVehicleTactic:CheckVehicleDance(sName)
 end
 
 function SistersVehicleTactic:DoAbilities()
-
+--[[
 	-- RAM!!! - The vehicle will sacrifice combat accuracy in exchange for extra speed and the ability to knock down infantry wherever the vehicle goes.
 	-- Vehicle gains a 60% movement speed increase and will knock down infantry continuously on contact.
 	local rammingspeed_id = cpu_manager.stats:GetAbilityID( "all_bumpertank" )
@@ -56,7 +56,7 @@ function SistersVehicleTactic:DoAbilities()
 			self.squad_ai:DoSpecialAbility( run_id )
 		end
 	end
-
+]]
 	-- Call standard method
 	VehicleTactic.DoAbilities(self)
 end

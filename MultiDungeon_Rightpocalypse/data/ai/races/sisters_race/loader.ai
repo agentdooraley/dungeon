@@ -203,7 +203,7 @@ function sisters_race:GetInfo(sType)
 	elseif (sType == "SupportAllyFactor") then
 		return 9 / 4
 	elseif (sType == "AttackModifier") then
-		return -5
+		return 10
 	elseif (sType == "CriticalRangeIncreasePerTier") then
 		return 10
 	elseif (sType == "MinArmyStrengthPerTier") then
@@ -245,7 +245,7 @@ function sisters_race:GetBuildingType(sBuildingName)
 		return "ListeningPost", 0
 		
 	elseif (sBuildingName == "sisters_turret_flamer") then
-		return "Turret", 350
+		return "Turret", 50
 		
 	elseif (sBuildingName == "sisters_mines") then
 		return "Mine", 25

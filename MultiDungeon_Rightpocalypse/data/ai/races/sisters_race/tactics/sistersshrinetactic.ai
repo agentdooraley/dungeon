@@ -14,9 +14,6 @@ end
 function SistersShrineTactic:InitAbilities()
 
 	-- Init ability ID's
-	if (SistersShrine.repair_id == nil) then
-		SistersShrine.repair_id = cpu_manager.stats:GetAbilityID( "all_autorepair" )
-	end
 	if (SistersShrine.intervention_id == nil) then
 		SistersShrine.intervention_id = cpu_manager.stats:GetAbilityID( "sisters_miraculous_intervention" )
 	end
@@ -41,12 +38,6 @@ function SistersShrineTactic:DoAbilities()
 	end
 
 	-- Base Repair!
-	if (self.base_ai:WasRecentlyHurt() and self.base_ai:GetHealthPercentage() < 0.6) then
-
-		if (self.base_ai:CanDoAbility( SistersShrine.repair_id )) then
-			self.base_ai:DoSpecialAbility( SistersShrine.repair_id )
-		end
-	end
 end
 
 -- Called to find if the player has a squad (from a specific list) that meets the low health condition.

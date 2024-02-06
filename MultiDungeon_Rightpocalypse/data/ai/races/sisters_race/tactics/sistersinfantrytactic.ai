@@ -49,6 +49,7 @@ function SistersInfantryTactic:AddTargetAbilities()
 end
 
 function SistersInfantryTactic:AddCommanders()
+--[[
 	table.insert(self.commander, { "sisters_squad_canoness", true })
 	table.insert(self.commander, { "sisters_squad_confessor", false })
 	table.insert(self.commander, { "sisters_inquisitor_squad", false })
@@ -56,10 +57,11 @@ function SistersInfantryTactic:AddCommanders()
 	table.insert(self.commander, { "sisters_squad_nunciate_superior", false })
 	table.insert(self.commander, { "sisters_squad_assassin", false })
 	table.insert(self.commander, { "sisters_squad_callidus_assassin", false })
+]]
 end
 
 function SistersInfantryTactic:DoAbilities()
-
+--[[
 	-- Run if safe
 	if ((not self.squad_ai:IsInCombat() and self.squad_ai:IsInStateMove()) or self.stateID ~= Tactic.StateID.NoState) then
 
@@ -69,7 +71,7 @@ function SistersInfantryTactic:DoAbilities()
 			self.squad_ai:DoSpecialAbility( run_id )
 		end
 	end
-
+]]
 	-- I might have these attached
 	if (self.squad_ai:IsAttached()) then
 

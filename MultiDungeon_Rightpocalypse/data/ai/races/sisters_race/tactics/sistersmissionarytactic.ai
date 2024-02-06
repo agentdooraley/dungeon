@@ -28,8 +28,8 @@ end
 -- Missionary is allowed to retreat even directly after a jump
 function SistersMissionaryTactic:SetTarget( target, variant_type )
 
-    self.variant_type = variant_type
-    self.variant_type = variant_type
+	self.variant_type = variant_type
+	self.variant_type = variant_type
        if self.variant_type==Tactic.Variant.Vector then
     self.target = Vector3f(target)
        elseif self.variant_type==Tactic.Variant.SquadAI then
@@ -37,10 +37,6 @@ function SistersMissionaryTactic:SetTarget( target, variant_type )
        elseif self.variant_type==Tactic.Variant.BaseAI then
     self.target = target
        end
-
-
-
-	
 	self.m_iMoveDelay = 0
 	self.last_jump = 0
 end
