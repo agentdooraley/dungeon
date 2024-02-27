@@ -110,24 +110,6 @@ UnitTypes.guard_race =
 		UpgradeFunction = UpgradeMeleeSquad,
 		FXType = "Squad",
 	},
-	guard_heavy_weapons_team_squad =
-	{
-		Title = "Heavy Weapon Suppression Team",
-		Type = "RegularForces",
-		UpgradeFunction = UpgradeRangedSquad,
-		FXType = "Squad",
-		HeavyWeaponsTeam = true,
-		HWT = true,
-	},
-	guard_heavy_weapon_team_entrenched_squad_sp =
-	{
-		Title = "Heavy Weapons Team Entrenched",
-		Type = "RegularForces",
-		UpgradeFunction = UpgradeRangedSquad,
-		FXType = "Squad",
-		HeavyWeaponsTeam = true,
-		HWTE = true,
-	},
 	guard_heavy_weapons_team_support_squad =
 	{
 		Title = "Heavy Weapons Support Team",
