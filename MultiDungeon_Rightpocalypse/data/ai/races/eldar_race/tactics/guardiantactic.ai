@@ -81,11 +81,6 @@ end
 
 function GuardianTactic:Reinforce()
 
-	-- Check if we are reinforcing
-	if (self.squad_ai:IsReinforcing()) then
-		return
-	end
-
 	-- If there are no ressources available, don't upgrade!
 	if (self.squad_ai:CanReinforce(true, 0)) and g_iGMT >= 45 then
 		self.squad_ai:DoReinforce(true, 0)

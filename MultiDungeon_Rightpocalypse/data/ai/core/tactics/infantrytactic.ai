@@ -98,7 +98,7 @@ function InfantryTactic:IsCommanderAttacker()
 	if (self.squad_ai:IsLocked()) then
 	
 		-- Retreat if almost dead and not part of a large army
-		if (self.squad_ai:GetHealthPercentage() < 0.4 and cpu_manager:GetArmyStrength() < 2000) then
+		if (self.squad_ai:GetHealthPercentage() < 0.6 and cpu_manager:GetArmyStrength() < 2000) then
 			return false
 		end
 	else
@@ -134,81 +134,85 @@ function InfantryTactic:IsTransportable()
 end
 
 function InfantryTactic:HarrasingAttack()
-      if CpuManager.AISettings.bHarassing then
-	local aCapturers = cpu_manager:GetAvailableCapturers()
-       if ((g_iGMT < DefendChokePointPlan.HarassingTime*60 and g_iGMT > 30 and self.time_life > 1) or (self.time_life > 1 and self.time_life < 60 and g_iGMT < 300 and g_iGMT > 30)) and not self.squad_ai:IsEngineer() and self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai)>180 then
+    if CpuManager.AISettings.bHarassing then
+		local vMyPos = self.squad_ai:GetPosition()
+		local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vMyPos, 60 , true)
+		local aCapturers = cpu_manager:GetAvailableCapturers()
+        if ((g_iGMT < DefendChokePointPlan.HarassingTime*60 and g_iGMT > 30 and self.time_life > 1) 
+			or (self.time_life > 1 and self.time_life < 60 and g_iGMT < 300 and g_iGMT > 30)) 
+			and not self.squad_ai:IsEngineer() and self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai)>180 and iAlliedStrength > vPosThreat*1.5 then
 	-- Find closest enemy
-	self.vHarassingTargetAttack = nil
-	local oEnemy = cpu_manager:FindClosestEnemyPlayer()
-	if (oEnemy == nil) then
-		self.vHarassingTargetAttack = nil
-		return
-	end
-
-	-- Check if old target is still valid
-	if (self.vHarassingTargetAttack ~= nil) then
-	            
-		-- Check for buildings
-		if (cpu_manager.cpu_player:FindFirstBaseEnemy(self.vHarassingTargetAttack, 35, 1) == nil) then
-			return
-		end
-
-		-- Check for strats to disown
-		local oStrategicPoint = resource_manager:FindFirstStrategicPoint(self.vHarassingTargetAttack, 40)
-		if (oStrategicPoint ~= nil) then
-		
-			-- Check owner
-			local iOwnerID = oStrategicPoint:Owner()
-			if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
+			self.vHarassingTargetAttack = nil
+			local oEnemy = cpu_manager:FindClosestEnemyPlayer()
+			if (oEnemy == nil) then
+				self.vHarassingTargetAttack = nil
 				return
 			end
-		end
-	end
 
-	-- Check for closest enemy building and closest enemy engineer on building
-	local iMaxAttackDistance = 250
-	local oEnemyBuilding = cpu_manager.cpu_player:FindFirstBaseEnemy(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance, 1)
-	if (oEnemyBuilding ~= nil) then
-        local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oEnemyBuilding:GetPosition(), 35, 1)
-              if (oUnit ~= nil and oUnit:IsEngineer()) then
-                self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-              elseif (oUnit ~= nil) then
-                self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-              else
-		self.vHarassingTarget = Vector3f(oEnemyBuilding:GetPosition())
-		iMaxAttackDistance = cpu_manager:GetShortestPathingDistance(cpu_manager.cpu_player:GetStartingPosition(), self.vHarassingTarget, true)
-              end
-	end
-        
-	-- Check for strats to disown
-	local oStrategicPoint = resource_manager:FindFirstStrategicPoint(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance)
-	if (oStrategicPoint ~= nil) then
-	
-		-- Check owner
-		local iOwnerID = oStrategicPoint:Owner()
-		if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
-                  local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oStrategicPoint:GetPosition(), 35, 1)
-                  if (oUnit ~= nil and oUnit:IsEngineer()) then
-                        self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-                  elseif (oUnit ~= nil) then
-                        self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-                  else
-			self.vHarassingTarget = Vector3f(oStrategicPoint:GetPosition())
-                  end
-		end
-	end
+			-- Check if old target is still valid
+			if (self.vHarassingTargetAttack ~= nil) then
+						
+				-- Check for buildings
+				if (cpu_manager.cpu_player:FindFirstBaseEnemy(self.vHarassingTargetAttack, 35, 1) == nil) then
+					return
+				end
 
-        if self.vHarassingTargetAttack ~= nil then
-        self.vHarassingTargetAttack = self.vHarassingTargetAttack
+				-- Check for strats to disown
+				local oStrategicPoint = resource_manager:FindFirstStrategicPoint(self.vHarassingTargetAttack, 40)
+				if (oStrategicPoint ~= nil) then
+				
+					-- Check owner
+					local iOwnerID = oStrategicPoint:Owner()
+					if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
+						return
+					end
+				end
+			end
+
+			-- Check for closest enemy building and closest enemy engineer on building
+			local iMaxAttackDistance = 250
+			local oEnemyBuilding = cpu_manager.cpu_player:FindFirstBaseEnemy(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance, 1)
+			if (oEnemyBuilding ~= nil) then
+				local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oEnemyBuilding:GetPosition(), 35, 1)
+					  if (oUnit ~= nil and oUnit:IsEngineer()) then
+						self.vHarassingTarget = Vector3f(oUnit:GetPosition())
+					  elseif (oUnit ~= nil) then
+						self.vHarassingTarget = Vector3f(oUnit:GetPosition())
+					  else
+						self.vHarassingTarget = Vector3f(oEnemyBuilding:GetPosition())
+						iMaxAttackDistance = cpu_manager:GetShortestPathingDistance(cpu_manager.cpu_player:GetStartingPosition(), self.vHarassingTarget, true)
+					  end
+			end
+				
+			-- Check for strats to disown
+			local oStrategicPoint = resource_manager:FindFirstStrategicPoint(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance)
+			if (oStrategicPoint ~= nil) then
+			
+				-- Check owner
+				local iOwnerID = oStrategicPoint:Owner()
+				if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
+					  local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oStrategicPoint:GetPosition(), 35, 1)
+					  if (oUnit ~= nil and oUnit:IsEngineer()) then
+						self.vHarassingTarget = Vector3f(oUnit:GetPosition())
+					  elseif (oUnit ~= nil) then
+						self.vHarassingTarget = Vector3f(oUnit:GetPosition())
+					  else
+						self.vHarassingTarget = Vector3f(oStrategicPoint:GetPosition())
+					  end
+				end
+			end
+
+			if self.vHarassingTargetAttack ~= nil then
+				self.vHarassingTargetAttack = self.vHarassingTargetAttack
 				cpu_manager:DoMove(self.squad_ai, self.vHarassingTargetAttack, true, "AttackState")
-        else 
-        self.vHarassingTargetAttack = oEnemy:GetStartingPosition()
-	Tactic.SetState(self, Tactic.States.Attack)
+			else 
+				self.vHarassingTargetAttack = oEnemy:GetStartingPosition()
+				Tactic.SetState(self, Tactic.States.Attack)
 				cpu_manager:DoMove(self.squad_ai, self.vHarassingTargetAttack, true, "AttackState")
+			end
+
         end
-
-       end
-      end
+    end
 end
 
 function InfantryTactic:BeginHoldState()
@@ -267,7 +271,7 @@ function InfantryTactic:BeginHoldState()
 		
 	-- Check for cover and bunkers
 	if (iDistance < sqr(35) and self.squad_ai:IsRanged() and g_iGMT > self.m_iCoverDelay) then
-                local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 30, true)			
+        local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 40, true)			
 		-- Check if squad is able to occupy bunkers
 		if (self.m_bBunkerSquad) then
 			
@@ -295,7 +299,7 @@ function InfantryTactic:BeginHoldState()
 	
 	-- Check distance
 	if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
-                        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
+        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
 		local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -396,7 +400,8 @@ function InfantryTactic:HoldState()
 end
 
 function InfantryTactic:BeginRetreatState()
-
+	local vSquadPos = self.m_vCurrentPosition
+	local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 40, true)
 	-- Check if we're desperatly capturing
 	if (self:UrgentCapturing()) then
 		return
@@ -405,7 +410,7 @@ function InfantryTactic:BeginRetreatState()
 	-- Check if our capturing was interrupted
 	if (self.squad_ai:IsCapturing()) then
 		
-		if (self.squad_ai:WasRecentlyHurt()) then
+		if (self.squad_ai:WasRecentlyHurt()) or (self.squad_ai:IsUnderAttack() and iAlliedStrength < 0.9*vPosThreat)  then
 			cpu_manager:DoMove(self.squad_ai, self.squad_ai:GetPosition(), true, "Interrupt capturing!")
 		end
 		return
@@ -443,7 +448,7 @@ function InfantryTactic:BeginRetreatState()
 	local vSquadPos = self.m_vCurrentPosition
 	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
 	if (self.squad_ai:IsRanged() and g_iGMT > self.m_iCoverDelay) then
-               local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 30, true)			
+        			
 		-- Check if squad is able to occupy bunkers
 		if (self.m_bBunkerSquad) then
 			
@@ -471,7 +476,7 @@ function InfantryTactic:BeginRetreatState()
 	
 	-- Check distance
 	if (iDistance > sqr(25) and 
-                self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
+        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
 	
 		-- Check for a close transporter
 		local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -504,7 +509,7 @@ function InfantryTactic:BeginRetreatState()
 end
 
 function InfantryTactic:BeginAttackState()
-
+	local vSquadPos = self.m_vCurrentPosition
 	-- Check if we're desperatly capturing
 	if (self:UrgentCapturing()) then
 		return
@@ -514,6 +519,8 @@ function InfantryTactic:BeginAttackState()
 	if (self.squad_ai:IsCapturing()) then
 		
 		local iMaxCapturingSquadCost = cpu_manager:GetArmyStrength() / 5
+	
+
 		if (self.squad_ai:WasRecentlyHurt() or self:GetUnitStrength() > iMaxCapturingSquadCost) then
 			cpu_manager:DoMove(self.squad_ai, self.squad_ai:GetPosition(), true, "Interrupt capturing!")
 		end
@@ -557,7 +564,7 @@ function InfantryTactic:BeginAttackState()
 	end
 	
 	-- Check for cover and bunkers
-	local vSquadPos = self.m_vCurrentPosition
+	
 	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
 	if (self.squad_ai:IsRanged() and g_iGMT > self.m_iCoverDelay) then
                local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 30, true)			
@@ -737,12 +744,12 @@ function InfantryTactic:Reinforce()
 	if (self.squad_ai:IsReinforcing()) then
 		return
 	end
-	
+	--[[
 	-- If I am broken, don't upgrade!
 	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken()) then
 		return
 	end
-	
+	]]
 	-- Don't reinforce squads in critical condition
 	if (self.squad_ai:GetNumTroopers() <= self.squad_ai:GetMaxTroopers() / 4 and self.squad_ai:IsUnderAttack()) then
 		return
@@ -874,7 +881,7 @@ function InfantryTactic:MoveToDisengage(bDanceflag)
         end
 
 	-- Check for a close transporter
-        local vSquadPos = self.m_vCurrentPosition
+    local vSquadPos = self.m_vCurrentPosition
 	local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable, iRangeTemp)
 	if (oTransporterTactic ~= nil) and self.squad_ai:IsUnderAttack() then
 		
@@ -1002,7 +1009,7 @@ function InfantryTactic:CheckForDeath(bCheck)
 	local fHealth = self.squad_ai:GetHealthPercentage()
 	local vSquadPos = self.m_vCurrentPosition
         local iMaxRange = cpu_manager:GetMaxRange(self.squad_ai:GetSquadName())
-        local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, iMaxRange , true)
+        local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, iMaxRange + 35 , true)
 
 	-- Commanders or ranged squads and not at home base
 	local bValidSquad = (self:IsCommander() or self.squad_ai:IsRanged() or self.squad_ai:CanJump())
@@ -1041,7 +1048,9 @@ function InfantryTactic:CheckForDeath(bCheck)
 	else 
 		local iSquadSize = self.squad_ai:GetNumTroopers()
 		local iSquadMax = self.squad_ai:GetMaxTroopers()
-		fHealthThresh = (1.0 - (iSquadSize / iSquadMax))*(vPosThreat/iAlliedStrength)
+		fHealthThresh = 0.4*(vPosThreat/iAlliedStrength)*(iSquadSize/ iSquadMax + 0.1)
+		--(1.0 - (iSquadSize/ iSquadMax))*(vPosThreat/iAlliedStrength)
+		
 	end
 
 	-- Check health threshold
@@ -1154,7 +1163,7 @@ function InfantryTactic:Update()
 	end
 	
 	-- Update commander attach/detach health
-	self.m_fCommanderAttachHealth = 0.4
+	self.m_fCommanderAttachHealth = 0.5
 
 	-- Upgrade weapons
 	self:Upgrade()
@@ -1237,19 +1246,19 @@ function InfantryTactic:CheckForDetach()
 	if (self:CommanderAttached()) then
 		
 		-- Detach only from capturing or ranged squads
-		if (self.squad_ai:IsCapturing() or (self.squad_ai:GetAttachedHealthPercentage() > fDetachHealth and self.squad_ai:IsRanged())) then
+		if (self.squad_ai:IsCapturing()) then--or (self.squad_ai:GetAttachedHealthPercentage() > fDetachHealth and self.squad_ai:IsRanged())) then
 			self.squad_ai:DoDetachSquad()
-			self.squad_ai:DoSetDefaultMeleeStance()
+			--self.squad_ai:DoSetDefaultMeleeStance()
 		end
 	end
 	
 	-- Detach commander from broken/capturing
-	if ((self.squad_ai:IsBroken() or self.squad_ai:IsCapturing()) and
-		(self.squad_ai:IsInCombat() or self.squad_ai:WasRecentlyHurt())) then 
+--[[	if --((self.squad_ai:IsBroken() or self.squad_ai:IsCapturing()) and
+		--(self.squad_ai:IsInCombat() or self.squad_ai:WasRecentlyHurt())) then 
 		
 		self.squad_ai:DoDetachSquad()
 		self.squad_ai:DoSetDefaultMeleeStance()
-	end
+	end]]
 end
 
 --runs away when morale is broken  by default

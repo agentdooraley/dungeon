@@ -58,10 +58,10 @@ UnitStrengths.sisters_squad_exorcist_mk = 500
 UnitStrengths.sisters_squad_lightning_strike = 500
 UnitStrengths.sisters_squad_capitol_imperialis = 600
 UnitStrengths.sisters_squad_throne = 700
-UnitStrengths.sisters_squad_living_saint = 700
-UnitStrengths.sisters_squad_living_saint_blue = 720
-UnitStrengths.sisters_squad_living_saint_black = 720
-UnitStrengths.sisters_squad_saint_celestine = 900
+UnitStrengths.sisters_squad_living_saint = 2000
+UnitStrengths.sisters_squad_living_saint_blue = 2000
+UnitStrengths.sisters_squad_living_saint_black = 2000
+UnitStrengths.sisters_squad_saint_celestine = 2000
 UnitStrengths.sisters_squad_arch_angel = 1000
 
 LeaderStrengths.sisters_squad_battle_sister = 0

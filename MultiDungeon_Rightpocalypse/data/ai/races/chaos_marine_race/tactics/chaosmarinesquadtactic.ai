@@ -124,3 +124,12 @@ function ChaosMarineSquadTactic:Reinforce()
 	end
 end
 
+function ChaosMarineSquadTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=ChaosBuildBaseStrategy:CountSquads("chaos_squad_cultist")
+	if scout_count >= 2 then
+		return true
+	else
+		return false
+	end
+end

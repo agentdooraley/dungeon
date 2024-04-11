@@ -194,3 +194,13 @@ function SpaceMarineInfantryTactic:Upgrade()
 		self.squad_ai:DoBestUpgrade(class_type)
 	end
 end
+
+function SpaceMarineInfantryTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=MarineBuildBaseStrategy:CountSquads("space_marine_squad_scout")
+	if scout_count >= 2 and sSquadName ~= "space_marine_squad_scout" then
+		return true
+	else
+		return false
+	end
+end

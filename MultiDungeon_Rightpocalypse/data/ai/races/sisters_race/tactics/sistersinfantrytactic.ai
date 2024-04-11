@@ -125,20 +125,65 @@ function SistersInfantryTactic:CheckDance(oSquad)
 	return true
 end
 
-function SistersInfantryTactic:Reinforce()
+function SistersInfantryTactic:Upgrade()
 
-	if (not self.squad_ai:IsReinforcing() and g_iGMT >= 40) then
-        	if (self.squad_ai:CanReinforce(true, 0)) then            
-            		self.squad_ai:DoReinforce(true, 0)
-       		elseif (self.squad_ai:CanReinforce(false, 0)) then
-            		self.squad_ai:DoReinforce(false, 0)
+	-- Check if we have free ressources
+	if (not Tactic.Options.can_reinforce) then
+		return
+	end
+	
+	-- If I am broken, don't upgrade!
+	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken()) then
+		return
+	end
+	
+	-- Don't upgrade sisters_squad_battlewith less than 6 troopers
+	if cpu_manager:GetTierLevel() < 2 then
+		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 10) then
+			return
+		end
+	else
+		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 7) then
+			return
 		end
 	end
-end	
+	
+	if (not self.squad_ai:IsReinforcing() and self.squad_ai:HasUpgradableTrooper() and self.squad_ai:GetNumTroopers() > 3) then
+		
+		-- Figure out my enemy's favourite class
+		local enemy = cpu_manager:FindClosestEnemyPlayer()
+		if (enemy == nil) then
+			return
+		end
+		local class_type = enemy:GetMajorityClassType()
+		
+		-- Larkins hard counter upgrade for HeavyInfantryMed 
+		if (class_type < UnitStatsAI.UC_HeavyInfantryMed) then	  
+		  
+			local enemy_race = enemy:GetPlayerRaceName()
+			if (enemy_race == "space_marine_race" or enemy_race == "chaos_marine_race" or enemy_race == "necron_race") then
+		    	class_type = UnitStatsAI.UC_HeavyInfantryMed
+		  	end
+		end
+		
+		-- Do best upgrade
+		self.squad_ai:DoBestUpgrade(class_type)
+	end
+end
 
 function SistersInfantryTactic:JumpAttack()
 
 	if (not cpu_manager.assassinate) then
 		Tactic.JumpAttack(self)
+	end
+end
+
+function SistersInfantryTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=SistersBuildBaseStrategy:CountSquads("sisters_squad_missionary")
+	if scout_count >= 2 and sSquadName ~= "sisters_squad_missionary" then
+		return true
+	else
+		return false
 	end
 end

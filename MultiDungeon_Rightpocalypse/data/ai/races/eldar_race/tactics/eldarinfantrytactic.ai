@@ -245,3 +245,13 @@ function EldarInfantryTactic:Reinforce()
 		end
 	end
 end
+
+function EldarInfantryTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=EldarBuildBaseStrategy:CountSquads("eldar_guardian_squad")
+	if scout_count >= 2 and sSquadName ~= "eldar_guardian_squad" then
+		return true
+	else
+		return false
+	end
+end

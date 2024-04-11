@@ -1,11 +1,6 @@
 ----------------------------------------
 -- File: 'ability.ai' (For SoulStorm)
 -- Edited by Thudmeizer @ 15.11.2007
--- Edited by Aliaska_RuS
-
-----
-
-
 
 -------------------------------------------------------------------------
 -- Helper functions to cast abilities ----------------------------
@@ -17,28 +12,6 @@ Ability =
 --pass these filters into the functions below to figure out the target to do special ability on
 Filters = 
 {
-	CloseInfiltratedOrVisibleEnemyInfantry = function( vPosition, iRange, iCount )
-		
-		if (iCount == nil) then
-			iCount = 1 
-		end
-		
-		-- Quick check
-		if (not cpu_manager:CloseEnemyUnits(vPosition, iRange)) then
-			return nil
-		end
-		
-		-- possibly broken
-		local oInfiltratedSquad = cpu_manager.cpu_player:FindFirstInfiltratedEnemy( vPosition, iRange, iCount )
-		if (oInfiltratedSquad ~= nil) then
-			--Infiltrated enemies have priority
-			return oInfiltratedSquad
-		end
-		
-		--if it has not found cloaked enemies try to find visible enemies
-		return cpu_manager.cpu_player:FindFirstInfantryEnemy( vPosition, iRange, iCount )		
-	end,
-
 	CloseHurt = function( position, tolerance, count )
 
 		return cpu_manager.cpu_player:FindFirstHurtSquad( position, tolerance )
@@ -112,6 +85,26 @@ Filters =
 		return cpu_manager.cpu_player:FindFirstVehicleEnemy(vPosition, iTolerance, iCount)
 	end,
 	
+	
+	CloseInfantryEnemyRanged = function(vPosition, iTolerance, iCount)
+	
+		-- Make sure that count is valid
+		if (iCount == nil) then
+			iCount = 1
+		end
+		
+		-- Quick check
+		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
+			return nil
+		end
+		
+		local oFunctor = function(oSquad, iCount)
+			return (oSquad:IsRanged() and oSquad:GetNumTroopers() >= iCount)
+		end
+		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
+	end,
+
+	
 	CloseInfantryEnemy = function(vPosition, iTolerance, iCount)
 	
 		-- Make sure that count is valid
@@ -139,12 +132,34 @@ Filters =
 		end
 	
 		local oSquad = cpu_manager.cpu_player:FindFirstInfantryEnemy(vPosition, iTolerance, iCount)
-		if (oSquad ~= nil and oSquad:GetNumTroopers() >= 4 and not oSquad:IsEngineer()) then
+		if (oSquad ~= nil and oSquad:GetNumTroopers() >= 3 and not oSquad:IsEngineer()) then
 			return oSquad
 		else
 			return nil
 		end
 	end,
+	
+	CloseTargetForStripSoul = function(vPosition, iTolerance, iCount)
+			-- Make sure that count is valid
+		if (iCount == nil) then
+			iCount = 1
+		end
+	
+		-- Quick check
+		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
+			return nil
+		end
+	
+		local oSquad = cpu_manager.cpu_player:FindFirstInfantryEnemy(vPosition, iTolerance, iCount)
+		if (oSquad ~= nil and oSquad:GetNumTroopers() == 1) then
+			return oSquad
+		elseif cpu_manager:CloseEnemyUnits(vPosition, iTolerance) then
+			return cpu_manager.cpu_player:FindFirstCommanderEnemy(vPosition, iTolerance, iCount)
+		else
+			return nil
+		end
+	end,
+	
 	
 	CloseCommanderEnemy = function(vPosition, iTolerance, iCount)
 		
@@ -209,7 +224,8 @@ Filters =
 			if (oStats == nil) then
 				return false
 			end
-			return ((oStats:GetClass() == UnitStatsAI.UC_VehicleHigh) and oSquad:GetNumTroopers() >= iCount)
+			return ((oStats:GetClass() == UnitStatsAI.UC_VehicleHigh) and oSquad:GetNumTroopers() >= iCount) or oStats:GetSquadName() == "space_marine_squad_land_raider" 
+			or oStats:GetSquadName() == "guard_squad_baneblade" or oStats:GetSquadName() =="necron_restored_monolith_squad" or oStats:GetSquadName() =="Ork Squiggoth"
 		end
 		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
 	end,
@@ -258,6 +274,11 @@ Filters =
 		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
 	end,
 	
+	
+
+	
+	
+	
 	CloseInfiltratedEnemy = function(vPosition, iTolerance, iCount)
 	
 		-- Make sure that count is valid
@@ -272,18 +293,6 @@ Filters =
 		return cpu_manager.cpu_player:FindFirstInfiltratedEnemy(vPosition, iTolerance, iCount)
 	end,
 
-	CloseInfiltratedBaseEnemy = function(vPosition, iTolerance)
-	
-		-- Quick check
-		if (not cpu_manager:CloseEnemyInfiltrators(vPosition, iTolerance)) then
-			return nil
-		end
-                local functortemp = function(base)
-                      return distance(base:GetPosition(),vPosition)<iTolerance and base:IsInfiltrating()
-                end
-		return cpu_manager:FindFirstEnemyBase(functortemp)
-	end,
-
 	CloseStrategicPoint = function( position, range, args )
 		return resource_manager:FindFirstStrategicPoint( position, range )
 	end,
@@ -291,7 +300,7 @@ Filters =
 	IsInCombat = function( squad_ai )
 		return squad_ai:IsInCombat()
 	end,
-
+	
 	CloseFaithfulUnits = function( position, range, args )
 		return cpu_manager.cpu_player:FindFirstFaithful( position, range, count )
 	end,
@@ -392,6 +401,9 @@ EntityFilters =
 		end
 		return nil
 	end,
+	
+	
+	
 },
 
 --pass these filters into the functions (DoAbilityLocation) below to figure out the location to do special ability on
