@@ -61,6 +61,8 @@ function eldar_race:LoadRace( eDifficulty )
 	import( 'Races/eldar_race/Tactics/EldarSuperweaponTactic.ai' )
 	import( 'Races/eldar_race/Tactics/EldarBombTactic.ai' )
 	import( 'Races/eldar_race/Tactics/EldarBigGeneratorTactic.ai' )
+	import( 'Races/eldar_race/Tactics/reapertactic.ai' )	
+	import( 'Races/eldar_race/Tactics/rangerstactic.ai' )	
 	return true
 end
 
@@ -96,12 +98,16 @@ function eldar_race:CreateTactic(oSquadAI)
 		return GravPlatformTactic(oSquadAI)
 	elseif (sUnitName == "eldar_guardian_squad") then
 		return GuardianTactic(oSquadAI)
-	elseif (sUnitName == "eldar_storm_guardian_squad") or (sUnitName == "eldar_squad_rangers") or (sUnitName == "eldar_squad_dark_reapers") or (sUnitName == "eldar_squad_striking_scorpions") or (sUnitName == "eldar_squad_swooping_hawk") or (sUnitName == "eldar_squad_fire_dragon") or (sUnitName == "eldar_squad_warp_spider") then
+	elseif (sUnitName == "eldar_storm_guardian_squad") or (sUnitName == "eldar_squad_striking_scorpions") or (sUnitName == "eldar_squad_swooping_hawk") or (sUnitName == "eldar_squad_fire_dragon") or (sUnitName == "eldar_squad_warp_spider") then
 		return EldarSquadTactic(oSquadAI)
 	elseif (sUnitName == "eldar_squad_banshees") then
 		return BansheeTactic(oSquadAI)
 	elseif (sUnitName == "eldar_dire_avenger_squad") then
-		return DireAvengerTactic(oSquadAI)
+		return DireAvengerTactic(oSquadAI)	
+	elseif (sUnitName == "eldar_squad_rangers") then
+		return RangersTactic(oSquadAI)
+	elseif (sUnitName == "eldar_squad_dark_reapers") then
+		return ReaperTactic(oSquadAI)			
 	elseif (sUnitName == "eldar_squad_corsairs") then
 		return CorsairTactic(oSquadAI)
 	elseif (sUnitName == "eldar_squad_wraithguard") or (sUnitName == "eldar_squad_wraithguard_ancient") then

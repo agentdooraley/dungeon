@@ -50,9 +50,11 @@ BuildBaseStrategyInfo =
 				{ 1, 140, 0, 0, 2,	"Unit",		"ork_squad_shoota_boy" },				
 				{ 1, 180, 0, 0, 2,	"Building",	"ork_waagh_banner" },
 				{ 1, 170, 70, 500, 1,	"Building",	"ork_pile_o_guns" },
+                { 1, 0, 0, 0, 0, "Rush", "Prepare" },				
 				{ 1, 160, 0, 0, 1,	"Unit",		"ork_squad_stormboy" },					
 				{ 1, 180, 0, 0, 3,	"Building",	"ork_waagh_banner" },
-				{ 1, 160, 0, 0, 2,	"Unit",		"ork_squad_stormboy" },		
+				{ 1, 160, 0, 0, 2,	"Unit",		"ork_squad_stormboy" },
+                { 1, 0, 0, 1600, 0, "Rush", "Unleash" },				
 				{ 1, 180, 0, 0, 4,	"Building",	"ork_waagh_banner" },
 
 				{ 2, 0, 0, 0, 0,	"Restrict",		"ork_squad_wierdboy" },

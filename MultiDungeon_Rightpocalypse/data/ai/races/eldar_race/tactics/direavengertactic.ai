@@ -116,3 +116,13 @@ function DireAvengerTactic:Reinforce()
 		self.squad_ai:DoReinforce( false, 0 )
 	end
 end
+
+function DireAvengerTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=EldarBuildBaseStrategy:CountSquads("eldar_guardian_squad")
+	if scout_count >= 2 then
+		return true
+	else
+		return false
+	end
+end

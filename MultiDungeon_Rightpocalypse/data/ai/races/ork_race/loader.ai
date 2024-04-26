@@ -185,11 +185,11 @@ function ork_race:GetInfo(sType)
 	if (sType == "TurretPower") then
 		return 500
 	elseif (sType == "SupportAllyFactor") then
-		return 7 / 4
+		return 10 / 4
 	elseif (sType == "AttackModifier") then
-		return 10
+		return 6
 	elseif (sType == "CriticalRangeIncreasePerTier") then
-		return 10
+		return 7
 	elseif (sType == "MinArmyStrengthPerTier") then
 		return 750
 	elseif (sType == "AttackRatio") then
@@ -232,7 +232,7 @@ function ork_race:GetBuildingType(sBuildingName)
 		return "ListeningPost", 0
 		
 	elseif (sBuildingName == "ork_waagh_banner") then
-		return "Turret", 190
+		return "Turret", 350
 		
 	elseif (sBuildingName == "ork_mine_field") then
 		return "Mine", 25

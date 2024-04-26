@@ -39,3 +39,13 @@ function BansheeTactic:Update()
 		return
 	end
 end
+
+function BansheeTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=EldarBuildBaseStrategy:CountSquads("eldar_guardian_squad")
+	if scout_count >= 2 then
+		return true
+	else
+		return false
+	end
+end
