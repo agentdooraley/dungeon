@@ -9,10 +9,9 @@ game_defaults =
 	-- win conditions: IDs listed here
 	win_condition_defaults = 
 	{
-		"_apocalypse_rules",
 		"Annihilate",
-		--"addon_legiotitanicus",
-		--"addon_startingarmy_builders",
+		"ControlArea",
+		"StrategicObjective",
 		"GameTimer"
 	},
 	

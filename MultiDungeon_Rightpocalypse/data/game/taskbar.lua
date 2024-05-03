@@ -801,7 +801,7 @@ resources =
 	
 	-- bonus
 	{ bind = "player_resource", ui = "grpBonus", text_widget = "txtBonus", icon_widget = "iconBonus", tt = tooltip_simple_template, tt_title = "$551100", tt_desc = "$551101"},
-	
+
 	-- ILE
     -- faith
     { bind = "player_resource", ui = "grpFaith", text_widget ="txtFaith", icon_widget ="iconFaith", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056"},
@@ -826,7 +826,7 @@ resources =
 --			{ bind = "player_resource", ui = "txtOrkSquadCap", text_widget = "orks", tt = tooltip_simple_template, tt_title = "$40754", tt_desc = "$40755", },
 
 			-- ork pop cap icon and label
-           		{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761" }, 
+            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761" }, 
 			{ bind = "player_population", pop_type = "ork", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761", },
 			
 			-- support cap icon and label
@@ -844,31 +844,8 @@ resources =
 		-- special bindings for NECRONS : Necron power
 		----------------------------------------------------------------------------------------
 		necrons = {
-			-- time bonus icon and label
-			{ bind = "player_resource", ui = "grpBonus", text_widget = "txtBonus", icon_widget = "iconBonus", tt = tooltip_simple_template, tt_title = "$551100", tt_desc = "$551101"},
-
-			-- power icon and label
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-
-			-- background for relic
-			{ bind = "image", ui = "grpRelicResource" },
-
-			-- relic icon and label
-			{ bind = "player_resource", ui = "grpRelic", text_widget = "txtOrks", icon_widget ="iconRelic", tt = tooltip_simple_template, tt_title = "$18210371", tt_desc = "$18210372"},
-
 			-- squad cap icon and label
-			{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			{ bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-
-			-- support cap icon and label
-			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-			{ bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" },
-		},
-
-		sisters = {
-			
-			--[[ squad cap icon and label
-	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
 			-- support cap icon and label
@@ -876,24 +853,16 @@ resources =
 			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
 
 			-- power
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$1103110"},
 			
-			-- faith image1
-			--{ bind = "player_resource_faith1_image", ui = "iconFaith1", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },
+		},
 
-			-- faith image2
-			{ bind = "player_resource_faith2_image", ui = "iconFaith2", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },]]
+		sisters = {
 			
 			-- squad cap icon and label
-	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
-			-- background for relic
-			{ bind = "image", ui = "grpRelicResource" },
-
-			-- relic icon and label
-			{ bind = "player_resource", ui = "grpRelic", text_widget = "txtOrks", icon_widget ="iconRelic", tt = tooltip_simple_template, tt_title = "$18210371", tt_desc = "$18210372"},
-
 			-- support cap icon and label
 			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
 			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
@@ -909,69 +878,13 @@ resources =
 		},
 		
 		----------------------------------------------------------------------------------------
-		-- special bindings for DARK ELDAR:
-		----------------------------------------------------------------------------------------
-		--[[dark_eldar = {
-			-- squad cap icon and label
-	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			
-			-- support cap icon and label
-			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-
-			-- power
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-		},]]
-		
-		----------------------------------------------------------------------------------------
-		-- standard bindings for DAEMONS:
-		----------------------------------------------------------------------------------------
-		
-		daemons = {
-			-- squad cap icon and label
-			{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-
-			-- support cap icon and label
-			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-
-			-- power
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-		},
-		
-		----------------------------------------------------------------------------------------
 		-- special bindings for ALL OTHER RACES: squad cap and support cap
 		----------------------------------------------------------------------------------------
 		other = {
-			--[[ squad cap icon and label
-	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
-			
-			-- support cap icon and label
-			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
-
-			-- power
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-			
-			-- faith image1
-			{ bind = "player_resource_faith1_image", ui = "iconFaith1", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },
-
-			-- faith image2
-			{ bind = "player_resource_faith2_image", ui = "iconFaith2", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },]]
-			
 			-- squad cap icon and label
-	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
-			-- background for relic
-			{ bind = "image", ui = "grpRelicResource" },
-
-			-- relic icon and label
-			{ bind = "player_resource", ui = "grpRelic", text_widget = "txtOrks", icon_widget ="iconRelic", tt = tooltip_simple_template, tt_title = "$18210371", tt_desc = "$18210372"},
-
 			-- support cap icon and label
 			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
 			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
@@ -979,19 +892,20 @@ resources =
 			-- power
 			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
 		},
+		
+	},
    	
 	----------------------------------------------------------------------------------------
 	-- strategic ui
 	----------------------------------------------------------------------------------------
 	-- these have special tooltips that display the requirements
-	{ bind = "player_strategic_points", strat_ebp = "strategic_point_flag", 		tt = tooltip_simple_template, tt_title = "$40770", tt_desc ="$40771", 	show_required_to_win = false, ui = "statsPoints", 		always_visible = false, 	timer_ui="txtPointsTime",		display_as_percentage = true,	show_team_count = true,	dependant = { { bind = "image", ui = "grpPoints" }, }, 			},
+	{ bind = "player_strategic_points", strat_ebp = "strategic_point_flag", 			tt = tooltip_simple_template, tt_title = "$40770", tt_desc ="$40771", 	show_required_to_win = false, ui = "statsPoints", 		always_visible = false, 	timer_ui="txtPointsTime",		display_as_percentage = true,	show_team_count = true,	dependant = { { bind = "image", ui = "grpPoints" }, }, 			},
 	{ bind = "player_strategic_points", strat_ebp = "strategic_objective_struct", 	tt = tooltip_simple_template, tt_title = "$40772", tt_desc ="$40773", 	show_required_to_win = false, ui = "statsObjectives",  always_visible = false, 	timer_ui="txtObjectivesTime",	display_as_percentage = true, 	show_team_count = true,	dependant = { { bind = "image", ui = "grpObjectives" }, }, 	},
-	{ bind = "player_strategic_points", strat_ebp = "relic_struct", 				tt = tooltip_simple_template, tt_title = "$40774", tt_desc ="$40775", 	show_required_to_win = false, ui = "statRelics", 			always_visible = true, 													display_as_percentage = true, 	show_team_count = false,	dependant = { { bind = "image", ui = "grpRelics" }, }, 			},
+	{ bind = "player_strategic_points", strat_ebp = "relic_struct", 							tt = tooltip_simple_template, tt_title = "$40774", tt_desc ="$40775", 	show_required_to_win = false, ui = "statRelics", 			always_visible = true, 													display_as_percentage = true, 	show_team_count = false,	dependant = { { bind = "image", ui = "grpRelics" }, }, 			},
 	
-	{ bind = "image", ui = "iconPoints",     tt = tooltip_simple_template, tt_title = "$40770", tt_desc ="$40771" }, 
+	{ bind = "image", ui = "iconPoints", tt = tooltip_simple_template, tt_title = "$40770", tt_desc ="$40771" }, 
 	{ bind = "image", ui = "iconObjectives", tt = tooltip_simple_template, tt_title = "$40772", tt_desc ="$40773" }, 
-	{ bind = "image", ui = "iconRelics",     tt = tooltip_simple_template, tt_title = "$40774", tt_desc ="$40775" }, 
-}
+	{ bind = "image", ui = "iconRelics", tt = tooltip_simple_template, tt_title = "$40774", tt_desc ="$40775" }, 
 }
 -- dialogs buttons
 dialogs = 

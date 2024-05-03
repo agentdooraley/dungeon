@@ -2,7 +2,7 @@ Localization =
 {
 exclusive = false,
 victory_condition = false,
-always_on = true,
+always_on = false,
 title = "Apocalypse Rules",
 win_message = "",
 lose_message = "",

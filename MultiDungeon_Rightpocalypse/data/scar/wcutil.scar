@@ -205,8 +205,7 @@ function WCUtil_CheckStrategicPoints( TeamTable, SettingsTable )
 			if( Misc_GetLocalPlayerID() ~= -1 and Player_GetTeam( Player_FromId(Misc_GetLocalPlayerID())) == winningTeamNum ) then
 				Sound_Play( SettingsTable.g_victory_sound )
 			end
-			haswon()
-			pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+			
 			World_SetTeamWin( winningTeam.first_player, SettingsTable.g_wc_name );
 			World_SetGameOver();
 			
