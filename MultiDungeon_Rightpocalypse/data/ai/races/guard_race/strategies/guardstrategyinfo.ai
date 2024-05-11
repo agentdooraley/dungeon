@@ -54,6 +54,7 @@ BuildBaseStrategyInfo =
 
 				{ 2, 0, 0, 0, 0, "Restrict",	 "guard_squad_officer_support_squad"},
 				{ 2, 0, 0, 0, 0, "Restrict",	 "guard_squad_officer_squad"},
+				{ 2, 0, 0, 0, 0, "Restrict",	 "guard_squad_marauder"},
 				{ 2, 250, 125, 0, 1,	"Building",	"guard_mechanized" },
 				{ 2, 200, 50, 0, 1,	"Unit",		"guard_squad_guardsmen_specialweapons" },
 				{ 2, 100, 180, 0, 1,	"Unit",		"guard_squad_sentinel" },
