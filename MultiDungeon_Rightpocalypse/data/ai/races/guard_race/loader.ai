@@ -166,7 +166,7 @@ function guard_race:CreateTactic(oSquadAI)
 	elseif (sUnitName == "guard_squad_marauder") then
 		return GuardVehicleTactic(oSquadAI)
 	elseif (sUnitName == "guard_squad_marauder_vigilant") then
-		return VigilantTactic(oSquadAI)
+		return GuardVehicleTactic(oSquadAI)
 	elseif (sUnitName == "guard_squad_valkyrie_transport") then
 		return ValkyrieTactic(oSquadAI)
 	elseif (sUnitName == "guard_squad_vulture") then
