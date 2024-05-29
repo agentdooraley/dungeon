@@ -1,0 +1,83 @@
+----------------------------------------
+-- File: 'ReaperTactic.ai'
+
+--eldar_squad_dark_reapers
+
+class 'ReaperTactic' (EldarInfantryTactic)
+
+Reaper = {}
+
+function ReaperTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Reaper Tactic")
+end
+
+
+function ReaperTactic:Reinforce()
+
+		-- Check time, before 150 sec no need reinforce.
+    if (g_iGMT <= 180) then
+		return
+    end 
+
+	if self.squad_ai:IsInCombat() then
+		if (not self.squad_ai:IsReinforcing()) then
+			self.squad_ai:DoReinforce(true, 0)
+			--[[
+			if (self.squad_ai:CanReinforce(true, 0)) then
+				self.squad_ai:DoReinforce(true, 0)
+			end]]
+		end
+	end
+	-- Try for leader
+	if (not self.squad_ai:IsReinforcing()) then
+	  
+		if (self.squad_ai:CanReinforce(true, 0)) then
+			self.squad_ai:DoReinforce(true, 0)
+		elseif (self.squad_ai:CanReinforce(false, 0)) then
+
+			-- Don't reinforce more than 5 reapers without a leader
+			if (self.squad_ai:HasLeader() or self.squad_ai:GetNumTroopers() < 5) then
+				self.squad_ai:DoReinforce(false, 0)
+			end
+		end
+	end
+
+end
+
+function ReaperTactic:Update()
+
+	if (self:IsComplete()) then
+        return
+    end	
+
+	    -- State machine
+    if (not InfantryTactic.Update( self )) then
+        return
+    end
+	
+	
+	if self:GetClosestUnitForMelee(1500) ~= nil then
+		local oUnitPos = self:GetClosestUnitForMelee(1500):GetPosition()
+	
+		-- Get closest enemy unit to target position
+		local oEnemySquad = cpu_manager.cpu_player:FindFirstEnemy(oUnitPos, 500, 1)
+		if oEnemySquad ~= nil then
+			if not (self.squad_ai:IsUnderAttack()) and g_iGMT< 180 then
+				cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemySquad:GetPosition()), true, "AttackState")	
+				return
+			end				
+		end
+		
+	end
+end
+
+function ReaperTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=EldarBuildBaseStrategy:CountSquads("eldar_guardian_squad")
+	if scout_count >= 2 then
+		return true
+	else
+		return false
+	end
+end
