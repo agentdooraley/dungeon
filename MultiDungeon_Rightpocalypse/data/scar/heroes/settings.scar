@@ -119,10 +119,6 @@ function UpgradeCommander(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
-		Squad_SetHealth(eSquadID, 1.0)
-		
 	elseif (iLevel == 7) then
 		-- Increase hitpoint regeneration
 		UnitStatAddBaseFactor("ModHealthRegeneration", eSquadID, iUnitIndex, 1.5)
@@ -137,7 +133,6 @@ function UpgradeCommander(eSquadID, iLevel, iUnitIndex)
 		
 		-- Increase weapon range
 		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.15)
-		Squad_SetHealth(eSquadID, 1.0)
 		
 	elseif (iLevel >= 9) then
 		-- Increase hitpoint regeneration
@@ -153,7 +148,6 @@ function UpgradeCommander(eSquadID, iLevel, iUnitIndex)
 		
 		-- Increase weapon range
 		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.2)
-		Squad_SetHealth(eSquadID, 1.0)
 	end
 end
 
@@ -186,7 +180,6 @@ function UpgradeBuilder(eSquadID, iLevel, iUnitIndex)
 		-- Increase speed
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
-		Squad_SetHealth(eSquadID, 1.0)
 	end
 end
 
@@ -209,8 +202,6 @@ function UpgradeScoutSquad(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.2)
 		
 	elseif (iLevel == 5) then	
 
@@ -224,9 +215,6 @@ function UpgradeScoutSquad(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.2)
-		Squad_SetHealth(eSquadID, 1.0)
 	end
 end
 
@@ -254,7 +242,6 @@ function UpgradeMeleeSquad(eSquadID, iLevel, iUnitIndex)
 		-- Increase speed
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.2)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
-		Squad_SetHealth(eSquadID, 1.0)
 	end
 end
 
@@ -274,9 +261,6 @@ function UpgradeRangedSquad(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.05)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.9)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.05)
-		
 	elseif (iLevel == 3) then
 	
 		-- Increase hitpoint regeneration
@@ -286,9 +270,6 @@ function UpgradeRangedSquad(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.9)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)	
-		
 	elseif (iLevel == 4) then
 	
 		-- Increase hitpoint regeneration
@@ -297,8 +278,6 @@ function UpgradeRangedSquad(eSquadID, iLevel, iUnitIndex)
 		-- Increase speed
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.9)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
 		
 	elseif (iLevel == 5) then
 	
@@ -309,9 +288,6 @@ function UpgradeRangedSquad(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedMax", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModSpeedAccelerationTime", eSquadID, iUnitIndex, 0.8)
 		
-		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
-		Squad_SetHealth(eSquadID, 1.0)
 	end
 end
 
@@ -352,7 +328,6 @@ function UpgradeArtillery(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSightRange", eSquadID, iUnitIndex, 1.1)
 		
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.9)
 		
 	elseif (iLevel == 5) then
@@ -361,7 +336,6 @@ function UpgradeArtillery(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSightRange", eSquadID, iUnitIndex, 1.2)
 		
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.2)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.9)
 		Squad_SetHealth(eSquadID, 1.0)
 	end
@@ -381,7 +355,6 @@ function UpgradeTank(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedRotationTime", eSquadID, iUnitIndex, 0.95)
 		
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.95)
 		
 	elseif (iLevel == 3) then
@@ -392,7 +365,6 @@ function UpgradeTank(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModHealthMax", eSquadID, iUnitIndex, 1.15)
 
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.05)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.93)
 
 	elseif (iLevel == 4) then
@@ -402,7 +374,6 @@ function UpgradeTank(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModSpeedRotationTime", eSquadID, iUnitIndex, 0.9)
 		
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.9)
 		
 	elseif (iLevel == 5) then
@@ -414,7 +385,6 @@ function UpgradeTank(eSquadID, iLevel, iUnitIndex)
 		UnitStatAddBaseFactor("ModHealthMax", eSquadID, iUnitIndex, 1.15)
 		
 		-- Increase weapon range
-		UnitStatAddBaseFactor("ModWeaponMaxRange", eSquadID, iUnitIndex, 1.1)
 		UnitStatAddBaseFactor("ModWeaponReloadTime", eSquadID, iUnitIndex, 0.88)
 		Squad_SetHealth(eSquadID, 1.0)
 	end
