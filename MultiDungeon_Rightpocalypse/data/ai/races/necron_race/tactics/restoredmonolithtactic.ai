@@ -40,9 +40,6 @@ end
 function RestoredMonolithTactic:InitAbilities()
 
 	-- Init ability ID's
-	if (RestoredMonolith.production_id == nil) then
-		RestoredMonolith.production_id = cpu_manager.stats:GetAbilityID( "necron_mass_production" )
-	end
 	if (RestoredMonolith.truegauss_id == nil) then
 		RestoredMonolith.truegauss_id = cpu_manager.stats:GetAbilityID( "necron_truegauss" )
 	end
@@ -50,18 +47,6 @@ end
 
 function RestoredMonolithTactic:DoAbilities()
 
-	if (self.squad_ai:CanDoAbility(RestoredMonolith.production_id )) then
-		if (not self.squad_ai:IsUsingAbility(RestoredMonolith.production_id)) then
-			if ((self.squad_ai:IsInCombat() and self.squad_ai:GetHealthPercentage() > 0.9) or (not self.squad_ai:IsInCombat() and self.squad_ai:GetHealthPercentage() < 0.5)) then
-				self.squad_ai:DoSpecialAbility(RestoredMonolith.production_id )
-			else
-			end
-		else
-			if (not self.squad_ai:IsInCombat() and self.squad_ai:GetHealthPercentage() >= 0.5) then
-				self.squad_ai:DoSpecialAbility(RestoredMonolith.production_id )
-			end
-		end
-	end
 
 	-- Gauss Weapon Overcharge: the squad will receive a boost in maximum damage, but a critical reduction in movement speed for a duration.
 	if (self.squad_ai:IsInCombat() and self.squad_ai:GetHealthPercentage() > 0.5) then
