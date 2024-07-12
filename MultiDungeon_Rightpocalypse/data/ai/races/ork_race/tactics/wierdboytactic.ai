@@ -15,19 +15,6 @@ function WierdBoyTactic:__init( squad_ai ) super( squad_ai )
 	self.m_iLastEntrenchTime = g_iGMT
 end
 
-function WierdBoyTactic:AutoBuildAddOn( addonSlot )
-	for e in self.squad_ai:GetEntities() do
-		local buildChannelWierdBoy = build_manager:GetBuildChannelFromID(e:GetID())
-		if (buildChannelWierdBoy ~= nil) then
-			local addOnID = buildChannelWierdBoy:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
-			if (buildChannelWierdBoy:IsBuilding() == 0 and buildChannelWierdBoy:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
-				buildChannelWierdBoy:BuildAddOn(addOnID)
-				return
-			end
-		end
-	end
-	return
-end
 
 function WierdBoyTactic:IsAttacker()
 	return self:IsCommanderAttacker()
@@ -138,20 +125,6 @@ function WierdBoyTactic:DoAbilities()
 	end
 end
 
-function WierdBoyTactic:Upgrade()
-
---	self:AutoBuildAddOn(0)	--	[addon_01] addon_commanders_cap_population.lua			5/1
---	self:AutoBuildAddOn(1)	-- 	[addon_02] addon_commanders_cap_support.lua			5/1
---	self:AutoBuildAddOn(2)	-- 	[addon_04] addon_commanders_increase_production.lua		5/1
---	self:AutoBuildAddOn(3)	-- 	[addon_05] addon_commanders_increase_health.lua			6/1
---	self:AutoBuildAddOn(4)	-- 	[addon_06] addon_commanders_increase_morale.lua			6/1
---	self:AutoBuildAddOn(5)	-- 	[addon_07] addon_commanders_cap_population_2.lua		8
---	self:AutoBuildAddOn(6)	-- 	[addon_08] addon_commanders_cap_support_2.lua			8
---	self:AutoBuildAddOn(7)	-- 	[addon_09] addon_commanders_increase_production_2.lua		8
-
-	local addon_random_commander_upgrades = math.random( 0,7 )	-- Randomize these addons
-		self:AutoBuildAddOn(addon_random_commander_upgrades)
-end
 
 function WierdBoyTactic:DoEntrenchAbility()
 

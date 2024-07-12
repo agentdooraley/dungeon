@@ -17,20 +17,6 @@ function OfficerMaleTactic:__init( squad_ai ) super( squad_ai )
 	OfficerMale.NextExecuteCheck = 0
 end
 
-function OfficerMaleTactic:AutoBuildAddOn( addonSlot )
-	for e in self.squad_ai:GetEntities() do
-		local buildChannelOfficerMale = build_manager:GetBuildChannelFromID(e:GetID())
-		if (buildChannelOfficerMale ~= nil) then
-			local addOnID = buildChannelOfficerMale:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
-			if (buildChannelOfficerMale:IsBuilding() == 0 and buildChannelOfficerMale:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
-				buildChannelOfficerMale:BuildAddOn(addOnID)
-				return
-			end
-		end
-	end
-	return
-end
-
 function OfficerMaleTactic:IsAttacker()	
 	return self:IsCommanderAttacker()
 end

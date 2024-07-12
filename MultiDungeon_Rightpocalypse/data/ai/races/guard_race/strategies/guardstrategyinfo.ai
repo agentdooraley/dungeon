@@ -213,9 +213,8 @@ BuildOrderStrategyInfo =
 			{ "squad", "guard_squad_command_squad" },
 			{ "squad", "guard_squad_enginseer" },
 			{ "squad", "guard_squad_guardsmen" },
-			{ "post_builder" }, 
 			{ "building", "guard_plasma_generator", true }
-		}
+		},
 	}
 }
 

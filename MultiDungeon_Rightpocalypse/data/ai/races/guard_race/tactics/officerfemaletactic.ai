@@ -14,20 +14,6 @@ function OfficerFemaleTactic:__init( squad_ai ) super( squad_ai )
 	self.m_bBunkerSquad = true
 end
 
-function OfficerFemaleTactic:AutoBuildAddOn( addonSlot )
-	for e in self.squad_ai:GetEntities() do
-		local buildChannelOfficerFemale = build_manager:GetBuildChannelFromID(e:GetID())
-		if (buildChannelOfficerFemale ~= nil) then
-			local addOnID = buildChannelOfficerFemale:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
-			if (buildChannelOfficerFemale:IsBuilding() == 0 and buildChannelOfficerFemale:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
-				buildChannelOfficerFemale:BuildAddOn(addOnID)
-				return
-			end
-		end
-	end
-	return
-end
-
 function OfficerFemaleTactic:IsAttacker()	
 	return self:IsCommanderAttacker()
 end

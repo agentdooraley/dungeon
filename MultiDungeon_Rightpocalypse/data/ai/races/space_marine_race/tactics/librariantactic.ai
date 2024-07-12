@@ -12,19 +12,6 @@ function LibrarianTactic:__init( squad_ai ) super( squad_ai )
 	self:SetName("Librarian Tactic")
 end
 
-function LibrarianTactic:AutoBuildAddOn( addonSlot )
-	for e in self.squad_ai:GetEntities() do
-		local buildChannelLibrarian = build_manager:GetBuildChannelFromID(e:GetID())
-		if (buildChannelLibrarian ~= nil) then
-			local addOnID = buildChannelLibrarian:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
-			if (buildChannelLibrarian:IsBuilding() == 0 and buildChannelLibrarian:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
-				buildChannelLibrarian:BuildAddOn(addOnID)
-				return
-			end
-		end
-	end
-	return
-end
 
 function LibrarianTactic:AlwaysAttack()
 	return true

@@ -189,19 +189,17 @@ BuildOrderStrategyInfo =
 		 
 		LargeMap = 
 		{
-			{ "flag_capture" }, { "post_builder" },
+			{ "flag_capture" }, { "flag_capture" },
 			{ "flag_capture" }, 
-			{ "squad", "ork_squad_grot" },
-			{ "squad", "ork_squad_grot_gang" },
-			{ "squad", "ork_squad_grot_gang" },
-			{ "squad", "ork_squad_grot_gang" },
-			{ "squad", "ork_squad_grot_gang" },
+			{ "squad", "ork_squad_slugga" },
+			{ "squad", "ork_squad_slugga" },
 			{ "squad", "ork_squad_grot" },
 			{ "post_builder" },
 			{ "building", "ork_boy_hut", true },
-			{ "building", "ork_generator", true },
-			{ "building", "ork_waagh_banner" }
-		}
+			{ "squad", "ork_squad_shoota_boy" },			
+			{ "building", "ork_generator" },
+			{ "squad", "ork_squad_mek_boy", true }			
+		},
 	}
 }
 

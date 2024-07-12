@@ -402,18 +402,13 @@ BuildOrderStrategyInfo =
 		{
 			{ "flag_capture" }, { "flag_capture" },
 			{ "flag_capture" }, 
+			{ "building", "eldar_aspect_portal", false },			
 			{ "squad", "eldar_squad_bonesinger" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "squad", "eldar_storm_guardian_squad" },
-			{ "post_builder" }, { "post_builder" },
-			{ "building", "eldar_warp_generator", true },
-			{ "squad", "eldar_squad_bonesinger" },
-			{ "building", "eldar_aspect_portal", true },
-			{ "building", "eldar_warp_generator", true },
-			{ "building", "eldar_webway_gate", true }
-		}
+			{ "squad", "eldar_guardian_squad" },
+			{ "squad", "eldar_guardian_squad" },
+			{ "post_builder" },
+			{ "squad", "eldar_guardian_squad" }
+		},
 	}
 }
 

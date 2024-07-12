@@ -402,18 +402,13 @@ BuildOrderStrategyInfo =
 		 
 		LargeMap =
 		{
-			{ "flag_capture" }, { "flag_capture" }, 
-			{ "flag_capture" },
-			{ "squad", "space_marine_squad_servitor" },
-			{ "squad", "space_marine_squad_scout" },
-			{ "squad", "space_marine_squad_scout" },
+			{ "flag_capture" }, { "flag_capture" },
 			{ "squad", "space_marine_squad_scout" },
 			{ "squad", "space_marine_squad_servitor" },
 			{ "squad", "space_marine_squad_scout" },
-			{ "post_builder" }, { "post_builder" },
-			{ "building", "space_marine_barracks", true },
-			{ "building", "space_marine_generator" }
-		}
+			{ "squad", "space_marine_squad_scout" },			
+			{ "squad", "space_marine_squad_scout" }
+		},
 	}
 }
 
