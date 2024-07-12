@@ -339,6 +339,7 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 					
 			-- Compute infantry researches
 			if (iInfantrySquads >= 2) then
+				self:DynamicResearch("chaos_health_upgrade_research", 1, 75, 50, 0, 0, nil, 0)			
 				self:DynamicResearch("chaos_frag_grenade_research", 1, 25, 75, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_champion_melee_research_1", 1, 40, 20, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_plasma_pistol_research", 1, 50, 30, 0, 0, nil, 0)
@@ -430,7 +431,6 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 				self:DynamicResearch("chaos_squad_size_increase_research", 3, 300, 300, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_accuracy_upgrade_research", 3, 100, 50, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_armor_upgrade_research", 3, 100, 50, 0, 0, nil, 0)
-				self:DynamicResearch("chaos_health_upgrade_research", 3, 100, 50, 0, 0, nil, 0)
 			end
 
 
