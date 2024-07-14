@@ -213,7 +213,7 @@ function OrkBuildBaseStrategy:BuildFlexible()
 	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
 	
 	
-	if (iArmyStrength >= 1000 or (iPower >= 800 and iRequisition >= 900)) then
+	if (iArmyStrength >= 400 or (iPower >= 800 and iRequisition >= 900)) then
 		
 		-- Dynamic research item syntax: ResearchName, MinTier, RequisitionCost, PowerCost, MinSquadCap, MinSupportCap, SquadName, SquadMinCount
 		local iCommanderSquads = self:CountSquads("ork_squad_mek_boy") + self:CountSquads("ork_squad_warboss")

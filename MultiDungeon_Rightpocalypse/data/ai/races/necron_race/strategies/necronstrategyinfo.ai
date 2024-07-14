@@ -50,7 +50,9 @@ BuildBaseStrategyInfo =
 				{ 1, 0, 40, 0, 25,   "TurretAddon",  "addon_necron_list_post_1" },
 				{ 1, 0, 120, 650, 1,	"Building", 	"necron_summoning_core" },
 				{ 1, 0, 200, 1000, 1,"Research",	"necron_warrior_boost" },
+                { 1, 0, 0, 0, 1000, "Rush", "Prepare" },				
 				{ 1, 0, 200, 800, 1,	"Building",	"necron_forbidden_archive" },
+                { 1, 0, 0, 2000, 0, "Rush", "Unleash" },					
 				{ 1, 0, 340, 900, 1,	"Addon", 	"addon_necron_hq_1" },
 				{ 1, 0, 500, 1400, 2,	"Building",	"monolith" },
 
