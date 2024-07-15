@@ -39,14 +39,17 @@ BuildBaseStrategyInfo =
 		{
 			-- Allround strategy
 			{
-				{ 1, 0, 120, 0, 1,	"Building",	"necron_turret" },
 				{ 1, 0, 0, 0, 1,	"Unit",		"necron_basic_warrior_squad" },
 				{ 1, 0, 200, 0, 1,	"Unit",		"necron_lord_squad" },
 				{ 1, 0, 0, 0, 2,	"Unit",		"necron_basic_warrior_squad" },
 				{ 1, 0, 0, 0, 1,	"Building",	"monolith" },
-				{ 1, 0, 0, 0, 3,	"Unit",		"necron_basic_warrior_squad" },
+				{ 1, 0, 0, 0, 4,	"Unit",		"necron_basic_warrior_squad" },
 				{ 1, 0, 150, 0, 2,	"Unit",		"necron_flayed_one_squad" },
-				{ 1, 0, 125, 0, 8,	"Building",	"necron_plasma_generator" },
+				{ 1, 0, 80, 0, 1,	"Building",	"necron_plasma_generator" },
+				{ 1, 0, 80, 0, 2,	"Building",	"necron_plasma_generator" },
+				{ 1, 0, 80, 0, 3,	"Building",	"necron_plasma_generator" },
+				{ 1, 0, 80, 0, 4,	"Building",	"necron_plasma_generator" },
+				{ 1, 0, 80, 0, 5,	"Building",	"necron_plasma_generator" },				
 				{ 1, 0, 40, 0, 25,   "TurretAddon",  "addon_necron_list_post_1" },
 				{ 1, 0, 120, 650, 1,	"Building", 	"necron_summoning_core" },
 				{ 1, 0, 200, 1000, 1,"Research",	"necron_warrior_boost" },
@@ -57,7 +60,7 @@ BuildBaseStrategyInfo =
 				{ 1, 0, 500, 1400, 2,	"Building",	"monolith" },
 
 				{ 2, 0, 200, 0, 1,	"Unit",		"necron_lord_squad" },
-				{ 2, 0, 0, 0, 3,	"Unit",		"necron_basic_warrior_squad" },
+				{ 2, 0, 0, 0, 5,	"Unit",		"necron_basic_warrior_squad" },
 				{ 2, 0, 340, 750, 2,	"Unit",		"necron_immortal_squad" },
 				{ 2, 0, 400, 0, 1,	"Unit",		"necron_destroyer_squad" },
 				{ 2, 0, 60, 400, 100,   "TurretAddon",  "addon_necron_list_post_1" },
@@ -70,7 +73,7 @@ BuildBaseStrategyInfo =
 				{ 3, 0, 200, 0, 1,	"Unit",		"necron_lord_squad" },
 				{ 3, 0, 200, 0, 1,	"Unit",		"necron_deathmark_squad" },
 				{ 3, 0, 500, 0, 1,	"Unit",		"necron_heavy_destroyer_squad" },
-				{ 3, 0, 0, 0, 4,	"Unit",		"necron_basic_warrior_squad" },
+				{ 3, 0, 0, 0, 5,	"Unit",		"necron_basic_warrior_squad" },
 				{ 3, 0, 700, 0, 1,	"Unit",		"necron_annihilation_barge_squad" },
 				{ 3, 0, 125, 0, 20,	"Building",	"necron_plasma_generator" },
 			    { 3, 0, 250, 0, 30,	"TurretAddon",	"addon_necron_list_post_2" },
@@ -148,14 +151,11 @@ BuildOrderStrategyInfo =
 		{
 			{ "squad", "necron_builder_scarab_squad" },
 			{ "squad", "necron_builder_scarab_squad" },
+			{ "squad", "necron_basic_warrior_squad" },				
 			{ "squad", "necron_builder_scarab_squad" },
-			{ "flag_capture" }, { "post_builder" },
+			{ "flag_capture" },  { "flag_capture" }, { "post_builder" },
 			{ "building", "necron_plasma_generator" },
-		    { "building", "necron_plasma_generator" },
-		    { "building", "necron_plasma_generator" },
-		    { "building", "necron_plasma_generator" },
-		    { "building", "necron_plasma_generator" },
-			{ "squad", "necron_basic_warrior_squad" },			
+		    { "building", "necron_plasma_generator" },	
 			{ "squad", "necron_basic_warrior_squad" }			
 		},
 		 

@@ -378,6 +378,7 @@ BuildOrderStrategyInfo =
 		Basic =
 		{
 			{ "flag_capture" }, { "flag_capture" },
+			{ "flag_capture" },
 			{ "squad", "space_marine_squad_scout" },
 			{ "squad", "space_marine_squad_servitor" },
 			{ "squad", "space_marine_squad_scout" },
@@ -403,6 +404,7 @@ BuildOrderStrategyInfo =
 		LargeMap =
 		{
 			{ "flag_capture" }, { "flag_capture" },
+			{ "flag_capture" },
 			{ "squad", "space_marine_squad_scout" },
 			{ "squad", "space_marine_squad_servitor" },
 			{ "squad", "space_marine_squad_scout" },

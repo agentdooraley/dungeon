@@ -12,19 +12,6 @@ function MekBoyTactic:__init( squad_ai ) super( squad_ai )
 	self:SetName("Mek Boy Tactic")
 end
 
-function MekBoyTactic:AutoBuildAddOn( addonSlot )
-	for e in self.squad_ai:GetEntities() do
-		local buildChannelMekBoy = build_manager:GetBuildChannelFromID(e:GetID())
-		if (buildChannelMekBoy ~= nil) then
-			local addOnID = buildChannelMekBoy:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
-			if (buildChannelMekBoy:IsBuilding() == 0 and buildChannelMekBoy:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
-				buildChannelMekBoy:BuildAddOn(addOnID)
-				return
-			end
-		end
-	end
-	return
-end
 
 -- Assassinate win condition -- never attack
 function MekBoyTactic:IsAttacker()

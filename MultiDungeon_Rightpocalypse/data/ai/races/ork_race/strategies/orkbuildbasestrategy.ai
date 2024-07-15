@@ -11,10 +11,6 @@ function OrkBuildBaseStrategy:__init( baseinfo ) super( baseinfo )
 	self:AddDetectorUnit("ork_squad_armored_nob")
 	self:AddDetectorUnit("ork_squad_warboss")
 	self:AddDetectorUnit("ork_squad_mek_boy")
-	
-	-- Phases of attacks. If army is decreased substantially, or build only titans: modify.
-	self.m_iArmyBuild = math.random(0, 4) -- 4 phases total. If 4 armies was defeated, stop creating armies as it is pointless. Build titans and focus on build order strategy.
-	self.m_iArmyHighestStrength = 0 -- Maximum possible army strength I ever had.
 
 	-- Build first HQ at start pos
 	self.m_iNumHQAtStartPos = 1
@@ -22,14 +18,7 @@ function OrkBuildBaseStrategy:__init( baseinfo ) super( baseinfo )
 end
 
 function OrkBuildBaseStrategy:ChooseBuildProgram()
-
-	-- Check build program count
-	if (table.getn(self.info.BuildPrograms) ~= 4) then
-		return BuildBaseStrategy.ChooseBuildProgram(self)
-	end
-	-- Set probabilities of the strategies according to the map size
-	local iBuildProgram1	-- Normal
-	return 1
+    return math.random(1,5) 
 end
 
 function OrkBuildBaseStrategy:EvaluateSquadCap()
@@ -225,8 +214,8 @@ function OrkBuildBaseStrategy:BuildFlexible()
 		if (self.tierLevel >= 1) then
 
 			-- Compute builder research
-			if (self:CountSquads("ork_squad_mek_boy") >= 1) then
-				self:DynamicResearch("ork_research_big_mek_1", 1, 75, 75, 0, 0, nil, 0)
+			if (self:CountSquads("ork_squad_mek_boy") >= 1) then		
+				self:DynamicResearch("ork_research_warboss_melee_1", 1, 75, 75, 0, 0, "ork_squad_mek_boy", 1)
 			end
 
 			-- Compute builder research
@@ -375,6 +364,8 @@ function OrkBuildBaseStrategy:BuildFlexible()
 			-- Compute resource research
 			self:DynamicResearch("ork_power_research_4", 4, 600, 160, 0, 0, nil, 0)
 			self:DynamicResearch("ork_requisition_research_4", 4, 150, 550, 0, 0, nil, 0)
+			self:DynamicResearch("ork_research_tech_lootas", 4, 0, 200, 0, 0, nil, 0)
+			self:DynamicResearch("ork_research_tech_squiggoth", 4, 0, 450, 0, 0, nil, 0)			
 		end
 
 		-- Compute tier 5 researches
@@ -387,7 +378,11 @@ function OrkBuildBaseStrategy:BuildFlexible()
 
 			-- Compute resource research
 			self:DynamicResearch("ork_requisition_research_5", 5, 900, 3000, 0, 0, nil, 0)
-
+			self:DynamicResearch("ork_research_tech_gargant", 5, 0, 450, 0, 0, nil, 0)	
+			self:DynamicResearch("ork_research_tech_great_gargant", 5, 0, 450, 0, 0, nil, 0)	
+			self:DynamicResearch("ork_research_tech_mega_gargant", 5, 0, 450, 0, 0, nil, 0)				
+			
+			
 			-- Compute Ork Titan researches
 			if (iUberSquads >= 1) then
 				self:DynamicResearch("ork_research_titan_armor", 5, 300, 300, 0, 0, nil, 0)
@@ -415,7 +410,7 @@ function OrkBuildBaseStrategy:BuildFlexible()
 		-- Dynamic buildings
 		-- Item-Syntax: BuildingName, BuildingCount, MinTier, MinRequisition, MinPower, MinSquadCap, MinSupportCap
 		self:DynamicBuild("ork_hq", 2, 1, 1000, 400, 0, 0)
-		self:DynamicBuild("ork_generator", 8 * self:GetBuildingCountByName("ork_hq"), 3, 150, 0, 0, 0)
+		self:DynamicBuild("ork_generator", 6 * self:GetBuildingCountByName("ork_hq"), 3, 150, 0, 0, 0)
 
 		-- Dynamically regulate quantity of defensive buildings based on how many strats/crits/relics we have through the tiers so we avoid cluttering/bottlenecking on maps with limited points
 		if (self.tierLevel >= 2 and (iRequisition >= 1500 and iPower >= 1500)) then
@@ -493,12 +488,6 @@ function OrkBuildBaseStrategy:BuildFlexible()
 				self:DynamicBuild("ork_gork_factory", 3, 6, 2000, 2500, 0, 0)
 				self:DynamicBuild("ork_hq_super", 3, 6, 5000, 4000, 0, 0)
 			end
-		end
-
-		-- Build an extra big powa plant if we need dat POWA!
-		local iPowRate = resource_manager:GetResourceRate( ResourceAmount.RT_Power )
-		if (iPowRate <= 1300) then
-			self:DynamicBuild("ork_even_bigger_generator", 2, 6, 7000, 0, 0, 0)
 		end
 
 		-- Build additional Superweapons if we have excess resources
