@@ -118,7 +118,7 @@ BuildBaseStrategyInfo =
 				{ 1, 180, 0, 0, 1,	"Building",	"ork_waagh_banner" },				
 				{ 1, 140, 0, 0, 2,	"Unit",		"ork_squad_shoota_boy" },				
 				{ 1, 180, 0, 0, 2,	"Building",	"ork_waagh_banner" },	
-				{ 1, 140, 0, 0, 3,	"Unit",		"ork_squad_shoota_boy" }					
+				{ 1, 140, 0, 0, 3,	"Unit",		"ork_squad_shoota_boy" },					
 				{ 1, 170, 70, 500, 1,	"Building",	"ork_pile_o_guns" },
                 { 1, 0, 0, 0, 700, "Rush", "Prepare" },							
 				{ 1, 180, 0, 0, 3,	"Building",	"ork_waagh_banner" },
@@ -395,7 +395,7 @@ BuildBaseStrategyInfo =
 				ork_squad_ard_boyz = 3,
 				ork_squad_tankbusta = 3,
 				ork_flash_gitz_squad = 3,
-				ork_squad_lootas = 3,
+				ork_squad_lootas = 1,
 				ork_squad_nob = 3,
 				ork_squad_armored_nob = 3,
 				ork_squad_looted_rhino = 2,
