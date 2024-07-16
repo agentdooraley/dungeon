@@ -357,9 +357,7 @@ function OrkBuildBaseStrategy:BuildFlexible()
 			
 			-- Compute Waagh Banner Research
 			self:DynamicResearch("ork_research_powerclaw", 4, 250, 125, 0, 0, nil, 0)
-			
-			-- Compute Walls research
-			self:DynamicResearch("ork_walls_research_2", 4, 250, 250, 0, 0, nil, 0)
+		
 			
 			-- Compute resource research
 			self:DynamicResearch("ork_power_research_4", 4, 600, 160, 0, 0, nil, 0)
@@ -379,8 +377,7 @@ function OrkBuildBaseStrategy:BuildFlexible()
 			-- Compute resource research
 			self:DynamicResearch("ork_requisition_research_5", 5, 900, 3000, 0, 0, nil, 0)
 			self:DynamicResearch("ork_research_tech_gargant", 5, 0, 450, 0, 0, nil, 0)	
-			self:DynamicResearch("ork_research_tech_great_gargant", 5, 0, 450, 0, 0, nil, 0)	
-			self:DynamicResearch("ork_research_tech_mega_gargant", 5, 0, 450, 0, 0, nil, 0)				
+			self:DynamicResearch("ork_research_tech_great_gargant", 5, 0, 450, 0, 0, nil, 0)			
 			
 			
 			-- Compute Ork Titan researches
@@ -417,27 +414,19 @@ function OrkBuildBaseStrategy:BuildFlexible()
     			if (resource_manager:GetNumOwnedStrategicPoints() < 4) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasRelic()) then
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 2, 2, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 2, 2, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 2, 2, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 2, 2, 800, 0, 0, 0)
 				self:DynamicBuild("ork_boomy_platform", 1, 3, 900, 500, 0, 0)
 				self:DynamicBuild("ork_burna_bomm", 1, 3, 750, 750, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 4, 3, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 4, 3, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 4, 3, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 4, 3, 800, 0, 0, 0)
    			end
 		else
    			if (resource_manager:GetNumOwnedStrategicPoints() > 3) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasRelic()) then
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 3, 2, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 3, 2, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 3, 2, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 3, 2, 800, 0, 0, 0)
 				self:DynamicBuild("ork_boomy_platform", 2, 3, 900, 500, 0, 0)
 				self:DynamicBuild("ork_burna_bomm", 1, 3, 750, 750, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 6, 3, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 6, 3, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 6, 3, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 6, 3, 800, 0, 0, 0)
 			end
 		end
 
@@ -445,23 +434,17 @@ function OrkBuildBaseStrategy:BuildFlexible()
     			if (resource_manager:GetNumOwnedStrategicPoints() > 4) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasRelic()) then
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 8, 4, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 8, 4, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 8, 4, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 8, 4, 800, 0, 0, 0)
 				self:DynamicBuild("ork_boomy_platform", 3, 4, 900, 500, 0, 0)
 				self:DynamicBuild("ork_burna_bomm", 2, 4, 750, 750, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_missile_sp", 2, 5, 1500, 1000, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 10, 5, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 10, 5, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 10, 5, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 10, 5, 800, 0, 0, 0)
 				self:DynamicBuild("ork_boomy_platform", 5, 5, 900, 500, 0, 0)
 				self:DynamicBuild("ork_burna_bomm", 3, 5, 750, 750, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_missile_sp", 4, 6, 1500, 1000, 0, 0)
 				self:DynamicBuild("ork_burna_bomm", 4, 6, 750, 750, 0, 0)
 				self:DynamicBuild("ork_waagh_banner_turret_sp", 12, 6, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 12, 6, 400, 100, 0, 0)
-				self:DynamicBuild("ork_tanktrap", 12, 6, 600, 600, 0, 0)
-				self:DynamicBuild("ork_wall", 12, 6, 800, 0, 0, 0)
 			end
 		end
 

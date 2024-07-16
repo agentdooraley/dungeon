@@ -30,8 +30,8 @@ stack_trace_num = 0
 tracing = {}
 
 -- ATTENTION : these have to be set to false for release, otherwise there will be lag !!!
-g_bAITrace = false
-g_bDebugMode = false
+g_bAITrace = true
+g_bDebugMode = true
 
 function aitrace( msg, bAILog, bReset )
         if msg==nil then
