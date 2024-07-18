@@ -59,10 +59,10 @@ AISettings_Insane =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 0,
+	iTechSpeed = 1,
 	iHandicap = 0,
 	bAlternativeStrategies = true,
-	bHarassing = false,
+	bHarassing = true,
 	bMultiBuildings = true,
 	bRelicUnits = true,
 	bTurrets = true,
