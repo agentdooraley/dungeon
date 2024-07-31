@@ -8,7 +8,7 @@ BuildBaseStrategyInfo =
 {
 	sisters_race =
 	{
-		post_builder = 2,
+		post_builder = 1,
 		flag_capture = 2,
 
 		-- Reserve this amount for building units, reinforcing and upgrading
@@ -275,11 +275,7 @@ BuildOrderStrategyInfo =
 			{ "squad", "sisters_squad_servitor" },
 			{ "squad", "sisters_squad_missionary" },			
 			{ "squad", "sisters_squad_missionary" },
-			{ "post_builder" }, { "post_builder" },
 			{ "building", "sisters_infantry", true },
-			--{ "building", "sisters_plasma_generator" }
-		--	{ "squad", "sisters_squad_canoness_advance_sp" },
-			--{ "building", "sisters_plasma_generator" }
 		},
 		
 		QuickStart =
