@@ -8,5 +8,7 @@
 !/MultiDungeon_Rightpocalypse/data/ai/**
 
 !MultiDungeon_Rightpocalypse.module
+!DXP2Dummy.module
+!MultiDungeonDummy.module
 !.gitignore
 
