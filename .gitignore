@@ -7,6 +7,7 @@
 !/MultiDungeon_Rightpocalypse/locale/**
 !/MultiDungeon_Rightpocalypse/data/ai/**
 !/MultiDungeon_Rightpocalypse/data/soundplaylistmusic.lua
+!/MultiDungeon_Rightpocalypse/data/Art/ui/screens/**
 
 !MultiDungeon_Rightpocalypse.module
 !DXP2Dummy.module
