@@ -1,177 +1,524 @@
-----------------------------------------------------------------------------------
--- Race-specific UI code                                                        --
--- Created by Miros  @ 11.Oct.2013                                              --
---                                                                              --
---  It's alive!                                                                 --
---                                                                              --
--- (c) 2003 Relic Entertainment Inc.                                            --
-----------------------------------------------------------------------------------
+--------------------------------------------------
+-- Race-specific UI code						--
+-- Created by Miros  @ 11.Oct.2013				--
+-- Edited by Gambit. Last edit @ 7.Dec.2018		--
+-- 												--
+--  It's alive!									--
+--												--
+-- (c) 2003 Relic Entertainment Inc.			--
+--------------------------------------------------
 
-import("Player.scar");
-import("GroupCallers.scar");
-import("Command.scar");
-import("Groups.scar");
-import("WCUtil.scar");
-import("WXPScarUtil.scar");
-import("WXPGroups.scar");
---import("Tyranids.scar");
+import("Player.scar")
+import("GroupCallers.scar")
+import("Command.scar")
+import("Groups.scar")
+import("WCUtil.scar")
+import("WXPScarUtil.scar")
+import("WXPGroups.scar")
+
+
+-- THOUSAND SONS UI switch
+-- Do NOT change manually, do NOT put elsewhere !
+TS_Use_New_UI = true
+
 
 --------------------------------------------------
---           Overall Rule managing              --
+--				Overall Rule managing			--
 --------------------------------------------------
 
 function FreeUI()
 
 	-- Set everything up
 	FreeUI_SetUp()
-	
+
 	-- Exclusive UI Rule
 	Rule_Add( ShowSpecificUI )
-	
+
 end
 
+
 --------------------------------------------------
---                SetUp Rule                    --
+--					SetUp Rule					--
 --------------------------------------------------
 
 function FreeUI_SetUp()
 
-	-- Race-exclusive UI bindings (thanks EvilIsador!)
+-- Race-exclusive UI bindings (thanks EvilIsador!)
 
-	--[[ Tyranids
+	-- Special Buttons Assignment: ALIEN HUNTERS
+		-- We add in the new UI buttons for the Orbital Command Builder
+		Taskbar_BG2 = Button_Add( "btnOrdoXenosBG", true, true, false )
+		Fleet_Button = Button_Add( "btnOrdoXenosFleet", true, true, false )
+		-- We add in the new UI digit buttons for the Gene resource
+		AH_Digit1 = Button_Add( "btnGeneDigit1", true, true, false )
+		AH_Digit2 = Button_Add( "btnGeneDigit2", true, true, false )
+		AH_Digit3 = Button_Add( "btnGeneDigit3", true, true, false )
+		AH_Digit4 = Button_Add( "btnGeneDigit4", true, true, false )
+	-- Special Buttons Assignment: TYRANIDS
+		-- We add in the new UI buttons for Influence and the Hive Mind Builder
+		Influence_BG = Button_Add( "btnInfluence1", true, true, false )
+		Influence_FG = Button_Add( "btnInfluence2", true, true, false )
+		Influence_Percent = Button_Add( "btnInfPercent", true, true, false )
+		Taskbar_BG = Button_Add( "btnTyranidBG", true, true, false )
+		Brain_Button = Button_Add( "btnTyranidBrain", true, true, false )
+	-- Special Buttons Assignment: RAGE KHORNE MARINES
+		-- We add in the new UI buttons for Blood
+		Blood_BG = Button_Add( "btnBlood1", true, true, false )
+		Blood_FG = Button_Add( "btnBlood2", true, true, false )
+		Blood_Percent = Button_Add( "btnBloodPercent", true, true, false )
+		Taskbar_BG3 = Button_Add( "btnKhorneBG", true, true, false )
+
+	-- Tyranids
 	g_toggleTooltipTyranids = Button_Add( "ScarTooltipTyranids", false, true, false )
 	g_toggleCustomResourceTyranids = Button_Add( "ScarCustomResourceTyranids", false, true, false )
 	g_toggleNextBuilderTyranids = Button_Add( "ScarNextBuilderTyranids", false, true, false )
-	g_toggleSubmenuStructuresTyranids = Button_Add( "ScarSubmenuStructuresTyranids", false, true, false )
 	g_toggleCmdMenuTyranids = Button_Add( "ScarCmdMenuTyranids", false, true, false )
-	g_toggleSquadCmdMenuTyranids = Button_Add( "ScarSquadCmdMenuTyranids", false, true, false )]]
+	g_toggleSquadCmdMenuTyranids = Button_Add( "ScarSquadCmdMenuTyranids", false, true, false )
+	g_toggleCustomResourceGeneratedTyranids = Button_Add( "ScarCustomResourceGeneratedTyranids", false, true, false )
+
+	-- Tyranid Swarm
+	g_toggleTooltipTyranidSwarm = Button_Add( "ScarTooltipTyranidSwarm", false, true, false )
+	g_toggleCmdMenuTyranidSwarm = Button_Add( "ScarCmdMenuTyranidSwarm", false, true, false )
+	g_toggleCustomResourceTyranidSwarm = Button_Add( "ScarCustomResourceTyranidSwarm", false, true, false )
+	g_toggleNextBuilderTyranidSwarm = Button_Add( "ScarNextBuilderTyranidSwarm", false, true, false )
+	g_toggleCustomResourceGeneratedTyranidSwarm = Button_Add( "ScarCustomResourceGeneratedTyranidSwarm", false, true, false )
 
 	-- OrkA
 	g_toggleCustomResourceOrka = Button_Add( "ScarCustomResourceOrka", false, true, false )
 
+	-- Genestealer Cult
+	--iconInfestation = Button_Add( "iconInfestation", true, true, false )
+	--txtGenestealers = Button_Add( "txtGenestealers", true, true, false )
+	--BGGenestealers = Button_Add( "BGGenestealers", true, true, false )
+	--g_toggleScarCustomResourceGenestealerCult = Button_Add( "ScarCustomResourceGenestealerCult", false, true, false )
+	--g_toggleSquadCmdMenuGenestealerCult = Button_Add( "ScarCmdMenuGenestealerCult", false, true, false )
+
 	-- Thousand Sons
 	g_toggleCmdMenuTS = Button_Add( "ScarCmdMenuTS", false, true, false )
+	g_toggleCmdMenuTS_Old = Button_Add( "ScarCmdMenuTS_OLD", false, true, false )
+	g_toggleSquadCmdMenuTS = Button_Add( "ScarSquadCmdMenuTS", false, true, false )
 
-	-- Daemons
+	-- Thousand Sons Advanced Menu Button - Toggle between ability/command and upgrade menu (default = ability menu)
+	-- It can be used for other projects as well!! Just do not forget to use the proper rotation icon (from the TS project)
+	g_btnToggleMenu = Button_Add( "btnToggleMenu", true, true, false )
+	g_toggleMenu = Button_Add( "ToggleMenu", true, false, false )
+	Button_SetTextures( g_btnToggleMenu, "command_icons/ts_menu_rotate1", "command_icons/ts_menu_rotate2", "command_icons/ts_menu_rotate2" )
+	Button_SetTooltip( g_btnToggleMenu, "Toggle Command Menu Display", "Left-click to either display Abilities and Special Commands, or Leader and Weapon Upgrades of the squad." )
+
+	-- Daemon Hunters
+	g_toggleCmdMenuIDH = Button_Add( "ScarCmdMenuIDH", false, true, false )
+
+	-- Chaos Daemons
 	g_toggleTooltipDaemons = Button_Add( "ScarTooltipDaemons", false, true, false )
 	g_toggleCmdMenuDaemons = Button_Add( "ScarCmdMenuDaemons", false, true, false )
 	g_toggleCustomResourceDaemons = Button_Add( "ScarCustomResourceDaemons", false, true, false )
 
-	-- Black Templars
-	g_toggleSquadCmdMenuTemplars = Button_Add( "ScarSquadCmdMenuTemplars", false, true, false )
-	g_toggleHeroPanelTemplars = Button_Add( "HeroPanelTemplars", false, true, false )
+	-- Witch Hunters
+	g_toggleCmdMenuOrdoHaereticus = Button_Add( "ScarCmdMenuOrdoHaereticus", false, true, false )
 
-	-- Default
+	-- Legio Titanicus
+	g_toggleCmdMenuTitans = Button_Add( "ScarCmdMenuTitans", false, true, false )
+
+	-- Ultramarines
+	g_toggleCmdMenuUltramarines = Button_Add( "ScarCmdMenuUltramarines", false, true, false )
+	g_toggleRampageButtonUltramarines = Button_Add( "btnRampageUltramarines", false, true, false )
+	
+	-- Salamanders
+	g_toggleCmdMenuSalamanders = Button_Add( "ScarCmdMenuSalamanders", false, true, false )
+
+	-- Imperial Fists
+	g_toggleCmdMenuImperialFists = Button_Add( "ScarCmdMenuImperialFists", false, true, false )
+
+	-- Emperor's Children
+	g_toggleCmdMenuEmperorsChildren = Button_Add( "ScarCmdMenuEmperorsChildren", false, true, false )
+
+	-- Alien Hunters
+	g_toggleTooltipOrdoXenos = Button_Add( "ScarTooltipOrdoXenos", false, true, false )
+	g_toggleCmdMenuOrdoXenos = Button_Add( "ScarCmdMenuOrdoXenos", false, true, false )
+	g_toggleCustomResourceOrdoXenos = Button_Add( "ScarCustomResourceOrdoXenos", false, true, false )
+	g_toggleNextBuilderOrdoXenos = Button_Add( "btnNextHQOrdoXenos", false, true, false )
+	Button_SetTextures( g_toggleNextBuilderOrdoXenos, "command_icons/scuttle", "command_icons/scuttle", "command_icons/scuttle" )
+
+	-- Rage Khorne Marines
+	g_toggleTooltipKhorne = Button_Add( "ScarTooltipKhorne", false, true, false )
+	g_toggleCustomResourceKhorne = Button_Add( "ScarCustomResourceKhorne", false, true, false )
+	g_toggleCmdMenuKhorne = Button_Add( "ScarCmdMenuKhorne", false, true, false )
+
+	-- Default/Advanced
 	g_toggleTooltipDefault = Button_Add( "ScarTooltipDefault", false, true, false )
 	g_toggleCustomResourceDefault = Button_Add( "ScarCustomResourceDefault", false, true, false )
 	g_toggleNextBuilderDefault = Button_Add( "ScarNextBuilderDefault", false, true, false )
-	g_toggleSubmenuStructuresDefault = Button_Add( "ScarSubmenuStructuresDefault", false, true, false )
 	g_toggleCmdMenuDefault = Button_Add( "ScarCmdMenuDefault", false, true, false )
-	g_toggleSquadCmdMenuDefault = Button_Add( "ScarSquadCmdMenuDefault", false, true, false )
-	g_toggleHeroPanelDefault = Button_Add( "HeroPanelDefault", false, true, false )
+--  g_toggleSquadCmdMenuDefault = Button_Add( "ScarSquadCmdMenuDefault", false, true, false ) -- Obsolete, only 4 weapons, Disabled for consistency
+	g_toggleSquadCmdMenuAdvanced = Button_Add( "ScarSquadCmdMenuTemplars", false, true, false ) -- New, allows FULL 6 weapons, Enabled by default
+	g_toggleSquadCmdMenuUltimate = Button_Add( "ScarSquadCmdMenuKhorne", false, true, false ) -- New, allows ANY combination of Leaders AND Weapons
+--  g_toggleHeroPanelDefault = Button_Add( "HeroPanelDefault", false, true, false ) -- Obsolete, 4 Heroes UI, Disabled (Change Players Buttons)
+	g_toggleHeroPanelAdvanced = Button_Add( "HeroPanelTemplars", false, true, false ) -- New, allows 9 Heroes UI, Enabled by default
+	g_toggleAttachDetachDefault = Button_Add( "ScarAttachDetachDefault", false, true, false ) -- Standard vanilla attachment
+	g_toggleAttachDetachAdvanced = Button_Add( "ScarAttachDetachTemplars", false, true, false ) -- Attachment moved to the left (for full 8 panel show)
+	g_toggleCustomResourceGeneratedDefault = Button_Add( "ScarCustomResourceGeneratedDefault", false, true, false )
 
+	-- On-demand load of the Advanced Build Menu
+	g_btnScarAdvMenu6 = Button_Add( "Btn_ScarAdvMenu6", false, true, false )
+	g_btnScarAdvMenu9 = Button_Add( "Btn_ScarAdvMenu9", false, true, false ) -- AdvBuildMenu in UI position 9, just below the BuildMenu
+	g_btnScarAdvMenu10 = Button_Add( "Btn_ScarAdvMenu10", false, true, false )
+	g_btnScarAdvMenu11 = Button_Add( "Btn_ScarAdvMenu11", false, true, false )
+	g_btnScarAdvMenuNids = Button_Add( "Btn_ScarAdvMenuNids", false, true, false )
+
+	-- Initiate the UI for the first time here, so that to have it appear IMMEDIATELY on game initialisation
+	InitiateSpecialButtons()	-- Used for the buttons that NEED to SetVisible -> [false], on init.
+	-- Global variable, responsible for changing players' handling
+	Previous_Player_IDX = Tut_GetLocalPlayerIndex()
+	ShowSpecificUI_ForRace(Player_GetRaceName(World_GetPlayerAt(Previous_Player_IDX)), true)
 end
 
+
+-- Some buttons MUST be Initiated -> Hidden on-init, otherwise they cause issues!!!
+function InitiateSpecialButtons()
+	-- "Global Builder" and "Fleet" Menus, MUST BE SET (false) InVisible, on init!
+	Button_SetVisible( Fleet_Button, false )
+	Button_SetVisible( Taskbar_BG, false )
+	Button_SetVisible( Taskbar_BG2, false )
+	Button_SetVisible( Taskbar_BG3, false )
+end
+
+
 --------------------------------------------------
---              Specific UI Rule                --
+--				Specific UI Rule				--
 --------------------------------------------------
 
 function ShowSpecificUI()
-
-	ShowSpecificUI_Templars( false )
-	ShowSpecificUI_Orka( false )
-	--ShowSpecificUI_Tyranids( false )
-	ShowSpecificUI_TS( false )
-	ShowSpecificUI_Daemons( false )
-	ShowSpecificUI_Default( false )
-
-	--if     ( Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) ) == "tyranids_race" then
-	--	ShowSpecificUI_Tyranids( true )
-	if     ( Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) ) == "orka_race" then
-		ShowSpecificUI_Orka( true )
-	elseif     ( Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) ) == "templar_race" then
-		ShowSpecificUI_Templars( true )
-	elseif     ( Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) ) == "thousand_sons_race" then
-		ShowSpecificUI_TS( true )
-	elseif     ( Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) ) == "deamons_race" then
-		ShowSpecificUI_Daemons( true )
-	else
-		ShowSpecificUI_Default( true )
+	if Tut_GetLocalPlayerIndex() ~= Previous_Player_IDX then
+		-- Disable previous player's buttons
+		ShowSpecificUI_ForRace(Player_GetRaceName(World_GetPlayerAt(Previous_Player_IDX)), false)
+		-- Set the new player
+		Previous_Player_IDX = Tut_GetLocalPlayerIndex()
+		-- Enable new player's buttons
+		ShowSpecificUI_ForRace(Player_GetRaceName(World_GetPlayerAt(Previous_Player_IDX)), true)
 	end
 end
 
-function ShowSpecificUI_Tyranids( true_or_false )
-		Button_SetVisible( g_toggleTooltipTyranids, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceTyranids, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderTyranids, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresTyranids, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuTyranids, true_or_false )
-		Button_SetVisible( g_toggleSquadCmdMenuTyranids, true_or_false )
 
-	--	Button_SetVisible( g_toggleHeroPanelDefault, true_or_false )	-- 4 Hero slots
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )	-- 9 Hero slots
-		
-		Button_SetVisible( Influence_BG, true_or_false )
-		Button_SetVisible( Influence_FG, true_or_false )
-		Button_SetVisible( Influence_Percent, true_or_false )
-		Button_SetVisible( Taskbar_BG, true_or_false )
-		Button_SetVisible( Brain_Button, true_or_false )
+function ShowSpecificUI_ForRace(player_race, show)
+	if     player_race == "tyranids_race" then ShowSpecificUI_Tyranids(show)
+	elseif player_race == "tyranid_race" then ShowSpecificUI_TyranidSwarm(show)
+	elseif player_race == "orka_race" then ShowSpecificUI_OrkA(show)
+	--elseif player_race == "genestealer_cult_race" then ShowSpecificUI_GenestealerCult(show)
+	elseif player_race == "khorne_marine_race" then ShowSpecificUI_Khorne(show)
+	elseif player_race == "witch_hunters_race" then ShowSpecificUI_OrdoHereticus(show)
+	elseif player_race == "xenos_hunters_race" then ShowSpecificUI_OrdoXenos(show)
+	elseif player_race == "thousand_sons_race" then ShowSpecificUI_ThousandSons(show)
+	elseif player_race == "deamons_race" then ShowSpecificUI_Daemons(show)
+	elseif player_race == "legio_titanicus_race" then ShowSpecificUI_Titans(show)
+	elseif player_race == "mechanicus_race" then ShowSpecificUI_AdvancedAttachment(show)
+	elseif player_race == "emperors_children_race" then ShowSpecificUI_EmperorsChildren(show)
+	elseif player_race == "ultra_marine_race" then ShowSpecificUI_Ultramarines(show)
+	elseif player_race == "inquisition_daemonhunt_race" then ShowSpecificUI_IDH(show)
+	elseif player_race == "darkangels_race" then ShowSpecificUI_AdvancedAttachmentBuildButtons(show)
+	elseif player_race == "salamanders_race" then ShowSpecificUI_Salamanders(show)
+	elseif player_race == "legio_custodes_race" then ShowSpecificUI_Custodes(show)
+	elseif player_race == "imperial_fists_race" then ShowSpecificUI_ImperialFists(show)
+	elseif player_race == "angry_race" then ShowSpecificUI_AngryMarines(show)
+	elseif player_race == "tau_race" and G_Is_Survival_Map ~= nil then ShowSpecificUI_AdvancedSurvival(show)
+	else ShowSpecificUI_Advanced(show) end
 end
 
-function ShowSpecificUI_Templars( true_or_false )
-		Button_SetVisible( g_toggleTooltipDefault, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceDefault, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderDefault, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresDefault, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuDefault, true_or_false )
-		Button_SetVisible( g_toggleSquadCmdMenuTemplars, true_or_false )
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )
-end
-
-function ShowSpecificUI_Orka( true_or_false )
-		Button_SetVisible( g_toggleTooltipDefault, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceOrka, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderDefault, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresDefault, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuDefault, true_or_false )
-		Button_SetVisible( g_toggleSquadCmdMenuTemplars, true_or_false )
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )
-end
-
-function ShowSpecificUI_TS( true_or_false )
-		Button_SetVisible( g_toggleTooltipDefault, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceDefault, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderDefault, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresDefault, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuTS, true_or_false )
-		Button_SetVisible( g_toggleSquadCmdMenuTemplars, true_or_false )
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )
-end
-
-function ShowSpecificUI_Daemons( true_or_false )
-		Button_SetVisible( g_toggleTooltipDaemons, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceDaemons, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderDefault, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresDefault, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuDaemons, true_or_false )
-		Button_SetVisible( g_toggleSquadCmdMenuTemplars, true_or_false )
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )
-end
-
-function ShowSpecificUI_Default( true_or_false )
-		Button_SetVisible( g_toggleTooltipDefault, true_or_false )
-		Button_SetVisible( g_toggleCustomResourceDefault, true_or_false )
-		Button_SetVisible( g_toggleNextBuilderDefault, true_or_false )
-		Button_SetVisible( g_toggleSubmenuStructuresDefault, true_or_false )
-		Button_SetVisible( g_toggleCmdMenuDefault, true_or_false )
-	--	Button_SetVisible( g_toggleSquadCmdMenuDefault, true_or_false )		-- 4 Weapon Upgrades (disabled, as most custom races need 6 - like DA, HRM, AM)
-		Button_SetVisible( g_toggleSquadCmdMenuTemplars, true_or_false )	-- 6 Weapon Upgrades
-	--	Button_SetVisible( g_toggleHeroPanelDefault, true_or_false )		-- 4 Hero Slots (disabled, because of Change Players wincondition Buttons)
-		Button_SetVisible( g_toggleHeroPanelTemplars, true_or_false )		-- 9 Hero slots
-end
 
 --------------------------------------------------
---              Start the show!                 --
+--			SPECIFIC RACE UI RULES				--
+--------------------------------------------------
+
+function ShowSpecificUI_Tyranids(show)
+	Button_SetVisible( Taskbar_BG, show )
+	Button_SetVisible( Brain_Button, show )
+	Button_SetVisible( Influence_BG, show )
+	Button_SetVisible( Influence_FG, show )
+	Button_SetVisible( Influence_Percent, show )
+	Button_SetVisible( g_toggleTooltipTyranids, show )
+	Button_SetVisible( g_toggleCustomResourceTyranids, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedTyranids, show )
+	Button_SetVisible( g_toggleNextBuilderTyranids, show )
+	Button_SetVisible( g_toggleCmdMenuTyranids, show )
+	Button_SetVisible( g_toggleSquadCmdMenuTyranids, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+	if G_Is_Survival_Map ~= nil then
+		Button_SetVisible( g_btnScarAdvMenuNids, show )
+	end
+end
+
+
+function ShowSpecificUI_TyranidSwarm(show)
+	Button_SetVisible( g_toggleTooltipTyranidSwarm, show )
+	Button_SetVisible( g_toggleCustomResourceTyranidSwarm, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedTyranidSwarm, show )
+	Button_SetVisible( g_toggleNextBuilderTyranidSwarm, show )
+	Button_SetVisible( g_toggleCmdMenuTyranidSwarm, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_OrkA(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceOrka, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+--[[function ShowSpecificUI_GenestealerCult(show)
+	Button_SetVisible( iconInfestation, show )
+	Button_SetVisible( txtGenestealers, show )
+	Button_SetVisible( BGGenestealers, show )
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleScarCustomResourceGenestealerCult, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuGenestealerCult, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end]]
+
+
+function ShowSpecificUI_ThousandSons(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	if TS_Use_New_UI then
+		Button_SetVisible( g_toggleCmdMenuTS, show )
+		Button_SetVisible( g_toggleSquadCmdMenuTS, show )
+	else
+		Button_SetVisible( g_toggleCmdMenuTS_Old, show )
+		Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	end
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Daemons(show)
+	Button_SetVisible( g_toggleTooltipDaemons, show )
+	Button_SetVisible( g_toggleCustomResourceDaemons, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDaemons, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_EmperorsChildren(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuEmperorsChildren, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Khorne(show)
+	Button_SetVisible( Taskbar_BG3, show )
+	Button_SetVisible( Brain_Button, show )
+	Button_SetVisible( Blood_BG, show )
+	Button_SetVisible( Blood_FG, show )
+	Button_SetVisible( Blood_Percent, show )
+	Button_SetVisible( g_toggleTooltipKhorne, show )
+	Button_SetVisible( g_toggleCustomResourceKhorne, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuKhorne, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+	if show and SGroup_Exists( "sg_caster"..Previous_Player_IDX ) then
+		W40k_AssignHotkeySGroup( SGroup_FromName("sg_caster"..Previous_Player_IDX), 9 )
+	end
+end
+
+
+function ShowSpecificUI_OrdoHereticus(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuOrdoHaereticus, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Titans(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuTitans, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_OrdoXenos(show)
+	Button_SetVisible( Fleet_Button, show )
+	Button_SetVisible( Taskbar_BG2, show )
+	Button_SetVisible( g_toggleTooltipOrdoXenos, show )
+	Button_SetVisible( g_toggleCustomResourceOrdoXenos, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderOrdoXenos, show )
+	Button_SetVisible( g_toggleCmdMenuOrdoXenos, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_IDH(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuIDH, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Ultramarines(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_btnScarAdvMenu9, show )
+	Button_SetVisible( g_toggleCmdMenuUltramarines, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Salamanders(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuSalamanders, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_ImperialFists(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_btnScarAdvMenu9, show )
+	Button_SetVisible( g_toggleCmdMenuImperialFists, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_Custodes(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+function ShowSpecificUI_AngryMarines(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuUltimate, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+-- Profile Benefits: 1] Attachment button moved (8 weapons + attachment) 
+function ShowSpecificUI_AdvancedAttachment(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+-- Profile Benefits: 1] Offers AdvBuild button in Survival
+function ShowSpecificUI_AdvancedSurvival(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_btnScarAdvMenu9, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+-- Profile Benefits: 1] Attachment button moved (8 weapons + attachment)
+--					 2] Offers AdvBuild button in Survival - shows NO AdvBuild button otherwise
+function ShowSpecificUI_AdvancedAttachmentBuildButtons(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachAdvanced, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+	if G_Is_Survival_Map ~= nil then
+		Button_SetVisible( g_btnScarAdvMenu9, show )
+	end
+end
+
+
+-- The default profile for all races. Always offers: 1] 9 Heroes UI, and 2] 6 Weapon Upgrades
+function ShowSpecificUI_Advanced(show)
+	Button_SetVisible( g_toggleTooltipDefault, show )
+	Button_SetVisible( g_toggleCustomResourceDefault, show )
+	Button_SetVisible( g_toggleCustomResourceGeneratedDefault, show )
+	Button_SetVisible( g_toggleNextBuilderDefault, show )
+	Button_SetVisible( g_toggleCmdMenuDefault, show )
+	Button_SetVisible( g_toggleSquadCmdMenuAdvanced, show )
+	Button_SetVisible( g_toggleAttachDetachDefault, show )
+	Button_SetVisible( g_toggleHeroPanelAdvanced, show )
+end
+
+
+--------------------------------------------------
+--				Start the show!					--
 --------------------------------------------------
 
 Scar_AddInit(FreeUI)

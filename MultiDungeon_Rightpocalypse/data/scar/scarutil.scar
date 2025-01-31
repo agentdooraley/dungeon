@@ -24,6 +24,8 @@ import("FreeUI.scar")
 -- This is the Import for Daemons Angron and Sacrifice rules
 import("Daemons_Rules.SCAR")
 
+import("Tyranids.SCAR")
+
 -- NOTES
 -- use lowercase to start variables
 -- use uppercase to start functions

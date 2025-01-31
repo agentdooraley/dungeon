@@ -2251,6 +2251,80 @@ Screen =
 											0.02194,
 										},
 									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9086",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.09696,
+											0.06663,
+										},
+										name = "txtHelpInfluenceRightCostMin",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														168,
+														153,
+														51,
+														255,
+													},
+													fontname = "gillsans_11",
+													textColourTop =  
+													{
+														255,
+														255,
+														255,
+														255,
+													},
+													ID = 173286,
+													horzAlign = "Centre",
+													dropShadow = true,
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.03138,
+											0.01695,
+										},
+									},
 									 
 									{
 										visible = false,
@@ -2504,6 +2578,140 @@ Screen =
 														0.74037,
 													},
 													texture = "art/ui/textures/taskbar/taskbar_share/resource_power.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.01689,
+											0.02194,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.08312,
+											0.06272,
+										},
+										name = "iconHelpTSInfCostMin",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 824,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_bmass.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.01689,
+											0.02194,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "ArtLabel",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.08312,
+											0.06272,
+										},
+										name = "iconHelpInfCostMinRight",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 824,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_influence1.tga",
 													states =  
 													{
 														"Normal",
@@ -2802,7 +3010,141 @@ Screen =
 											0.02194,
 										},
 									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.03641,
+											0.06272,
+										},
+										name = "iconHelpTSBioCostMin",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 828,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_inflnce.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.01689,
+											0.02194,
+										},
+									},
 									 
+									{
+										visible = false,
+										type = "ArtLabel",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.03641,
+											0.06272,
+										},
+										name = "iconHelpInfCostMin",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 828,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_influence1.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.01689,
+											0.02194,
+										},
+									},
+
 									{
 										visible = false,
 										type = "TextLabel",
@@ -3928,6 +4270,54 @@ Screen =
 											0.02760,
 										},
 									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										HitArea =  
+										{
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.26158,
+											0.05736,
+										},
+										name = "iconHelpInfluenceCostMax",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													ID = 784,
+													size =  
+													{
+														0.86122,
+														0.90836,
+													},
+													texture = "art/ui/ingame/Tyranids_icons/influencebar/sglass_06.tga",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.08820,
+											0.02760,
+										},
+									},
 									
 									{
 										visible = false,
@@ -4474,6 +4864,148 @@ Screen =
 										{
 											0.01689,
 											0.02194,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9096",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.17643,
+											0.05837,
+										},
+										name = "iconHelpTSMSquadCostMax",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 797,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/tyr_cap_mnstr.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.01689,
+											0.02194,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9096",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													0,
+													0,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.04813,
+											0.06199,
+										},
+										name = "txtHelpInfluenceCostMax",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														168,
+														153,
+														51,
+														255,
+													},
+													fontname = "gillsans_11",
+													textColourTop =  
+													{
+														255,
+														255,
+														255,
+														255,
+													},
+													ID = 794,
+													horzAlign = "Centre",
+													dropShadow = true,
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.03138,
+											0.01695,
 										},
 									},
 									 
@@ -25870,6 +26402,140 @@ Screen =
 											0.02814,
 										},
 									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.03678,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapBigBugs",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_bigbug.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+									{
+										visible = false,
+										type = "ArtLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.00548,
+										},
+										name = "iconCapTyrSrmMonster",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/tyr_cap_mnstr.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
 									
 									{
 										visible = false,
@@ -26194,6 +26860,595 @@ Screen =
 										},
 									},
 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0.00302,
+											0.07032,
+										},
+										Children =  
+										{
+											--[[ {
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"UIStyles",
+													"resourceInfo_Text",
+												},
+												position =  
+												{
+													0.14584,
+													0.00437,
+												},
+												name = "txtFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																245,
+																134,
+																60,
+																233,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																250,
+																194,
+																190,
+																240,
+															},
+															multiline = false,
+															ID = 762,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+															},
+														},
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															multiline = false,
+															ID = 94476,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.06336,
+													0.01695,
+												},
+											}, ]]
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02558,
+													0.00364,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/i_blank.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13160,
+													0.02100,
+												},
+											}, ]]
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_faith.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											}, ]]
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconInf",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_influence1.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											},
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02575,
+													0.00350,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/i_blank.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13143,
+													0.02100,
+												},
+											}, ]]
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.02584,
+													0.00600,
+												},
+												name = "btnInfPercent",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/percent/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.03200,
+													0.01600,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													-0.00325,
+													-0.00850,
+												},
+												name = "btnInfluence1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/influencebar/sglass_04.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.21250,
+													0.05500,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													-0.00325,
+													-0.00850,
+												},
+												name = "btnInfluence2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/influencebar/5frame_01.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.21250,
+													0.05500,
+												},
+											},
+										},
+										name = "grpInf",
+										Presentation =  
+										{
+											--[[ Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													ID = 776,
+													size =  
+													{
+														0.60319,
+														0.92316,
+													},
+													texture = "",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											}, ]]
+										},
+										size =  
+										{
+											0.21600,
+											0.04296,
+										},
+									},
 									
 									{
 										visible = false,
@@ -26447,6 +27702,105 @@ Screen =
 											0.01695,
 										},
 									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.00954,
+										},
+										name = "txtTyrSrmMonsterCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														135,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														189,
+														240,
+													},
+													multiline = false,
+													ID = 764,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 93351,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
 									 
 									{
 										visible = false,
@@ -26601,7 +27955,467 @@ Screen =
 											0.02700,
 										},
 									},
-									 
+
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.03800,
+										},
+										Children =  
+										{
+											 
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																108,
+																250,
+																16,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 348189,
+															textColourTop =  
+															{
+																175,
+																248,
+																17,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00100,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.13700,
+															},
+															ID = 348314,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_bmass.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02100,
+													0.02900,
+												},
+											},
+										},
+										name = "grpTSInf",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02700,
+										},
+									},
+
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_inflnce.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpTSBio",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconBio",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_biomass2.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpBio",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+									
 									{
 										visible = false,
 										type = "Group",
@@ -29815,8 +31629,12 @@ Screen =
 						name = "grpScarUI",
 						position =  
 						{
-							0.10996,
-							0.17422,
+						--	0.10996,
+						--	0.17245,---0.17422,
+
+                      -- jONES Shift to center
+              0.16660, -- 0.10996,
+              0.15300, -- 0.16955, -- shift up,  align top with heroUI_1,heroUI_3,heroUI_5,
 						},
 						Children =  
 						{
@@ -29854,7 +31672,7 @@ Screen =
 									0,
 									0,
 								},
-								name = "btn_ScarUI",
+								name = "btn_ScarUI1",
 								Presentation =  
 								{
 									Art =  
@@ -29933,6 +31751,1609 @@ Screen =
 									0.05525,
 								},
 							},
+
+							{
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0.08500,
+								},
+								name = "btn_ScarUI2",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297469,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297470,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297471,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301780,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301779,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},
+
+
+							{
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0.17000,
+								},
+								name = "btn_ScarUI3",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297466,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297467,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297468,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301778,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301777,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},
+
+
+							{
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0.06050,
+									0,
+								},
+								name = "btn_ScarUI4",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297466,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297467,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297468,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301778,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301777,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},
+
+
+							{
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0.06050,
+									0.08500,
+								},
+								name = "btn_ScarUI5",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297466,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297467,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297468,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301778,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301777,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},
+
+
+							{
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0.06050,
+									0.17000,
+								},
+								name = "btn_ScarUI6",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297466,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297467,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297468,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301778,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301777,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},
+
+							{
+								name = "ScarTooltipDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarTooltipTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+							 
+							{
+								name = "ScarCustomResourceDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarCustomResourceOrka",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+
+							{
+								name = "ScarCustomResourceGenestealerCult",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarCustomResourceTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+							{
+								name = "Btn_ScarAdvMenu6",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "Btn_ScarAdvMenu9",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "Btn_ScarAdvMenu10",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "Btn_ScarAdvMenu11",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+							 
+							{
+								name = "Btn_ScarAdvMenuNids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarNextBuilderDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarNextBuilderTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarNextBuilderTyranidSwarm",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarSubmenuStructuresDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarSubmenuStructuresTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+							 
+							{
+								name = "ScarCmdMenuDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarCmdMenuTS",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarCmdMenuTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+							 
+							{
+								name = "ScarSquadCmdMenuDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarSquadCmdMenuTemplars",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "ScarSquadCmdMenuTyranids",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+							{
+								name = "HeroPanelTemplars",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
+
+							{
+								name = "HeroPanelDefault",
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =
+								{
+									{
+										type = "Rectangle",
+										size =
+										{
+											0,
+											0,
+										},
+										position =
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								size =  
+								{
+									0,
+									0,
+								},
+								Presentation =  
+								{
+								},
+							},
+
 						},
 						style =  
 						{
@@ -29944,8 +33365,8 @@ Screen =
 						},
 						size =  
 						{
-							0.04155,
-							0.05394,
+              0.108, -- 0.04155,
+              0.226, -- 0.05394,  -- jONES should be extended
 						},
 					},
 					 
@@ -39483,7 +42904,29 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
-		 
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpBioCostMin",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpBioCostMin",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+
 		{
 			ArtGuides =  
 			{
@@ -39538,12 +42981,45 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpTSMSquadCostMin",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
 		 
 		{
 			ArtGuides =  
 			{
 			},
 			name = "txtHelpFaithCostMin",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpInfCostMin",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpInfCostMin",
 			HitAreaGuides =  
 			{
 			},
@@ -39849,6 +43325,17 @@ ToolInfo =
 			},
 			type = "TextLabel",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpTSMSquadCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
 		 
 		{
 			ArtGuides =  
@@ -39871,7 +43358,29 @@ ToolInfo =
 			},
 			type = "TextLabel",
 		},
-		 
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpInfluenceCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpNidCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -39882,7 +43391,18 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
-		 
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpNidCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -39948,7 +43468,29 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
-		 
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpBioCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+		
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpBioCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -39971,7 +43513,29 @@ ToolInfo =
 			{
 			},
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpInfCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},	
 		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpInfCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+		
 		{
 			ArtGuides =  
 			{
@@ -41589,6 +45153,17 @@ ToolInfo =
 			},
 			type = "Group",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtStatsInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
 		 
 		{
 			ArtGuides =  
@@ -43044,6 +46619,17 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconCapTyrSrmMonster",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
 		 
 		{
 			ArtGuides =  
@@ -43125,6 +46711,17 @@ ToolInfo =
 			ArtGuides =  
 			{
 			},
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpInf",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
 		},
 		
 		{
@@ -43225,6 +46822,17 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtBio",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
 		 
 		{
 			ArtGuides =  
@@ -43291,6 +46899,28 @@ ToolInfo =
 			},
 			type = "Group",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
 		 
 		{
 			ArtGuides =  
@@ -43308,6 +46938,17 @@ ToolInfo =
 			{
 			},
 			name = "iconOrks",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+		
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconNids",
 			HitAreaGuides =  
 			{
 			},
@@ -43336,7 +46977,18 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
-			
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{

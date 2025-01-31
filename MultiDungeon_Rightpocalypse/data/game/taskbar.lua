@@ -881,6 +881,34 @@ resources =
 		-- special bindings for ALL OTHER RACES: squad cap and support cap
 		----------------------------------------------------------------------------------------
 		other = {
+		
+			{ bind = "scar_button", ui = "ScarCustomResourceTyranids", tt = {},		
+				dependant = {
+					-- ork resource icon and label
+					-- art/ui/textures/taskbar/your_race/resource_orksquadcap.tga-- conversion DDS.
+					--	{ bind = "player_resource", ui = "grpPower", text_widget = "txtOrks", icon_widget="iconSouls", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751", },
+					--	{ bind = "race_image", ui = "iconSouls", texture= "resource_influence", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+					
+					-- squad cap icon and label
+					-- edit UCS --  --art/ui/textures/taskbar/your_race/resource_cap_infantery.tga --  conversion DDS.
+					{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$16028518", tt_desc = "$16028519" }, 
+					{ bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$16028518", tt_desc = "$16028519" }, 
+					
+					-- support cap icon and label
+					-- edit UCS --  --art/ui/textures/taskbar/your_race/resource_cap_vehicule.tga --  conversion DDS.
+					{ bind = "image", ui = "iconCapBigBugs", tt = tooltip_simple_template, tt_title = "$16028520", tt_desc = "$16028600" }, 
+					{ bind = "player_population", pop_type = "support", ui = "txtBigBugsCap", tt = tooltip_simple_template, tt_title = "$16028520", tt_desc = "$16028600" }, 
+					
+					-- requisition (Biomass)	--replace "txtReq" with "txtBio" to change color (and edit in gamescreen.screen) and replace "resource_requisition" with "resource_biomass" to change icon.
+					{ bind = "player_resource", ui = "grpBio", text_widget ="txtReq", icon_widget ="iconBio", tt = tooltip_simple_template, tt_title = "$40752", tt_desc = "$40753"},
+
+					-- power
+					{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+					
+					-- Influence
+					{ bind = "player_resource", ui = "grpInf", text_widget = "txtPower", icon_widget ="iconInf", tt = tooltip_simple_template, tt_title = "$16025447", tt_desc = "$16025448"},
+				},
+			},		
 			-- squad cap icon and label
             { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
@@ -1112,6 +1140,11 @@ hero_ui =
 
 scar_ui =
 {
+	{ bind = "scar_button", ui = "btnInfluence1", tt = tooltip_simple_template, },
+	{ bind = "scar_button", ui = "btnInfluence2", tt = tooltip_simple_template, },
+	{ bind = "scar_button", ui = "btnInfPercent", tt = tooltip_simple_template, },
+	{ bind = "scar_button", ui = "btnTyranidBrain", tt = tooltip_simple_template, },
+	{ bind = "scar_button", ui = "btnTyranidBG", },
 	{ bind = "scar_button", ui = "btn_ScarUI", tt = tooltip_simple_template, },
 }
 
