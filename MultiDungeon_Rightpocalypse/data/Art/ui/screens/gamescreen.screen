@@ -17542,8 +17542,8 @@ Screen =
 										type = "Rectangle",
 										size =  
 										{
-											0,
-											0,
+											1,
+											1,
 										},
 										position =  
 										{
@@ -17639,8 +17639,8 @@ Screen =
 														type = "Rectangle",
 														size =  
 														{
-															1,
-															1,
+															0,
+															0,
 														},
 														position =  
 														{
@@ -17712,8 +17712,8 @@ Screen =
 														type = "Rectangle",
 														size =  
 														{
-															1,
-															1,
+															0,
+															0,
 														},
 														position =  
 														{
@@ -17817,8 +17817,8 @@ Screen =
 																type = "Rectangle",
 																size =  
 																{
-																	1,
-																	1,
+																	0,
+																	0,
 																},
 																position =  
 																{
@@ -21076,8 +21076,8 @@ Screen =
 												type = "Rectangle",
 												size =  
 												{
-													0,
-													0,
+													1,
+													1,
 												},
 												position =  
 												{
@@ -21903,8 +21903,8 @@ Screen =
 										type = "Rectangle",
 										size =  
 										{
-											0,
-											0,
+											1,
+											1,
 										},
 										position =  
 										{
@@ -21995,8 +21995,8 @@ Screen =
 												type = "Rectangle",
 												size =  
 												{
-													0,
-													0,
+													1,
+													1,
 												},
 												position =  
 												{
@@ -22792,8 +22792,8 @@ Screen =
 										type = "Rectangle",
 										size =  
 										{
-											0,
-											0,
+											1,
+											1,
 										},
 										position =  
 										{
@@ -23222,8 +23222,8 @@ Screen =
 										type = "Rectangle",
 										size =  
 										{
-											0,
-											0,
+											1,
+											1,
 										},
 										position =  
 										{
@@ -24019,8 +24019,8 @@ Screen =
 										type = "Rectangle",
 										size =  
 										{
-											0,
-											0,
+											1,
+											1,
 										},
 										position =  
 										{
