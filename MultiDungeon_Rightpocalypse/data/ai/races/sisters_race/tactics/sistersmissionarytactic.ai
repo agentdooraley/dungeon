@@ -25,30 +25,6 @@ function SistersMissionaryTactic:IsDefender()
 		return (cpu_manager:GetTierLevel() >= 1 or bNeedSupportDetector)
 end
 
--- Missionary is allowed to retreat even directly after a jump
-function SistersMissionaryTactic:SetTarget( target, variant_type )
-
-	self.variant_type = variant_type
-	self.variant_type = variant_type
-       if self.variant_type==Tactic.Variant.Vector then
-    self.target = Vector3f(target)
-       elseif self.variant_type==Tactic.Variant.SquadAI then
-    self.target = target
-       elseif self.variant_type==Tactic.Variant.BaseAI then
-    self.target = target
-       end
-	self.m_iMoveDelay = 0
-	self.last_jump = 0
-end
-
-function SistersMissionaryTactic:JumpAttack()
-	Tactic.JumpAttack(self)
-end
-
-function SistersMissionaryTactic:CanJumpAttached()
-	return true
-end
-
 function SistersMissionaryTactic:InitAbilities()
 
 	-- Init ability ID's
@@ -63,10 +39,7 @@ function SistersMissionaryTactic:InitAbilities()
 	end
 	if (SistersMissionary.medics_id == nil) then
 		SistersMissionary.medics_id = cpu_manager.stats:GetAbilityID( "sisters_battlefield_medics" )
-	end
-	if (SistersMissionary.run_id == nil) then
-		SistersMissionary.run_id = cpu_manager.stats:GetAbilityID( "all_run!" )	
-	end	
+    end
 end
 
 function SistersMissionaryTactic:DoAbilities()
@@ -97,14 +70,6 @@ function SistersMissionaryTactic:DoAbilities()
 		end
 	end
 
-	-- Run if safe
-	if ((not self.squad_ai:IsInCombat() and self.squad_ai:IsInStateMove()) or self.stateID ~= Tactic.StateID.NoState) then
-
-		-- If I am safe I can run
-		if (self.squad_ai:CanDoAbility( SistersMissionary.run_id )) then
-			self.squad_ai:DoSpecialAbility( SistersMissionary.run_id )
-		end
-	end	
 end
 
 function SistersMissionaryTactic:Update()
@@ -117,8 +82,15 @@ function SistersMissionaryTactic:Update()
 		return false
 	end
 
+	---Atach to all
+	if not self.squad_ai:IsCapturing() then
+		if g_iGMT>180 then
+			self:TryAttachSquad(false, false, 1000, 60, nil)
+		end
+	end
 	-- Try to attach to melee in tier 2+
-	if (cpu_manager:GetTierLevel() >= 1 or self.squad_ai:WasRecentlyHurt()) then
+	
+	if (cpu_manager:GetTierLevel() >= 2 or self.squad_ai:WasRecentlyHurt()) and not self.squad_ai:IsCapturing()  then
 	
 		if (self:TryAttachSquad(true, true, 50, 100, nil) ~= nil) then
 			return
@@ -127,8 +99,14 @@ function SistersMissionaryTactic:Update()
 		if (self:TryAttachSquad(false, true, 50, 100, nil) == nil) then
 			self:TryAttachSquadMelee()
 		end
+		
+	end
+	
+	
+	
+	if (self:IsComplete()) then
+		return
 	end
 
-	-- Check if we are in serious trouble
-	self:EmergencyRetreat()
 end
+

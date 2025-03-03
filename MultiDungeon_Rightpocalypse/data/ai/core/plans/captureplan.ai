@@ -363,7 +363,7 @@ function CapturePlan:FindFreeStrategicPoint()
 				end
                 end
 
-				if (self.capturing_squad == nil and oStrategicPoint:IsStrategicObjective() and bEmergency) then
+				if (self.capturing_squad == nil and oStrategicPoint:IsStrategicObjective() and bEmergency and aCapturers[1][1] ~= nil) then
 					self.capturing_squad = aCapturers[1][1]
 					table.remove(aCapturers, 1)
 				end

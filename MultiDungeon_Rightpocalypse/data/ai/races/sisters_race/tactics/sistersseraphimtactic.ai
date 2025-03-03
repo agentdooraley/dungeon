@@ -14,8 +14,8 @@ end
 -- Seraphims are allowed to retreat even directly after a jump
 function SistersSeraphimTactic:SetTarget( target, variant_type )
 
-	self.variant_type = variant_type
-	self.variant_type = variant_type
+    self.variant_type = variant_type
+    self.variant_type = variant_type
        if self.variant_type==Tactic.Variant.Vector then
     self.target = Vector3f(target)
        elseif self.variant_type==Tactic.Variant.SquadAI then
@@ -23,6 +23,10 @@ function SistersSeraphimTactic:SetTarget( target, variant_type )
        elseif self.variant_type==Tactic.Variant.BaseAI then
     self.target = target
        end
+
+
+
+	
 	self.m_iMoveDelay = 0
 	self.last_jump = 0
 end
@@ -50,21 +54,15 @@ function SistersSeraphimTactic:DoAbilities()
 
 		-- Reduces morale damage and boosts combat performance
 		Ability.DoAbility(self.squad_ai, SistersSeraphim.visage_id)
-			
+	
     end
 	-- Throw krak grenades!
 	if (self.squad_ai:CanDoAbility( SistersSeraphim.krak_id )) then
 		Ability.DoAbilityTarget( self.squad_ai, SistersSeraphim.krak_id, Ability.Filters.CloseVehicleEnemy, 1 )
-		Ability.DoAbilityTargetEntity( self.squad_ai, SistersSeraphim.krak_id, Ability.EntityFilters.CloseBaseEntityEnemy, 1 )
 	end
 
 	-- Run if safe
 	if ((not self.squad_ai:IsInCombat() and self.squad_ai:IsInStateMove()) or self.stateID ~= Tactic.StateID.NoState) then
-
-		-- If I am safe I can run
-		if (self.squad_ai:CanDoAbility( SistersSeraphim.run_id )) then
-			self.squad_ai:DoSpecialAbility( SistersSeraphim.run_id )
-		end
 	end
 end
 
