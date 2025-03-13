@@ -84,17 +84,17 @@ BuildBaseStrategyInfo =
 				{ 6, 5000, 5000, 2000, 3,"Building",	"chaos_hq_super" },
 				{ 6, 8000, 8000, 3000, 100,"Addon",	"chaos_hq_super_addon_1" },
 				{ 6, 15000, 15000, 4000, 50,"Addon",	"chaos_hq_super_addon_2" }
-			},
-			
-			-- std raptor++
+			},				
+
+			-- STD
 			{  
 				{ 1, 300, 0, 0, 1,	"Building",	"chaos_temple" },			
-			    { 1, 190, 0, 0, 2,	"Unit",		"chaos_squad_raptor" },
-				{ 1, 120, 50, 0, 1,	"Unit",		"chaos_squad_lord" },				
-			    { 1, 140, 0, 850, 1,	"building",		"chaos_plasma_generator" },
+			    { 1, 90, 0, 0, 2,	"Unit",		"chaos_marine_squad" },
+				{ 1, 120, 50, 0, 1,	"Unit",		"chaos_squad_lord" },
+			    { 1, 210, 0, 0, 3,	"Unit",		"chaos_marine_squad" },
+			    { 1, 140, 0, 1000, 1,	"building",		"chaos_plasma_generator" },
 				{ 1, 140, 80, 750, 60,	"TurretAddon",	"chaos_list_post_addon_1" },
-				{ 1, 200, 50, 700, 1,	"Building",	"chaos_armoury" },
-			    { 1, 190, 0, 0, 3,	"Unit",		"chaos_squad_raptor" },				
+				{ 1, 200, 50, 1000, 1,	"Building",	"chaos_armoury" },
 				{ 1, 140, 80, 1000, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
 				{ 1, 400, 125, 0, 1,	"Addon",	"chaos_hq_addon_1" },
 
@@ -133,7 +133,7 @@ BuildBaseStrategyInfo =
 				{ 6, 5000, 5000, 2000, 3,"Building",	"chaos_hq_super" },
 				{ 6, 8000, 8000, 3000, 100,"Addon",	"chaos_hq_super_addon_1" },
 				{ 6, 15000, 15000, 4000, 50,"Addon",	"chaos_hq_super_addon_2" }
-			},			
+			},	
 
 			-- gen std
 			{  
@@ -190,7 +190,7 @@ BuildBaseStrategyInfo =
 				{ 1, 175, 50, 0, 1,	"Building",	"chaos_armoury" },			
 				{ 1, 140, 80, 750, 50,	"TurretAddon",	"chaos_list_post_addon_1" },				
 				{ 1, 140, 80, 1000, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
-				{ 1, 400, 125, 0, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 350, 125, 0, 1,	"Addon",	"chaos_hq_addon_1" },
 
 				{ 2, 0, 0, 0, 0,	"Restrict",	"chaos_squad_lord_khorne" },
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },				
@@ -238,7 +238,7 @@ BuildBaseStrategyInfo =
 				{ 1, 90, 45, 0, 1,	"Building",	"chaos_turret_bolter" },									
 				{ 1, 140, 80, 750, 75,	"TurretAddon",	"chaos_list_post_addon_1" },				
 				{ 1, 140, 80, 1000, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
-				{ 1, 400, 125, 0, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 350, 125, 0, 1,	"Addon",	"chaos_hq_addon_1" },
 
 				{ 2, 0, 0, 0, 0,	"Restrict",	"chaos_squad_lord_khorne" },
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },				

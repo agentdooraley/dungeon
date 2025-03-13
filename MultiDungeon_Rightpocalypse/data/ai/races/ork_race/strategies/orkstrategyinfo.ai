@@ -41,7 +41,7 @@ BuildBaseStrategyInfo =
 			{
 				{ 1, 400, 0, 0, 1,	"Building",	"ork_hq" },
 				{ 1, 225, 0, 0, 1,	"Building",	"ork_boy_hut" },
-				{ 1, 140, 0, 200, 1,	"Building",	"ork_generator" },				
+				{ 1, 140, 0, 100, 1,	"Building",	"ork_generator" },				
 				{ 1, 120, 0, 0, 2,	"Unit",		"ork_squad_slugga" },
 				{ 1, 140, 0, 0, 1,	"Unit",		"ork_squad_shoota_boy" },
 				{ 1, 190, 50, 0, 1,	"Unit",		"ork_squad_mek_boy" },
@@ -110,7 +110,7 @@ BuildBaseStrategyInfo =
 			{
 				{ 1, 400, 0, 0, 1,	"Building",	"ork_hq" },
 				{ 1, 225, 0, 0, 1,	"Building",	"ork_boy_hut" },
-				{ 1, 140, 0, 200, 1,	"Building",	"ork_generator" },				
+				{ 1, 140, 0, 100, 1,	"Building",	"ork_generator" },				
 				{ 1, 120, 0, 0, 2,	"Unit",		"ork_squad_slugga" },
 				{ 1, 140, 0, 0, 1,	"Unit",		"ork_squad_shoota_boy" },
 				{ 1, 190, 50, 0, 1,	"Unit",		"ork_squad_mek_boy" },
@@ -179,7 +179,7 @@ BuildBaseStrategyInfo =
 			{
 				{ 1, 400, 0, 0, 1,	"Building",	"ork_hq" },
 				{ 1, 225, 0, 0, 1,	"Building",	"ork_boy_hut" },
-				{ 1, 140, 0, 200, 1,	"Building",	"ork_generator" },				
+				{ 1, 140, 0, 100, 1,	"Building",	"ork_generator" },				
 				{ 1, 120, 0, 0, 3,	"Unit",		"ork_squad_slugga" },
 				{ 1, 190, 50, 0, 1,	"Unit",		"ork_squad_mek_boy" },
 				{ 1, 100, 80, 750, 85,	"TurretAddon",	"ork_gork_totem_addon_1" },				
@@ -247,7 +247,7 @@ BuildBaseStrategyInfo =
 			{
 				{ 1, 400, 0, 0, 1,	"Building",	"ork_hq" },
 				{ 1, 225, 0, 0, 1,	"Building",	"ork_boy_hut" },
-				{ 1, 180, 0, 0, 1,	"Building",	"ork_waagh_banner" },				
+				{ 1, 180, 0, 100, 1,	"Building",	"ork_waagh_banner" },				
 				{ 1, 120, 0, 0, 2,	"Unit",		"ork_squad_slugga" },
 				{ 1, 190, 50, 0, 1,	"Unit",		"ork_squad_mek_boy" },
 				{ 1, 140, 0, 750, 1,	"Building",	"ork_generator" },	
@@ -315,7 +315,7 @@ BuildBaseStrategyInfo =
 			{
 				{ 1, 400, 0, 0, 1,	"Building",	"ork_hq" },
 				{ 1, 225, 0, 0, 1,	"Building",	"ork_boy_hut" },
-				{ 1, 180, 0, 0, 1,	"Building",	"ork_waagh_banner" },			
+				{ 1, 180, 0, 100, 1,	"Building",	"ork_waagh_banner" },			
 				{ 1, 120, 0, 0, 3,	"Unit",		"ork_squad_slugga" },
 				{ 1, 190, 50, 0, 1,	"Unit",		"ork_squad_mek_boy" },
 				{ 1, 140, 0, 750, 1,	"Building",	"ork_generator" },	
@@ -434,7 +434,8 @@ BuildOrderStrategyInfo =
 			{ "squad", "ork_squad_slugga" },
 			{ "squad", "ork_squad_slugga" },			
 			{ "building", "ork_boy_hut", false  },		
-			{ "flag_capture" }, { "flag_capture" }
+			{ "flag_capture" }, { "flag_capture" },
+			{ "squad", "ork_squad_grot" }
 		},
 		 
 		QuickStart = 

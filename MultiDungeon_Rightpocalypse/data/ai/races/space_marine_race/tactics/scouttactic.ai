@@ -18,33 +18,19 @@ function ScoutTactic:InitAbilities()
 		Scout.demolition_id = cpu_manager.stats:GetAbilityID( "marines_demo_charge" )	
 	end
 
-	if (Scout.detonate_id == nil) then
-		Scout.detonate_id = cpu_manager.stats:GetAbilityID( "marines_demo_charge_detonate" )	
-	end
 end
 
 function ScoutTactic:DoAbilities()
 
 	-- Place Demo Charge
 	if (self.squad_ai:CanDoAbility(Scout.demolition_id)) then 
-		Ability.DoAbilityPos(self.squad_ai, Scout.demolition_id, Ability.EntityFilters.CloseBaseEntityEnemy)
 		Ability.DoAbilityPos( self.squad_ai, Scout.demolition_id, Ability.Filters.CloseVehicleEnemy, 1 )
 		Ability.DoAbilityPos( self.squad_ai, Scout.demolition_id, Ability.Filters.CloseSquadEnemy, 4 )
 	end
 
-	-- Detonate Charge!
-	if (self.squad_ai:CanDoAbility(Scout.detonate_id)) then 
-		Ability.DoAbilityPos(self.squad_ai, Scout.demolition_id, Ability.EntityFilters.CloseBaseEntityEnemy)
-		Ability.DoAbilityPos( self.squad_ai, Scout.detonate_id, Ability.Filters.CloseVehicleEnemy, 1 )
-		Ability.DoAbilityPos( self.squad_ai, Scout.detonate_id, Ability.Filters.CloseSquadEnemy, 4 )
-	end
 
 	-- Call standard method
 	SpaceMarineInfantryTactic.DoAbilities(self)
-end
-
-function ScoutTactic:IsAttacker()
-	return (cpu_manager:GetTierLevel() >= 1)
 end
 
 function ScoutTactic:Upgrade()
@@ -81,16 +67,6 @@ function ScoutTactic:Reinforce()
 	if (not Tactic.Options.can_reinforce) then
 		return
 	end
-
-	-- Always try for the actual leader next
-	if not self.squad_ai:IsReinforcing() then
-		if (self.squad_ai:CanReinforce( false, 0 )) then
-			self.squad_ai:DoReinforce( false, 0 )
-		elseif (self.squad_ai:CanReinforce( true, 0 )) then
-			self.squad_ai:DoReinforce( true, 0 )
-		end
-	end
-	
 	-- Check if sniper was researched
 	if (not cpu_manager.cpu_player:IsResearchComplete("marine_sniper_rifle")) then
 		return

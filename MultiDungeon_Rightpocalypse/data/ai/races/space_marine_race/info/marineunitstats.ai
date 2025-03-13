@@ -42,7 +42,7 @@ UnitStrengths.space_marine_squad_veteran_stronghold_sp = 50
 
 -- Skirmish
 UnitStrengths.space_marine_squad_servitor = 0
-UnitStrengths.space_marine_squad_scout = 90
+UnitStrengths.space_marine_squad_scout = 70
 UnitStrengths.space_marine_squad_tactical = 170
 UnitStrengths.space_marine_squad_tactical_bike = 160
 UnitStrengths.space_marine_squad_assault = 175
@@ -216,15 +216,10 @@ SpaceMarineUnitStats =
 		potential =
 		{
 			{
-				name = "space_marine_bolt_pistol_scout",
-				effectiveness = GenerateUnitEffectiveness(math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,math.random(4*10,5*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
+				name = "space_marine_bolter_scout",
+				effectiveness = GenerateUnitEffectiveness(math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
 				range = UnitStatsAI.RT_Ranged,
 			},
---			{
---				name = "space_marine_bolter_scout",
---				effectiveness = GenerateUnitEffectiveness(math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
---				range = UnitStatsAI.RT_Ranged,
---			},
 --			{
 --				name = "space_marine_shotgun",
 --				effectiveness = GenerateUnitEffectiveness(math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,math.random(5*10,6*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
