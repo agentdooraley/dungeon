@@ -287,10 +287,19 @@ function EldarBuildBaseStrategy:BuildFlexible()
 			end
 
 			-- Compute secondary researches
-			if (iInfantrySquads >= 1) then
+			if (iInfantrySquads >= 3) then
 				self:DynamicResearch("eldar_plasma_grenade_research", 1, 25, 75, 0, 0, nil, 0)
 				self:DynamicResearch("eldar_warlock_ability_research", 1, 125, 65, 0, 0, nil, 0)
 			end
+			
+			if (self:CountSquads("eldar_squad_rangers") >= 1) then
+				self:DynamicResearch("eldar_ranger_infiltration_research", 1, 75, 75, 0, 0, nil, 0)
+			end
+			
+			-- Compute Death Omen research
+			if (self:CountSquads("eldar_squad_dark_reapers") >= 2) then
+				self:DynamicResearch("eldar_exarch_ability_research_1", 1, 75, 75, 0, 0, nil, 0)
+			end			
 
 		end
 
@@ -300,10 +309,6 @@ function EldarBuildBaseStrategy:BuildFlexible()
 		self:DynamicResearch("eldar_research_infantryhealth_1", 2, 100, 50, 0, 0, nil, 0)
 		self:DynamicResearch("eldar_research_infantryaccuracy_1", 2, 100, 50, 0, 0, nil, 0)
 
-			-- Compute rangers infiltration research
-			if (self:CountSquads("eldar_squad_rangers") >= 1) then
-				self:DynamicResearch("eldar_ranger_infiltration_research", 2, 100, 100, 0, 0, nil, 0)
-			end
 		
 			-- Compute resource researches
 			self:DynamicResearch("eldar_power_research_1", 2, 200, 20, 0, 0, nil, 0)
@@ -334,11 +339,6 @@ function EldarBuildBaseStrategy:BuildFlexible()
 
 			if (self:CountSquads("eldar_squad_farseer") >= 1) then
 				self:DynamicResearch("eldar_spell_eldritch_storm", 2, 100, 100, 0, 0, nil, 0)
-			end
-
-			-- Compute Death Omen research
-			if (self:CountSquads("eldar_squad_dark_reapers") >= 1) then
-				self:DynamicResearch("eldar_exarch_ability_research_1", 2, 100, 100, 0, 0, nil, 0)
 			end
 
 			-- Compute Vengeful Persistance research

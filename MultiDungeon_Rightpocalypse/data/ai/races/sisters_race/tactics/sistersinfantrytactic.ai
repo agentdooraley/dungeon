@@ -139,11 +139,11 @@ function SistersInfantryTactic:Upgrade()
 	
 	-- Don't upgrade sisters_squad_battlewith less than 6 troopers
 	if cpu_manager:GetTierLevel() < 2 then
-		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 10) then
+		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 6) then
 			return
 		end
 	else
-		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 7) then
+		if (self.squad_ai:GetSquadName() == "sisters_squad_battle_sister" and self.squad_ai:GetNumTroopers() < 4) then
 			return
 		end
 	end
@@ -180,8 +180,8 @@ end
 
 function SistersInfantryTactic:CanOnlyDecap()
 	local scout_count
-	scout_count=SistersBuildBaseStrategy:CountSquads("sisters_squad_missionary")
-	if scout_count >= 2 and sSquadName ~= "sisters_squad_missionary" then
+	scout_count=SistersBuildBaseStrategy:CountSquads("sisters_squad_battle_sister")
+	if scout_count >= 2 and sSquadName ~= "sisters_squad_battle_sister" then
 		return true
 	else
 		return false

@@ -15,14 +15,14 @@ function SistersMissionaryTactic:IsAttacker()
 
 	-- Check for infiltrators
 	local bNeedSupportDetector = (cpu_manager:EnemyHasUnitInfiltrators() or cpu_manager:EnemyHasBaseInfiltrators())
-		return (cpu_manager:GetTierLevel() >= 1 or bNeedSupportDetector)
+	return (cpu_manager:GetTierLevel() >= 2 or bNeedSupportDetector)
 end
 
 function SistersMissionaryTactic:IsDefender()
 
 	-- Check for infiltrators
 	local bNeedSupportDetector = (cpu_manager:EnemyHasUnitInfiltrators() or cpu_manager:EnemyHasBaseInfiltrators())
-		return (cpu_manager:GetTierLevel() >= 1 or bNeedSupportDetector)
+	return (cpu_manager:GetTierLevel() >= 2 or bNeedSupportDetector)
 end
 
 function SistersMissionaryTactic:InitAbilities()
