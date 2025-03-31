@@ -6,7 +6,7 @@ DllName = WXPMod
 ;; DllName = WXPMod_DCMod
 Playable = 1
 ModFolder = MultiDungeon_Rightpocalypse 
-ModVersion = 0.23
+ModVersion = 0.24
 TextureFE = Art/UI/Textures/Title_winter_assault.tga
 TextureIcon =
 
