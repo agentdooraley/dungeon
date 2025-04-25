@@ -5,8 +5,8 @@ Description = The Right project, developed by the Dungeon mod team (agent007412 
 DllName = WXPMod
 ;; DllName = WXPMod_DCMod
 Playable = 1
-ModFolder = MultiDungeon_6IbDJlOpocalypse 
-ModVersion = 0.35
+ModFolder = MultiDungeon_Rightpocalypse 
+ModVersion = 0.35 6ABAHCpocalypse
 TextureFE = Art/UI/Textures/Title_winter_assault.tga
 TextureIcon =
 
