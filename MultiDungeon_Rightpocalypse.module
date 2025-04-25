@@ -1,12 +1,12 @@
 [global]
 
-UIName = MultiDungeon ZQRGpocalypse 
+UIName = MultiDungeon 6ABAHCpocalypse
 Description = The Right project, developed by the Dungeon mod team (agent007412 McGuaire, Tauker The Hole and Lesnoy Gay-babay )
 DllName = WXPMod
 ;; DllName = WXPMod_DCMod
 Playable = 1
 ModFolder = MultiDungeon_Rightpocalypse 
-ModVersion = 0.35 6ABAHCpocalypse
+ModVersion = 0.35
 TextureFE = Art/UI/Textures/Title_winter_assault.tga
 TextureIcon =
 
