@@ -219,7 +219,7 @@ Screen =
 										{
 											type = "Graphic",
 											ID = 297191,
-											texture = "art/ui/textures/soulstorm_main_menu_tech.tga",	
+											texture = "art/ui/textures/soulstorm_main_menu_tech.tga",
 											states =  
 											{
 												"Normal",
@@ -269,7 +269,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.38714,
+											0.39714,
 										},
 										style =  
 										{
@@ -595,7 +595,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.32507,
+											0.34127,
 										},
 										style =  
 										{
@@ -635,7 +635,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.26000,
+											0.28500,
 										},
 										style =  
 										{
@@ -675,7 +675,7 @@ Screen =
 										position =  
 										{
 											0.01700,
-											0.19924,
+											0.22924,
 										},
 										style =  
 										{
@@ -715,7 +715,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.12837,
+											0.17337,
 										},
 										style =  
 										{
@@ -726,7 +726,7 @@ Screen =
 										size =  
 										{
 											0.27712,
-											0.07027,
+											0.06027,
 										},
 									},
 									 
@@ -755,7 +755,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.06732,
+											0.11732,
 										},
 										style =  
 										{
@@ -795,7 +795,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.00427,
+											0.06127,
 										},
 										style =  
 										{
@@ -836,7 +836,7 @@ Screen =
 										position =  
 										{
 											0.01687,
-											0.06127,
+											0.00500,
 										},
 										style =  
 										{
@@ -847,12 +847,11 @@ Screen =
 										size =  
 										{
 											0.27712,
-											0.06027,
+											0.06000,
 										},
 									},
 									 
 									{
-										visible = false,
 										type = "Button",
 										tooltip_text = "$3028",
 										text = "$3006",
@@ -885,6 +884,86 @@ Screen =
 											"btn_MainMenu_16pt",
 										},
 										tooltip_name = "tooltip",
+									},
+									 
+									{
+										type = "Button",
+										tooltip_text = "$3106",
+										text = "$3105",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "btnBattle1",
+										position =  
+										{
+											0.01686,
+											0.06100,
+										},
+										style =  
+										{
+											"UIStyles",
+											"btn_MainMenu_16pt",
+										},
+										tooltip_name = "tooltip",
+										size =  
+										{
+											0.27712,
+											0.06100,
+										},
+									},
+									 
+									{
+										type = "Button",
+										tooltip_text = "$3108",
+										text = "$3107",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "btnBattle2",
+										position =  
+										{
+											0.01686,
+											0.11700,
+										},
+										style =  
+										{
+											"UIStyles",
+											"btn_MainMenu_16pt",
+										},
+										tooltip_name = "tooltip",
+										size =  
+										{
+											0.27712,
+											0.06100,
+										},
 									},
 								},
 								HitArea =  
@@ -1317,6 +1396,7 @@ Screen =
 							 
 							{
 								type = "TextLabel",
+								tooltip_text = "$3019",
 								text = "$3010",
 								HitArea =  
 								{
@@ -1336,6 +1416,7 @@ Screen =
 									},
 								},
 								name = "txtThought",
+								tooltip_name = "tooltip",
 								position =  
 								{
 									0.00881,
@@ -1346,7 +1427,6 @@ Screen =
 									"UIStyles",
 									"txt_Thought_Brown",
 								},
-								tooltip_name = "tooltip",
 								Presentation =  
 								{
 									Art =  
@@ -1763,6 +1843,30 @@ ToolInfo =
 			{
 			},
 			type = "Button",
+		},
+		 
+		{
+			type = "Button",
+			name = "btnBattle1",
+			HitAreaGuides =  
+			{
+			},
+			hidden = true,
+			ArtGuides =  
+			{
+			},
+		},
+		 
+		{
+			type = "Button",
+			name = "btnBattle2",
+			HitAreaGuides =  
+			{
+			},
+			hidden = true,
+			ArtGuides =  
+			{
+			},
 		},
 		 
 		{

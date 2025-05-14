@@ -44,8 +44,6 @@ function ork_race:LoadRace( eDifficulty )
 	import( 'Races/ork_race/Tactics/NobzTactic.ai' )
 	import( 'Races/ork_race/Tactics/MegaNobzTactic.ai' )
 	import( 'Races/ork_race/Tactics/BadDokTactic.ai' )
-	import( 'Races/ork_race/Tactics/WierdBoyTactic.ai' )
-	import( 'Races/ork_race/Tactics/WierdBoyEntrenchedTactic.ai' )
 	import( 'Races/ork_race/Tactics/MekBoyTactic.ai' )
 	import( 'Races/ork_race/Tactics/WarBossTactic.ai' )
 	import( 'Races/ork_race/Tactics/TrukkTactic.ai' )
@@ -123,10 +121,6 @@ function ork_race:CreateTactic(oSquadAI)
 		return BadDokTactic(oSquadAI)
 	elseif (sUnitName == "ork_squad_mek_boy") or (sUnitName == "npc_squad_civilian_group") then
 		return MekBoyTactic(oSquadAI)
-	elseif (sUnitName == "ork_squad_wierdboy") then
-		return WierdBoyTactic(oSquadAI)
-	elseif (sUnitName == "ork_squad_wierdboy_entrenched") then
-		return WierdBoyEntrenchedTactic(oSquadAI)
 	elseif (sUnitName == "ork_squad_warboss") then
 		return WarBossTactic(oSquadAI)
 	elseif (sUnitName == "ork_squad_trukk") or (sUnitName == "ork_squad_looted_rhino") then
