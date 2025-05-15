@@ -7,12 +7,12 @@ ArmyRanks =
 			Value = 2,
 		},
 		{
-			PlayerStrongholdDistance = 3,
+			PlayerStrongholdDistance = 2,
 			Value = 2,
 		},
 		{
 			PlayerStrongholdDistance = 5,
-			Value = 2,
+			Value = 3,
 		},
 		{
 			PlayerStrongholdDistance = 8,
@@ -31,8 +31,8 @@ Phases =
 
 		RequisitionCap = 1000,
 		
-		AttackProbability = 0.25,
-		AttackRange = 2, --2,
+		AttackProbability = 0.50,
+		AttackRange = 4, --2,
 
     WeightAttackTargetRace = 0,
     WeightBuildStrongholdPerimeter = 0.5,
@@ -42,16 +42,16 @@ Phases =
 		TargetChangeProbability = 0.5, --0, ###
 		TargetTargettingRaceCountMax = 0,
 
-		StrongholdAttackTerritoryCount = 31, --25, Assuming this should be the # of territories???
+		StrongholdAttackTerritoryCount = 31, -- 31 25, Assuming this should be the # of territories???
 
 		PlayerAttackFrequencyMin = 2,
 		PlayerAttackRulesIgnoreTerritoryCount = 2,
 		PlayerAttackRulesIgnoreArmyRankDifference = 2,
 
-		TerritoryOwnershipLimit = 10, --6, ###
+		TerritoryOwnershipLimit = 10, -- 10 6, ###
 
-		TerritoryMilitaryStrengthDiscrepancyMax = 2, --3,
-		TerritoryMilitaryStrengthMultipleIncreasePerTurnProbability = 0.5,
+		TerritoryMilitaryStrengthDiscrepancyMax = 10, -- 2     3,
+		TerritoryMilitaryStrengthMultipleIncreasePerTurnProbability = 0.5, --0.5
 	},
 	{
 		PhaseLengthMin = 8,
@@ -61,13 +61,13 @@ Phases =
 
 		RequisitionCap = 1000,
 		
-		AttackProbability = 0.5, --0.42, ###
-		AttackRange = 31,
+		AttackProbability = 0.42, --0.42, ###
+		AttackRange = 4, --4
 
     WeightAttackTargetRace = 0,
-    WeightBuildStrongholdPerimeter = 0.25,
-    WeightObtainWarpGate = 0.5,
-    WeightReconnectIsolatedTerritory = 0.75,
+    WeightBuildStrongholdPerimeter = 0.5,
+    WeightObtainWarpGate = 0,
+    WeightReconnectIsolatedTerritory = 0.5,
 
 		TargetChangeProbability = 0.5,
 		TargetTargettingRaceCountMax = 2,
@@ -75,8 +75,8 @@ Phases =
 		StrongholdAttackTerritoryCount = 31, --25, Assuming this should be the # of territories???
 
 		PlayerAttackFrequencyMin = 2,
-		PlayerAttackRulesIgnoreTerritoryCount = 2,
-		PlayerAttackRulesIgnoreArmyRankDifference = 2,
+		PlayerAttackRulesIgnoreTerritoryCount = 4,
+		PlayerAttackRulesIgnoreArmyRankDifference = 4,
 
 		TerritoryOwnershipLimit = 20, --6, ###
 
@@ -91,22 +91,22 @@ Phases =
 
 		RequisitionCap = 1000,
 
-		AttackProbability = 0.75, --0.5, ###
-		AttackRange = 31,
+		AttackProbability = 0.40, --0.4, ###
+		AttackRange = 4, --4
 
-    WeightAttackTargetRace = 0.25,
-    WeightBuildStrongholdPerimeter = 0,
-    WeightObtainWarpGate = 0.5,
-    WeightReconnectIsolatedTerritory = 0.75,
+    WeightAttackTargetRace = 0,
+    WeightBuildStrongholdPerimeter = 0.5,
+    WeightObtainWarpGate = 0,
+    WeightReconnectIsolatedTerritory = 0.5,
 
 		TargetChangeProbability = 0.25,
-		TargetTargettingRaceCountMax = 4,
+		TargetTargettingRaceCountMax = 6, --4 ???
 
 		StrongholdAttackTerritoryCount = 5,
 
 		PlayerAttackFrequencyMin = 2,
-		PlayerAttackRulesIgnoreTerritoryCount = 2,
-		PlayerAttackRulesIgnoreArmyRankDifference = 2,
+		PlayerAttackRulesIgnoreTerritoryCount = 8,
+		PlayerAttackRulesIgnoreArmyRankDifference = 8,
 
 		TerritoryOwnershipLimit = 31, --25,
 
@@ -126,37 +126,37 @@ AutoResolve =
 	--
 	--
 	-- Basically, CommanderBonusBase is there to give attackers an early chance against territories with strengths of 3 and 4
-	CommanderBonusBase = 2.5,
-	WarGearFactor = 0.4,
+	CommanderBonusBase = 1.5, --2.5 let's see... 
+	WarGearFactor = 0.2, --0.25 too much for current balance 
 	-- DefenderRatingFactor skews battles slightly in favor of the defender on the broad average (as opposed to early)
-	DefenderRatingFactor = 0.9, --Was 1.3, Setting this value to <1 means that territories have a slight *dis*advantage against attackers
+	DefenderRatingFactor = 0.7, -- 0.6 Was 1.3, Setting this value to <1 means that territories have a slight *dis*advantage against attackers
 	-- ChanceToDefendFactor determines how much is chance and how much is about the numbers. 
 	-- If the discrepency is a value of 5, then with a CTDF of 0.75 it adds .375 to the .5 random split. If the difference is 7 or over, it's a done deal: the value is > 1
 	ChanceToDefendFactor = 0.075,
      -- In a player vs. AI battle, DefenderRating = DefenderRAting * PlayerDefendFactor, giving the player a distinct advantage
-    PlayerDefendFactor = 1.2,  -- a slight advantage
+    PlayerDefendFactor = 0.9,  -- 1.1 a slight (dis)advantage now
   
-  AIWarGearPerVictories = 0.5,
+  AIWarGearPerVictories = 0.1, --1.0, ###
   AIWarGearCap = 10,
-  AIGarrisonBonusPerMilitaryStrength = 1.0,
+  AIGarrisonBonusPerMilitaryStrength = 0.6,
 	
 	VictoryMarginValues =
 	{
 		{
-			MaxMargin = 0.1,
-			UnitLossChance = 0.7, --0.3, --0.9,
+			MaxMargin = 0.4, --0.1
+			UnitLossChance = 0.65, --0.3, --0.9,
 		},
 		{
-			MaxMargin = 0.2,
-			UnitLossChance = 0.75, --0.2, --0.75,
-		},
-		{
-			MaxMargin = 0.4,
-			UnitLossChance = 0.8, --0.15, --0.6,
+			MaxMargin = 0.5, --0.2
+			UnitLossChance = 0.70, --0.2, --0.75,
 		},
 		{
 			MaxMargin = 0.6,
-			UnitLossChance = 0.85, --0.1, --0.4,
+			UnitLossChance = 0.75, --0.15, --0.6,
+		},
+		{
+			MaxMargin = 0.7,
+			UnitLossChance = 0.80, --0.1, --0.4,
 		},
 		{
 			MaxMargin = 0.8,
@@ -169,7 +169,7 @@ AutoResolve =
 	},	
 	
 	VictoryMarginMaxUnitLossChance = 0.0,
-    ArmyRankLossFactor = .65,
+    ArmyRankLossFactor = 0.40, --0.65 values were reduced to balance army lose factor. That means that garrison is now more affected of the battles.
 }
 
 -- Map difficulty settings
@@ -188,7 +188,7 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Hard",
 			},
 
 			}
@@ -201,7 +201,7 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Hard",
 			},
 		}
 	},
@@ -213,7 +213,7 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Advanced",
 			},
 		}
 	},
@@ -225,7 +225,7 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Insane",
 			},
 		}
 	},
@@ -237,10 +237,10 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Hard",
 			},
 			{
-				Difficulty = "Easy",
+				Difficulty = "Hard",
 			},
 		}
 	},
@@ -252,10 +252,10 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Advanced",
 			},
 			{
-				Difficulty = "Easy",
+				Difficulty = "Hard",
 			},
 		}
 	},
@@ -267,10 +267,10 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Advanced",
 			},
 			{
-				Difficulty = "Easy",
+				Difficulty = "Advanced",
 			},
 		}
 	},
@@ -282,10 +282,10 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Insane",
 			},
 			{
-				Difficulty = "Standard",
+				Difficulty = "Hard",
 			},
 		}
 	},
@@ -297,10 +297,10 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Insane",
 			},
 			{
-				Difficulty = "Standard",
+				Difficulty = "Advanced",
 			},
 		}
 	},
@@ -312,668 +312,11 @@ DifficultySettings =
 		AIOpponents =
 		{
 			{
-				Difficulty = "Standard",
+				Difficulty = "Insane",
 			},
 			{
-				Difficulty = "Standard",
+				Difficulty = "Insane",
 			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 11,
-    AIRank = 10,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 12,
-    AIRank = 11,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 13,
-    AIRank = 12,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 14,
-    AIRank = 13,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 15,
-    AIRank = 14,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 16,
-    AIRank = 15,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 17,
-    AIRank = 16,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 18,
-    AIRank = 17,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 19,
-    AIRank = 18,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 20,
-    AIRank = 19,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Standard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 21,
-    AIRank = 20,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 22,
-    AIRank = 21,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 23,
-    AIRank = 22,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 24,
-    AIRank = 23,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Hard",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 25,
-    AIRank = 24,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 26,
-    AIRank = 25,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 27,
-    AIRank = 26,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 28,
-    AIRank = 27,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 29,
-    AIRank = 28,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 30,
-    AIRank = 29,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 31,
-    AIRank = 30,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 32,
-    AIRank = 31,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 33,
-    AIRank = 32,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 34,
-    AIRank = 33,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 35,
-    AIRank = 34,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 36,
-    AIRank = 35,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 36,
-    AIRank = 35,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 37,
-    AIRank = 36,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 38,
-    AIRank = 37,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 39,
-    AIRank = 38,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Hard",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 40,
-    AIRank = 39,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 41,
-    AIRank = 40,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 42,
-    AIRank = 41,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 43,
-    AIRank = 42,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 44,
-    AIRank = 43,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 45,
-    AIRank = 44,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 46,
-    AIRank = 45,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 47,
-    AIRank = 46,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 48,
-    AIRank = 47,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 49,
-    AIRank = 48,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
-		}
-	},
-
-	{
-		MilitaryStrength = 50,
-    AIRank = 49,
-		
-		AIOpponents =
-		{
-			{
-				Difficulty = "Advanced",
-			},
-			{
-				Difficulty = "Advanced",
-			},
-
 		}
 	},
 }
