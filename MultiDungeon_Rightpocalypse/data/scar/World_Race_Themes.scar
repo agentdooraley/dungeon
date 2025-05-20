@@ -14,8 +14,8 @@ chaos_marine_race = {
 	"music_main_title",
 	
 	-- new themes
-	"music_vindication",
-	"music_excessum_alighiero",
+	"Adam Skorupa, Krzysztof Wierzynkiewicz - Death Is Nigh",
+	"diabolus o. - Orcus, the king of hell. [Istorium.TV]",
 	"music_dark_calculation",
 	"music_black_legion_hymn",
 	"music_orchestrated_catastrophe",
@@ -26,9 +26,9 @@ chaos_marine_race = {
 	"music_path_to_damnation",
 	
 	-- shared
-	"music_gathering",
-	"music_retribution",
-	"music_elite_med_combat",
+	"Bear McCreary - God of War",
+	"Bear McCreary - Magni and Modi",
+	"Dance With the Dead - Out of Body",
 	"music_elite_odyssey_combat",
 	"music_sentius",
 	"music_velocitron",
@@ -69,16 +69,16 @@ eldar_race = {
 	"mu_ig_str_eldar_perc_str",
 	
 	-- new themes
-	"music_blood_lust",
-	"music_sundering",
-	"music_widowmaker",
+	"Alireza Vejdani,Amadea Music Productions - End of the Night",
+	"Bear McCreary & Joohyun Park - Something Dark Is Coming",
+	"Gothic Storm - Checkmate",
 	"music_murderous_prowess",
 	"music_dragonflame",
 	
 	-- shared
-	"music_invasion_theme",
-	"music_warhammer40ktheme",
-	"music_eldarthemev2",
+	"10000 Watts of Iron - Awakening",
+	"Brand X Music - A Grand Plan",
+	"Dance with the Dead - Banshee",
 	"music_gathering",
 	"music_retribution",
 	"music_elite_combat",
@@ -99,7 +99,7 @@ guard_race = {
 	"copy of music_main_title",
 	
 	-- new themes
-	"music_imperial_creed",
+	"Audiomachine - Guardians At The Gate",
 	"music_blood_of_man",
 	"music_into_the_breach",
 	"music_helghast_march",
@@ -128,15 +128,15 @@ necron_race = {
 	"music_necron_theme",
 	
 	-- new themes
-	"music_the_attack_begins",
-	"music_times_up",
+	"audiomachine - Andromeda",
+	"Audiomachine (Phantasm) - Frozen Synapse",
 	"music_times_up_reprise",
 	"music_you_betray_me",
 	
 	-- shared
-	"music_gathering",
-	"music_retribution",
-	"music_elite_combat",
+	"Audiomachine (Another Sky) - Once Was All There Was",
+	"Elephant Music - Marble",
+	"Ghostwriter Music - Collapse",
 	"music_elite_odyssey_combat",
 	"music_sentius",
 	"music_velocitron",
@@ -152,7 +152,7 @@ ork_race = {
 	"music_ork_theme",
 	
 	--new themes
-	"music_ere_we_go",
+	"Audio Machine - March of the gremlins",
 	"music_storm_fire",
 	"music_orks",
 	"music_rise_of_the_waaagh",
@@ -160,7 +160,7 @@ ork_race = {
 	"music_waaagh_skarblitz",
 	
 	-- shared
-	"music_invasion_theme",
+	"Adam Skorupa, Krzysztof Wierzynkiewicz - Hordes of the North",
 	"music_warhammer40ktheme",
 	"music_eldarthemev2",
 	"music_gathering",
@@ -183,8 +183,8 @@ sisters_race = {
 	"mu_ig_str_sisters_perc_voice",
 	
 	-- new themes
-	"music_temple_damnation",
-	"menu_sisters2",
+	"Bear McCreary - Valkyries",
+	"End of Silence - Warrior Princess (feat. Julie Elven)",
 	
 	-- shared
 	"music_invasion_theme",
@@ -202,7 +202,7 @@ sisters_race = {
 	
 -- Space Marines
 space_marine_race = {
-	"mu_ig_str_spacemarine",
+	"(Warhammer 40.000) Jeremy Soule - Spacemarines Theme",
 	"mu_ig_str_spacemarine_perc",
 	"mu_ig_str_spacemarine_perc_str",
 	"music_dawnofwartheme",
@@ -210,7 +210,7 @@ space_marine_race = {
 	"music_theme_spacemarines_01",
 	
 	-- new themes
-	"music_1000_ships_underworld",
+	"Atom Music Audio - Guardians",
 	"music_tyrianis",
 	
 	-- shared
