@@ -8,6 +8,10 @@
 !/MultiDungeon_Rightpocalypse/data/ai/**
 !/MultiDungeon_Rightpocalypse/data/soundplaylistmusic.lua
 !/MultiDungeon_Rightpocalypse/data/Art/ui/screens/**
+!/MultiDungeon_Rightpocalypse/data/camera_high.lua
+!/MultiDungeon_Rightpocalypse/data/camera_low.lua
+!/MultiDungeon_Rightpocalypse/data/camera_me.lua
+
 
 !MultiDungeon_Rightpocalypse.module
 !DXP2Dummy.module
