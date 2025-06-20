@@ -14,7 +14,7 @@ import("Groups.scar");
 import("WCUtil.scar");
 import("WXPScarUtil.scar");
 import("WXPGroups.scar");
---import("Tyranids.scar");
+import("Tyranids.scar");
 
 --------------------------------------------------
 --           Overall Rule managing              --

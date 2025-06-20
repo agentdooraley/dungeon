@@ -2,6 +2,7 @@
 -- Influence code for Tyranids										--
 -- Created by Miros  @  3.Dec.2011	(Updated @ 03.Oct.2013)			--
 -- Updated by Gambit @  9.Oct.2016	(Updated @ 23.jul.2017)			--
+-- Updated by Gambit @  22.05.2022									--
 --																	--
 --  It's alive!														--
 --																	--
@@ -10,6 +11,12 @@
 
 import("WXPScarUtil.scar")
 import("WCUtil.scar")
+
+
+Tyranids_Global_Builder_Name  = "tyranids_squad_woth"
+Tyranids_Global_Builder_Dummy = "tyranids_squad_woth_dummy"
+Tyranids_HQ_Name = "tyranids_hq"
+
 
 --------------------------------------------------
 --           Overall Rule managing              --
@@ -20,10 +27,36 @@ function Tyranids_Threshold()
 	-- global table that stores Tyranids players' IDs
 	g_TyranidsPlayersIDs = {}
 
+	-- Global table that stores Tyranids players HQs' Positions
+	g_Tyranids_HQsPos = {nil,nil,nil,nil,nil,nil,nil,nil}
+
+	-- global table that stores Tyranids players builders' SGroupIDs
+	g_TyranidsBuildersSGroupIDs = {}
+
+	-- global table that stores Tyranids players builders' SquadIDs
+	g_TyranidsBuildersIDs = {}
+
+	-- global table that stores Tyranids players builders' Positions
+	g_TyranidsBuildersPOS = {}
+
+	-- one-position array that stores a possibly stuck builder's index
+	g_TyranidsStuckBuilder = {0}
+
+	-- Global table that stores the regen modifiers that are applied to Raveners
+	g_Tyranids_RavenerModifiers = {}
+
 	for i = 0, World_GetPlayerCount()-1 do
 		local playerID = World_GetPlayerAt(i)
 		if Player_GetRaceName(playerID) == "tyranids_race" then
 			table.insert(g_TyranidsPlayersIDs, playerID)
+		end
+
+		-- Restrict research not affecting campaign Hive Tyrant
+		if pcall( MetaMap_GetAttackerRaceIndex ) then
+			Player_RestrictResearch( playerID, "tyranids_hivetyrant_adrenal_research")
+			Player_RestrictResearch( playerID, "tyranids_hivetyrant_toxic_miasma_research")
+			Player_RestrictResearch( playerID, "tyranids_hivetyrant_warp_field_research")
+			Player_RestrictResearch( playerID, "tyranids_hivetyrant_wings_research")
 		end
 	end
 
@@ -33,20 +66,33 @@ function Tyranids_Threshold()
 	-- Do not run if there are no Tyranids players in-game
 	if Tyranids_Players_Number == 0 then return end
 
+	-- We do NOT use builders in Last Stand or KTGM!
+	if G_Is_LastStand_Map ~= nil or KTGM_ENABLED ~= nil then
+		print("NO need to have a Tyranids builder in this Game Mode!")
+	else
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_Tyranids_Temp_Dummy_Builder"))
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_Tyranids_Temp_Dummy_Builder_Check_Temp"))
+		EGroup_Clear(EGroup_CreateIfNotFound("eg_Tyranids_Temp_Dummy_Builing"))
+		-- Also, in case of the Campaign, the builder is not spawned on_init, so...
+	end
+
 	-- Set everything up
 	Influence_SetUp()
 
 	-- Initial Influence and Builders' definition
-	Rule_AddOneShot( Influence_StartingResAndBuilders, 0.4 )
+	Rule_AddOneShot( Influence_StartingResTyranids, 0.4 )
 
-	-- Builder stuck fix
-	--Rule_AddIntervalDelay( Tyranids_BuilderStuckFixTest, 3.125, 0.75 )
+	-- Brain Button Tweaks Rule
+	Rule_AddDelay( Tweaks_AddMainRule, 1.4 )
 
 	-- Resource Rules
 	Rule_Add( InfluenceCap_Rule )
 
 	-- AI Resource fix Rule
 	Rule_AddInterval( AI_Res_Fix_Rule, 1 )
+	Rule_AddInterval( early_start, 60 )
+	Rule_AddOneShot( early_start_stop, 601 )
+	--Rule_AddInterval( AI_reinit_Tyranids, 420 )
 
 end
 
@@ -55,16 +101,18 @@ end
 -- Global Functions that count key elements     --
 --------------------------------------------------
 
+-- Used to delay the Builder initiation, in case the race does NOT start with a builder immediately!
+
 -- Custom function to count fully constructed chimneys
 Tyr_Count_Chimneys = function( egroupid, itemindex, entityID )
-	if Entity_GetBlueprintName(entityID) == "tyranids_digest_pool" and Entity_GetBuildingProgress(entityID) >= 1.0 then
+	if Entity_GetBlueprintName(entityID) == "tyranids_spore_chimney" and Entity_GetBuildingProgress(entityID) >= 1.0 then
 		ChimneyCount = ChimneyCount + 1
 	end
 end
 
 -- Custom function to count chimneys' addons
 Tyr_Count_LP_Addons = function( egroupid, itemindex, entityID )
-	if Entity_GetBlueprintName(entityID) == "tyranids_digest_pool" and Entity_GetBuildingProgress(entityID) >= 1.0 then
+	if Entity_GetBlueprintName(entityID) == "tyranids_spore_chimney" and Entity_GetBuildingProgress(entityID) >= 1.0 then
 		Tyr_nLP0 = Tyr_nLP0 + 1
 		if Entity_ContainsAddOn(entityID,"tyranids_list_post_addon_2") then
 			Tyr_nLP1 = Tyr_nLP1 + 1
@@ -75,6 +123,7 @@ Tyr_Count_LP_Addons = function( egroupid, itemindex, entityID )
 	end
 end
 
+
 -- Trick to re-calculate Tyranids Players variable number on-load
 if g_TyranidsPlayersIDs ~= nil then
 	Tyranids_Players_Number = table.getn(g_TyranidsPlayersIDs)
@@ -82,12 +131,95 @@ end
 
 
 --------------------------------------------------
+--           New Auto-Build Method           	--
+--			By spawning Dummy Builders			--
+--------------------------------------------------
+
+-- The function that performs the unfinished building checks
+Tyranids_BuildUnfinishedBuildings = function(egroupid, itemindex, entityID)
+	if Entity_IsBuilding(entityID) then
+		-- Update HQ place
+		if Entity_GetBlueprintName(entityID) == Tyranids_HQ_Name and Entity_GetBuildingProgress(entityID) > 0.01 then
+			if not Tyranids_Current_Player_First_HQ_Found then
+				g_Tyranids_HQsPos[Tyranids_Current_Player_Array_Pos] = Entity_GetPosition(entityID)
+				Tyranids_Current_Player_First_HQ_Found = true
+			end
+		end
+		-- Check if we need to build it
+		if Entity_GetBuildingProgress(entityID) < 0.0001 then
+			SGroup_Clear("sg_Tyranids_Temp_Dummy_Builder")
+			local owner = Entity_GetPlayerOwner(entityID)
+			-- Create a builder at THAT place if possible, to perform the build
+			local pos = Entity_GetPosition(entityID)
+			local builder1 = Squad_Create(Tyranids_Global_Builder_Dummy, owner, pos, 1); Squad_Spawn(builder1, pos)
+			SGroup_Clear("sg_Tyranids_Temp_Dummy_Builder_Check_Temp")
+			SGroup_Add("sg_Tyranids_Temp_Dummy_Builder_Check_Temp", builder1)
+			-- Check for a despawned builder, in case it was NOT properly spawned!
+			if SGroup_CountDeSpawned("sg_Tyranids_Temp_Dummy_Builder_Check_Temp") > 0 then
+				SGroup_DestroyAllSquads("sg_Tyranids_Temp_Dummy_Builder_Check_Temp")
+			else
+				SGroup_Add("sg_Tyranids_Temp_Dummy_Builder", builder1)
+			end
+			-- Make a 2nd randomly-placed-nearby builder, for sure
+			pos = Tyranids_Extended_ONE_SpawnablePosition(pos, owner)
+			local builder2 = Squad_Create(Tyranids_Global_Builder_Dummy, owner, pos, 1); Squad_Spawn(builder2, pos)
+			SGroup_Clear("sg_Tyranids_Temp_Dummy_Builder_Check_Temp")
+			SGroup_Add("sg_Tyranids_Temp_Dummy_Builder_Check_Temp", builder2)
+			-- Check for a despawned builder, in case it was NOT properly spawned!
+			if SGroup_CountDeSpawned("sg_Tyranids_Temp_Dummy_Builder_Check_Temp") > 0 then
+				SGroup_DestroyAllSquads("sg_Tyranids_Temp_Dummy_Builder_Check_Temp")
+			else
+				SGroup_Add("sg_Tyranids_Temp_Dummy_Builder", builder2)
+			end
+			EGroup_Clear("eg_Tyranids_Temp_Dummy_Builing"); EGroup_Add("eg_Tyranids_Temp_Dummy_Builing", entityID)
+			if SGroup_CountSpawned("sg_Tyranids_Temp_Dummy_Builder") > 0 then
+				Command_SquadEntity(owner, "sg_Tyranids_Temp_Dummy_Builder", SCMD_BuildStructure, "eg_Tyranids_Temp_Dummy_Builing")
+			end
+		end
+	end
+end
+
+
+-- The 12 vectors table, used for finding a valid spawnable position.
+Community_Vectors12 = {{x=0,z=1}, {x=0.5,z=0.866}, {x=0.866,z=0.5}, {x=1,z=0}, {x=0.866,z=-0.5}, {x=0.5,z=-0.866},
+		{x=0,z=-1}, {x=-0.5,z=-0.866}, {x=-0.866,z=-0.5}, {x=-1,z=0}, {x=-0.866,z=0.5}, {x=-0.5,z=0.866}}
+-- Returns only ONE position
+function Tyranids_Extended_ONE_SpawnablePosition(initial_pos, player_id)
+	local spwnpos = World_Pos(0,10,0)
+	local rnd_vector = Community_Vectors12[World_GetRand(1,12)]
+	local rnd_distance = World_GetRand(4,14)
+	spwnpos.x = initial_pos.x + (rnd_vector.x * rnd_distance)
+	spwnpos.z = initial_pos.z + (rnd_vector.z * rnd_distance)
+	local entityID = Entity_Create("space_marine_generator", player_id, spwnpos)
+	return World_GetSpawnablePosition(spwnpos,entityID)
+end
+
+--------------------------------------------------
 --           Starting Influence AND           	--
 -- 		  	  Builder Finder Rule				--
 --------------------------------------------------
 
-function Influence_StartingResAndBuilders()
 
+-- Find the builders of players, and stores their stats
+function Tyranids_StartingBuilders()
+	-- Create/store the SGroup/SGroupID of each Tyranids player's builder
+	for i = 1, Tyranids_Players_Number do
+		local builder_finder = function(sgroupid, itemindex, squadID)
+			if Squad_GetBlueprintName(squadID) == Tyranids_Global_Builder_Name then
+				local player_index = World_GetPlayerIndex(Squad_GetPlayerOwner(squadID))
+				g_TyranidsBuildersIDs[player_index] = squadID
+				g_TyranidsBuildersPOS[player_index] = Squad_GetPosition(squadID)
+				g_TyranidsBuildersSGroupIDs[player_index] = SGroup_CreateIfNotFound( "Tyranids_sg_builder"..player_index )
+				SGroup_Add("Tyranids_sg_builder"..player_index, squadID)
+				return
+			end
+		end
+		SGroup_ForEach(Player_GetSquads(g_TyranidsPlayersIDs[i]), builder_finder )
+	end
+end
+
+
+function Influence_StartingResTyranids()
 	-- Manage resources
 	for i=1, Tyranids_Players_Number do
 		local starting_req = Player_GetResource(g_TyranidsPlayersIDs[i], RT_Requisition)
@@ -155,19 +287,103 @@ function Influence_SetUp()
 		"Tyranids_icons/influencebar/sglass_30",
 	}
 
+	-- Ceate an empty group
+	tyr_eg_empty = EGroup_CreateIfNotFound( "tyr_eg_empty" )
+
+	-- This global var, is for the dynamic brain button
+	Tyr_Brain_Index = 2
+
 	local local_player = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
 
+	-- We set temporary textures while the actual rules load, else it'd look buggy for a second or two
+	Button_SetTextures( Brain_Button, "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_glow_2" )
+	Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_open", "dynamic_taskbar/Tyranid_BG_open", "dynamic_taskbar/Tyranid_BG_open" )
 	if Player_GetRaceName(local_player) == "tyranids_race" then
 		-- Button_SetTextures( ButtonID, enabled, disabled, hover )
 		Button_SetTextures( Influence_Percent, "Tyranids_icons/percent/20", "Tyranids_icons/percent/20", "Tyranids_icons/percent/20" )
 		Button_SetTextures( Influence_FG, Bar_InfCap[2], Bar_InfCap[2], Bar_InfCap[2] )
 		Button_SetTextures( Influence_BG, Bar_InfCur[6], Bar_InfCur[6], Bar_InfCur[6] )
+	else
+		Button_SetVisible( Brain_Button, false )
+		Button_SetVisible( Taskbar_BG, false )
 	end
 	-- And tooltips too
 	Button_SetTooltip( Influence_FG, "$16025447", "$16025448" )
 	Button_SetTooltip( Influence_Percent, "$16025447", "$16025448" )
+	Button_SetTooltip( Brain_Button, "$16028501", "$16028503" )
 
 end
+
+
+--------------------------------------------------
+--             Dynamic Taskbar Rule             --
+--------------------------------------------------
+
+function Dynamic_TaskbarRule()
+
+	if (Tyr_Brain_Index == 1) then
+		Button_SetTextures( Brain_Button, "dynamic_taskbar/Tyranid_brain_1", "dynamic_taskbar/Tyranid_brain_1", "dynamic_taskbar/Tyranid_brain_glow_1" )
+	elseif (Tyr_Brain_Index == 2) then
+		Button_SetTextures( Brain_Button, "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_glow_2" )
+	elseif (Tyr_Brain_Index == 3) then
+		Button_SetTextures( Brain_Button, "dynamic_taskbar/Tyranid_brain_3", "dynamic_taskbar/Tyranid_brain_3", "dynamic_taskbar/Tyranid_brain_glow_3" )
+	elseif (Tyr_Brain_Index == 4) then
+		Button_SetTextures( Brain_Button, "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_2", "dynamic_taskbar/Tyranid_brain_glow_2" )
+	else
+		Tyr_Brain_Index = 0
+	end
+
+	Tyr_Brain_Index = Tyr_Brain_Index+1
+
+end
+
+
+--------------------------------------------------
+--                Tweaks Rule                   --
+--------------------------------------------------
+
+function Tweaks_AddMainRule()
+	local player_index = Tut_GetLocalPlayerIndex()
+	local player_ID =  World_GetPlayerAt(player_index)
+	if Player_GetRaceName( player_ID ) == "tyranids_race" then
+		-- Influence display Rule update for ALL Tyranids players - even dead
+		-- Used so that to properly show 0 Influence for dead players as well
+		InfluenceDisp_Rule()
+		if Player_IsAlive(player_ID) then
+			local builder_sg = "Tyranids_sg_builder"..player_index
+			-- Dynamic taskbar Rule update. Appears here and not above, so that
+			-- for dead players, to show NO pulse on the hive brain !
+			Dynamic_TaskbarRule()
+			if Taskbar_IsMinimized() then
+				if SGroup_Exists(builder_sg) and SGroup_IsSelected(builder_sg) then
+					W40k_SelectEGroup(tyr_eg_empty)
+					Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed" )
+				end
+				Button_SetTooltip( Brain_Button, "$16028501", "$16028504" )
+				-- Trick, to reset button pressing if minimised. Also plays the "disabled" sound
+				if Button_GetPressed(Brain_Button) then Sound_Play("taskbar_down") end
+			else
+				if Button_GetPressed(Brain_Button) and g_TyranidsBuildersSGroupIDs[player_index] ~= nil then
+					if SGroup_Exists(builder_sg) and SGroup_IsSelected(builder_sg) then
+						W40k_SelectEGroup(tyr_eg_empty)
+						Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed" )
+						Button_SetTooltip( Brain_Button, "$16028501", "$16028502" )
+						Sound_Play("taskbar_down")
+					else
+						W40k_SelectSGroup( g_TyranidsBuildersSGroupIDs[player_index] )
+						Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_open", "dynamic_taskbar/Tyranid_BG_open", "dynamic_taskbar/Tyranid_BG_open" )
+						Button_SetTooltip( Brain_Button, "$16028501", "$16028503" )
+					end
+				end
+				if SGroup_Exists(builder_sg) and not SGroup_IsSelected(builder_sg) then
+					Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed" )
+					Button_SetTooltip( Brain_Button, "$16028501", "$16028502" )
+				end
+			end
+		end
+	end
+end
+
 
 --------------------------------------------------
 --            AI Resource fix Rule              --
@@ -200,6 +416,7 @@ function AI_Res_Fix_Rule()
 
 				-- Add the missing Influence to the AI player
 				Player_AddResource( g_TyranidsPlayersIDs[i], RT_Faith, missing_inf )
+	
 			end
 		else
 			table.remove(g_TyranidsPlayersIDs, i)
@@ -209,7 +426,6 @@ function AI_Res_Fix_Rule()
 				Rule_Remove(Tweaks_AddMainRule)
 				Rule_Remove(InfluenceCap_Rule)
 				Rule_Remove(AI_Res_Fix_Rule)
-				Rule_Remove(Tyranids_BuilderStuckFixTest)
 				Tyranids_DisplayDeadPlayer()
 				print("Tyranids TaskBar and Influence Rules removed!")
 			end
@@ -218,6 +434,24 @@ function AI_Res_Fix_Rule()
 	end
 end
 
+function early_start()
+	for i=1, Tyranids_Players_Number do
+		if Player_IsAlive(g_TyranidsPlayersIDs[i]) then
+			if player_IsTyrAI(g_TyranidsPlayersIDs[i]) then
+			--print "helping"
+			Player_AddResource( g_TyranidsPlayersIDs[i], RT_Requisition, 45)
+			Player_AddResource( g_TyranidsPlayersIDs[i], RT_Faith, 15)
+			end
+		end
+	end
+end
+
+
+
+function early_start_stop()
+--print "enough of this nonsense"
+Rule_Remove(early_start)
+end
 
 --------------------------------------------------
 --       Influence Rules    (it sure does!)     --
@@ -241,11 +475,13 @@ end
 
 
 function Tyranids_DisplayDeadPlayer()
+	Button_SetTextures( Taskbar_BG, "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed", "dynamic_taskbar/Tyranid_BG_closed" )
 	Button_SetTextures( Influence_Percent, "Tyranids_icons/percent/0", "Tyranids_icons/percent/0", "Tyranids_icons/percent/0" )
 	Button_SetTextures( Influence_FG, Bar_InfCap[1], Bar_InfCap[1], Bar_InfCap[1] )
 	Button_SetTextures( Influence_BG, Bar_InfCur[1], Bar_InfCur[1], Bar_InfCur[1] )
 	Button_SetTooltip( Influence_FG, "$16025447", "$16025448" )
 	Button_SetTooltip( Influence_Percent, "$16025447", "$16025448" )
+	Button_SetTooltip( Brain_Button, "$16028501", "$16028505" )
 end
 
 
@@ -281,7 +517,7 @@ function InfluenceDisp_Rule()
 		if iInfluence > 100 then iInfluence = 100 end
 
 		-- Set Influence Cap
-		InfCap = 20+10*ChimneyCount
+		InfCap = 20+16*ChimneyCount
 		if InfCap > 100 then
 			InfCap = 100
 		end
@@ -395,3 +631,61 @@ end
 --------------------------------------------------
 
 Scar_AddInit(Tyranids_Threshold)
+
+
+--------------------------------------------------
+--		Let's try this thing		--
+--------------------------------------------------
+function AI_reinit_Tyranids()
+	if AI_DIS_WC_Switch ~= true then
+		if AI_ReInit_AIFlag == 1 then
+		Rule_AddOneShot(AI_Proper_ReInit,0)
+		print "Tyranid Reinit flag detected"
+		end
+	end
+end
+
+--------------------------------------------------
+-- NO LONGER NEEDED
+
+
+--------------------------------------------------
+--     Builder Stuck Fix Rule (non-SS maps)     --
+--------------------------------------------------
+
+function Tyranids_BuilderStuckFixTest()
+	for i = 1, Tyranids_Players_Number do
+		local playerID = g_TyranidsPlayersIDs[i]
+		if Player_IsAlive(playerID) then
+			local player_index = World_GetPlayerIndex(playerID)
+			local cmnd = Squad_GetActiveCommand(g_TyranidsBuildersIDs[player_index])
+			local pos = Squad_GetPosition(g_TyranidsBuildersIDs[player_index])
+			if (cmnd == 1 or cmnd == 2) and pos.x == g_TyranidsBuildersPOS[player_index].x and pos.z == g_TyranidsBuildersPOS[player_index].z then
+				--print("Builder possibly stuck...")
+				g_TyranidsStuckBuilder[1] = player_index
+				g_TyranidsBuildersPOS[player_index] = pos
+				Rule_AddOneShot( Tyranids_BuilderStuckFix, 2 )
+				return
+			else
+				g_TyranidsBuildersPOS[player_index] = pos
+			end
+		end
+	end
+end
+
+
+function Tyranids_BuilderStuckFix()
+	if Player_IsAlive(World_GetPlayerAt(g_TyranidsStuckBuilder[1])) then
+		local cmnd = Squad_GetActiveCommand(g_TyranidsBuildersIDs[g_TyranidsStuckBuilder[1]])
+		local pos = Squad_GetPosition(g_TyranidsBuildersIDs[g_TyranidsStuckBuilder[1]])
+		if (cmnd == 1 or cmnd == 2) and pos.x == g_TyranidsBuildersPOS[g_TyranidsStuckBuilder[1]].x and pos.z == g_TyranidsBuildersPOS[g_TyranidsStuckBuilder[1]].z then
+			--print("BUILDER INDEED STUCK!!!")
+			Command_Squad( World_GetPlayerAt(g_TyranidsStuckBuilder[1]), g_TyranidsBuildersSGroupIDs[g_TyranidsStuckBuilder[1]], 0 )
+			Squad_DeSpawn(g_TyranidsBuildersIDs[g_TyranidsStuckBuilder[1]])
+			local newPos = Player_GetStartPosition(Squad_GetPlayerOwner(g_TyranidsBuildersIDs[g_TyranidsStuckBuilder[1]]))
+			Squad_Spawn(g_TyranidsBuildersIDs[g_TyranidsStuckBuilder[1]], newPos )
+		else
+			g_TyranidsBuildersPOS[g_TyranidsStuckBuilder[1]] = pos
+		end
+	end
+end
