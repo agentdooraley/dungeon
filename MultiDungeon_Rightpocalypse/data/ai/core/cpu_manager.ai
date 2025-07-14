@@ -113,20 +113,20 @@ CpuManager.StrategicTransitions =
 }
 CpuManager.ForceTech =
 {
-	StartTier1 = 6,
-	StartTier2 = 13,
-	StartTier3 = 23,
-	StartTier4 = 29,
-	StartTier5 = 35,
-	StartTier6 = 45
+	StartTier1 = 3,
+	StartTier2 = 7,
+	StartTier3 = 9,
+	StartTier4 = 14,
+	StartTier5 = 17,
+	StartTier6 = 20
 }
 
 CpuManager.AISettings =
 {
-	iDancing = 0,
-	iAttackDelay = 0,
-	iTechSpeed = 0,
-	iHandicap = 0,
+	iDancing = 100,
+	iAttackDelay = 20,
+	iTechSpeed = 2,
+	iHandicap = 3,
 	bAlternativeStrategies = true,
 	bHarassing = true,
 	bMultiBuildings = true,
@@ -440,12 +440,12 @@ function CpuManager:Initialize()
 		CpuManager.ForceTech.StartTier5 = math.random(35,40)
 		CpuManager.ForceTech.StartTier6 = 45
 	elseif (CpuManager.AISettings.iTechSpeed == 2) then
-		CpuManager.ForceTech.StartTier1 = 1
-		CpuManager.ForceTech.StartTier2 = 2
-		CpuManager.ForceTech.StartTier3 = 3
-		CpuManager.ForceTech.StartTier4 = 4
-		CpuManager.ForceTech.StartTier5 = 5
-		CpuManager.ForceTech.StartTier6 = 6
+		CpuManager.ForceTech.StartTier1 = math.random(1,4)
+		CpuManager.ForceTech.StartTier2 = math.random(5,8)
+		CpuManager.ForceTech.StartTier3 = math.random(8,12)
+		CpuManager.ForceTech.StartTier4 = math.random(12,16)
+		CpuManager.ForceTech.StartTier5 = math.random(16,20)
+		CpuManager.ForceTech.StartTier6 = 25
 	end
 	
 	-- Check race name
