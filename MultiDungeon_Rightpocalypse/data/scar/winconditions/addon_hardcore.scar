@@ -15,7 +15,7 @@ end
 
 function HardCore()
 
-	local Modifier_percent = 0.3
+	local Modifier_percent = 0.8
 	
 	local playerCount = World_GetPlayerCount()
 
