@@ -1,6 +1,6 @@
 [global]
 
-UIName = MultiDungeon 6ABAHCpocalypse
+UIName = MultiDungeon 6ABAHCpocalyps
 Description = The Right project, developed by the Dungeon mod team (agent007412 McGuaire, Tauker The Hole and Lesnoy Gay-babay )
 DllName = WXPMod
 ;; DllName = WXPMod_DCMod
@@ -12,7 +12,7 @@ TextureIcon =
 
 DataFolder.1 = Data
 
-RequiredMod.1 = DXP2
+RequiredMod.1 = DXP2Dummy
 RequiredMod.2 = W40k
 
 
