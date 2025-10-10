@@ -31638,6 +31638,118 @@ Screen =
 						},
 						Children =  
 						{
+							{						
+								visible = false,
+								type = "Button",
+								buttonType = "ClickOnPress",
+								text = "",
+								wantAlternate = true,
+								HitArea =  
+								{
+									 
+									{
+										type = "Rectangle",
+										size =  
+										{
+											1,
+											1,
+										},
+										position =  
+										{
+											0,
+											0,
+										},
+									},
+								},
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleButton",
+								},
+								position =  
+								{
+									0,
+									0,
+								},
+								name = "btn_ScarUI",
+								Presentation =  
+								{
+									Art =  
+									{
+										 
+										{
+											type = "Graphic",
+											ID = 297466,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Hover",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297467,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Disabled",
+											},
+										},
+										 
+										{
+											type = "Graphic",
+											ID = 297468,
+											texture = "art/ui/textures/default.tga",
+											states =  
+											{
+												"Normal",
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301778,
+											rectangleType = "Border",
+											states =  
+											{
+												"Active",
+											},
+										},
+										 
+										{
+											type = "Rectangle",
+											ID = 301777,
+											colour =  
+											{
+												255,
+												255,
+												255,
+												255,
+											},
+											rectangleType = "Border",
+											states =  
+											{
+												"Hover",
+											},
+										},
+									},
+									Sound =  
+									{
+										 
+										{
+											sample = "taskbar_small_button_click",
+											event = "OnClick",
+										},
+									},
+								},
+								size =  
+								{
+									0.04155,
+									0.05525,
+								},
+							},								
 							 
 							{
 								visible = false,
