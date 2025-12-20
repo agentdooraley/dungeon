@@ -1,0 +1,233 @@
+Screen =  
+{
+	AspectRatio = 1.33333,
+	version = 4,
+	TooltipWidgets =  
+	{
+		type = "Group",
+		name = "grp_tooltips",
+		position =  
+		{
+			0,
+			0,
+		},
+		HitArea =  
+		{
+			 
+			{
+				type = "Rectangle",
+				size =  
+				{
+					1,
+					1,
+				},
+				position =  
+				{
+					0,
+					0,
+				},
+			},
+		},
+		Clip = true,
+		size =  
+		{
+			1,
+			1,
+		},
+	},
+	Widgets =  
+	{
+		type = "Group",
+		name = "grp_screen",
+		position =  
+		{
+			0,
+			0,
+		},
+		Children =  
+		{
+			 
+			{
+				type = "Custom",
+				name = "ctmMovieWidget",
+				position =  
+				{
+					0.44940,
+					0.04007,
+				},
+				customProperties = "",
+				HitArea =  
+				{
+					 
+					{
+						type = "Rectangle",
+						size =  
+						{
+							1,
+							1,
+						},
+						position =  
+						{
+							0,
+							0,
+						},
+					},
+				},
+				Clip = true,
+				size =  
+				{
+					0.54800,
+					0.48748,
+				},
+			},
+			 
+			{
+				type = "Swf",
+				HitArea =  
+				{
+					 
+					{
+						type = "Rectangle",
+						size =  
+						{
+							1,
+							1,
+						},
+						position =  
+						{
+							0,
+							0,
+						},
+					},
+				},
+				name = "Swf",
+				position =  
+				{
+					-0.40000,
+					0,
+				},
+				Clip = true,
+				style =  
+				{
+					"DefaultStyles",
+					"defStyleSwf",
+				},
+				Presentation =  
+				{
+					Art =  
+					{
+						 
+						{
+							type = "Swf",
+							swf = [[GENERIC:ART\UI\SWF\CAMPAIGNNUGGET.swf]],
+							ID = 369554,
+							alpha = 0,
+							states =  
+							{
+								"Normal",
+								"Active",
+								"Hover",
+								"Disabled",
+							},
+						},
+					},
+				},
+				size =  
+				{
+					1.80000,
+					1,
+				},
+			},
+		},
+		HitArea =  
+		{
+			 
+			{
+				type = "Rectangle",
+				size =  
+				{
+					1,
+					1,
+				},
+				position =  
+				{
+					0,
+					0,
+				},
+			},
+		},
+		Clip = false,
+		size =  
+		{
+			1,
+			1,
+		},
+	},
+}
+ToolInfo =  
+{
+	version = 3,
+	WidgetInfo =  
+	{
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grp_screen",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "ctmMovieWidget",
+			HitAreaGuides =  
+			{
+			},
+			type = "Custom",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "Swf",
+			HitAreaGuides =  
+			{
+			},
+			type = "Swf",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grp_tooltips",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
+	},
+	Guides =  
+	{
+		 
+		{
+			horizontal = true,
+			position = 0.50000,
+		},
+	},
+	ScreenInfo =  
+	{
+		LocaleRange =  
+		{
+			21750,
+			21999,
+		},
+	},
+}
