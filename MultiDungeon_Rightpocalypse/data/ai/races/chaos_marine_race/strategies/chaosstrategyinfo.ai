@@ -54,7 +54,6 @@ BuildBaseStrategyInfo =
 				{ 2, 75, 75, 1000, 1,"Research",	"chaos_mark_nurgle_research" },				
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },
 				{ 2, 175, 50, 0, 1,	"Building",	"chaos_sacrificial_circle" },
-				{ 2, 300, 90, 0, 1,	"Unit",		"chaos_havoc_marine_squad" },
 				{ 2, 250, 500, 0, 2,	"Unit",		"chaos_squad_predator" },
 				{ 2, 450, 450, 0, 1,	"Addon",	"chaos_hq_addon_2" },
 				

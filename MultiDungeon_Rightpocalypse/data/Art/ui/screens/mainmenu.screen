@@ -1,5 +1,7 @@
 Screen =  
 {
+	AspectRatio = 1.33333,
+	version = 4,
 	TooltipWidgets =  
 	{
 		type = "Group",
@@ -9,29 +11,12 @@ Screen =
 			0,
 			0,
 		},
-		HitArea =  
-		{
-			 
-			{
-				type = "Rectangle",
-				size =  
-				{
-					1,
-					1,
-				},
-				position =  
-				{
-					0,
-					0,
-				},
-			},
-		},
 		Children =  
 		{
 			 
 			{
 				type = "TextLabel",
-				text = "",
+				text = "Dawn of War",
 				HitArea =  
 				{
 					 
@@ -49,17 +34,18 @@ Screen =
 						},
 					},
 				},
-				style =  
-				{
-					"DefaultStyles",
-					"defStyleLabel",
-				},
+				name = "tooltip",
 				position =  
 				{
 					0.01027,
 					0.96349,
 				},
-				name = "tooltip",
+				Clip = true,
+				style =  
+				{
+					"DefaultStyles",
+					"defStyleLabel",
+				},
 				Presentation =  
 				{
 					Art =  
@@ -100,22 +86,6 @@ Screen =
 				},
 			},
 		},
-		size =  
-		{
-			1,
-			1,
-		},
-	},
-	version = 4,
-	Widgets =  
-	{
-		type = "Group",
-		name = "grp_Screen",
-		position =  
-		{
-			0,
-			0,
-		},
 		HitArea =  
 		{
 			 
@@ -133,6 +103,22 @@ Screen =
 				},
 			},
 		},
+		Clip = true,
+		size =  
+		{
+			1,
+			1,
+		},
+	},
+	Widgets =  
+	{
+		type = "Group",
+		name = "grp_Screen",
+		position =  
+		{
+			0,
+			0,
+		},
 		Children =  
 		{
 			 
@@ -147,7 +133,7 @@ Screen =
 						name = "sceneBackground",
 						position =  
 						{
-							0,
+							0.37500,
 							0,
 						},
 						customProperties = "",
@@ -168,6 +154,7 @@ Screen =
 								},
 							},
 						},
+						Clip = true,
 						size =  
 						{
 							1,
@@ -183,16 +170,6 @@ Screen =
 							 
 							{
 								type = "ArtLabel",
-								style =  
-								{
-									"DefaultStyles",
-									"defStyleLabel",
-								},
-								position =  
-								{
-									0.67631,
-									0,
-								},
 								HitArea =  
 								{
 									 
@@ -211,6 +188,17 @@ Screen =
 									},
 								},
 								name = "menuTech",
+								position =  
+								{
+									0.67631,
+									0,
+								},
+								Clip = true,
+								style =  
+								{
+									"DefaultStyles",
+									"defStyleLabel",
+								},
 								Presentation =  
 								{
 									Art =  
@@ -219,7 +207,7 @@ Screen =
 										{
 											type = "Graphic",
 											ID = 297191,
-											texture = "art/ui/textures/soulstorm_main_menu_tech.tga",
+											texture = "art/ui/textures/apocalypse_menu.tga",
 											states =  
 											{
 												"Normal",
@@ -247,6 +235,7 @@ Screen =
 										type = "Button",
 										tooltip_text = "$3015",
 										text = "$3005",
+										Clip = true,
 										HitArea =  
 										{
 											 
@@ -597,12 +586,13 @@ Screen =
 											0.01687,
 											0.34127,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27713,
@@ -637,12 +627,13 @@ Screen =
 											0.01687,
 											0.28500,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27713,
@@ -677,12 +668,13 @@ Screen =
 											0.01700,
 											0.22924,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27700,
@@ -717,12 +709,13 @@ Screen =
 											0.01687,
 											0.17337,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27712,
@@ -757,12 +750,13 @@ Screen =
 											0.01687,
 											0.11732,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27712,
@@ -797,12 +791,13 @@ Screen =
 											0.01687,
 											0.06127,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27712,
@@ -838,12 +833,13 @@ Screen =
 											0.01687,
 											0.00500,
 										},
+										tooltip_name = "tooltip",
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
 										},
-										tooltip_name = "tooltip",
+										Clip = true,
 										size =  
 										{
 											0.27712,
@@ -873,99 +869,21 @@ Screen =
 											},
 										},
 										name = "btnSinglePlayer",
+										tooltip_name = "tooltip",
 										position =  
 										{
 											0.01687,
 											0.00522,
 										},
+										Clip = true,
 										style =  
 										{
 											"UIStyles",
 											"btn_MainMenu_16pt",
-										},
-										tooltip_name = "tooltip",
-									},
-									 
-									{
-										type = "Button",
-										tooltip_text = "$3106",
-										text = "$3105",
-										HitArea =  
-										{
-											 
-											{
-												type = "Rectangle",
-												size =  
-												{
-													1,
-													1,
-												},
-												position =  
-												{
-													0,
-													0,
-												},
-											},
-										},
-										name = "btnBattle1",
-										position =  
-										{
-											0.01686,
-											0.06100,
-										},
-										style =  
-										{
-											"UIStyles",
-											"btn_MainMenu_16pt",
-										},
-										tooltip_name = "tooltip",
-										size =  
-										{
-											0.27712,
-											0.06100,
-										},
-									},
-									 
-									{
-										type = "Button",
-										tooltip_text = "$3108",
-										text = "$3107",
-										HitArea =  
-										{
-											 
-											{
-												type = "Rectangle",
-												size =  
-												{
-													1,
-													1,
-												},
-												position =  
-												{
-													0,
-													0,
-												},
-											},
-										},
-										name = "btnBattle2",
-										position =  
-										{
-											0.01686,
-											0.11700,
-										},
-										style =  
-										{
-											"UIStyles",
-											"btn_MainMenu_16pt",
-										},
-										tooltip_name = "tooltip",
-										size =  
-										{
-											0.27712,
-											0.06100,
 										},
 									},
 								},
+								Clip = true,
 								HitArea =  
 								{
 									 
@@ -1031,17 +949,18 @@ Screen =
 												},
 											},
 										},
-										style =  
-										{
-											"DefaultStyles",
-											"defStyleLabel",
-										},
+										name = "txtLine3",
 										position =  
 										{
 											0.01859,
 											0.05084,
 										},
-										name = "txtLine3",
+										Clip = true,
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
 										Presentation =  
 										{
 											Art =  
@@ -1103,17 +1022,18 @@ Screen =
 												},
 											},
 										},
-										style =  
-										{
-											"DefaultStyles",
-											"defStyleLabel",
-										},
+										name = "txtLine2",
 										position =  
 										{
 											0.01859,
 											0.03291,
 										},
-										name = "txtLine2",
+										Clip = true,
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
 										Presentation =  
 										{
 											Art =  
@@ -1175,17 +1095,18 @@ Screen =
 												},
 											},
 										},
-										style =  
-										{
-											"DefaultStyles",
-											"defStyleLabel",
-										},
+										name = "txtLine1",
 										position =  
 										{
 											0.01859,
 											0.01498,
 										},
-										name = "txtLine1",
+										Clip = true,
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
 										Presentation =  
 										{
 											Art =  
@@ -1231,6 +1152,7 @@ Screen =
 										type = "Button",
 										tooltip_text = "$3023",
 										text = "$3008",
+										Clip = true,
 										HitArea =  
 										{
 											 
@@ -1369,6 +1291,7 @@ Screen =
 										},
 									},
 								},
+								Clip = true,
 								HitArea =  
 								{
 								},
@@ -1398,6 +1321,7 @@ Screen =
 								type = "TextLabel",
 								tooltip_text = "$3019",
 								text = "$3010",
+								Clip = true,
 								HitArea =  
 								{
 									 
@@ -1472,6 +1396,7 @@ Screen =
 								type = "TextLabel",
 								tooltip_text = "$3026",
 								text = "$3001",
+								Clip = true,
 								HitArea =  
 								{
 									 
@@ -1542,6 +1467,7 @@ Screen =
 								},
 							},
 						},
+						Clip = false,
 						HitArea =  
 						{
 							 
@@ -1563,7 +1489,7 @@ Screen =
 						tooltip_name = "tooltip",
 						position =  
 						{
-							0,
+							0.37500,
 							0,
 						},
 						style =  
@@ -1580,14 +1506,21 @@ Screen =
 									type = "Rectangle",
 									position =  
 									{
-										0,
-										0.95703,
+										-0.37500,
+										0.95700,
 									},
 									ID = 2657,
+									colour =  
+									{
+										0,
+										0,
+										0,
+										90,
+									},
 									size =  
 									{
-										1,
-										0.04297,
+										1.75000,
+										0.04300,
 									},
 									states =  
 									{
@@ -1606,6 +1539,7 @@ Screen =
 						},
 					},
 				},
+				Clip = true,
 				HitArea =  
 				{
 					 
@@ -1627,7 +1561,7 @@ Screen =
 				tooltip_name = "tooltip",
 				position =  
 				{
-					0,
+					-0.37500,
 					0,
 				},
 				style =  
@@ -1643,7 +1577,7 @@ Screen =
 						{
 							type = "Graphic",
 							ID = 298,
-							texture = "generic:art/ui/textures/fe_soulstorm_background.tga",
+							texture = "generic:art/ui/textures/apocalypse_frontend.tga",
 							states =  
 							{
 								"Normal",
@@ -1656,11 +1590,29 @@ Screen =
 				},
 				size =  
 				{
-					1,
+					1.75000,
 					1,
 				},
 			},
 		},
+		HitArea =  
+		{
+			 
+			{
+				type = "Rectangle",
+				size =  
+				{
+					1,
+					1,
+				},
+				position =  
+				{
+					0,
+					0,
+				},
+			},
+		},
+		Clip = false,
 		size =  
 		{
 			1,
@@ -1843,30 +1795,6 @@ ToolInfo =
 			{
 			},
 			type = "Button",
-		},
-		 
-		{
-			type = "Button",
-			name = "btnBattle1",
-			HitAreaGuides =  
-			{
-			},
-			hidden = true,
-			ArtGuides =  
-			{
-			},
-		},
-		 
-		{
-			type = "Button",
-			name = "btnBattle2",
-			HitAreaGuides =  
-			{
-			},
-			hidden = true,
-			ArtGuides =  
-			{
-			},
 		},
 		 
 		{

@@ -247,7 +247,7 @@ end
 --  2 - LISTS
 ----------------------------------------------------------------------------------------
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 
 
@@ -295,7 +295,7 @@ list_commands =
 	"CommandIcon40", --reserve slot--option alternative--
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list-- list currently unused.	only the command buttons . 01-02 used.-- TESTS CONCEPT--
 list_specialIcon_waaagh =
 {
@@ -304,7 +304,7 @@ list_specialIcon_waaagh =
     "specialIcon03",
 }	
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list-- list currently unused.	only the command buttons -- TESTS CONCEPT--
 list_completed_research =
 {
@@ -315,7 +315,7 @@ list_completed_research =
 
 
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 list_production = 
 {
@@ -349,7 +349,7 @@ list_production =
 }
 
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 list_extra_menu_production =
 {
@@ -379,7 +379,7 @@ list_extra_menu_production =
 	--"CommandIcon24",
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 list_builder_construction = 
 {
@@ -423,7 +423,7 @@ list_builder_construction =
 }
 
 -- mappings for command buttons (command buttons always appear in the same slot on the taskbar)
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  -- Edit for your custom Race or Mod .
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  -- Edit for your custom Race or Mod .
 
 commandsmall_buttons = 
 {
@@ -469,7 +469,7 @@ commandsmall_buttons =
 	
 --	build_adv		= list_commands[0],	
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 
 	-- squad/building commands
 	attach_detach			= "Attach",	
@@ -484,7 +484,7 @@ commandsmall_buttons =
 	cancel_construction	= list_commands[24],
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 
 
@@ -524,7 +524,7 @@ list_abilities =
 }
 
 -- progress positions must be in sync with above list_abilities list
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list--
 
 
@@ -597,7 +597,7 @@ list_abilities_production_progress =
 	"SoulProgress12",
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 
 list_weapon_upgrades =
 {
@@ -651,7 +651,7 @@ list_leader_upgrades =
 	"AddLeader", -- 		REINFORCE LEADER
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --05-16 not working --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --05-16 not working --
 
 list_multileader_upgrades =
 {
@@ -801,7 +801,7 @@ resources =
 	
 	-- bonus
 	{ bind = "player_resource", ui = "grpBonus", text_widget = "txtBonus", icon_widget = "iconBonus", tt = tooltip_simple_template, tt_title = "$551100", tt_desc = "$551101"},
-
+	
 	-- ILE
     -- faith
     { bind = "player_resource", ui = "grpFaith", text_widget ="txtFaith", icon_widget ="iconFaith", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056"},
@@ -826,7 +826,7 @@ resources =
 --			{ bind = "player_resource", ui = "txtOrkSquadCap", text_widget = "orks", tt = tooltip_simple_template, tt_title = "$40754", tt_desc = "$40755", },
 
 			-- ork pop cap icon and label
-            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761" }, 
+           		{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761" }, 
 			{ bind = "player_population", pop_type = "ork", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$40760", tt_desc = "$40761", },
 			
 			-- support cap icon and label
@@ -844,8 +844,25 @@ resources =
 		-- special bindings for NECRONS : Necron power
 		----------------------------------------------------------------------------------------
 		necrons = {
+			-- time bonus icon and label
+			{ bind = "player_resource", ui = "grpBonus", text_widget = "txtBonus", icon_widget = "iconBonus", tt = tooltip_simple_template, tt_title = "$551100", tt_desc = "$551101"},
+
+			-- power icon and label
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+
 			-- squad cap icon and label
-            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			{ bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+
+			-- support cap icon and label
+			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+			{ bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" },
+		},
+
+		sisters = {
+			
+			--[[ squad cap icon and label
+	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
 			-- support cap icon and label
@@ -853,16 +870,24 @@ resources =
 			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
 
 			-- power
-			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$1103110"},
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
 			
-		},
+			-- faith image1
+			--{ bind = "player_resource_faith1_image", ui = "iconFaith1", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },
 
-		sisters = {
+			-- faith image2
+			{ bind = "player_resource_faith2_image", ui = "iconFaith2", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },]]
 			
 			-- squad cap icon and label
-            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
+			-- background for relic
+			{ bind = "image", ui = "grpRelicResource" },
+
+			-- relic icon and label
+			{ bind = "player_resource", ui = "grpRelic", text_widget = "txtOrks", icon_widget ="iconRelic", tt = tooltip_simple_template, tt_title = "$18210371", tt_desc = "$18210372"},
+
 			-- support cap icon and label
 			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
 			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
@@ -878,39 +903,11 @@ resources =
 		},
 		
 		----------------------------------------------------------------------------------------
-		-- special bindings for ALL OTHER RACES: squad cap and support cap
+		-- special bindings for DARK ELDAR:
 		----------------------------------------------------------------------------------------
-		other = {
-		
-			{ bind = "scar_button", ui = "ScarCustomResourceTyranids", tt = {},		
-				dependant = {
-					-- ork resource icon and label
-					-- art/ui/textures/taskbar/your_race/resource_orksquadcap.tga-- conversion DDS.
-					--	{ bind = "player_resource", ui = "grpPower", text_widget = "txtOrks", icon_widget="iconSouls", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751", },
-					--	{ bind = "race_image", ui = "iconSouls", texture= "resource_influence", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-					
-					-- squad cap icon and label
-					-- edit UCS --  --art/ui/textures/taskbar/your_race/resource_cap_infantery.tga --  conversion DDS.
-					{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$16028518", tt_desc = "$16028519" }, 
-					{ bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$16028518", tt_desc = "$16028519" }, 
-					
-					-- support cap icon and label
-					-- edit UCS --  --art/ui/textures/taskbar/your_race/resource_cap_vehicule.tga --  conversion DDS.
-					{ bind = "image", ui = "iconCapBigBugs", tt = tooltip_simple_template, tt_title = "$16028520", tt_desc = "$16028600" }, 
-					{ bind = "player_population", pop_type = "support", ui = "txtBigBugsCap", tt = tooltip_simple_template, tt_title = "$16028520", tt_desc = "$16028600" }, 
-					
-					-- requisition (Biomass)	--replace "txtReq" with "txtBio" to change color (and edit in gamescreen.screen) and replace "resource_requisition" with "resource_biomass" to change icon.
-					{ bind = "player_resource", ui = "grpBio", text_widget ="txtReq", icon_widget ="iconBio", tt = tooltip_simple_template, tt_title = "$40752", tt_desc = "$40753"},
-
-					-- power
-					{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
-					
-					-- Influence
-					{ bind = "player_resource", ui = "grpInf", text_widget = "txtPower", icon_widget ="iconInf", tt = tooltip_simple_template, tt_title = "$16025447", tt_desc = "$16025448"},
-				},
-			},		
+		--[[dark_eldar = {
 			-- squad cap icon and label
-            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
 			
 			-- support cap icon and label
@@ -919,10 +916,59 @@ resources =
 
 			-- power
 			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+		},]]
+		
+		----------------------------------------------------------------------------------------
+		-- standard bindings for DAEMONS:
+		----------------------------------------------------------------------------------------
+		
+		daemons = {
+			-- squad cap icon and label
+			{ bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+
+			-- support cap icon and label
+			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+
+			-- power
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
 		},
 		
-	},
-   	
+		----------------------------------------------------------------------------------------
+		-- special bindings for ALL OTHER RACES: squad cap and support cap
+		----------------------------------------------------------------------------------------
+		other = {
+			--[[ squad cap icon and label
+	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			
+			-- support cap icon and label
+			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+
+			-- power
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+			
+			-- faith image1
+			{ bind = "player_resource_faith1_image", ui = "iconFaith1", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },
+
+			-- faith image2
+			{ bind = "player_resource_faith2_image", ui = "iconFaith2", tt = tooltip_simple_template, tt_title = "$4900055", tt_desc = "$4900056" },]]
+			
+			-- squad cap icon and label
+	            { bind = "image", ui = "iconCapInfantry", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			{bind = "player_population", pop_type = "squad", ui = "txtTroopsCap", tt = tooltip_simple_template, tt_title = "$551006", tt_desc = "$551007" }, 
+			
+
+			-- support cap icon and label
+			{ bind = "image", ui = "iconCapVehicles", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+			{bind = "player_population", pop_type = "support", ui = "txtVehicleCap", tt = tooltip_simple_template, tt_title = "$551008", tt_desc = "$551009" }, 
+
+			-- power
+			{ bind = "player_resource", ui = "grpPower", text_widget = "txtPower", icon_widget ="iconPower", tt = tooltip_simple_template, tt_title = "$40750", tt_desc = "$40751"},
+		},
+   	},
 	----------------------------------------------------------------------------------------
 	-- strategic ui
 	----------------------------------------------------------------------------------------
@@ -983,8 +1029,13 @@ background =
 {
 	-- race skins
 	{ bind = "race_image", ui = "artTaskbar", texture = "taskbar" },
+    { bind = "race_image", ui = "artTaskbarPadded", texture = "taskbar_padded"},
+    { bind = "race_image", ui = "artTaskbarLeft", texture = "map_separated"},
+    { bind = "race_image", ui = "artTaskbarRight", texture = "taskbar_separated"},
 	{ bind = "race_image", ui = "artOverlay", texture = "taskbar_minimap" },
 	{ bind = "race_image", ui = "artMenubar", texture = "taskbar_menu" },
+    { bind = "race_image", ui = "artMenubarLeft", texture = "taskbar_menu_separated_left" },
+    { bind = "race_image", ui = "artMenubarRight", texture = "taskbar_menu_separated_right" },
     { bind = "race_image", ui = "Extrabar",   texture = "extrabar"},
 
 }
@@ -1140,11 +1191,6 @@ hero_ui =
 
 scar_ui =
 {
-	{ bind = "scar_button", ui = "btnInfluence1", tt = tooltip_simple_template, },
-	{ bind = "scar_button", ui = "btnInfluence2", tt = tooltip_simple_template, },
-	{ bind = "scar_button", ui = "btnInfPercent", tt = tooltip_simple_template, },
-	{ bind = "scar_button", ui = "btnTyranidBrain", tt = tooltip_simple_template, },
-	{ bind = "scar_button", ui = "btnTyranidBG", },
 	{ bind = "scar_button", ui = "btn_ScarUI", tt = tooltip_simple_template, },
 }
 
@@ -1160,7 +1206,7 @@ static = uses(minimap, hero_ui, scar_ui, intel_event, resources, dialogs, backgr
 
 ----------------------------------------------------------------------------------------
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 -- simple cancel menu for abilities bar speels commands
 submenu_modal_abilities = uses(static)
 {
@@ -1306,7 +1352,7 @@ reinforcement_info = uses(SoulAbilities)
 	},
 }
 
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new list
 
 
@@ -1379,7 +1425,7 @@ submenu_production_squad_from_squad = uses(static, production_info)
 		},
 	},
 }
--- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 --new group
 submenu_production_squad_from_squad_research = uses(static, production_info)
 {
@@ -1584,7 +1630,7 @@ entity_commands = uses(SoulAbilities)
 				{ 
 					{ bind = "image", ui = "grpSquadHold" }, 
 					-- next / prev buttons for mult selection (race specific)
-					{ bind = "mult_select_scroll", ui = "btnPreviousMultiPage", forward = false, tunnel = true, tunnel = true, texture = "btn_multipage_back", },
+					{ bind = "mult_select_scroll", ui = "btnPreviousMultiPage", forward = false, tunnel = true, texture = "btn_multipage_back", },
 					{ bind = "mult_select_scroll", ui = "btnNextMultiPage", forward = true, tunnel = true, texture = "btn_multipage_next", 
 						dependant = {
 							{ bind = "image", ui = "grpMultipage" },
@@ -1775,7 +1821,7 @@ commands = uses(SoulAbilities)
 		},
 	},
 	
-    -- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+    -- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 
 	-- Squad production menu--squad
 	{ bind = "production_squad_from_squad_menu", ui = commandsmall_buttons.leaders_menu01, texture =  "command_icons/leaders_menu01", submenu =  submenu_production_squad_from_squad, tt = tooltip_simple_template, tt_title = "$551200", tt_desc = "$551201" },	
@@ -1813,7 +1859,7 @@ commands = uses(SoulAbilities)
 
 	{ bind = "melee_dance_button", ui = commandsmall_buttons.melee_dance, progress_bar = "ProgressIcon05", hk = "melee_dance", tt = tooltip_simple_template },
 	
-	-- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --
+	-- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --
 
 	-- Completed research display.		
 	{ bind = "completed_research_a", ui = "ResearchIcon_A", tt = tooltip_simple_template},
@@ -1977,7 +2023,7 @@ squad_commands =
 	        },	
 		},
 	
-   -- Spécial Ombrephenix  modifications Démo Mod Codex Evolutions  --	
+   -- Spï¿½cial Ombrephenix  modifications Dï¿½mo Mod Codex Evolutions  --	
 
 		multi = 
 		{			
