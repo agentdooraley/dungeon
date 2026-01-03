@@ -42,23 +42,18 @@ BuildBaseStrategyInfo =
 				{ 1, 250, 0, 0, 1,	"Building",	"sisters_infantry" },
 				{ 1, 140, 0, 0, 1,	"Unit",		"sisters_squad_battle_sister" },
 				{ 1, 150, 40, 0, 1,	"Unit",		"sisters_squad_canoness" },
-				{ 1, 140, 0, 0, 3,	"Unit",		"sisters_squad_battle_sister" },
-				
-				
-				{ 1, 135, 0, 0, 1,	"Building",	"sisters_plasma_generator" },
-				
-				
-				{ 1, 200, 40, 0, 1,	"Unit",		"sisters_squad_canoness" },
+				{ 1, 140, 0, 0, 2,	"Unit",		"sisters_squad_battle_sister" },
+				{ 1, 135, 0, 0, 1,	"Building",	"sisters_plasma_generator" },	
 				{ 1, 450, 0, 0, 1,	"Building",	"sisters_hq" },			
 				
 				 
 				{ 1, 175, 50, 1200, 1,	"Building",	"sisters_sanctuary" },
 				{ 1, 50, 25, 0, 1,	"Research",	"sisters_leader_range_upgrade"},
-				--{ 1, 25, 75, 700, 1,	"Research",	"sisters_phosphor_grenades_research"},
+				{ 1, 25, 75, 700, 1,	"Research",	"sisters_phosphor_grenades_research"},
 				{ 1, 25, 0, 0, 1,	"TurretAddon",	"addon_sisters_holy_icon" },				
 				{ 1, 100, 75, 0, 2,	"TurretAddon",	"addon_sisters_list_post_1" },	
 				
-				{ 1, 300, 125, 0, 1,  "Addon",	"addon_sisters_hq_1" },
+				{ 1, 300, 125, 500, 1,  "Addon",	"addon_sisters_hq_1" },
 				{ 1, 135, 0, 0, 3,	"Building",	"sisters_plasma_generator" },
 				{ 1, 100, 75, 250, 100,	"TurretAddon",	"addon_sisters_list_post_1" },
 				{ 1, 105, 50, 500, 3,	"TurretAddon",	"addon_sisters_holy_icon" },				

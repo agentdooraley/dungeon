@@ -203,7 +203,7 @@ function necron_race:GetInfo(sType)
 	if (sType == "TurretPower") then
 		return 400
 	elseif (sType == "SupportAllyFactor") then
-		return 8 / 4
+		return 4 / 4
 	elseif (sType == "AttackModifier") then
 		return 8
 	elseif (sType == "CriticalRangeIncreasePerTier") then

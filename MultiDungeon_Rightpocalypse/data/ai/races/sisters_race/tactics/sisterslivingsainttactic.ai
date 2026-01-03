@@ -44,6 +44,14 @@ function SistersLivingSaintTactic:InitAbilities()
 	if (SistersLivingSaint.ascension_id == nil) then
 		SistersLivingSaint.ascension_id = cpu_manager.stats:GetAbilityID( "sisters_act_of_faith_ascension" )
 	end
+	
+	if (SistersLivingSaint.medics_id == nil) then
+		SistersLivingSaint.medics_id = cpu_manager.stats:GetAbilityID( "sisters_battlefield_medics_saint" )
+    end	
+	
+	if (SistersLivingSaint.divinelight_id == nil) then
+		SistersLivingSaint.divinelight_id = cpu_manager.stats:GetAbilityID( "sisters_divine_slaughter" )
+	end	
 end
 
 function SistersLivingSaintTactic:DoAbilities()
@@ -57,6 +65,16 @@ function SistersLivingSaintTactic:DoAbilities()
 
 	-- Summons non-player controlled angels to fight for a short period (Faith cost: 200)
 	Ability.DoAbilityArea( self.squad_ai, SistersLivingSaint.ascension_id, Ability.Filters.CloseEnemy, 10, 4 )
+	
+	Ability.DoAbilityArea( self.squad_ai, SistersLivingSaint.ascension_id, Ability.Filters.CloseEnemy, 10, 10 )
+	Ability.DoAbility( self.squad_ai, SistersLivingSaint.divinelight_id, Ability.Filters.IsInCombat ) 
+
+	if (self.squad_ai:WasRecentlyHurt() and self.squad_ai:GetHealthPercentage() < 0.5) then
+	
+		if (self.squad_ai:CanDoAbility(SistersLivingSaint.medics_id)) then
+			self.squad_ai:DoSpecialAbility(SistersLivingSaint.medics_id) 
+		end
+	end	
 end
 
 function SistersLivingSaintTactic:Update()

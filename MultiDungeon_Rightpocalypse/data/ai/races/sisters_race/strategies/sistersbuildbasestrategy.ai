@@ -12,11 +12,7 @@ function SistersBuildBaseStrategy:__init( baseinfo ) super( baseinfo )
 	self:AddDetectorUnit("sisters_squad_missionary")
 	self:AddDetectorUnit("sisters_squad_confessor")
 	self:AddDetectorUnit("sisters_squad_arch_angel")
-	self:AddDetectorUnit("sisters_squad_saint_cherub")
-	
-	-- Phases of attacks. If army is decreased substantially, or build only titans: modify.
-	self.m_iArmyBuild = math.random(0, 4) -- 4 phases total. If 4 armies was defeated, stop creating armies as it is pointless. Build titans and focus on build order strategy.
-	self.m_iArmyHighestStrength = 0 -- Maximum possible army strength I ever had.
+	self:AddDetectorUnit("sisters_squad_saint_cherub")	
 
 	-- Build first HQ at start pos
 	self.m_iNumHQAtStartPos = 1
@@ -364,6 +360,7 @@ function SistersBuildBaseStrategy:BuildFlexible()
 				self:DynamicResearch("sisters_flashbang_grenade_research", 2, 50, 50, 0, 0, nil, 0)
 				self:DynamicResearch("sisters_krak_grenades_research", 2, 75, 75, 0, 0, nil, 0)
 				self:DynamicResearch("sisters_health_research", 2, 100, 50, 0, 0, nil, 0)
+				self:DynamicResearch("sisters_max_weapons_research", 2, 75, 75, 0, 0, nil, 0)				
 			end
 		
 			-- Compute secondary researches
@@ -391,7 +388,6 @@ function SistersBuildBaseStrategy:BuildFlexible()
 			
 				-- Compute infantry researches
 				if (iInfantrySquads >= 3) then
-					self:DynamicResearch("sisters_max_weapons_research", 2, 75, 75, 0, 0, nil, 0)
 					self:DynamicResearch("sisters_blessed_bionics_2", 2, 100, 50, 0, 0, nil, 0)
 				end
 
@@ -569,7 +565,7 @@ function SistersBuildBaseStrategy:ForceTech()
 	if (iTierLevel == 1) then
 
 		-- Check resources
-		if (iRequisition > 600 and iPower > 200) then
+		if (iRequisition > 500 and iPower > 200) then
 			return false
 		end
 		return not self.m_bHQAddon1

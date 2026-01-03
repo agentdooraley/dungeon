@@ -201,7 +201,7 @@ function sisters_race:GetInfo(sType)
 	if (sType == "TurretPower") then
 		return 400
 	elseif (sType == "SupportAllyFactor") then
-		return 9 / 4
+		return 6 / 4
 	elseif (sType == "AttackModifier") then
 		return 10
 	elseif (sType == "CriticalRangeIncreasePerTier") then

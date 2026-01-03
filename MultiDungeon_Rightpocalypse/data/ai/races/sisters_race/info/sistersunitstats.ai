@@ -30,18 +30,18 @@ UnitStrengths.sisters_squad_honor_guard = 80
 UnitStrengths.sisters_squad_servitor = 70
 UnitStrengths.sisters_squad_saint_cherub = 40
 UnitStrengths.sisters_squad_missionary = 120
-UnitStrengths.sisters_squad_battle_sister = 100
-UnitStrengths.sisters_squad_seraphim = 110
+UnitStrengths.sisters_squad_battle_sister = 55
+UnitStrengths.sisters_squad_seraphim = 45
 UnitStrengths.sisters_squad_retributor = 70
-UnitStrengths.sisters_squad_arco_flagellants = 200
-UnitStrengths.sisters_squad_celestian = 70
-UnitStrengths.sisters_squad_assassin = 70
+UnitStrengths.sisters_squad_arco_flagellants = 75
+UnitStrengths.sisters_squad_celestian = 80
+UnitStrengths.sisters_squad_assassin = 150
 UnitStrengths.sisters_squad_callidus_assassin = 200 
-UnitStrengths.sisters_squad_repentia = 190
+UnitStrengths.sisters_squad_repentia = 90
 UnitStrengths.sisters_squad_almoness = 280
 UnitStrengths.sisters_squad_redemptionist = 280
 UnitStrengths.sisters_squad_canoness = 325
-UnitStrengths.sisters_squad_legatine_superior = 300
+UnitStrengths.sisters_squad_legatine_superior = 100
 UnitStrengths.sisters_inquisitor_squad = 350
 UnitStrengths.sisters_squad_confessor = 400
 UnitStrengths.sisters_squad_nunciate_superior = 290
@@ -64,10 +64,10 @@ UnitStrengths.sisters_squad_living_saint_black = 2000
 UnitStrengths.sisters_squad_saint_celestine = 2000
 UnitStrengths.sisters_squad_arch_angel = 1000
 
-LeaderStrengths.sisters_squad_battle_sister = 0
-LeaderStrengths.sisters_squad_seraphim = 75
-LeaderStrengths.sisters_squad_repentia = 0
-LeaderStrengths.sisters_squad_celestian = 0
+LeaderStrengths.sisters_squad_battle_sister = 100
+LeaderStrengths.sisters_squad_seraphim = 100
+LeaderStrengths.sisters_squad_repentia = 125
+LeaderStrengths.sisters_squad_celestian = 100
 LeaderStrengths.sisters_squad_retributor = 0
 LeaderStrengths.sisters_inquisitor_squad  = 0
 
@@ -154,17 +154,12 @@ SistersUnitStats =
 			},
 			{
 				name = "sisters_flamer_battle_sister",
-				effectiveness = GenerateUnitEffectiveness(math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
+				effectiveness = GenerateUnitEffectiveness(8.1,8.5,6.0,5.3,4.8,2.3,2.2,0.0,4.1,0.0,4.1,7.4,5.6,4.7,0.0,0.0,0.0),
 				range = UnitStatsAI.RT_ShortRanged,
 			},
 			{
-				name = "sisters_melta_battle_sister",
-				effectiveness = GenerateUnitEffectiveness(math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
-				range = UnitStatsAI.RT_ShortRanged,
-			},
-			{
-				name = "sisters_storm_bolter_battle_sister",
-				effectiveness = GenerateUnitEffectiveness(math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,math.random(6*10,8*10)/10,6.1,2.3,3.1,3.7,1.9,0.0,0.0,0.0,0.0),
+				name = "sisters_heavy_bolter_battle_sister",
+				effectiveness = GenerateUnitEffectiveness(4.5,4.5,7.4,7.5,6.1,5.0,4.0,0.0,5.0,0.0,3.8,3.9,2.1,1.3,0.0,0.0,0.0),
 				range = UnitStatsAI.RT_Ranged,
 			},
 			{
@@ -191,11 +186,6 @@ SistersUnitStats =
 				name = "sisters_flamer_seraphim",
 				effectiveness = GenerateUnitEffectiveness(7.1,7.1,7.1,7.1,3.1,5.0,4.0,5.8,7.2,7.2,7.1,6.4,5.6,5.8,0.0,0.0,0.0),
 				range = UnitStatsAI.RT_ShortRanged,
-			},
-			{
-				name = "sisters_inferno_pistol_seraphim",
-				effectiveness = GenerateUnitEffectiveness(3.1,4.1,3.1,4.1,7.1,7.0,7.0,7.8,6.2,4.2,6.1,7.4,7.6,7.8,0.0,0.0,0.0),
-				range = UnitStatsAI.RT_Ranged,
 			},
 			{
 				name = "sisters_chain_sword_seraphim",

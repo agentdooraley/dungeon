@@ -42,18 +42,18 @@ UnitStrengths.space_marine_squad_veteran_stronghold_sp = 50
 
 -- Skirmish
 UnitStrengths.space_marine_squad_servitor = 0
-UnitStrengths.space_marine_squad_scout = 70
-UnitStrengths.space_marine_squad_tactical = 170
+UnitStrengths.space_marine_squad_scout = 50
+UnitStrengths.space_marine_squad_tactical = 70
 UnitStrengths.space_marine_squad_tactical_bike = 160
-UnitStrengths.space_marine_squad_assault = 175
-UnitStrengths.space_marine_squad_devastator = 190
+UnitStrengths.space_marine_squad_assault = 85
+UnitStrengths.space_marine_squad_devastator = 90
 UnitStrengths.space_marine_squad_servitor_weapons = 160
 UnitStrengths.space_marine_squad_lotd_tactical = 270
 UnitStrengths.marine_squad_grey_knights_astra= 230
-UnitStrengths.space_marine_squad_vanguard_veteran = 200
-UnitStrengths.space_marine_squad_sternguard_veteran = 210
-UnitStrengths.space_marine_squad_terminator = 250
-UnitStrengths.space_marine_squad_terminator_assault = 250
+UnitStrengths.space_marine_squad_vanguard_veteran = 90
+UnitStrengths.space_marine_squad_sternguard_veteran = 90
+UnitStrengths.space_marine_squad_terminator = 100
+UnitStrengths.space_marine_squad_terminator_assault = 100
 UnitStrengths.space_marine_squad_skull_probe = 50
 UnitStrengths.space_marine_squad_banner_bearer = 110
 UnitStrengths.space_marine_squad_apothecary = 110
@@ -98,8 +98,8 @@ UnitStrengths.space_marine_squad_warlord_titan = 1300
 UnitStrengths.space_marine_squad_imperator_titan = 1500
 
 LeaderStrengths.space_marine_squad_servitor_weapons = 75
-LeaderStrengths.space_marine_squad_tactical = 75
-LeaderStrengths.space_marine_squad_assault = 75
+LeaderStrengths.space_marine_squad_tactical = 100
+LeaderStrengths.space_marine_squad_assault = 100
 LeaderStrengths.space_marine_squad_devastator = 0
 LeaderStrengths.space_marine_squad_lotd_tactical = 0
 LeaderStrengths.space_marine_squad_vanguard_veteran = 0
