@@ -310,7 +310,7 @@ function NecronBuildBaseStrategy:BuildFlexible()
 		if (self.tierLevel >= 1) then
 		
 			-- Compute scarab researches
-			if (self:CountSquads("necron_scarab_squad") >= 1) then
+			if (self:CountSquads("necron_scarab_squad") >= 4) then
 				self:DynamicResearch("necron_scarab_research", 1, 0, 85, 0, 0, nil, 0)
 			end
 
@@ -328,13 +328,14 @@ function NecronBuildBaseStrategy:BuildFlexible()
 			
 			-- Compute Resource Researches
 			self:DynamicResearch("necron_power_research", 2, 0, 200, 0, 0, nil, 0)
+			self:DynamicResearch("necron_flayed_one_boost", 2, 0, 150, 0, 0, "necron_flayed_one_squad", 2)			
 
 			-- Compute infantry researches
 			if (iInfantrySquads >= 3) then
 				self:DynamicResearch("necron_wraith_boost", 2, 0, 75, 0, 0, "necron_wraith_squad", 1)
 				self:DynamicResearch("necron_immortal_boost", 2, 0, 100, 0, 0, "necron_immortal_squad", 1)
 				self:DynamicResearch("necron_warrior_boost_2", 2, 0, 200, 0, 0, "necron_basic_warrior_squad", 3)
-				self:DynamicResearch("necron_flayed_one_boost_2", 2, 0, 150, 0, 0, "necron_flayed_one_squad", 1)
+				self:DynamicResearch("necron_flayed_one_boost_2", 2, 0, 150, 0, 0, "necron_flayed_one_squad", 2)
 				self:DynamicResearch("necron_speed_research_1", 2, 0, 170, 0, 0, nil, 0)
 			end
 			
@@ -348,8 +349,6 @@ function NecronBuildBaseStrategy:BuildFlexible()
 				self:DynamicResearch("necron_gauss_weaponry_research", 2, 0, 180, 0, 0, nil, 0)
 			end
 			
-			-- Compute vehicle upgrades research
-			self:DynamicResearch("necron_destroyer_boost", 2, 0, 150, 0, 0, "necron_destroyer_squad", 1)
 			
 			-- Compute turret upgrades research
 			self:DynamicResearch("necron_turret_upgrade1", 2, 0, 200, 0, 0, nil, 0)
@@ -567,7 +566,7 @@ end
 function NecronBuildBaseStrategy:ForceTech()
 
 	-- Check time
-	if (g_iGMT < 60 * CpuManager.ForceTech.StartTier1) then
+	if (g_iGMT < 55 * CpuManager.ForceTech.StartTier1) then
 		return false
 	end
 	
@@ -587,7 +586,7 @@ function NecronBuildBaseStrategy:ForceTech()
 	elseif (iTierLevel == 2) then
 
 		-- Check resources
-		if (iPower >= 700) then
+		if (iPower >= 550) then
 			return false
 		end
 		return not self.m_bHQAddon2
@@ -595,7 +594,7 @@ function NecronBuildBaseStrategy:ForceTech()
 	elseif (iTierLevel == 3) then	
 
 		-- Check for large summoning core
-		if (self:GetBuildingCountByName("necron_summoning_core_big", false) < 1) and iPower <= 1500 then
+		if (self:GetBuildingCountByName("necron_summoning_core_big", false) < 1) and iPower <= 700 then
 			return true
 		end
 	end

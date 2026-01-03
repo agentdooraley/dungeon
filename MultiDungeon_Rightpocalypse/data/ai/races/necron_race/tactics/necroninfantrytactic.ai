@@ -66,11 +66,6 @@ function NecronInfantryTactic:Update()
         return
     end
 
-    if (self.m_NecronRetr ~= nil) then
-        self.m_NecronRetr:Call()
-        else
-        NecronInfantryTactic.NecronRetr(self)
-    end 
 end
 
 function NecronInfantryTactic:NecronRetr() 
@@ -190,15 +185,23 @@ function NecronInfantryTactic:CheckForDeath()
 	
 end
 
+-- Reinforce
 function NecronInfantryTactic:Reinforce()
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
 	
-	-- Always try to reinforce
-	if (not self.squad_ai:IsReinforcing()) then
-			
-		if (self.squad_ai:CanReinforce( true, 0 )) then
-			self.squad_ai:DoReinforce( true, 0 )
-		elseif (self.squad_ai:CanReinforce( false, 0 )) then
-			self.squad_ai:DoReinforce( false, 0 )
-		end	
+	if self.squad_ai:IsInCombat() or self.squad_ai:IsUnderAttack()  then
+		if (not self.squad_ai:IsReinforcing()) then
+			self.squad_ai:DoReinforce(false, 0)
+		end
+	end
+	if iPower>150 then
+			-- Reinforce
+		if (not self.squad_ai:IsReinforcing()) then
+			if (self.squad_ai:CanReinforce(true, 0)) then			
+				self.squad_ai:DoReinforce(true, 0)
+			elseif (self.squad_ai:CanReinforce(false, 0)) then
+				self.squad_ai:DoReinforce(false, 0)
+			end
+		end
 	end
 end

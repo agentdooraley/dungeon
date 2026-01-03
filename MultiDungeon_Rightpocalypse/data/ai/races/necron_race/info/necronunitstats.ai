@@ -140,7 +140,7 @@ NecronUnitStats =
 		ebp_name = "necron_basic_warrior",
 		class = UnitStatsAI.UC_HeavyInfantryMed,
 		rating = 3,
-		max_range = 9,
+		max_range = 5,
 		potential = 
 		{
 			{
@@ -287,7 +287,7 @@ NecronUnitStats =
 		ebp_name = "necron_cryptothrall",
 		class = UnitStatsAI.UC_HeavyInfantryMed,
 		rating = 2,
-		max_range = 22,
+		max_range = 5,
 		potential = 
 		{
 			{

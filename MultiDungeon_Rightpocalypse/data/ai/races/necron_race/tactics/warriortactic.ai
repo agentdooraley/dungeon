@@ -56,14 +56,4 @@ function WarriorTactic:DoAbilities()
 	NecronInfantryTactic.DoAbilities(self)
 end
 
-function WarriorTactic:Reinforce()
-	
-	-- Always try to reinforce
-	if (not self.squad_ai:IsReinforcing() and g_iGMT >= 60) then
-        	if (self.squad_ai:CanReinforce(true, 0)) then            
-            		self.squad_ai:DoReinforce(true, 0)
-       		elseif (self.squad_ai:CanReinforce(false, 0)) then
-            		self.squad_ai:DoReinforce(false, 0)
-		end
-	end
-end
+

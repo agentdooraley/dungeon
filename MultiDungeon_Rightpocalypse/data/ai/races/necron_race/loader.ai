@@ -213,7 +213,7 @@ function necron_race:GetInfo(sType)
 	elseif (sType == "AttackRatio") then
 		return 3 / 5
 	elseif (sType == "RetreatRatio") then
-		return 2 / 5
+		return 1 / 2
 	elseif (sType == "InvisibleBuildings") then
 		return false
 	elseif (sType == "HarassingLeader") then
