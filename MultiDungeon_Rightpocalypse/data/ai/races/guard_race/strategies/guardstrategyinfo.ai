@@ -65,9 +65,8 @@ BuildBaseStrategyInfo =
 				{ 2, 400, 400, 1000, 1,	"Addon",	"addon_guard_hq_2" },
 				{ 2, 240, 160, 0, 100,  "TurretAddon",	"addon_guard_list_post_2" },
 
-				{ 3, 0, 0, 0, 0, "Restrict",	 "guard_squad_guardsmen"},
 				{ 3, 0, 0, 0, 0, "Restrict",	 "guard_squad_guardsmen_rider"},
-				{ 3, 190, 560, 0, 1,	"Unit",		"guard_squad_lemanruss" }, 
+				{ 3, 190, 400, 0, 1,	"Unit",		"guard_squad_lemanruss" }, 
 			    { 3, 190, 160, 0, 1,	"Building", 	"guard_comms_array" },
 				{ 3, 700, 150, 0, 2,	"Building", 	"guard_hq" },
 				{ 3, 500, 500, 1500, 1,"Research",	"guard_full_scale_war" },
