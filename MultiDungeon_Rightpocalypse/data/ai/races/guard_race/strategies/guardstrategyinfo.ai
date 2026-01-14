@@ -177,15 +177,16 @@ BuildOrderStrategyInfo =
 	{
 		Basic =
 		{
+			{ "squad", "guard_squad_guardsmen" },	
+			{ "squad", "guard_squad_guardsmen" },
+			{ "squad", "guard_squad_enginseer" },
+			{ "squad","guard_squad_command_squad"},	
+			{ "squad", "guard_squad_guardsmen" },
 			{ "flag_capture" }, { "flag_capture" },
 			{ "flag_capture" },
+			{ "post_builder" }, { "post_builder" },
 			{ "building", "guard_infantry", true },
-			{ "squad", "guard_squad_guardsmen" },
-			{ "squad", "guard_squad_guardsmen" },
-			{ "squad", "guard_squad_command_squad" },
-			{ "squad", "guard_squad_enginseer" },
-			{ "squad", "guard_squad_guardsmen" },
-			{ "building", "guard_plasma_generator", true }
+			{ "building", "guard_plasma_generator" }
 		},
 		
 		QuickStart =

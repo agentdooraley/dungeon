@@ -9,7 +9,7 @@ function GuardBuildBaseStrategy:__init( baseinfo ) super( baseinfo )
 	
 	-- Add detector units (Best first, worst last)
 	self:AddDetectorUnit("guard_squad_psyker")
-	
+	self:AddDetectorUnit("guard_squad_command_squad")
 	
 	-- Phases of attacks. If army is decreased substantially, or build only titans: modify.
 	self.m_iArmyBuild = math.random(0, 4) -- 4 phases total. If 4 armies was defeated, stop creating armies as it is pointless. Build titans and focus on build order strategy.
