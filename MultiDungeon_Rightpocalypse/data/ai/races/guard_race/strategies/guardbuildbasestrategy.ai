@@ -410,7 +410,6 @@ function GuardBuildBaseStrategy:BuildFlexible()
 			-- Compute basic infantry researches
 			if (iBasicInfantrySquads >= 3) then
 				self:DynamicResearch("guard_guardsman_morale_2", 2, 75, 15, 0, 0, nil, 0)
-				self:DynamicResearch("guard_max_weapons_research", 2, 75, 75, 0, 0, nil, 0)
 				self:DynamicResearch("guard_upgrade_guardsmen_health_2", 2, 150, 100, 0, 0, nil, 0)	-- Battle armor
 			end
 
@@ -457,6 +456,7 @@ function GuardBuildBaseStrategy:BuildFlexible()
 			-- Compute resource researches
 			self:DynamicResearch("guard_upgrade_power_2", 3, 350, 40, 0, 0, nil, 0)
 			self:DynamicResearch("guard_upgrade_requisition_2", 3, 100, 350, 0, 0, nil, 0)
+				self:DynamicResearch("guard_max_weapons_research", 3, 75, 75, 0, 0, nil, 0)
 
 			-- Compute Mechanized Depot Addons
 			if (self:GetBuildingCountByName("guard_mechanized") > 0 and iRequisition >= 500) then
