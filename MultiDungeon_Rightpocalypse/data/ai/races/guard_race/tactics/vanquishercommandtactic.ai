@@ -36,7 +36,7 @@ function VanquisherCommandTactic:DoAbilities()
 	if (self.squad_ai:CanDoAbility(VanquisherCommand.mark_id) and self.squad_ai:IsInCombat()) then
 	
 		-- Get closest squad in range
-		local iRange = self.squad_ai:GetAbilityRange(PathFinder.mark_id)
+		local iRange = self.squad_ai:GetAbilityRange(VanquisherCommand.mark_id)
 		local oSquad = cpu_manager.cpu_player:FindFirstEnemy(self.squad_ai:GetPosition(), iRange, 1)
 		if (oSquad ~= nil) then
 		
