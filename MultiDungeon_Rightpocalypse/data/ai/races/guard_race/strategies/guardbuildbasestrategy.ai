@@ -361,7 +361,31 @@ function GuardBuildBaseStrategy:BuildFlexible()
 	local iPowRate = resource_manager:GetResourceRate( ResourceAmount.RT_Power )
 	local iReqRate = resource_manager:GetResourceRate( ResourceAmount.RT_Requisition )
 
-	if (iArmyStrength >= 1600 or (iPower >= 800 and iRequisition >= 900)) then
+	self.m_iguarddoctrine = math.random(1, 5)
+
+   if (self.self.m_iguarddoctrine == 1) then
+
+		self:DynamicResearch("guard_doctrine_infantry", 1, 0, 0, 0, 0, nil, 0)
+
+   elseif (self.self.m_iguarddoctrine == 2) then
+
+		self:DynamicResearch("guard_doctrine_armor", 1, 0, 0, 0, 0, nil, 0)
+
+   elseif (self.self.m_iguarddoctrine == 3) then
+
+		self:DynamicResearch("guard_doctrine_aerial", 1, 0, 0, 0, 0, nil, 0)
+
+   elseif (self.self.m_iguarddoctrine == 4) then
+
+		self:DynamicResearch("guard_doctrine_artillery", 1, 0, 0, 0, 0, nil, 0)		
+
+   elseif (self.self.m_iguarddoctrine == 5) then
+
+		self:DynamicResearch("guard_doctrine_adeptus_titanicus", 1, 0, 0, 0, 0, nil, 0)				
+end
+
+
+	if (iArmyStrength >= 1000 or (iPower >= 500 and iRequisition >= 500)) then
 
 		-- Dynamic research item syntax: ResearchName, MinTier, RequisitionCost, PowerCost, MinSquadCap, MinSupportCap, SquadName, SquadMinCount
 		local iBasicInfantrySquads = self:CountSquads("guard_squad_guardsmen_conscript") + self:CountSquads("guard_squad_guardsmen_rider") + self:CountSquads("guard_squad_guardsmen") + self:CountSquads("guard_squad_guardsmen_specialweapons")
