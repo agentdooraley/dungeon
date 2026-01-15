@@ -363,23 +363,23 @@ function GuardBuildBaseStrategy:BuildFlexible()
 
 	self.m_iguarddoctrine = math.random(1, 5)
 
-   if (self.self.m_iguarddoctrine == 1) then
+   if (self.m_iguarddoctrine == 1) then
 
 		self:DynamicResearch("guard_doctrine_infantry", 1, 0, 0, 0, 0, nil, 0)
 
-   elseif (self.self.m_iguarddoctrine == 2) then
+   elseif (self.m_iguarddoctrine == 2) then
 
 		self:DynamicResearch("guard_doctrine_armor", 1, 0, 0, 0, 0, nil, 0)
 
-   elseif (self.self.m_iguarddoctrine == 3) then
+   elseif (self.m_iguarddoctrine == 3) then
 
 		self:DynamicResearch("guard_doctrine_aerial", 1, 0, 0, 0, 0, nil, 0)
 
-   elseif (self.self.m_iguarddoctrine == 4) then
+   elseif (self.m_iguarddoctrine == 4) then
 
 		self:DynamicResearch("guard_doctrine_artillery", 1, 0, 0, 0, 0, nil, 0)		
 
-   elseif (self.self.m_iguarddoctrine == 5) then
+   elseif (self.m_iguarddoctrine == 5) then
 
 		self:DynamicResearch("guard_doctrine_adeptus_titanicus", 1, 0, 0, 0, 0, nil, 0)				
 end
