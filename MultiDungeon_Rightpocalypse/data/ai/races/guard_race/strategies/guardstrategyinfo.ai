@@ -113,6 +113,7 @@ BuildBaseStrategyInfo =
 				guard_squad_guardsmen_rider = 2,
 				guard_squad_guardsmen_specialweapons = 3,
 				guard_heavy_weapons_team_support_squad = 3,
+				guard_heavy_weapons_team_antitank_squad = 3,
 				guard_heavy_weapons_team_squad = 2,
 				guard_heavy_weapon_team_entrenched_squad_sp = 2,
 				guard_squad_kasrkin = 2,
