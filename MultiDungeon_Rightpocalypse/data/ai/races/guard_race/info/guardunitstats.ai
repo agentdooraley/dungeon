@@ -3069,8 +3069,8 @@ GuardUnitStats =
 		sbp_name = "guard_squad_shadowsword",
 		ebp_name = "guard_vehicles_shadowsword",
 		class = UnitStatsAI.UC_VehicleHigh,
-		rating = 1,
-		max_range = 150,
+		rating = 10,
+		max_range = 75,
 		potential = 
 		{
 			{
@@ -3083,6 +3083,11 @@ GuardUnitStats =
 				effectiveness = GenerateUnitEffectiveness(10,10,10,10,10,10,10,10,10,10,10,10,10,10,0,10,0,150),
 				range = UnitStatsAI.RT_Count,
 			},
+			{
+				name = "guard_quake_cannon_shadowsword",
+				effectiveness = GenerateUnitEffectiveness(10,10,10,10,10,10,10,10,10,10,10,10,10,10,0,10,0,150),
+				range = UnitStatsAI.RT_Count,
+			},			
 			{
 				name = "guard_heavy_bolter_shadowsword_1",
 				effectiveness = GenerateUnitEffectiveness(0.767,0.777,0.687,0.541,0.462,0.153,0,0,0.764,0.764,0.153,0.275,0,0,0,0,0,40),
