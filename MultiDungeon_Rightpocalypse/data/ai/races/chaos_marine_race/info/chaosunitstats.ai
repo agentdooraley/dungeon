@@ -1997,42 +1997,6 @@ ChaosMarineUnitStats =
 		},
 	},
 	{
-		name = "chaos_squad_reaver_titan",
-		sbp_name = "chaos_squad_reaver_titan",
-		ebp_name = "chaos_reaver_titan",
-		class = UnitStatsAI.UC_VehicleHigh,
-		rating = 10,
-		max_range = 150,
-		potential = 
-		{
-			{
-				name = "npc_missile_launcher_reaver_left",
-				effectiveness = GenerateUnitEffectiveness(0.098,0.113,0.098,0.091,0.091,0.603,0.49,0.151,0.113,0.226,0.075,0.226,0.075,0.038,0,0,0,150),
-				range = UnitStatsAI.RT_Count,
-			},
-			{
-				name = "npc_titan_megalaser_reaver_chaos",
-				effectiveness = GenerateUnitEffectiveness(4.666,4.666,4.666,4.666,3.888,10,10,7.777,6.222,5.444,6.222,6.222,4.666,3.111,0,10,0,100),
-				range = UnitStatsAI.RT_Count,
-			},
-			{
-				name = "npc_titan_autocannon_reaver_chaos",
-				effectiveness = GenerateUnitEffectiveness(1.926,4.127,3.302,2.752,1.926,1.926,1.376,0.55,2.752,1.651,2.201,1.926,1.101,0.55,0,1.101,0,100),
-				range = UnitStatsAI.RT_Count,
-			},
-			{
-				name = "npc_missile_launcher_reaver",
-				effectiveness = GenerateUnitEffectiveness(0.021,0.025,0.021,0.02,0.02,0.132,0.107,0.033,0.025,0.049,0.017,0.049,0.017,0.008,0,0,0,150),
-				range = UnitStatsAI.RT_Count,
-			},
-			{
-				name = "npc_missile_launcher_reaver_apocalypse_chaos",
-				effectiveness = GenerateUnitEffectiveness(10,10,10,10,9.139,10,10,10,10,10,10,10,10,7.311,0,10,0,150),
-				range = UnitStatsAI.RT_Count,
-			},
-		},
-	},
-	{
 		name = "chaos_squad_renegades",
 		sbp_name = "chaos_squad_renegades",
 		ebp_name = "chaos_renegade",
@@ -2479,4 +2443,35 @@ ChaosMarineUnitStats =
 			},
 		},
 	},
+	{
+		name = "chaos_squad_reaver_titan",
+		sbp_name = "chaos_squad_reaver_titan",
+		ebp_name = "chaos_reaver_titan",
+		class = UnitStatsAI.UC_VehicleHigh,
+		rating = 10,
+		max_range = 72,
+		potential = 
+		{
+			{
+				name = "titan_reaver_blaster",
+				effectiveness = GenerateUnitEffectiveness(7.1,7.1,8.52,7.1,7.1,10,10,3.55,3.55,1.42,1.42,3.323,1.289,0.568,0,6.221,0,72),
+				range = UnitStatsAI.RT_Ranged,
+			},
+			{
+				name = "titan_reaver_powerfist",
+				effectiveness = GenerateUnitEffectiveness(7.125,7.125,9.5,9.5,10,10,10,10,9.5,8.55,4.75,3.8,3.8,3.8,0,10,0,60),
+				range = UnitStatsAI.RT_Melee,
+			},
+			{
+				name = "chaos_ravager_titan_melta_cannon_r",
+				effectiveness = GenerateUnitEffectiveness(7.1,7.1,8.52,7.1,7.1,10,10,3.55,3.55,1.42,1.42,3.323,1.289,0.568,0,6.221,0,72),
+				range = UnitStatsAI.RT_ShortRanged,
+			},
+			{
+				name = "chaos_ravager_titan_volcano_cannon_r",
+				effectiveness = GenerateUnitEffectiveness(7.125,7.125,9.5,9.5,10,10,10,10,9.5,8.55,4.75,3.8,3.8,3.8,0,10,0,60),
+				range = UnitStatsAI.RT_Ranged,
+			},
+		},
+	},	
 }
