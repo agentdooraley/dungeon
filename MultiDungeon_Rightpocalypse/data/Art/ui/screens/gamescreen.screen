@@ -39939,1288 +39939,4406 @@ Screen =
 											 
 											{
 												type = "Group",
-												Children =  
+							Children =  
+								{
+													 
+													{
+										visible = false,
+										type = "TextLabel",
+										text = "$9040",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
 												{
-													 
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.04250,
+										},
+										name = "txtVehicleCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
 													{
-														type = "TextLabel",
-														text = "$9040",
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														name = "txtVehicleCap",
-														position =  
-														{
-															0.14821,
-															0.04250,
-														},
-														Clip = true,
-														style =  
-														{
-															"UIStyles",
-															"resourceInfo_Text",
-														},
-														Presentation =  
-														{
-															Art =  
-															{
-																 
-																{
-																	type = "Text",
-																	textColourBottom =  
-																	{
-																		245,
-																		134,
-																		60,
-																		233,
-																	},
-																	fontname = "gillsans_bold_16",
-																	textColourTop =  
-																	{
-																		250,
-																		194,
-																		190,
-																		240,
-																	},
-																	multiline = false,
-																	ID = 762,
-																	horzAlign = "Centre",
-																	states =  
-																	{
-																		"Normal",
-																		"Active",
-																		"Hover",
-																	},
-																},
-																 
-																{
-																	type = "Text",
-																	textColourBottom =  
-																	{
-																		255,
-																		0,
-																		0,
-																		255,
-																	},
-																	fontname = "gillsans_bold_16",
-																	textColourTop =  
-																	{
-																		255,
-																		0,
-																		0,
-																		255,
-																	},
-																	multiline = false,
-																	ID = 94476,
-																	horzAlign = "Centre",
-																	states =  
-																	{
-																		"Disabled",
-																	},
-																},
-															},
-														},
-														size =  
-														{
-															0.06336,
-															0.01695,
-														},
+														245,
+														134,
+														60,
+														233,
 													},
-													 
+													fontname = "gillsans_bold_16",
+													textColourTop =  
 													{
-														type = "ArtLabel",
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														name = "iconCapInfantry",
-														position =  
-														{
-															0.12234,
-															0.00548,
-														},
-														Clip = true,
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleLabel",
-														},
-														Presentation =  
-														{
-															Art =  
-															{
-																 
-																{
-																	type = "Graphic",
-																	position =  
-																	{
-																		0.11565,
-																		0.12981,
-																	},
-																	ID = 773,
-																	size =  
-																	{
-																		0.76870,
-																		0.74037,
-																	},
-																	texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_infantry.tga",
-																	states =  
-																	{
-																		"Normal",
-																		"Disabled",
-																		"Active",
-																		"Hover",
-																	},
-																},
-															},
-														},
-														size =  
-														{
-															0.02033,
-															0.02814,
-														},
+														250,
+														194,
+														190,
+														240,
 													},
-													 
+													multiline = false,
+													ID = 762,
+													horzAlign = "Centre",
+													states =  
 													{
-														type = "TextLabel",
-														text = "$9114",
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														name = "txtTroopsCap",
-														position =  
-														{
-															0.14821,
-															0.00954,
-														},
-														Clip = true,
-														style =  
-														{
-															"UIStyles",
-															"resourceInfo_Text",
-														},
-														Presentation =  
-														{
-															Art =  
-															{
-																 
-																{
-																	type = "Text",
-																	textColourBottom =  
-																	{
-																		245,
-																		135,
-																		60,
-																		233,
-																	},
-																	fontname = "gillsans_bold_16",
-																	textColourTop =  
-																	{
-																		250,
-																		194,
-																		189,
-																		240,
-																	},
-																	multiline = false,
-																	ID = 764,
-																	horzAlign = "Centre",
-																	states =  
-																	{
-																		"Normal",
-																		"Active",
-																		"Hover",
-																	},
-																},
-																 
-																{
-																	type = "Text",
-																	textColourBottom =  
-																	{
-																		255,
-																		0,
-																		0,
-																		255,
-																	},
-																	fontname = "gillsans_bold_16",
-																	textColourTop =  
-																	{
-																		255,
-																		0,
-																		0,
-																		255,
-																	},
-																	multiline = false,
-																	ID = 93351,
-																	horzAlign = "Centre",
-																	states =  
-																	{
-																		"Disabled",
-																	},
-																},
-															},
-														},
-														size =  
-														{
-															0.06336,
-															0.01695,
-														},
+														"Normal",
+														"Active",
+														"Hover",
 													},
-													 
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
 													{
-														type = "ArtLabel",
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														name = "iconCapVehicles",
-														position =  
-														{
-															0.12234,
-															0.03678,
-														},
-														Clip = true,
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleLabel",
-														},
-														Presentation =  
-														{
-															Art =  
-															{
-																 
-																{
-																	type = "Graphic",
-																	position =  
-																	{
-																		0.11565,
-																		0.12981,
-																	},
-																	ID = 773,
-																	size =  
-																	{
-																		0.76870,
-																		0.74037,
-																	},
-																	texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_vehicle.tga",
-																	states =  
-																	{
-																		"Normal",
-																		"Disabled",
-																		"Active",
-																		"Hover",
-																	},
-																},
-															},
-														},
-														size =  
-														{
-															0.02033,
-															0.02814,
-														},
+														255,
+														0,
+														0,
+														255,
 													},
-													 
+													fontname = "gillsans_bold_16",
+													textColourTop =  
 													{
-														visible = false,
-														type = "Group",
-														Children =  
-														{
-															 
-															{
-																type = "TextLabel",
-																text = "",
-																HitArea =  
-																{
-																},
-																name = "txtFaith",
-																position =  
-																{
-																	0.14584,
-																	0.00437,
-																},
-																Clip = true,
-																style =  
-																{
-																	"UIStyles",
-																	"resourceInfo_Text",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				245,
-																				134,
-																				60,
-																				233,
-																			},
-																			fontname = "gillsans_bold_16",
-																			textColourTop =  
-																			{
-																				250,
-																				194,
-																				190,
-																				240,
-																			},
-																			multiline = false,
-																			ID = 762,
-																			horzAlign = "Centre",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																			},
-																		},
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				255,
-																				0,
-																				0,
-																				255,
-																			},
-																			fontname = "gillsans_bold_16",
-																			textColourTop =  
-																			{
-																				255,
-																				0,
-																				0,
-																				255,
-																			},
-																			multiline = false,
-																			ID = 94476,
-																			horzAlign = "Centre",
-																			states =  
-																			{
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.06336,
-																	0.01695,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																	 
-																	{
-																		type = "Rectangle",
-																		size =  
-																		{
-																			1,
-																			1,
-																		},
-																		position =  
-																		{
-																			0,
-																			0,
-																		},
-																	},
-																},
-																name = "iconFaith1",
-																position =  
-																{
-																	0.02558,
-																	0.00364,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			ID = 784,
-																			size =  
-																			{
-																				0.86122,
-																				0.90836,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/waaagh_1.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.13160,
-																	0.02100,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																},
-																name = "iconFaith",
-																position =  
-																{
-																	-0.00177,
-																	-0.00108,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			position =  
-																			{
-																				0.05941,
-																				0.19794,
-																			},
-																			ID = 352135,
-																			size =  
-																			{
-																				0.83300,
-																				0.65800,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/resource_faith.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.02128,
-																	0.02900,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																	 
-																	{
-																		type = "Rectangle",
-																		size =  
-																		{
-																			1,
-																			1,
-																		},
-																		position =  
-																		{
-																			0,
-																			0,
-																		},
-																	},
-																},
-																name = "iconFaith2",
-																position =  
-																{
-																	0.02575,
-																	0.00350,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			ID = 784,
-																			size =  
-																			{
-																				0.86122,
-																				0.90836,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/waaagh_1.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.13143,
-																	0.02100,
-																},
-															},
-														},
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleGroup",
-														},
-														position =  
-														{
-															0.00302,
-															0.07032,
-														},
-														Clip = true,
-														name = "grpFaith",
-														Presentation =  
-														{
-															Art =  
-															{
-																 
-																{
-																	type = "Graphic",
-																	ID = 776,
-																	size =  
-																	{
-																		0.60319,
-																		0.92316,
-																	},
-																	texture = "",
-																	states =  
-																	{
-																		"Normal",
-																		"Active",
-																		"Hover",
-																		"Disabled",
-																	},
-																},
-															},
-														},
-														size =  
-														{
-															0.21600,
-															0.03596,
-														},
+														255,
+														0,
+														0,
+														255,
 													},
-													 
+													multiline = false,
+													ID = 94476,
+													horzAlign = "Centre",
+													states =  
 													{
-														visible = false,
-														type = "Group",
-														Children =  
-														{
-															 
-															{
-																type = "TextLabel",
-																text = "",
-																HitArea =  
-																{
-																},
-																name = "txtSouls",
-																position =  
-																{
-																	0.02578,
-																	0.00370,
-																},
-																Clip = true,
-																style =  
-																{
-																	"UIStyles",
-																	"resourceInfo_Text",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				255,
-																				50,
-																				50,
-																				255,
-																			},
-																			fontname = "gillsans_bold_16",
-																			textColourTop =  
-																			{
-																				255,
-																				255,
-																				255,
-																				255,
-																			},
-																			multiline = false,
-																			ID = 778,
-																			horzAlign = "Centre",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.08255,
-																	0.02131,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																},
-																name = "iconSouls",
-																position =  
-																{
-																	0.00125,
-																	0.00100,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			position =  
-																			{
-																				0.06802,
-																				0.11652,
-																			},
-																			ID = 348134,
-																			size =  
-																			{
-																				0.83333,
-																				0.65789,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/resource_souls.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.02075,
-																	0.02900,
-																},
-															},
-														},
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleGroup",
-														},
-														position =  
-														{
-															0,
-															0.06928,
-														},
-														Clip = true,
-														name = "grpSouls",
-														Presentation =  
-														{
-														},
-														size =  
-														{
-															0.11700,
-															0.02783,
-														},
+														"Disabled",
 													},
-													 
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9040",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.04250,
+										},
+										name = "txtGreaterDaemonsCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
 													{
-														visible = false,
-														type = "Group",
-														Children =  
-														{
-															 
-															{
-																type = "TextLabel",
-																text = "",
-																HitArea =  
-																{
-																},
-																name = "txtPower",
-																position =  
-																{
-																	0.03000,
-																	0.00200,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleTextLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				108,
-																				250,
-																				16,
-																				233,
-																			},
-																			horzAlign = "Centre",
-																			ID = 348189,
-																			textColourTop =  
-																			{
-																				175,
-																				248,
-																				17,
-																				240,
-																			},
-																			fontname = "gillsans_bold_16",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.07500,
-																	0.02300,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																},
-																name = "iconPower",
-																position =  
-																{
-																	0.00100,
-																	0.00100,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			position =  
-																			{
-																				0.06802,
-																				0.13700,
-																			},
-																			ID = 348314,
-																			size =  
-																			{
-																				0.83333,
-																				0.65789,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/resource_power.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.02100,
-																	0.02900,
-																},
-															},
-														},
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleGroup",
-														},
-														position =  
-														{
-															0,
-															0.03800,
-														},
-														Clip = true,
-														name = "grpPower",
-														Presentation =  
-														{
-														},
-														size =  
-														{
-															0.11700,
-															0.02700,
-														},
+														245,
+														134,
+														60,
+														233,
 													},
-													 
+													fontname = "gillsans_bold_16",
+													textColourTop =  
 													{
-														visible = false,
-														type = "Group",
-														Children =  
-														{
-															 
-															{
-																type = "TextLabel",
-																text = "",
-																HitArea =  
-																{
-																},
-																name = "txtReq",
-																position =  
-																{
-																	0.03017,
-																	0.00200,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleTextLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				34,
-																				184,
-																				245,
-																				233,
-																			},
-																			horzAlign = "Centre",
-																			ID = 347976,
-																			textColourTop =  
-																			{
-																				120,
-																				159,
-																				250,
-																				240,
-																			},
-																			fontname = "gillsans_bold_16",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.07483,
-																	0.02300,
-																},
-															},
-															 
-															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																},
-																name = "iconReq",
-																position =  
-																{
-																	0.00125,
-																	0.00100,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			position =  
-																			{
-																				0.06802,
-																				0.11652,
-																			},
-																			ID = 348134,
-																			size =  
-																			{
-																				0.83333,
-																				0.65789,
-																			},
-																			texture = "art/ui/textures/taskbar/taskbar_share/resource_requisition.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.02075,
-																	0.02900,
-																},
-															},
-														},
-														HitArea =  
-														{
-															 
-															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
-															},
-														},
-														style =  
-														{
-															"DefaultStyles",
-															"defStyleGroup",
-														},
-														position =  
-														{
-															0,
-															0.00667,
-														},
-														Clip = true,
-														name = "grpReq",
-														Presentation =  
-														{
-														},
-														size =  
-														{
-															0.11725,
-															0.02783,
-														},
+														250,
+														194,
+														190,
+														240,
 													},
-													 
+													multiline = false,
+													ID = 762,
+													horzAlign = "Centre",
+													states =  
 													{
-														visible = false,
-														type = "Group",
-														Children =  
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 94476,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9040",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.04250,
+										},
+										name = "txtKhorneCommandersCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														134,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														190,
+														240,
+													},
+													multiline = false,
+													ID = 762,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 94476,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9040",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.04250,
+										},
+										name = "txtBigBugsCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														134,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														190,
+														240,
+													},
+													multiline = false,
+													ID = 762,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 94476,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.00548,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapInfantry",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_infantry.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.00548,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapPop",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_infantry.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.00548,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapLesserDaemons",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_lesser_daemons.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.00548,
+										},
+										name = "iconCapTyrSrmMonster",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/tyr_cap_mnstr.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.03678,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapKhorneCommanders",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/khm_resource_cap_hero.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.00954,
+										},
+										name = "txtTroopsCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														135,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														189,
+														240,
+													},
+													multiline = false,
+													ID = 764,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 93351,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.00954,
+										},
+										name = "txtLesserDaemonsCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														135,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														189,
+														240,
+													},
+													multiline = false,
+													ID = 764,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 93351,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.00954,
+										},
+										name = "txtTyrSrmMonsterCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														135,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														189,
+														240,
+													},
+													multiline = false,
+													ID = 764,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 93351,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "TextLabel",
+										text = "$9114",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"UIStyles",
+											"resourceInfo_Text",
+										},
+										position =  
+										{
+											0.14821,
+											0.00954,
+										},
+										name = "txtPopCap",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														245,
+														135,
+														60,
+														233,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														250,
+														194,
+														189,
+														240,
+													},
+													multiline = false,
+													ID = 764,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+													},
+												},
+												 
+												{
+													type = "Text",
+													textColourBottom =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													fontname = "gillsans_bold_16",
+													textColourTop =  
+													{
+														255,
+														0,
+														0,
+														255,
+													},
+													multiline = false,
+													ID = 93351,
+													horzAlign = "Centre",
+													states =  
+													{
+														"Disabled",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.06336,
+											0.01695,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.03678,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapVehicles",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_vehicle.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.03678,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapGreaterDaemons",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_greater_daemons.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "ArtLabel",
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleLabel",
+										},
+										position =  
+										{
+											0.12234,
+											0.03678,
+										},
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										name = "iconCapBigBugs",
+										Presentation =  
+										{
+											Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													position =  
+													{
+														0.11565,
+														0.12981,
+													},
+													ID = 773,
+													size =  
+													{
+														0.76870,
+														0.74037,
+													},
+													texture = "art/ui/textures/taskbar/taskbar_share/resource_cap_bigbug.tga",
+													states =  
+													{
+														"Normal",
+														"Disabled",
+														"Active",
+														"Hover",
+													},
+												},
+											},
+										},
+										size =  
+										{
+											0.02033,
+											0.02814,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0.00302,
+											0.07032,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"UIStyles",
+													"resourceInfo_Text",
+												},
+												position =  
+												{
+													0.14584,
+													0.00437,
+												},
+												name = "txtFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
 														{
-															 
+															type = "Text",
+															textColourBottom =  
 															{
-																type = "TextLabel",
-																text = "",
-																HitArea =  
-																{
-																},
-																name = "txtBonus",
-																position =  
-																{
-																	0.03000,
-																	0.00200,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleTextLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Text",
-																			textColourBottom =  
-																			{
-																				255,
-																				49,
-																				49,
-																				255,
-																			},
-																			horzAlign = "Centre",
-																			ID = 349103,
-																			textColourTop =  
-																			{
-																				255,
-																				255,
-																				255,
-																				255,
-																			},
-																			fontname = "gillsans_bold_16",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.07500,
-																	0.02300,
-																},
+																245,
+																134,
+																60,
+																233,
 															},
-															 
+															fontname = "gillsans_bold_16",
+															textColourTop =  
 															{
-																type = "ArtLabel",
-																HitArea =  
-																{
-																},
-																name = "iconBonus",
-																position =  
-																{
-																	0.00100,
-																	0.00100,
-																},
-																Clip = true,
-																style =  
-																{
-																	"DefaultStyles",
-																	"defStyleLabel",
-																},
-																Presentation =  
-																{
-																	Art =  
-																	{
-																		 
-																		{
-																			type = "Graphic",
-																			ID = 349251,
-																			texture = "generic:art/ui/textures/taskbar/taskbar_share/resource_time.tga",
-																			states =  
-																			{
-																				"Normal",
-																				"Active",
-																				"Hover",
-																				"Disabled",
-																			},
-																		},
-																	},
-																},
-																size =  
-																{
-																	0.02100,
-																	0.02900,
-																},
+																250,
+																194,
+																190,
+																240,
 															},
-														},
-														HitArea =  
-														{
-															 
+															multiline = false,
+															ID = 762,
+															horzAlign = "Centre",
+															states =  
 															{
-																type = "Rectangle",
-																size =  
-																{
-																	1,
-																	1,
-																},
-																position =  
-																{
-																	0,
-																	0,
-																},
+																"Normal",
+																"Active",
+																"Hover",
 															},
 														},
-														style =  
+														 
 														{
-															"DefaultStyles",
-															"defStyleGroup",
-														},
-														position =  
-														{
-															0,
-															0.00650,
-														},
-														Clip = true,
-														name = "grpBonus",
-														Presentation =  
-														{
-														},
-														size =  
-														{
-															0.11700,
-															0.02800,
+															type = "Text",
+															textColourBottom =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															multiline = false,
+															ID = 94476,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Disabled",
+															},
 														},
 													},
 												},
+												size =  
+												{
+													0.06336,
+													0.01695,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02558,
+													0.00364,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/waaagh_1.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13160,
+													0.02100,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_faith.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02575,
+													0.00350,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/waaagh_1.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13143,
+													0.02100,
+												},
+											},
+										},
+										name = "grpFaith",
+										Presentation =  
+										{
+											--[[ Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													ID = 776,
+													size =  
+													{
+														0.60319,
+														0.92316,
+													},
+													texture = "",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											}, ]]
+										},
+										size =  
+										{
+											0.21600,
+											0.04296,
+										},
+									},
+
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0.00302,
+											0.07032,
+										},
+										Children =  
+										{
+											--[[ {
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"UIStyles",
+													"resourceInfo_Text",
+												},
+												position =  
+												{
+													0.14584,
+													0.00437,
+												},
+												name = "txtFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																245,
+																134,
+																60,
+																233,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																250,
+																194,
+																190,
+																240,
+															},
+															multiline = false,
+															ID = 762,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+															},
+														},
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																255,
+																0,
+																0,
+																255,
+															},
+															multiline = false,
+															ID = 94476,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.06336,
+													0.01695,
+												},
+											}, ]]
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02558,
+													0.00364,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/i_blank.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13160,
+													0.02100,
+												},
+											}, ]]
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconFaith",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_faith.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											}, ]]
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconInf",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_influence1.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											},
+											 
+											--[[ {
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.02575,
+													0.00350,
+												},
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												name = "iconFaith2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																0.86122,
+																0.90836,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/i_blank.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.13143,
+													0.02100,
+												},
+											}, ]]
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.02584,
+													0.00600,
+												},
+												name = "btnInfPercent",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/percent/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.03200,
+													0.01600,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													-0.00325,
+													-0.00850,
+												},
+												name = "btnInfluence1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/influencebar/sglass_04.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.21250,
+													0.05500,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													-0.00325,
+													-0.00850,
+												},
+												name = "btnInfluence2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/tyranids_icons/influencebar/5frame_01.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.21250,
+													0.05500,
+												},
+											},
+										},
+										name = "grpInf",
+										Presentation =  
+										{
+											--[[ Art =  
+											{
+												 
+												{
+													type = "Graphic",
+													ID = 776,
+													size =  
+													{
+														0.60319,
+														0.92316,
+													},
+													texture = "",
+													states =  
+													{
+														"Normal",
+														"Active",
+														"Hover",
+														"Disabled",
+													},
+												},
+											}, ]]
+										},
+										size =  
+										{
+											0.21600,
+											0.04296,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0.00302,
+											0.07032,
+										},
+										Children =  
+										{
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconBlood",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_blood.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.15884,
+													0.00600,
+												},
+												name = "btnBloodPercent",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/khorne_marine_icons/percent/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.03200,
+													0.01600,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.02558,
+													0.00364,
+												},
+												name = "btnBlood1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/khorne_marine_icons/bloodbar/sglass_04.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.13160,
+													0.02100,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.02575,
+													0.00350,
+												},
+												name = "btnBlood2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/khorne_marine_icons/bloodbar/5frame_01.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+													Sound =  
+													{
+										 
+														{
+															event = "OnClick",
+														},
+													},
+												},
+												size =  
+												{
+													0.13143,
+													0.02100,
+												},
+											},
+										},
+										name = "grpBlood",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.21600,
+											0.04296,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0.00302,
+											0.07032,
+										},
+										Children =  
+										{
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													-0.00177,
+													-0.00108,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconGenes",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.05941,
+																0.19794,
+															},
+															ID = 352135,
+															size =  
+															{
+																0.83300,
+																0.65800,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_genes.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02128,
+													0.02900,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.07584,
+													0.00600,
+												},
+												name = "btnGeneDigit1",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/alien_hunters_icons/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.01000,
+													0.01700,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.06584,
+													0.00600,
+												},
+												name = "btnGeneDigit2",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/alien_hunters_icons/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.01000,
+													0.01700,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.05584,
+													0.00600,
+												},
+												name = "btnGeneDigit3",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/alien_hunters_icons/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.01000,
+													0.01700,
+												},
+											},
+											 
+											{
+												visible = false,
+												type = "Button",
+												buttonType = "ClickOnPress",
+												text = "",
+												wantAlternate = true,
+												HitArea =  
+												{
+													 
+													{
+														type = "Rectangle",
+														size =  
+														{
+															1,
+															1,
+														},
+														position =  
+														{
+															0,
+															0,
+														},
+													},
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleButton",
+												},
+												position =  
+												{
+													0.04584,
+													0.00600,
+												},
+												name = "btnGeneDigit4",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 784,
+															size =  
+															{
+																1.00000,
+																1.00000,
+															},
+															texture = "art/ui/ingame/alien_hunters_icons/0.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.01000,
+													0.01700,
+												},
+											},
+										},
+										name = "grpGenes",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.21600,
+											0.04296,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.06928,
+										},
+										Children =  
+										{
+											 
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"UIStyles",
+													"resourceInfo_Text",
+												},
+												position =  
+												{
+													0.02578,
+													0.00370,
+												},
+												name = "txtSouls",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																255,
+																50,
+																50,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																255,
+																255,
+																255,
+																255,
+															},
+															multiline = false,
+															ID = 778,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.08255,
+													0.02131,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconSouls",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_souls.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+
+											--[[ {
+												type = "TextLabel",
+												text = "$0",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"UIStyles",
+													"resourceInfo_Text",
+												},
+												position =  
+												{
+													0.02578,
+													0.00370,
+												},
+												name = "txtPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																168,
+																153,
+																51,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															textColourTop =  
+															{
+																255,
+																255,
+																255,
+																255,
+															},
+															multiline = false,
+															ID = 778,
+															horzAlign = "Centre",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.08255,
+													0.02131,
+												},
+											}, ]]
+										},
+										name = "grpSouls",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02783,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.03800,
+										},
+										Children =  
+										{
+											 
+											--[[ {
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtOrks",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																108,
+																250,
+																16,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 348189,
+															textColourTop =  
+															{
+																175,
+																248,
+																17,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											}, ]]
+
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																108,
+																250,
+																16,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 348189,
+															textColourTop =  
+															{
+																175,
+																248,
+																17,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00100,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.13700,
+															},
+															ID = 348314,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_power.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02100,
+													0.02900,
+												},
+											},
+										},
+										name = "grpPower",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02700,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.03800,
+										},
+										Children =  
+										{
+											 
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																108,
+																250,
+																16,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 348189,
+															textColourTop =  
+															{
+																175,
+																248,
+																17,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00100,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.13700,
+															},
+															ID = 348314,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_power.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02100,
+													0.02900,
+												},
+											},
+										},
+										name = "grpDaemonPower",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02700,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.03800,
+										},
+										Children =  
+										{
+											 
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																108,
+																250,
+																16,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 348189,
+															textColourTop =  
+															{
+																175,
+																248,
+																17,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00100,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconPower",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.13700,
+															},
+															ID = 348314,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_bmass.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02100,
+													0.02900,
+												},
+											},
+										},
+										name = "grpTSInf",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02700,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_requisition.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpReq",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_requisition.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpDaemonReq",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/tyr_resource_inflnce.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpTSBio",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00667,
+										},
+										Children =  
+										{
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03017,
+													0.00200,
+												},
+												name = "txtReq",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																34,
+																184,
+																245,
+																233,
+															},
+															horzAlign = "Centre",
+															ID = 347976,
+															textColourTop =  
+															{
+																120,
+																159,
+																250,
+																240,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07483,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00125,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconBio",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															position =  
+															{
+																0.06802,
+																0.11652,
+															},
+															ID = 348134,
+															size =  
+															{
+																0.83333,
+																0.65789,
+															},
+															texture = "art/ui/textures/taskbar/taskbar_share/resource_biomass2.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02075,
+													0.02900,
+												},
+											},
+										},
+										name = "grpBio",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11725,
+											0.02783,
+										},
+									},
+									 
+									{
+										visible = false,
+										type = "Group",
+										HitArea =  
+										{
+											 
+											{
+												type = "Rectangle",
+												size =  
+												{
+													1,
+													1,
+												},
+												position =  
+												{
+													0,
+													0,
+												},
+											},
+										},
+										style =  
+										{
+											"DefaultStyles",
+											"defStyleGroup",
+										},
+										position =  
+										{
+											0,
+											0.00650,
+										},
+										Children =  
+										{
+											 
+											{
+												type = "TextLabel",
+												text = "",
+												HitArea =  
+												{
+												},
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleTextLabel",
+												},
+												position =  
+												{
+													0.03000,
+													0.00200,
+												},
+												name = "txtBonus",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Text",
+															textColourBottom =  
+															{
+																255,
+																49,
+																49,
+																255,
+															},
+															horzAlign = "Centre",
+															ID = 349103,
+															textColourTop =  
+															{
+																255,
+																255,
+																255,
+																255,
+															},
+															fontname = "gillsans_bold_16",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.07500,
+													0.02300,
+												},
+											},
+											 
+											{
+												type = "ArtLabel",
+												style =  
+												{
+													"DefaultStyles",
+													"defStyleLabel",
+												},
+												position =  
+												{
+													0.00100,
+													0.00100,
+												},
+												HitArea =  
+												{
+												},
+												name = "iconBonus",
+												Presentation =  
+												{
+													Art =  
+													{
+														 
+														{
+															type = "Graphic",
+															ID = 349251,
+															texture = "generic:art/ui/textures/taskbar/taskbar_share/resource_time.tga",
+															states =  
+															{
+																"Normal",
+																"Active",
+																"Hover",
+																"Disabled",
+															},
+														},
+													},
+												},
+												size =  
+												{
+													0.02100,
+													0.02900,
+												},
+											},
+										},
+										name = "grpBonus",
+										Presentation =  
+										{
+										},
+										size =  
+										{
+											0.11700,
+											0.02800,
+										},
+									},
+								},
 												HitArea =  
 												{
 												},
@@ -48609,7 +51727,29 @@ ToolInfo =
 			},
 			type = "TextLabel",
 		},
-		 
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpNidCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpNidCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+
 		{
 			ArtGuides =  
 			{
@@ -48686,7 +51826,29 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpBioCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
 		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconHelpBioCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -48747,13 +51909,35 @@ ToolInfo =
 			ArtGuides =  
 			{
 			},
+			name = "iconHelpInfCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},		 
+		 
+		{
+			ArtGuides =  
+			{
+			},
 			name = "txtHelpFaithCostMax",
 			HitAreaGuides =  
 			{
 			},
 			type = "TextLabel",
 		},
-		 
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "txtHelpInfCostMax",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -50188,6 +53372,28 @@ ToolInfo =
 			ArtGuides =  
 			{
 			},
+			name = "Upgrade06Hotkey",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "Upgrade05Hotkey",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
 			name = "Upgrade04Hotkey",
 			HitAreaGuides =  
 			{
@@ -50228,6 +53434,17 @@ ToolInfo =
 			type = "TextLabel",
 		},
 		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "Upgrade00Hotkey",
+			HitAreaGuides =  
+			{
+			},
+			type = "TextLabel",
+		},
+		
 		{
 			ArtGuides =  
 			{
@@ -51641,7 +54858,18 @@ ToolInfo =
 			},
 			type = "CheckButton",
 		},
-		 
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpNidAbilities",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},	
+	
 		{
 			ArtGuides =  
 			{
@@ -51652,6 +54880,39 @@ ToolInfo =
 			},
 			type = "Group",
 		},
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "btnSoulAbility09",
+			HitAreaGuides =  
+			{
+			},
+			type = "Button",
+		},
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "btnSoulAbility08",
+			HitAreaGuides =  
+			{
+			},
+			type = "Button",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "btnSoulAbility07",
+			HitAreaGuides =  
+			{
+			},
+			type = "Button",
+		}, 
 		 
 		{
 			ArtGuides =  
@@ -51717,6 +54978,50 @@ ToolInfo =
 			{
 			},
 			type = "TextLabel",
+		},
+
+        {
+			ArtGuides =  
+			{
+			},
+			name = "SoulProgress08",
+			HitAreaGuides =  
+			{
+			},
+			type = "ProgressBar",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "prgLbl_SoulProgress08",
+			HitAreaGuides =  
+			{
+			},
+			type = "Component",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "SoulProgress07",
+			HitAreaGuides =  
+			{
+			},
+			type = "ProgressBar",
+		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "prgLbl_SoulProgress07",
+			HitAreaGuides =  
+			{
+			},
+			type = "Component",
 		},
 		 
 		{
@@ -51817,7 +55122,18 @@ ToolInfo =
 			},
 			type = "Button",
 		},
-		 
+	
+		{
+			ArtGuides =  
+			{
+			},
+			name = "btnSoulAbility00",
+			HitAreaGuides =  
+			{
+			},
+			type = "Button",
+		},
+	
 		{
 			ArtGuides =  
 			{
@@ -52290,6 +55606,17 @@ ToolInfo =
 			},
 			type = "Group",
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpTyranidTaskbar",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
 		 
 		{
 			ArtGuides =  
@@ -52637,6 +55964,17 @@ ToolInfo =
 			{
 			},
 		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpNidSquadCap",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
 		 
 		{
 			ArtGuides =  
@@ -52648,6 +55986,28 @@ ToolInfo =
 			},
 			type = "Group",
 		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "grpInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "Group",
+		},
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},		 
 		 
 		{
 			ArtGuides =  
@@ -52670,7 +56030,18 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
-		 
+
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconNids",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},
+		
 		{
 			ArtGuides =  
 			{
@@ -52681,6 +56052,17 @@ ToolInfo =
 			},
 			type = "ArtLabel",
 		},
+		 
+		{
+			ArtGuides =  
+			{
+			},
+			name = "iconInfluence",
+			HitAreaGuides =  
+			{
+			},
+			type = "ArtLabel",
+		},		 
 		 
 		{
 			ArtGuides =  
