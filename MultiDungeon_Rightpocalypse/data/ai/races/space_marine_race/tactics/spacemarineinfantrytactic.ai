@@ -49,7 +49,7 @@ function SpaceMarineInfantryTactic:AddTargetAbilities()
 	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_melta_bombs_ass", Ability.Filters.CloseVehicleEnemy, 1, 0 })	
 	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_krak_grenades", Ability.Filters.CloseVehicleEnemy, 1, 0 })
 	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_frag_grenades", Ability.Filters.CloseSquadEnemy, 1, 0 })
-	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_inferno_grenades", Ability.Filters.CloseSquadEnemy, 1, 0 })
+	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_inferno_grenades", Ability.Filters.CloseSquadEnemy, 10, 0 })
 	table.insert(InfantryTactic.TargetAbilities, { nil, "marines_flashbang_grenades", Ability.Filters.CloseSquadEnemy, 4, 0 })
 end
 
