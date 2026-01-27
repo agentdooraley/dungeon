@@ -234,7 +234,7 @@ function ChaosBuildBaseStrategy:UpdateTierLevel()
 			if (cpu_manager.cpu_player:IsResearchComplete("chaos_apocalypse_research")) then
 				self.tierLevel = 6
 				return
-			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_sorcerer_research_2")) then
+			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_projectiles")) then
 				self.tierLevel = 5
 				return
 			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_projectiles")) then
