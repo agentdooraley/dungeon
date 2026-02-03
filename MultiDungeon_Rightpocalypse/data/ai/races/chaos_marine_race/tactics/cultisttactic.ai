@@ -20,8 +20,8 @@ end
 function CultistTactic:InitAbilities()
 
 	-- Init ability ID's
-	if (Cultist.explode_id == nil) then
-		Cultist.explode_id = cpu_manager.stats:GetAbilityID( "chaos_cultist_explode" )	
+	if (Cultist.rage_id == nil) then
+		Cultist.rage_id = cpu_manager.stats:GetAbilityID( "chaos_furious_rage" )	
 	end
 
 	if (Cultist.worshipkhorne_id == nil) then
@@ -71,9 +71,15 @@ function CultistTactic:DoAbilities()
 		end
 	end
 
-	-- Sacrifice a cultist to reduce nearby enemy morale
-	if (self.squad_ai:CanDoAbility(Cultist.explode_id)) then
-		Ability.DoAbilityArea(self.squad_ai, Cultist.explode_id, Ability.Filters.CloseInfantryEnemy, 10, 2)
+	if (self.squad_ai:IsInCombat() and not self.squad_ai:IsCapturing() and not self.squad_ai:IsBroken()) then
+	  
+		-- Check if I can go berserk while stationary
+		if (not self:IsMoving()) then
+
+			if (self.squad_ai:CanDoAbility( Cultist.rage_id )) then
+				self.squad_ai:DoSpecialAbility( Cultist.rage_id )
+			end
+		end		
 	end
 
 	-- Call basic DoAbilities methods
@@ -96,18 +102,58 @@ function CultistTactic:Upgrade()
 end
 
 function CultistTactic:Reinforce()
+		-- Check time, before 120 sec no need reinforce.
+    if (g_iGMT <= 120) then
+		return
+    end 
 
-	-- If I am broken, don't upgrade/reinforce!
-	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken()) then
-	   return
+	-- Check if we are reinforcing
+	if (self.squad_ai:IsReinforcing()) then
+		return
+	end
+	--in t1 more than 7 not need
+	
+	if self.squad_ai:IsInCombat() or self.squad_ai:IsUnderAttack()  then
+		if (not self.squad_ai:IsReinforcing()) then
+			self.squad_ai:DoReinforce(false, 0)
+			--self.squad_ai:DoReinforce(true, 0)
+		end
+	end
+	
+	
+	if (self.squad_ai:CanReinforce(true, 0)) then
+		self.squad_ai:DoReinforce(true, 0)
+		return
 	end
 
-	if (not self.squad_ai:IsReinforcing() and  self.squad_ai:GetNumTroopers() <= 5 or g_iGMT >= 420) then
-        	if (self.squad_ai:CanReinforce(true, 0)) then            
-            		self.squad_ai:DoReinforce(true, 0)
-       		elseif (self.squad_ai:CanReinforce(false, 0)) then
-            		self.squad_ai:DoReinforce(false, 0)
-		end
+	
+	if (cpu_manager:GetTierLevel() <=2 ) and (self.squad_ai:GetNumTroopers()>=7) then
+		return
+	end
+	
+	-- If I am broken, don't upgrade!
+--	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken()) then
+--		return
+--	end
+
+	
+	
+	-- Don't reinforce squads in critical condition
+	if (self.squad_ai:GetNumTroopers() <= self.squad_ai:GetMaxTroopers() / 2 and self.squad_ai:IsUnderAttack()) then
+		return
+	end
+
+	-- Always try to get the leader first at t2 and upper
+
+	-- Check resources
+	local iRequisition = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition)
+	if ((iRequisition < 340 or self.m_bPowerCost) and not Tactic.Options.can_reinforce) then
+		return
+	end
+	
+	-- Always try to reinforce, as long as I have money
+	if (self.squad_ai:CanReinforce( false, 0 )) then-- and self.squad_ai:HasLeader() and cpu_manager:GetTierLevel() >= 2) then
+		self.squad_ai:DoReinforce( false, 0 )
 	end
 end
 
@@ -122,7 +168,35 @@ function CultistTactic:Update()
 		return
 	end
 	
-    if (g_iGMT >= 90 and self.squad_ai:GetMeleeStance() ~= SquadAI.MSTANCE_Ranged) then
-    	self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+	local vMyPos = self.squad_ai:GetPosition()
+	local vPosThreat, iAlliedStrength2 = cpu_manager:GetArmyStrengthAtPos(vMyPos, 90 , true)
+	local vPosThreat2, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vMyPos, 45 , true)
+	if g_iGMT > 180 then
+		local squad_filter = function( squad_ai )		
+			return 	not squad_ai:IsBroken() and
+					not squad_ai:IsCapturing() 
+		end	
+		local target_squad = cpu_manager:GetClosestSquad( self.squad_ai:GetPosition(), 500, squad_filter )			
+		
+		if not self.squad_ai:IsCapturing() and not self.squad_ai:IsUnderAttack() and not self.squad_ai:IsInCombat()
+		and self.squad_ai:IsIdle() and not self.squad_ai:IsBroken() then--and iAlliedStrength < vPosThreat*1.3  then
+			if target_squad  ~= nil then
+				cpu_manager:DoMove(self.squad_ai, Vector3f(target_squad:GetPosition()), true, "AttackState")	
+				--print("check")
+				--print(target_squad  ~= nil)
+			end
+		end
+	end
+	
+    -- ???????? ID ??????
+    local armoury_id = cpu_manager.stats:GetBuildingID("chaos_armoury")
+    
+    -- ????????? ??????? ??????????? ??????
+    if armoury_id and cpu_manager.player_stats:GetNumBasesByBPID(armoury_id, true) > 0 then
+        -- ???????? ???????
+        if cpu_manager:GetTierLevel() >= 1 and 
+           self.squad_ai:GetMeleeStance() ~= SquadAI.MSTANCE_Ranged then
+            self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+        end
     end
 end

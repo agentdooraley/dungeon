@@ -231,10 +231,7 @@ function ChaosBuildBaseStrategy:UpdateTierLevel()
 		if (oBase:IsValid() and not oBase:IsListeningPost()) then
 
 			-- We still have the proper research or add-on
-			if (cpu_manager.cpu_player:IsResearchComplete("chaos_apocalypse_research")) then
-				self.tierLevel = 6
-				return
-			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_projectiles")) then
+            if (cpu_manager.cpu_player:IsResearchComplete("chaos_sorcerer_research_2")) then
 				self.tierLevel = 5
 				return
 			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_projectiles")) then
@@ -271,9 +268,6 @@ function ChaosBuildBaseStrategy:CheckTech()
         elseif self.tierLevel == 4 then
         type = research
         name = "chaos_sorcerer_research_2"
-        elseif self.tierLevel == 5 then
-        type = research
-        name = "chaos_apocalypse_research"
         end
        
         if type == addon then
@@ -509,19 +503,7 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 			if (self:CountSquads("chaos_squad_warhound_titan") >= 1) or (self:CountSquads("chaos_squad_reaver_titan") >= 1) or (self:CountSquads("chaos_squad_heldrake") >= 1) then
 				self:DynamicResearch("chaos_titan_armor_research", 5, 600, 600, 0, 0, nil, 0)
 			end
-		
-			-- Compute Apocalypse
-			if self:HasCriticalLocation() then
-				self:DynamicResearch("chaos_apocalypse_research", 5, 2000, 2000, 0, 0, nil, 0)
-			end
-		end
-
-		-- Compute tier 6 researches
-		if (self.tierLevel >= 6) then
-
-			-- Compute Resource researches
-			self:DynamicResearch("chaos_requisition_research_5", 6, 300, 1100, 0, 0, nil, 0)
-			self:DynamicResearch("chaos_power_research_5", 6, 800, 100, 0, 0, nil, 0)
+			
 		end
 
 
@@ -548,14 +530,13 @@ function ChaosBuildBaseStrategy:BuildFlexible()
               local Numpoint = resource_manager:GetNumOwnedStrategicPoints()
               local num_hq = self:GetBuildingCountByName(self:GetBuildingName("HQ"))
 		        self:DynamicBuild("chaos_hq", Numpoint/3 , 2, 400 + 200*(num_hq), 150*(num_hq), 0, 0, false)
-                if iRequisition >= 4000 and iPower >= 4000 then
+                if iRequisition >= 2000 and iPower >= 2000 then
 				self:DynamicBuild("chaos_temple", num_hq, 1, 500, 0, 0, 0)
 				self:DynamicBuild("chaos_machine_pit", num_hq, 2, 300, 100, 0, 0)
 				self:DynamicBuild("chaos_sacrificial_circle", num_hq, 2, 300, 100, 0, 0)
 				self:DynamicBuild("chaos_greater_sacrificial_circle", num_hq, 4, 1200, 1200, 0, 0)
-				self:DynamicBuild("chaos_warpforge", num_hq, 5, 2000, 3000, 0, 0)
-				self:DynamicBuild("chaos_hq_super", num_hq, 5, 3000, 3000, 0, 0)
-				self:DynamicBuild("chaos_warpgate", num_hq, 5, 4000, 4000, 0, 0)
+				self:DynamicBuild("chaos_hq_super", num_hq, 5, 500, 500, 0, 0)
+				self:DynamicBuild("chaos_warpgate", num_hq, 5, 1250, 1250, 0, 0)
                 end
 
                 if iRequisition >= 2000 and iPower >= 2000 then
@@ -698,29 +679,6 @@ end
 
 -- Arkhan 03.2006: Inherited method to modify squad demand
 function ChaosBuildBaseStrategy:ModifySquadDemand(iUnitID)
-
-	-- No more icon bearers then squads 
-	if (iUnitID == cpu_manager.stats:GetSquadID("chaos_marine_icon_bearer_squad")) then
-		
-		-- Check number of attachable squads 
-		local banner_attach = function ( squad_ai )
-			return (squad_ai:GetTactic():GetUnitStrength() >= 250 and squad_ai:CanReceiveAttachment())
-		end
-		local num_attach = self:CountSquads("chaos_squad_renegades", banner_attach) +
-				   self:CountSquads("chaos_marine_squad", banner_attach) +
-				   self:CountSquads("chaos_havoc_marine_squad", banner_attach) +
-				   self:CountSquads("chaos_noise_marine_squad", banner_attach) +
-				   self:CountSquads("chaos_plague_marine_squad", banner_attach) +
-				   self:CountSquads("chaos_rubric_marine_squad", banner_attach) +
-				   self:CountSquads("chaos_terminator_khorne_squad", banner_attach) +
-				   self:CountSquads("chaos_terminator_squad", banner_attach)
-
- 		-- Check banner count
-		local num_banner = self:CountSquads("chaos_marine_icon_bearer_squad")
-		if (num_banner >= num_attach) then
-			return 0
-		end	
-	end
 
 	-- No more pyskers then squads 
 	if (iUnitID == cpu_manager.stats:GetSquadID("chaos_squad_psyker")) then

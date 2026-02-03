@@ -126,16 +126,64 @@ end
 
 function ChaosLordTactic:Update()
 
-	if (self:IsComplete()) then
-		return
+   if (self:IsComplete()) then
+        return
+    end
+    
+    -- State machine
+    if (not InfantryTactic.Update(self)) then
+        return
+    end
+    
+    local hp = self.squad_ai:GetHealthPercentage()
+    local stance = self.squad_ai:GetMeleeStance()
+    local pos = self.squad_ai:GetPosition()
+    
+    -- ?????? ?????????? ?????????? ?????????
+    local enemy_commander = Ability.Filters.CloseCommanderEnemy(pos, 30, 1)
+    local enemy_commander_hp = nil
+    if enemy_commander ~= nil then
+        enemy_commander_hp = enemy_commander:GetHealthPercentage()
+    end
+    
+	
+	
+	local squad_filter = function(squad_ai)
+		return squad_ai:GetSquadName() ==  "chaos_marine_squad" 
 	end
 	
-	-- State machine
-	if (not InfantryTactic.Update( self )) then
-		return
-	end	
+	self:TryAttachSquad(false, false, 1500, 60, nil, squad_filter)
+	
+    -- === ?????? ????? ===
+    if hp > 0.8 then
+        -- ?????? ??????? ???
+        if stance ~= SquadAI.MSTANCE_Assault then
+            self.squad_ai:DoSetDefaultMeleeStance()
+        end
 
-    if (self.squad_ai:GetHealthPercentage() <= 0.3 and self.squad_ai:GetMeleeStance() ~= SquadAI.MSTANCE_Ranged) then
+    elseif hp > 0.5 then
+        -- ??????? ????????
+        if (enemy_commander ~= nil and enemy_commander_hp < 0.3) or enemy_commander == nil then
+            -- ??????? ???
+            if stance ~= SquadAI.MSTANCE_Assault then
+                self.squad_ai:DoSetDefaultMeleeStance()
+            end
+        else   
+            -- ??????? ???
+            if stance ~= SquadAI.MSTANCE_Ranged then
+                self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+            end
+        end
+
+    else
+        -- ?????? ??? ????? 50% ???????? ? ??????? ??? + attach
+        if stance ~= SquadAI.MSTANCE_Ranged then
+            self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+        end
+        self:TryAttachSquad(false, false, 1500, 60, nil, squad_filter)
+    end
+
+    if (self.squad_ai:GetHealthPercentage() <= 0.15 and self.squad_ai:GetMeleeStance() ~= SquadAI.MSTANCE_Ranged) then
     	self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
     end
 
