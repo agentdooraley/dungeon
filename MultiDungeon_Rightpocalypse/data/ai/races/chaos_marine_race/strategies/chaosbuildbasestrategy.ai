@@ -488,7 +488,7 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 		end
 	-- Restrict dynamic builds to hard difficulty or higher
 	if (CpuManager.AISettings.bMultiBuildings) then
-	
+		self:DynamicAddon("addon_superweapon", 1*self:GetBuildingCountByName("chaos_hq_super"), 1, 0, 0, 0, 0, nil, nil, false)
 		-- Dynamic buildings
 		-- Item-Syntax: BuildingName, BuildingCount, MinTier, MinRequisition, MinPower, MinSquadCap, MinSupportCap
               if (iPower < 150 and self.tierLevel==1) or self.tierLevel>1 and iRequisition>600 or self:GetBuildingCountByName("chaos_machine_pit")>=1 then
@@ -504,8 +504,6 @@ function ChaosBuildBaseStrategy:BuildFlexible()
               end
               if (iRequisition >= 500 and iPower >= 1000) or (self.tierLevel==4 and iRequisition >= 300 and iPower >= 300) then
 		self:DynamicAddon("chaos_list_post_addon_2", 1*Numpoint, 2, 0, 0, 0, 0, nil, nil, false)
-              end
-		self:DynamicAddon("addon_superweapon", 1*self:GetBuildingCountByName("chaos_hq_super"), 1, 0, 0, 0, 0, nil, nil, false)
               end
               local Numpoint = resource_manager:GetNumOwnedStrategicPoints()
               local num_hq = self:GetBuildingCountByName(self:GetBuildingName("HQ"))
