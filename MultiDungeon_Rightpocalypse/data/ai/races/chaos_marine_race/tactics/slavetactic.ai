@@ -30,7 +30,7 @@ function SlaveTactic:DoAbilities()
 		self.squad_ai:DoSpecialAbility( Slave.forced_labour )
 		self.forced_labour = true
 	
-	elseif (self.forced_labour and self.squad_ai:GetHealthPercentage() < 0.3) and (not self.squad_ai:IsUnderAttack() and self.squad_ai:IsBuildProgressing()) then
+	elseif (self.forced_labour and self.squad_ai:GetHealthPercentage() < 0.3 and not self.squad_ai:IsUnderAttack()) then
 		
 		-- Turn off ability
 		self.squad_ai:DoSpecialAbility( Slave.forced_labour )

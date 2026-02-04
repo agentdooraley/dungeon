@@ -4,7 +4,7 @@
 -- Edited by LarkinVB   @ 14.04.2008
 -- Edited by Flenser    @ 03.06.2005
 -- Edited by Arkhan	@ 13.01.2006
-
+-- Edited by [DAG05]Simon
 class 'Tactic'
 
 Tactic.States = 
@@ -227,7 +227,7 @@ function Tactic:EnterDeepStrikeBuilding()
 
 	-- Check if we are ready to enter a deepstrike building
 	if (self.squad_ai:GetHealthPercentage() < 0.8 or self.squad_ai:IsCapturing() or
-		(self.squad_ai:GetHealthPercentage() < 1.0 and self.squad_ai:GetMaxTroopers() == 1) or
+		(self.squad_ai:GetMaxTroopers() == 1) or
 		self.squad_ai:IsInCombat() or self.squad_ai:GetNumTroopers() < self.squad_ai:GetMaxTroopers()) then
 		return false
 	end
@@ -295,64 +295,64 @@ function Tactic:FocusEnemy()
     self.m_iNextEffectivenessCheck = self.m_iNextEffectivenessCheck + 10
     end]]
     if (oEnemyTable~=nil and self.m_bEffectiveness~=nil) then
-    local oEnemyChange = false
-    local oEnemyBuildingChange = false
-    local bGo = true
-     if table.getn(oEnemyTable)==1 then
-        if self.variant_type==Tactic.Variant.SquadAI and oEnemyTable[1][3]==true and self:GetTarget(true):GetID()==oEnemyTable[1][1]:GetSquad():GetID() then
-           return 
-        elseif self.variant_type==Tactic.Variant.BaseAI 
-			and oEnemyTable[1][3]==false 
-			and self:GetTarget(true):GetID()==
-			oEnemyTable[1][1]:GetEntity():GetID() then
-           return
-        end
-     end
-     for effectiv in self.m_bEffectiveness do
-      for enemytemp in oEnemyTable do
-      local postemp = oEnemyTable[enemytemp][1]:GetPosition()
-      local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(postemp, iMaxRange+10, true)
-       if (vPosThreat<iAlliedStrength*1.1 and self.squad_ai:IsUnderAttack()) or (vPosThreat>iAlliedStrength and not self.squad_ai:IsUnderAttack()) or (vPosThreat<iAlliedStrength and not self.squad_ai:IsUnderAttack()) then
-          local oEnemyTemp = oEnemyTable[enemytemp][1]
-          local effectivtemp = self.m_bEffectiveness[effectiv][1]
-         if (oEnemyTable[enemytemp][3]==true) and oEnemyTable[enemytemp][1]:GetStats()~=nil then
-          oEnemyChange = oEnemyTemp:GetStats():GetClass()==(effectivtemp)
-           local oEnemyUnitEnt = oEnemyTemp:GetEntities()
-           local unitbuf=nil
-           for unit in oEnemyUnitEnt do
-              unitbuf=unit
-              break
-           end
-          if ((oEnemyTemp:IsEngineer() and (oEnemyTemp:IsBuildProgressing() or oEnemyTemp:IsBuilding()~=0 or oEnemyTemp:IsIdle())) or (oEnemyChange and oEnemyTemp:GetHealthPercentage()<0.3) or oEnemyChange or oEnemyTemp:GetHealthPercentage()<0.1 or oEnemyTemp:IsBroken()) and self.squad_ai:IsRanged() and not oEnemyTemp:IsInfiltrating() then
-           self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
-           self.squad_ai:DoDefault(unitbuf)
-           bGo = false
-           return true
-          elseif not self.squad_ai:IsRanged() and ((oEnemyTemp:IsRanged() and oEnemyChange) or oEnemyTemp:IsRanged() or oEnemyChange or ((oEnemyTemp:IsEngineer() and not oEnemyTemp:IsInStateMove() and (oEnemyTemp:IsBuildProgressing() or oEnemyTemp:IsBuilding()~=0)))) and not oEnemyTemp:IsInfiltrating() then
-           self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
-           self.squad_ai:DoDefault(unitbuf)
-           bGo = false
-           return true
-          end
-        end
-        if oEnemyTable[enemytemp][3]==false then
-          oEnemyBuildingChange = cpu_manager:GetClassBuilding(oEnemyTemp:GetBaseName())==(effectivtemp)
-          if oEnemyBuildingChange and (oEnemyTemp:IsAttacking() or oEnemyTemp:HasGuns()) and not oEnemyChange and oEnemyTemp:GetHealthPercentage()>=0.02 then
-           self:SetTarget(oEnemyTemp:GetEntity(), Tactic.Variant.BaseAI)
-           self.squad_ai:DoDefault(oEnemyTemp:GetEntity())
-           bGo = false
-           return true
-          end
-        end
-       end
-       if bGo==false then
-         break
-       end
-      end
-       if bGo==false then
-          break
-       end
-     end
+		local oEnemyChange = false
+		local oEnemyBuildingChange = false
+		local bGo = true
+		if table.getn(oEnemyTable)==1 then
+			if self.variant_type==Tactic.Variant.SquadAI and oEnemyTable[1][3]==true and self:GetTarget(true):GetID()==oEnemyTable[1][1]:GetSquad():GetID() then
+				return 
+			elseif self.variant_type==Tactic.Variant.BaseAI 
+				and oEnemyTable[1][3]==false 
+				and self:GetTarget(true):GetID()==
+				oEnemyTable[1][1]:GetEntity():GetID() then
+				return
+			end
+		end
+		for effectiv in self.m_bEffectiveness do
+			for enemytemp in oEnemyTable do
+				local postemp = oEnemyTable[enemytemp][1]:GetPosition()
+				local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(postemp, iMaxRange+10, true)
+				if (vPosThreat<iAlliedStrength*1.1 and self.squad_ai:IsUnderAttack()) or (vPosThreat>iAlliedStrength and not self.squad_ai:IsUnderAttack()) or (vPosThreat<iAlliedStrength and not self.squad_ai:IsUnderAttack()) then
+					local oEnemyTemp = oEnemyTable[enemytemp][1]
+					local effectivtemp = self.m_bEffectiveness[effectiv][1]
+					if (oEnemyTable[enemytemp][3]==true) and oEnemyTable[enemytemp][1]:GetStats()~=nil then
+						oEnemyChange = oEnemyTemp:GetStats():GetClass()==(effectivtemp)
+						local oEnemyUnitEnt = oEnemyTemp:GetEntities()
+						local unitbuf=nil
+						for unit in oEnemyUnitEnt do
+							unitbuf=unit
+							break
+						end
+						if ((oEnemyTemp:IsEngineer() and (oEnemyTemp:IsBuildProgressing() or oEnemyTemp:IsBuilding()~=0 or oEnemyTemp:IsIdle())) or (oEnemyChange and oEnemyTemp:GetHealthPercentage()<0.3) or oEnemyChange or oEnemyTemp:GetHealthPercentage()<0.1 or oEnemyTemp:IsBroken()) and self.squad_ai:IsRanged() and not oEnemyTemp:IsInfiltrating() then
+							self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
+							self.squad_ai:DoDefault(unitbuf)
+							bGo = false
+							return true
+						elseif not self.squad_ai:IsRanged() and ((oEnemyTemp:IsRanged() and oEnemyChange) or oEnemyTemp:IsRanged() or oEnemyChange or ((oEnemyTemp:IsEngineer() and not oEnemyTemp:IsInStateMove() and (oEnemyTemp:IsBuildProgressing() or oEnemyTemp:IsBuilding()~=0)))) and not oEnemyTemp:IsInfiltrating() then
+							self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
+							self.squad_ai:DoDefault(unitbuf)
+							bGo = false
+							return true
+						end
+					end
+					if oEnemyTable[enemytemp][3]==false then
+						oEnemyBuildingChange = cpu_manager:GetClassBuilding(oEnemyTemp:GetBaseName())==(effectivtemp)
+						if oEnemyBuildingChange and (oEnemyTemp:IsAttacking() or oEnemyTemp:HasGuns()) and not oEnemyChange and oEnemyTemp:GetHealthPercentage()>=0.02 then
+							self:SetTarget(oEnemyTemp:GetEntity(), Tactic.Variant.BaseAI)
+							self.squad_ai:DoDefault(oEnemyTemp:GetEntity())
+							bGo = false
+							return true
+						end
+					end
+				end
+				if bGo==false then
+					break
+				end
+			end
+			if bGo==false then
+				break
+			end
+		end
     end
 end
 
@@ -537,7 +537,7 @@ function Tactic:IsCommanderAttacker()
 		end
 	else
 		-- Don't join attacks if severly hurt
-		if (self.squad_ai:GetHealthPercentage() < 0.6) then
+		if (self.squad_ai:GetHealthPercentage() < 0.2) then
 			return false
 		end
 	end
@@ -553,70 +553,76 @@ function Tactic:IsCommanderDefender()
 	return self:IsCommanderAttacker()
 end
 
-function Tactic:TryAttachSquad( melee, match_stance, radius, min_strength, health )
+function Tactic:TryAttachSquad(melee, match_stance, radius, min_strength, health, oUserFilter)
 
+   local attach_to = nil
    local bInfiltrator = self.squad_ai:IsInfiltrating()
-   if not self.squad_ai:IsBroken() and 
-	  (health == nil or self.squad_ai:GetHealthPercentage() < health) then
-	  
-	  --minimum strength of squad we want to attach to
-	  if min_strength == nil then
-	     min_strength = 160 + (cpu_manager:GetTierLevel() - 1) * 40
-	  end
 
-	  local range_filter = function( squad_ai )
-	  	 local oTactic = squad_ai:GetTactic()
-	     return squad_ai:IsRanged() and not squad_ai:IsBroken() and not squad_ai:IsCapturing() and
-	     		oTactic:GetUnitStrength() >= min_strength and self.squad_ai:CanAttachTo( squad_ai ) and
-				not oTactic:IsInSubState() and (not squad_ai:IsInfiltrating() or bInfiltrator) and oTactic:IsAttacker()
-	  end
-	  
-	  local melee_filter = function( squad_ai )
-	  	 local oTactic = squad_ai:GetTactic()
-	     return not squad_ai:IsRanged() and not squad_ai:IsBroken() and not squad_ai:IsCapturing() and
-	     		oTactic:GetUnitStrength() >= min_strength and self.squad_ai:CanAttachTo( squad_ai ) and
-				not oTactic:IsInSubState() and (not squad_ai:IsInfiltrating() or bInfiltrator) and oTactic:IsAttacker()
-	  end
+   if not self.squad_ai:IsBroken() and (health == nil or self.squad_ai:GetHealthPercentage() < health) then
 
-	  --attach to ranged
-	  if not melee then
-		 
-		 local attach_to = cpu_manager:GetClosestSquad( self.squad_ai:GetPosition(), radius, range_filter )
-		 if attach_to == nil and not match_stance then
-			--try for melee unit if we don't care about the stance
-			local attach_to = cpu_manager:GetClosestSquad( self.squad_ai:GetPosition(), radius, melee_filter )
-		 end
-		 
-		 if attach_to ~= nil then			
-			self:DoMoveAttach( attach_to )		            		 
-			
-			if match_stance then
-			   attach_to:DoSetMeleeStance( SquadAI.MSTANCE_Ranged )
-			end			
-		 end
-		 
-	  else --attach to melee
-		 
-		 local attach_to = cpu_manager:GetClosestSquad( self.squad_ai:GetPosition(), radius, melee_filter )
-		 if attach_to == nil and not match_stance then
-			--try for ranged unit if we don't care about the stance
-			local attach_to = cpu_manager:GetClosestSquad( self.squad_ai:GetPosition(), radius, range_filter )
-		 end
+      -- minimum strength default
+      if min_strength == nil then
+         min_strength = 160 + (cpu_manager:GetTierLevel() - 1) * 40
+      end
 
-		 if attach_to ~= nil then
-		 
-			self:DoMoveAttach( attach_to )		            		 
-			
-			if match_stance then
-			   attach_to:DoSetMeleeStance( SquadAI.MSTANCE_Assault )
-			end
-		 end
-	  end
+      -- ??????? range-?????? + ????? ?????????????????, ???? ????
+      local range_filter = function(squad_ai)
+         local oTactic = squad_ai:GetTactic()
+         local ok = squad_ai:IsRanged() and not squad_ai:IsBroken() and not squad_ai:IsCapturing() and
+                    (oTactic:GetUnitStrength() >= min_strength) and self.squad_ai:CanAttachTo(squad_ai) and
+                    not oTactic:IsInSubState() and (not squad_ai:IsInfiltrating() or bInfiltrator) and oTactic:IsAttacker()
+         if not ok then return false end
+         if type(oUserFilter) == "function" then
+            return oUserFilter(squad_ai)
+         end
+         return true
+      end
+
+      -- ??????? melee-?????? + ????? ?????????????????, ???? ????
+      local melee_filter = function(squad_ai)
+         local oTactic = squad_ai:GetTactic()
+         local ok = (not squad_ai:IsRanged()) and not squad_ai:IsBroken() and not squad_ai:IsCapturing() and
+                    (oTactic:GetUnitStrength() >= min_strength) and self.squad_ai:CanAttachTo(squad_ai) and
+                    not oTactic:IsInSubState() and (not squad_ai:IsInfiltrating() or bInfiltrator) and oTactic:IsAttacker()
+         if not ok then return false end
+         if type(oUserFilter) == "function" then
+            return oUserFilter(squad_ai)
+         end
+         return true
+      end
+
+      -- attach logic (??????????? ??????, ?? attach_to ???????? ??????)
+      if not melee then
+         attach_to = cpu_manager:GetClosestSquad(self.squad_ai:GetPosition(), radius, range_filter)
+         if attach_to == nil and not match_stance then
+            attach_to = cpu_manager:GetClosestSquad(self.squad_ai:GetPosition(), radius, melee_filter)
+         end
+
+         if attach_to ~= nil then
+            self:DoMoveAttach(attach_to)
+            if match_stance then
+               attach_to:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+            end
+         end
+
+      else
+         attach_to = cpu_manager:GetClosestSquad(self.squad_ai:GetPosition(), radius, melee_filter)
+         if attach_to == nil and not match_stance then
+            attach_to = cpu_manager:GetClosestSquad(self.squad_ai:GetPosition(), radius, range_filter)
+         end
+
+         if attach_to ~= nil then
+            self:DoMoveAttach(attach_to)
+            if match_stance then
+               attach_to:DoSetMeleeStance(SquadAI.MSTANCE_Assault)
+            end
+         end
+      end
    end
 
-   return attach_to 
-
+   return attach_to
 end
+
 
 function Tactic:TryAttachSquadMelee()
 
@@ -940,11 +946,13 @@ end
 function Tactic:MoveToDisengage()
 
 	local maxd = 100
-	local mind = 40
+	local mind = 25
 	local safe_radius = 35
 	local jump_ok = false
 	local squad_pos = self.squad_ai:GetPosition()
 	
+	
+
 	-- Broken squad will need bigger safe area than others
 	if (self.squad_ai:IsBroken()) then
   		maxd = 140
@@ -963,6 +971,12 @@ function Tactic:MoveToDisengage()
 		jump_ok = false
 	end
 	local deviate = false
+
+	if self.squad_ai:GetNumTroopers() > 3 then
+		if self.squad_ai:GetHealthPercentage() > 0.5 or not self.squad_ai:WasRecentlyHurt() or not self.squad_ai:IsUnderAttack() then
+			jump_ok = false
+		end
+	end
 	
 	-- No SP, check for friendly squad
 	local move_pos = nil
@@ -981,15 +995,35 @@ function Tactic:MoveToDisengage()
 		end
 	else
 		deviate = true
+		
+				-- НОВОЕ: Если нет угрозы, просто отступаем на небольшое расстояние
+		if (not cpu_manager.terrain_analyzer:HasThreat( squad_pos, safe_radius )) then
+			-- Отступаем на mind (10 единиц) в случайном направлении от текущей позиции
+			move_pos = Vector3f(squad_pos)
+			move_pos.x = move_pos.x + deviate_pos( mind )
+			move_pos.z = move_pos.z + deviate_pos( mind )
+			-- Не ищем базу, сразу используем эту точку
+		end
 	end
 	
 	-- Check if we already have a move pos
 	if (move_pos == nil) then
-	
-		-- Get closest strat to retreat
-		local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(squad_pos, cpu_manager.start_pos, true, false)
-		if (vBasePos ~= nil) then
-			move_pos = Vector3f(vBasePos)
+		-- Только если есть угроза, ищем базу
+		if cpu_manager.terrain_analyzer:HasThreat( squad_pos, safe_radius ) then
+			-- Get closest strat to retreat
+			local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(squad_pos, cpu_manager.start_pos, true, true)
+			if (vBasePos ~= nil) then
+				move_pos = Vector3f(vBasePos)
+			end
+		else
+			-- Если нет угрозы, просто отступаем на mind
+			move_pos = self:CompassMove( mind )
+			if move_pos == nil then
+				-- Запасной вариант: случайное смещение
+				move_pos = Vector3f(squad_pos)
+				move_pos.x = move_pos.x + deviate_pos( mind )
+				move_pos.z = move_pos.z + deviate_pos( mind )
+			end
 		end
 	end
 	
@@ -1035,7 +1069,7 @@ function Tactic:EmergencyRetreat()
 		return
 	end
 	if self.squad_ai:GetNumTroopers() > 1 then
-		if self.squad_ai:GetHealthPercentage() > 0.8 or not self.squad_ai:WasRecentlyHurt() then
+		if self.squad_ai:GetHealthPercentage() > 0.5 or not self.squad_ai:WasRecentlyHurt() then
 			return
 		end
 	end
@@ -1175,7 +1209,7 @@ function Tactic:UrgentCapturing()
 	end
 	
 	-- Check threat
-	if (not cpu_manager.terrain_analyzer:HasThreat(vSquadPos, 50)) then
+	if (not cpu_manager.terrain_analyzer:HasThreat(vSquadPos, 20)) then
 		return true
 	end
 	
@@ -1374,19 +1408,19 @@ function Tactic:TryDisownFlags()
 	if (not bExpendable and distance_sqr(vSquadPos, self:GetTarget()) > sqr(50)) then
 		return false
 	end
-	self.m_iNextDisownCheck = g_iGMT + 1/10
+	self.m_iNextDisownCheck = g_iGMT + 1/2
 	
 	-- Search a flag for capturing
 	local oStrategicPoint = resource_manager:SearchForFlagToDisown(self.squad_ai, 50)
 	if (oStrategicPoint ~= nil) then
-                if oStrategicPoint:IsLocked() then
-                   return false
-                end
+        if oStrategicPoint:IsLocked() then
+           return false
+        end
 		if cpu_manager:IsFriendly(oStrategicPoint:Owner()) or oStrategicPoint:Owner()==0 then
-                if not self.squad_ai:IsCapturing() and oStrategicPoint:GetCaptureProgress()>0 then
-                      return false
-                   end
-                end
+            if not self.squad_ai:IsCapturing() and oStrategicPoint:GetCaptureProgress()>0 then
+                  return false
+               end
+            end
 		-- Check owner
 		local iOwner = oStrategicPoint:Owner()
 		if (iOwner == 0 and (self:CanOnlyDecap() or (oStrategicPoint:IsStrategicObjective() and not bExpendable))) or (g_iGMT <150 and (oStrategicPoint:IsStrategicObjective() or oStrategicPoint:IsRelic())) then
@@ -1401,9 +1435,9 @@ function Tactic:TryDisownFlags()
 			if (vEnemyStrength*2>iAlliedStrength) then
 				return false
 			elseif (vEnemyStrength*2<iAlliedStrength or vEnemyStrength==0) then
-			self.squad_ai:DoDefault(oStrategicPoint:GetEntity())
-			return true
-                        end
+				self.squad_ai:DoDefault(oStrategicPoint:GetEntity())
+				return true
+            end
 		end
 	end
 	return false

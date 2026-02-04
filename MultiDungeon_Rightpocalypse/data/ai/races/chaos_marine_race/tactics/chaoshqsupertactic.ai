@@ -24,9 +24,6 @@ function ChaosHQSuperTactic:InitAbilities()
 		ChaosHQSuper.warpstorm2_id = cpu_manager.stats:GetAbilityID( "chaos_warp_storm_super_world_end" )
 	end
 
-	if (ChaosHQSuper.repair_id == nil) then
-		ChaosHQSuper.repair_id = cpu_manager.stats:GetAbilityID( "all_autorepair" )
-	end
 end
 
 function ChaosHQSuperTactic:DoAbilities()
@@ -47,13 +44,5 @@ function ChaosHQSuperTactic:DoAbilities()
 	if (self.base_ai:CanDoAbility(ChaosHQSuper.warpstorm_id) and (iRequisition >= 3000 and iPower >= 3000)) then
 		Ability.DoAbilityPos( self.base_ai, ChaosHQSuper.warpstorm_id, Ability.Filters.CloseEnemy, 25 )
 		Ability.DoAbilityPos( self.base_ai, ChaosHQSuper.warpstorm_id, Ability.EntityFilters.CloseBaseEntityEnemy, 6 )
-	end
-
-	-- Base Repair!
-	if (self.base_ai:WasRecentlyHurt() and self.base_ai:GetHealthPercentage() < 0.6) then
-
-		if (self.base_ai:CanDoAbility( ChaosHQSuper.repair_id )) then
-			self.base_ai:DoSpecialAbility( ChaosHQSuper.repair_id )
-		end
 	end
 end

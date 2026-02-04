@@ -167,47 +167,33 @@ function ChaosBuildBaseStrategy:GetUnitStats(sSquadName)
 	elseif (sSquadName == "chaos_squad_renegades") then
 		return 2, 0
 	elseif (sSquadName == "chaos_marine_squad") then
-		return 3, 0
+		return 2, 0
 	elseif (sSquadName == "chaos_marine_bike_squad") then
 		return 2, 1
 	elseif (sSquadName == "chaos_squad_raptor") then
 		return 3, 0
 	elseif (sSquadName == "chaos_havoc_marine_squad") then
-		return 4, 0
+		return 3, 0
 	elseif (sSquadName == "chaos_squad_khorne_berserker") then
-		return 4, 0
+		return 2, 0
 	elseif (sSquadName == "chaos_noise_marine_squad") then
-		return 4, 0
+		return 2, 0
 	elseif (sSquadName == "chaos_plague_marine_squad") then
-		return 4, 0
+		return 3, 0
 	elseif (sSquadName == "chaos_rubric_marine_squad") then
-		return 5, 0
+		return 3, 0
 	elseif (sSquadName == "chaos_squad_possessed_marine") then
-		return 5, 0
-	elseif (sSquadName == "chaos_squad_mutilator") then
-		return 8, 0
+		return 3, 0
 	elseif (sSquadName == "chaos_squad_obliterator") then
-		return 8, 0
-	elseif (sSquadName == "chaos_terminator_khorne_squad") then
-		return 6, 0
+		return 3, 0
 	elseif (sSquadName == "chaos_terminator_squad") then
-		return 6, 0
-	elseif (sSquadName == "chaos_squad_assaultpod") then
-		return 0, 1
+		return 3, 0
 	elseif (sSquadName == "chaos_squad_rhino") then
-		return 0, 1
-	elseif (sSquadName == "chaos_squad_thunderhawk") then
-		return 0, 2
-	elseif (sSquadName == "chaos_squad_dreadnought") then
-		return 0, 4
+		return 0, 0
 	elseif (sSquadName == "chaos_squad_hell_talon") then
-		return 0, 10
-	elseif (sSquadName == "chaos_squad_vindicator") then
-		return 0, 5
-	elseif (sSquadName == "chaos_squad_deathwheel") then
-		return 0, 5
+		return 0, 3
 	elseif (sSquadName == "chaos_squad_defiler") then
-		return 0, 6
+		return 0, 3
 	elseif (sSquadName == "chaos_squad_predator") then
 		return 0, 5
 	end
@@ -231,7 +217,10 @@ function ChaosBuildBaseStrategy:UpdateTierLevel()
 		if (oBase:IsValid() and not oBase:IsListeningPost()) then
 
 			-- We still have the proper research or add-on
-            if (cpu_manager.cpu_player:IsResearchComplete("chaos_sorcerer_research_2")) then
+			if (cpu_manager.cpu_player:IsResearchComplete("chaos_apocalypse_research")) then
+				self.tierLevel = 6
+				return
+			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_sorcerer_research_2")) then
 				self.tierLevel = 5
 				return
 			elseif (cpu_manager.cpu_player:IsResearchComplete("chaos_projectiles")) then
@@ -268,6 +257,10 @@ function ChaosBuildBaseStrategy:CheckTech()
         elseif self.tierLevel == 4 then
         type = research
         name = "chaos_sorcerer_research_2"
+        name = "chaos_sorcerer_research_2"
+        elseif self.tierLevel == 5 then
+        type = research
+        name = "chaos_apocalypse_research"		
         end
        
         if type == addon then
@@ -300,13 +293,13 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 
    if (self.m_iChaosLordShmotPattern == 1) then 
         --нагрудник
-		self:DynamicResearch("chaos_wargear06", 2, 200, 200, 0, 0, "chaos_squad_lord", 1)
+		self:DynamicResearch("chaos_wargear06", 2, 85, 85, 0, 0, "chaos_squad_lord", 1)
 		
         --huy
-		self:DynamicResearch("necron_wargear07", 2, 140, 140, 0, 0, "chaos_squad_lord", 1)
+		self:DynamicResearch("chaos_wargear08", 2, 50, 50, 0, 0, "chaos_squad_lord", 1)
 		
        --huy
-		self:DynamicResearch("necron_wargear08", 2, 100, 100, 0, 0, "chaos_squad_lord", 1)
+		self:DynamicResearch("chaos_wargear09", 2, 50, 50, 0, 0, "chaos_squad_lord", 1)
 
    end		
 	-- Determine my all time largest army. During major casualties, determine if I should create more squads or only focus on build orders and titans.
@@ -396,7 +389,7 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 				end
 
 				-- Compute scout researches
-				if (self:CountSquads("chaos_squad_cultist") >= 1) then
+				if (self:CountSquads("chaos_squad_cultist") >= 2) then
 					self:DynamicResearch("chaos_infiltration_research", 2, 100, 75, 0, 0, nil, 0)
 				end
 
@@ -425,12 +418,6 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 				self:DynamicResearch("chaos_squad_size_increase_research", 3, 300, 300, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_accuracy_upgrade_research", 3, 100, 50, 0, 0, nil, 0)
 				self:DynamicResearch("chaos_armor_upgrade_research", 3, 100, 50, 0, 0, nil, 0)
-			end
-
-
-			-- Compute daemon infantry researches
-			if (self:CountSquads("chaos_squad_possessed_marine") >= 1) then
-				self:DynamicResearch("chaos_possessed_daemon_fire_research", 3, 150, 50, 0, 0, nil, 0)
 			end
 
 			-- Compute Daemon Prince Summoning
@@ -468,15 +455,12 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 
 		-- Compute tier 4 researches
 		if (self.tierLevel >= 4) then
-			
-			-- Compute Resource researches
-			self:DynamicResearch("chaos_power_research_3", 4, 500, 60, 0, 0, nil, 0)
-			self:DynamicResearch("chaos_requisition_research_3", 4, 125, 450, 0, 0, nil, 0)
-	
-			-- Computer Bonus researches
-			self:DynamicResearch("chaos_dirge_caster_research", 4, 80, 20, 0, 0, nil, 0)
-				
-	
+
+			-- Compute daemon infantry researches
+			if (self:CountSquads("chaos_squad_possessed_marine") >= 1) then
+				self:DynamicResearch("chaos_possessed_daemon_fire_research", 4, 150, 50, 0, 0, nil, 0)
+			end	
+
 			-- Compute Bloodthirster Summoning
 			self:DynamicResearch("chaos_bloodthirster_research", 4, 700, 700, 0, 0, nil, 0)
 				
@@ -486,27 +470,22 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 			end
 
 			-- Compute Tier IV
-			self:DynamicResearch("chaos_sorcerer_research_2", 4, 1500, 1500, 0, 0, nil, 0)
+			self:DynamicResearch("chaos_sorcerer_research_2", 4, 500, 500, 0, 0, nil, 0)
 		end
 
 		-- Compute tier 5 researches
 		if (self.tierLevel >= 5) then
 					
 			-- Compute Resource researches
-			self:DynamicResearch("chaos_power_research_4", 5, 650, 80, 0, 0, nil, 0)
-			self:DynamicResearch("chaos_requisition_research_4", 5, 150, 550, 0, 0, nil, 0)
-
-			-- Compute Relic researches
-			self:DynamicResearch("chaos_relic_research_2", 5, 2000, 2000, 0, 0, nil, 0)
+			self:DynamicResearch("chaos_power_research_3", 5, 650, 80, 0, 0, nil, 0)
+			self:DynamicResearch("chaos_requisition_research_3", 5, 150, 550, 0, 0, nil, 0)
 
 			-- Compute Misc Titan researches
-			if (self:CountSquads("chaos_squad_warhound_titan") >= 1) or (self:CountSquads("chaos_squad_reaver_titan") >= 1) or (self:CountSquads("chaos_squad_heldrake") >= 1) then
+			if (self:CountSquads("chaos_squad_reaver_titan") >= 1) then
 				self:DynamicResearch("chaos_titan_armor_research", 5, 600, 600, 0, 0, nil, 0)
 			end
 			
 		end
-
-
 	-- Restrict dynamic builds to hard difficulty or higher
 	if (CpuManager.AISettings.bMultiBuildings) then
 	
@@ -526,7 +505,8 @@ function ChaosBuildBaseStrategy:BuildFlexible()
               if (iRequisition >= 500 and iPower >= 1000) or (self.tierLevel==4 and iRequisition >= 300 and iPower >= 300) then
 		self:DynamicAddon("chaos_list_post_addon_2", 1*Numpoint, 2, 0, 0, 0, 0, nil, nil, false)
               end
-
+		self:DynamicAddon("addon_superweapon", 1*self:GetBuildingCountByName("chaos_hq_super"), 1, 0, 0, 0, 0, nil, nil, false)
+              end
               local Numpoint = resource_manager:GetNumOwnedStrategicPoints()
               local num_hq = self:GetBuildingCountByName(self:GetBuildingName("HQ"))
 		        self:DynamicBuild("chaos_hq", Numpoint/3 , 2, 400 + 200*(num_hq), 150*(num_hq), 0, 0, false)
@@ -535,8 +515,6 @@ function ChaosBuildBaseStrategy:BuildFlexible()
 				self:DynamicBuild("chaos_machine_pit", num_hq, 2, 300, 100, 0, 0)
 				self:DynamicBuild("chaos_sacrificial_circle", num_hq, 2, 300, 100, 0, 0)
 				self:DynamicBuild("chaos_greater_sacrificial_circle", num_hq, 4, 1200, 1200, 0, 0)
-				self:DynamicBuild("chaos_hq_super", num_hq, 5, 500, 500, 0, 0)
-				self:DynamicBuild("chaos_warpgate", num_hq, 5, 1250, 1250, 0, 0)
                 end
 
                 if iRequisition >= 2000 and iPower >= 2000 then

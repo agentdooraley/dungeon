@@ -70,8 +70,7 @@ BuildBaseStrategyInfo =
 				{ 4, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
 				
 				{ 5, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
-				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
-				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" }
 			},				
 
 			-- STD
@@ -108,8 +107,7 @@ BuildBaseStrategyInfo =
 				{ 4, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
 				
 				{ 5, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
-				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
-				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" }
 			},	
 
 			-- gen std
@@ -128,7 +126,7 @@ BuildBaseStrategyInfo =
 				{ 2, 75, 75, 1000, 1,"Research",	"chaos_mark_nurgle_research" },				
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },
 				{ 2, 175, 50, 0, 1,	"Building",	"chaos_sacrificial_circle" },
-				{ 2, 340, 340, 1200, 1,	"Addon",	"chaos_hq_addon_2" },
+				{ 2, 340, 340, 1200, 1,	"Addon",	"chaos_hq_addon_2" },		
 				
                 { 3, 200, 50, 250, 1,	"Building",	"chaos_armoury" },
 				{ 3, 300, 0, 0, 1,	"Building",	"chaos_temple" },
@@ -150,8 +148,7 @@ BuildBaseStrategyInfo =
 				{ 4, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
 				
 				{ 5, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
-				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
-				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" }
 			},
 
             -- grenocult
@@ -159,16 +156,17 @@ BuildBaseStrategyInfo =
 				{ 1, 80, 0, 0, 6,	"Unit",		"chaos_squad_cultist" },			
 				{ 1, 135, 0, 0, 1,	"Building",	"chaos_plasma_generator" },					
 				{ 1, 175, 50, 0, 1,	"Building",	"chaos_armoury" },			
-				{ 1, 140, 80, 750, 50,	"TurretAddon",	"chaos_list_post_addon_1" },				
-				{ 1, 140, 80, 1200, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
-				{ 1, 350, 125, 1000, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 140, 80, 500, 50,	"TurretAddon",	"chaos_list_post_addon_1" },				
+				{ 1, 140, 80, 750, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
+				{ 1, 350, 125, 650, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 600, 0, 500, 1,	"Building",	"chaos_temple" },									
 
 				{ 2, 0, 0, 0, 0,	"Restrict",	"chaos_squad_lord_khorne" },
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },				
 				{ 2, 175, 80, 0, 1,	"Unit",		"chaos_squad_sorcerer" },		
 				{ 2, 75, 75, 1000, 1,"Research",	"chaos_mark_nurgle_research" },				
 				{ 2, 175, 50, 0, 1,	"Building",	"chaos_sacrificial_circle" },
-                { 2, 300, 0, 1000, 1,	"Building",	"chaos_temple" },				
+                { 2, 500, 0, 1000, 1,	"Building",	"chaos_temple" },				
 				{ 2, 250, 340, 0, 4,	"Unit",		"chaos_squad_defiler" },
 				{ 2, 250, 50, 0, 3,	"Unit",		"chaos_squad_horror" },				
 				{ 2, 340, 340, 1000, 1,	"Addon",	"chaos_hq_addon_2" },
@@ -182,13 +180,12 @@ BuildBaseStrategyInfo =
 
 				{ 4, 300, 100, 0, 1,	"Building",	"chaos_greater_sacrificial_circle" },
 				{ 4, 320, 120, 1500, 1,	"Building",	"chaos_warpforge" },
-				{ 4, 500, 500, 1500, 1,"Research",	"chaos_sorcerer_research_2" },
+				{ 4, 500, 500, 1500, 1, "Research",	"chaos_sorcerer_research_2" },
 				{ 4, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
 				{ 4, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
 				
 				{ 5, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
-				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
-				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" }
 			},	
 
             -- grenocult free
@@ -197,9 +194,10 @@ BuildBaseStrategyInfo =
 				{ 1, 135, 0, 0, 2,	"Building",	"chaos_plasma_generator" },					
 				{ 1, 175, 50, 0, 1,	"Building",	"chaos_armoury" },
 				{ 1, 90, 45, 0, 1,	"Building",	"chaos_turret_bolter" },									
-				{ 1, 140, 80, 750, 75,	"TurretAddon",	"chaos_list_post_addon_1" },				
-				{ 1, 140, 80, 1000, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
-				{ 1, 350, 125, 900, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 140, 80, 0, 75,	"TurretAddon",	"chaos_list_post_addon_1" },				
+				{ 1, 140, 80, 750, 100,	"TurretAddon",	"chaos_list_post_addon_1" },
+				{ 1, 350, 125, 600, 1,	"Addon",	"chaos_hq_addon_1" },
+				{ 1, 600, 0, 0, 1,	"Building",	"chaos_temple" },					
 
 				{ 2, 0, 0, 0, 0,	"Restrict",	"chaos_squad_lord_khorne" },
 				{ 2, 250, 125, 0, 1,	"Building",	"chaos_machine_pit" },				
@@ -210,6 +208,7 @@ BuildBaseStrategyInfo =
 				{ 2, 250, 340, 0, 4,	"Unit",		"chaos_squad_defiler" },
 				{ 2, 250, 50, 0, 3,	"Unit",		"chaos_squad_horror" },					
 				{ 2, 340, 340, 0, 1,	"Addon",	"chaos_hq_addon_2" },
+				{ 2, 500, 0, 0, 1,	"Building",	"chaos_temple" },					
 
                 { 3, 300, 0, 1000, 1,	"Building",	"chaos_temple" },				
                 { 3, 200, 50, 250, 1,	"Building",	"chaos_armoury" },				
@@ -222,13 +221,12 @@ BuildBaseStrategyInfo =
 
 				{ 4, 300, 100, 0, 1,	"Building",	"chaos_greater_sacrificial_circle" },
 				{ 4, 320, 120, 1500, 1,	"Building",	"chaos_warpforge" },
-				{ 4, 500, 500, 1500, 1,"Research",	"chaos_sorcerer_research_2" },
+				{ 4, 500, 500, 1500, 1, "Research",	"chaos_sorcerer_research_2" },
 				{ 4, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
 				{ 4, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
 				
 				{ 5, 500, 500, 0, 1,	"Building",	"chaos_warpgate" },
-				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" },
-				{ 5, 0, 0, 0, 100,	"Addon",	"addon_superweapon" },
+				{ 5, 1250, 1250, 0, 1,  "Building",	"chaos_hq_super" }
 			},							
 		},					
 		
@@ -236,8 +234,7 @@ BuildBaseStrategyInfo =
 		{
 			standard =
 			{
-			    chaos_squad_slave = 3,
-				chaos_squad_cultist = 3,
+				chaos_squad_cultist = 6,
 				chaos_marine_squad = 5,
 				chaos_squad_raptor = 2,
 				chaos_squad_ds_turret = 3,

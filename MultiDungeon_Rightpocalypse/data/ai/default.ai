@@ -200,7 +200,7 @@ cpu:NetSay(550001, false)
 end
 
 function think()
- Rule_AddInterval(AI_Think, 0.2)
+ Rule_AddInterval(AI_Think, 0.1)
 end
 local function InitializeAI()
 

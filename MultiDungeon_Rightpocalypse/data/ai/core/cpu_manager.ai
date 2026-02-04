@@ -116,9 +116,8 @@ CpuManager.ForceTech =
 	StartTier1 = 3,
 	StartTier2 = 7,
 	StartTier3 = 9,
-	StartTier4 = 14,
-	StartTier5 = 17,
-	StartTier6 = 20
+	StartTier4 = 12,
+	StartTier5 = 15,
 }
 
 CpuManager.AISettings =
@@ -420,32 +419,28 @@ function CpuManager:Initialize()
 	-- Adjust force tech times
 	if (CpuManager.AISettings.iTechSpeed == -2) then
 		CpuManager.ForceTech.StartTier1 = 7
-		CpuManager.ForceTech.StartTier2 = 21
-		CpuManager.ForceTech.StartTier3 = 35
-		CpuManager.ForceTech.StartTier4 = 49
-		CpuManager.ForceTech.StartTier5 = 35
-		CpuManager.ForceTech.StartTier6 = 45
+		CpuManager.ForceTech.StartTier2 = 14
+		CpuManager.ForceTech.StartTier3 = 17
+		CpuManager.ForceTech.StartTier4 = 20
+		CpuManager.ForceTech.StartTier5 = 25
 	elseif (CpuManager.AISettings.iTechSpeed == -1) then
 		CpuManager.ForceTech.StartTier1 = 6
-		CpuManager.ForceTech.StartTier2 = 18
-		CpuManager.ForceTech.StartTier3 = 30
-		CpuManager.ForceTech.StartTier4 = 42
-		CpuManager.ForceTech.StartTier5 = 35
-		CpuManager.ForceTech.StartTier6 = 45
+		CpuManager.ForceTech.StartTier2 = 12
+		CpuManager.ForceTech.StartTier3 = 18
+		CpuManager.ForceTech.StartTier4 = 24
+		CpuManager.ForceTech.StartTier5 = 30
 	elseif (CpuManager.AISettings.iTechSpeed == 1) then
 		CpuManager.ForceTech.StartTier1 = math.random(2,4)
-		CpuManager.ForceTech.StartTier2 = math.random(6,10)
-		CpuManager.ForceTech.StartTier3 = math.random(12,14)
-		CpuManager.ForceTech.StartTier4 = math.random(15,20)
-		CpuManager.ForceTech.StartTier5 = math.random(35,40)
-		CpuManager.ForceTech.StartTier6 = 45
+		CpuManager.ForceTech.StartTier2 = math.random(5,9)
+		CpuManager.ForceTech.StartTier3 = math.random(11,13)
+		CpuManager.ForceTech.StartTier4 = math.random(14,18)
+		CpuManager.ForceTech.StartTier5 = math.random(18,25)
 	elseif (CpuManager.AISettings.iTechSpeed == 2) then
 		CpuManager.ForceTech.StartTier1 = math.random(1,4)
-		CpuManager.ForceTech.StartTier2 = math.random(5,8)
-		CpuManager.ForceTech.StartTier3 = math.random(8,12)
-		CpuManager.ForceTech.StartTier4 = math.random(12,16)
+		CpuManager.ForceTech.StartTier2 = math.random(4,8)
+		CpuManager.ForceTech.StartTier3 = math.random(8,11)
+		CpuManager.ForceTech.StartTier4 = math.random(12,14)
 		CpuManager.ForceTech.StartTier5 = math.random(16,20)
-		CpuManager.ForceTech.StartTier6 = 25
 	end
 	
 	-- Check race name
