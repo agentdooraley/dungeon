@@ -5554,6 +5554,26 @@ bindings =
 	daemons_ability_disable_flight_lord			= "",
 	daemons_ability_disable_flight			= "",
 
+	inquisition_archivist                    = "Q",
+    inquisition_shock_troops            = "W",
+    inquisition_scholars                = "W",
+    inquisition_grenaider_troops            = "E",
+    inquisition_servitor_maintenance        = "R",
+    inquisition_servitor_melee            = "S",
+    inquisition_servitor_weapon            = "A",
+    inquisition_rhino                = "D",
+    inquisition_chimera_transport            = "F",
+    inquisition_razorback                    = "Z",
+    inquisition_damocles                    = "X",
+    inquisition_dreadnought_assault            = "X",
+    inquisition_dreadnought_support            = "Z",
+    inquisition_tempest                = "R",
+    inquisition_grey_knights_terminator        = "A",
+    inquisition_grey_knights_interceptor        = "W",
+    inquisition_grey_knights_purgator        = "E",
+    inquisition_predator                = "C",
+    inquisition_whirlwind                = "V",
+
 	--Entity attack range
 	attack			= 	"A",
 	
