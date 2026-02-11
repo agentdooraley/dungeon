@@ -27,7 +27,7 @@ RepairingSquadMmbrs = 1
 AircraftType1 = "chaos_squad_hell_talon"
 AircraftType2 = "chaos_squad_hell_talon"
 RelicName1 = "chaos_squad_brass_scorpion"
-RelicName2 = "chaos_squad_land_raider"
+RelicName2 = "chaos_squad_landraider"
 TitanName1 = "chaos_squad_reaver_titan"
 TitanName2 = "chaos_squad_reaver_titan"
 --Upgrades and add leader
