@@ -1,0 +1,557 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "tau_fire_warrior_squad_fem"
+DeCapturingSquadMmbrs = 5
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "tau_barracks"
+EnemyBuilding1Squad1 = {"tau_fire_warrior_squad_fem", 2, 5}
+EnemyBuilding1Squad2 = nil
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "tau_kroot_nest"
+EnemyBuilding2Squad1 = {"tau_krootox_squad", 3, 1}
+EnemyBuilding2Squad2 = nil
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"tau_skyray_squad",1,1}
+EnemyBuilding2SquadA2 = {"tau_skyray_squad",1,1}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "tau_devilfish_troop_carrier"
+EnemyTransportedSquad = {"tau_shasui_fire_warrior_bodyguard_sp", 2, 1}
+EnemyHonourGuardSquad1 = {"tau_crisis_suit_squad", 3, 1}
+EnemyHonourGuardSquad2 = {"tau_commander_squad_advance_sp", 1, 1}
+EnemyHonourGuardSquad3 = {"tau_kroot_shaper_squad_advance_sp", 1, 1}
+EnemyHonourGuardSquad4 = nil
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+-- LEADERS: If a commander squad has leaders, add the number of		------
+-- each, after the name. The first number, is the number of leaders ------
+-- of the first type (index 1), etc. 								------
+-- WARNING: DO NOT add non-existing ones or you will get a CTD!!!	------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"tau_anghkor_prok_squad"}
+EnemyCommanderSquadName2 = {"tau_xv_25_commander_squad"}
+EnemyCommanderSquadName3 = {"tau_commander_longstrike_hh_squad"}
+EnemyCommanderSquadName4 = {"tau_commander_longknife_squad"}
+EnemyCommanderSquadName5 = {"tau_shadowsun_squad"}
+EnemyCommanderSquadName6 = {"tau_ethereal_squad_stronghold_sp"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_greater_knarloc_squad", "mk_uberspawn_1", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_xv95_ghostkeel_stealthsuit_squad", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_xv104_riptide_battlesuit_squad", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_xv107_rvarna_squad", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_crisis_suit_squad", "mk_uberspawn_2", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_hammerhead_gunship_squad", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tau_pathfinder_squad", "mk_enemy_pos", 3, 4)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_fire_warrior_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_devilfish_troop_carrier", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_honor_guard_crisis_suit_squad_advance_honor_guard_sp", marker, 1, 1)
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_squats_squad", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_initiate_squad", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_virus_squad", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_stalker_squad", marker, 1, 1)			
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_devilfish_troop_carrier", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_honor_guard_crisis_suit_squad_advance_honor_guard_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_squats_squad", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_initiate_squad", marker, 2, 4)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_virus_squad", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_stalker_squad", marker, 1, 3)				
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 4, 3)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_fire_warrior_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_devilfish_troop_carrier", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_honor_guard_crisis_suit_squad_advance_honor_guard_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_squats_squad", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_initiate_squad", marker, 1, 4)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_stalker_squad", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_virus_squad", marker, 1, 1)			
+		
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_devilfish_troop_carrier", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_pathfinder_squad", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_honor_guard_crisis_suit_squad_advance_honor_guard_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_squats_squad", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_initiate_squad", marker, 2, 4)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_virus_squad", marker, 1, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tau_stalker_squad", marker, 1, 3)					
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 1,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2, 10)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_devilfish_troop_carrier", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_hound_squad", marker, 1, 5)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_shaper_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2, 10)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2,10 )
+		end
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_squad", marker, 2,5 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_hound_squad", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_stealth_team_squad", marker, 1, 6)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_vespid_auxiliary_squad", marker, 1,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_hammerhead_gunship_squad", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 3, 5)
+		end
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 3, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 2, 1)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_hammerhead_gunship_squad", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_vespid_auxiliary_squad", marker, 1,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+		end
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_initiate_squad", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_dunerider_squad", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_squats_squad", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 1,1 )
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_knarloc_rider_squad", marker, 2,4 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 3,1 )
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_initiate_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_dunerider_squad", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_ethereal_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_initiate_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_virus_squad", marker, 2, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 3,1 )
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_piranha_skimmer_squad", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2,10 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_knarloc_rider_squad", marker, 2,4 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 3, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_breacher_squad", marker, 1,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_ethereal_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_piranha_skimmer_squad", marker, 2,1 )
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_devilfish_troop_carrier", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_skyray_squad", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 3,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_piranha_skimmer_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_breacher_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_ethereal_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_squats_squad", marker, 2,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_dunerider_squad", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_devilfish_troop_carrier", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_hammerhead_gunship_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 3,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_knarloc_rider_squad", marker, 2,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_greater_knarloc_squad", marker, 1,1 )
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kv128_stormsurge_titan_squad", marker, 1, 1)		
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_piranha_skimmer_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_fire_warrior_breacher_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_commander_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_ethereal_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_drone_harbinger_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_crisis_suit_squad", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_swordfish_gunship_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kroot_carnivore_squad", marker, 4,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_knarloc_rider_squad", marker, 3,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_initiate_squad", marker, 3,6 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tau_initiate_squad","tau_archer_bow_guevesa",3)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_stalker_squad", marker, 1,5 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_virus_squad", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_dunerider_squad", marker, 5, 1)				
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_squats_squad", marker, 3,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_krootox_squad", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_xv95_ghostkeel_stealthsuit_squad", marker, 1,1 )
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kv128_stormsurge_titan_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_kx139_taunar_supremacy_armour_titan_squad", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+		local uber = World_GetRand(1,3)
+		if uber == 0 then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_xv104_riptide_battlesuit_squad", marker, 1,1 )
+		elseif uber == 1 then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_xv107_rvarna_squad", marker, 1,1 )
+		else
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_xv109_yvahra_squad", marker, 1,1 )
+		end
+		SGroup_AddLeaders(sgroupName)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_squad_greater_psionic_god", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tau_rahn_squad", marker, 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "tau_squad_greater_psionic_god"), g_enemy_PlayerID)			
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "tau_rahn_squad"), g_enemy_PlayerID)
+		end
+		SGroup_AddLeaders(sgroupName)		
+	end	
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_Tau_OrbitalStrike,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1),Get_NextRule_InitiationTMR_Survival())
+end
+
+
+function Rule_Tau_OrbitalStrike()
+	Orbital_Hit_Pos = {}
+	Orbital_Hit_Pos[0] = nil
+	Orbital_Hit_DamageRing = {}
+	Orbital_Hit_DamageRing[0] = 0
+	Orbital_Hit_Range = {}
+	Orbital_Hit_Range[0] = 5
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_all_players_buildings"))
+	local isBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) then
+			EGroup_Add("eg_all_players_buildings", entityID)
+		end
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			EGroup_ForEach(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]), isBuilding)
+		end
+	end
+	local contents = EGroup_Count("eg_all_players_buildings")
+	if contents > 0 then
+		local target = World_GetRand(1,contents)
+		local eID = EGroup_GetSpawnedEntityAt("eg_all_players_buildings",target)
+		if eID ~= nil then
+			Orbital_Hit_Pos[0] = Entity_GetPosition(eID)
+			Util_StartIntel(EVENTS.IE_Tau_Orbital_P1)
+			Rule_AddOneShot(Rule_Orbital_Hit_Start,20)
+			Rule_AddInterval(OrbitalHitDisplayFX,1.5)
+			pg_IG_Orbital = Ping_Position(Orbital_Hit_Pos[0],true)
+		end
+	end
+end
+
+
+function OrbitalHitDisplayFX()
+	World_FXEvent("data:Art/Events/Tau/Abilities/Tau_Skyray_Missles_Trigger.events",Orbital_Hit_Pos[0])
+end
+
+
+Orbital_squad_damage = function(sgroupid, itemindex, squadID)
+	local totalhealth = Squad_GetHealthMax(squadID)
+	local currenthealth = Squad_GetHealth(squadID)
+	local newhealth = currenthealth - Orbital_Hit_DamageRing[0]
+	if newhealth > 1 then
+		local sethealth = (newhealth / totalhealth)
+		Squad_SetHealth(squadID,sethealth)
+	else
+		Squad_SetHealth(squadID,0)
+	end
+end
+
+
+Orbital_building_damage = function( egroupid, itemindex, EntityID )
+	local totalhealth = Entity_GetHealthMax(EntityID)
+	local currenthealth = Entity_GetHealth( EntityID)
+	local newhealth = currenthealth - (Orbital_Hit_DamageRing[0]+200)
+	if newhealth > 1 then
+		local sethealth = (newhealth / totalhealth)
+		Entity_SetHealth(EntityID,sethealth)
+	else
+		Entity_SetHealth(EntityID,0)
+	end
+end
+
+
+function Rule_Orbital_Hit_Start()
+	Rule_Remove(OrbitalHitDisplayFX)
+	Ping_Stop(pg_IG_Orbital)
+	World_FXEvent("data:Art/Events/tau/abilities/tau_death_pulse.events",Orbital_Hit_Pos[0])
+	Rule_AddOneShot(Rule_Orbital_FirstRingPlusFX, 1)
+end
+
+
+function Rule_Orbital_FirstRingPlusFX()
+	World_FXEvent("data:Art/Events/unit_ability_fx/psychic_storm_explosion.events",Orbital_Hit_Pos[0])
+	World_FXEvent("data:Art/Events/unit_ability_fx/psychic_storm_hit.events",Orbital_Hit_Pos[0])
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_deadGuys_Orbital"))
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_deadGuys_Orbital"))
+	for pIDX=0, g_number_of_players-1 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			Player_GetAllSquadsNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"sg_deadGuys_Orbital",Orbital_Hit_Pos[0],Orbital_Hit_Range[0])
+			Player_GetAllEntitiesNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"eg_deadGuys_Orbital",Orbital_Hit_Pos[0],Orbital_Hit_Range[0])
+		end
+	end
+	Orbital_Hit_DamageRing[0] = World_GetRand(200,300)
+	SGroup_ForEach("sg_deadGuys_Orbital", Orbital_squad_damage )
+	EGroup_ForEach("eg_deadGuys_Orbital", Orbital_building_damage )
+	Rule_AddInterval(Rule_Orbital_SubsequentRings,3)
+end
+
+
+function Rule_Orbital_SubsequentRings()
+	Orbital_Hit_Range[0] = Orbital_Hit_Range[0] + 4.5
+	if Orbital_Hit_Range[0] > 24 then
+		Rule_Remove(Rule_Orbital_SubsequentRings)
+		return
+	end
+	SGroup_Clear("sg_deadGuys_Orbital")
+	EGroup_Clear("eg_deadGuys_Orbital")
+	for pIDX=0, g_number_of_players-1 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			Player_GetAllSquadsNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"sg_deadGuys_Orbital",Orbital_Hit_Pos[0],Orbital_Hit_Range[0])
+			Player_GetAllEntitiesNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"eg_deadGuys_Orbital",Orbital_Hit_Pos[0],Orbital_Hit_Range[0])
+		end
+	end
+	Orbital_Hit_DamageRing[0] = Orbital_Hit_DamageRing[0] - 40
+	SGroup_ForEach("sg_deadGuys_Orbital", Orbital_squad_damage )
+	EGroup_ForEach("eg_deadGuys_Orbital", Orbital_building_damage )
+end
+
+
+
+
+
+
+--[[ OLD Manta Hit code. 
+mantablast_survival_P1 = {}
+
+-- Tau Manta Strike for P1
+function Rule_Tau_Manta_P1()
+	if not Player_IsAlive(g_Player1) then
+		Rule_Remove(Rule_Tau_Manta_P1)
+		return
+	end
+	EGroup_AddGroup(EGroup_CreateIfNotFound("eg_P1_all_veh"), Player_GetEntities(g_Player1))
+	local countents = EGroup_CountSpawned(EGroup_FromName("eg_P1_all_veh"))
+	if countents > 0 then
+		local bombtarget = World_GetRand(1,countents)
+		EGroup_Clear(EGroup_CreateIfNotFound("eg_Player1_target_veh"))
+		EGroup_Add(EGroup_FromName("eg_Player1_target_veh"), EGroup_GetSpawnedEntityAt("eg_P1_all_veh",bombtarget))
+		mantablast_survival_P1[0] = EGroup_GetPosition("eg_Player1_target_veh")
+	else
+		return
+	end
+	Util_StartIntel(EVENTS.IE_Tau_Arrive_P1)
+	pg_Tau_P1 = Ping_Position(mantablast_survival_P1[0],true)
+	Rule_AddOneShot(Rule_MantaHitOne,20)
+end
+ 
+function Rule_MantaHitOne()
+	Ping_Stop(pg_Tau_P1)
+	local eventfile2 = "data:Art/Events/tau/abilities/comm_tower_ability.events"
+	World_FXEvent (eventfile2, mantablast_survival_P1[0])
+	Rule_AddOneShot(Rule_MantaHitTwo,7)
+end
+
+function Rule_MantaHitTwo()	
+	local eventfile2 = "data:Art/Events/unit_ability_fx/psychic_storm_explosion.events"
+	World_FXEvent (eventfile2, mantablast_survival_P1[0])
+	Rule_AddOneShot(Rule_MantaHitThree,1)
+end
+
+function Rule_MantaHitThree()
+	local eventfile3 = "data:Art/Events/tau/abilities/tau_death_pulse.events"
+	World_FXEvent (eventfile3, mantablast_survival_P1[0])
+	local healthcheck3 = function( egroupid, itemindex, EntityID )
+		totalhealth = Entity_GetHealthMax( EntityID)
+		currenthealth = Entity_GetHealth( EntityID)
+		bombrand2 = World_GetRand(1,3)
+		bombrand = bombrand2 * 1000
+		newhealth = currenthealth - bombrand
+		if newhealth > 1 then
+			sethealth = (newhealth / totalhealth)
+			Entity_SetHealth(EntityID,sethealth)
+		else
+			Entity_SetHealth(EntityID,0)
+		end
+    end
+	local squadcheck1 = function(sgroupid, itemindex, squadID)
+		totalhealth = Squad_GetHealthMax( squadID)
+		currenthealth = Squad_GetHealth( squadID)
+		pain = 1000
+		newhealth = currenthealth - pain
+		if newhealth > 1 then
+			sethealth = (newhealth / totalhealth)
+			Squad_SetHealth(squadID,sethealth)
+		else
+			Squad_SetHealth(squadID,0)
+		end
+	end
+	local squadcheck2 = function(sgroupid, itemindex, squadID)
+		totalhealth = Squad_GetHealthMax( squadID)
+		currenthealth = Squad_GetHealth( squadID)
+		pain = 1000
+		newhealth = currenthealth - pain
+		if newhealth > 1 then
+			sethealth = (newhealth / totalhealth)
+			Squad_SetHealth(squadID,sethealth)
+		else
+			Squad_SetHealth(squadID,0)
+		end
+	end
+	local squadcheck3 = function(sgroupid, itemindex, squadID)
+		totalhealth = Squad_GetHealthMax( squadID)
+		currenthealth = Squad_GetHealth( squadID)
+		pain = 1000
+		newhealth = currenthealth - pain
+		if newhealth > 1 then
+			sethealth = (newhealth / totalhealth)
+			Squad_SetHealth(squadID,sethealth)
+		else
+			Squad_SetHealth(squadID,0)
+		end
+	end
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_deadGuysTau1_1"))
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_deadGuysTau1_1"))
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_deadGuysTau1_2"))
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_deadGuysTau1_5"))
+	Player_GetAllEntitiesNearPos(g_Player1,"eg_deadGuysTau1_1",mantablast_survival_P1[0],16)
+	EGroup_ForEach( EGroup_FromName("eg_deadGuysTau1_1"), healthcheck3 )
+	Player_GetAllSquadsNearPos(g_Player1,"sg_deadGuysTau1_1",mantablast_survival_P1[0],16)
+	SGroup_ForEach( SGroup_FromName("sg_deadGuysTau1_1"), squadcheck1 )
+	if(g_number_of_players==2)then
+		Player_GetAllSquadsNearPos(g_enemy_PlayerID,"sg_deadGuysTau1_5",mantablast_survival_P1[0],16)
+		SGroup_ForEach( SGroup_FromName("sg_deadGuysTau1_5"), squadcheck2 )
+	end
+	if(g_number_of_players==3)then
+		Player_GetAllSquadsNearPos(g_Player2,"sg_deadGuysTau1_2",mantablast_survival_P1[0],16)
+		SGroup_ForEach( SGroup_FromName("sg_deadGuysTau1_2"), squadcheck3 )
+	end
+	Rule_AddOneShot(Rule_MantaHitFour,6)
+end
+
+function Rule_MantaHitFour()
+	local eventfile4 ="data:Art/Events/unit_ability_fx/psychic_storm_explosion.events"
+	World_FXEvent (eventfile4, mantablast_survival_P1[0])
+	Rule_AddOneShot(Rule_MantaHitFive,5)
+end
+
+function Rule_MantaHitFive()
+	local eventfile5 = "data:Art/Events/unit_ability_fx/psychic_storm_hit.events"
+	World_FXEvent (eventfile5,mantablast_survival_P1[0])
+end]]

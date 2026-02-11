@@ -1,0 +1,168 @@
+----------------------------------
+-- Vehicle and Heroic Spawnings --
+-- Adds harsh challenges to the --
+-- Survival gaming mode			--
+-- Code/Conception by Argonaut  --
+-- Re-coded by Gambit 10/1/2018 --
+-- Ver 1.02 					--
+----------------------------------
+
+import("ScarUtil.scar")
+
+G_HeroicDefenceSwitchEnabled = true
+
+function Rule_OpeningSettings_Heroic()
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Heroic Defence (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	-- Create the required squad groups
+	for i=0, g_number_of_players-2 do
+		SGroup_CreateIfNotFound("sg_standard_vehicle_srvvl"..i)
+		SGroup_CreateIfNotFound("sg_vehicle_troops_survvl"..i)
+		SGroup_CreateIfNotFound("sg_honour_guard_srvvl"..i)
+		SGroup_CreateIfNotFound("sg_uber_srvvl"..i)
+	end
+	-- Global arrays
+	g_enemy_base_HQ_position = {Marker_GetPosition(Marker_FromName("mk_enemy_pos","basic_marker"))}
+	g_troops_delivered_P = {false,false,false,false,false,false,false,false}
+
+	-- init all rules after a delay, so that difficulty is set
+	Rule_AddOneShot(Rule_OpeningDelayStartRules_Heroic, 20)
+end
+
+
+Scar_AddInit(Rule_OpeningSettings_Heroic)
+
+
+function Rule_OpeningDelayStartRules_Heroic()
+	-- Rules timers, based on difficulty
+	local intTMR, delTMR = 200, 240 -- for easy Difficulty
+	if   g_difficulty=="standard" then intTMR, delTMR = 150, 220
+	elseif g_difficulty=="hard"   then intTMR, delTMR = 130, 200
+	elseif g_difficulty=="harder" then intTMR, delTMR = 100, 180
+	elseif g_difficulty=="insane" then intTMR, delTMR = 80, 180 end
+	local time_mod = World_GetRand(10,60)
+	-- 1] Transport Attacks -----------------------------------------------------
+	Rule_AddIntervalDelay(Rule_Trigger_Standard_Vehicle_Attacks, intTMR, delTMR)
+	Rule_AddIntervalDelay(Rule_CheckProximityOfStandard_Vehicles, 4.5, delTMR+10.25)
+	-- 2] Honour Guard and Uber Squad Attacks -----------------------------------
+	Rule_AddIntervalDelay(Rule_Trigger_HonourGuard,intTMR+200,delTMR+time_mod)
+	Rule_AddIntervalDelay(Rule_Trigger_HonourGuard_ForceAttack,10,delTMR+time_mod+intTMR+200)
+	-- 3] Race-Specific special attacks/effects (defined in the race's file) ----
+	Rule_AddOneShot(Rule_SpecialRaceAttackingMethodSurvival,0.25)
+end
+	
+
+function Rule_Trigger_Standard_Vehicle_Attacks()
+	if g_Survival_Enemy_Waves_Have_Failed then
+		if g_difficulty == "easy" or g_difficulty == "standard" or g_difficulty == "hard" then
+			Rule_Remove(Rule_Trigger_Standard_Vehicle_Attacks)
+			Rule_Remove(Rule_CheckProximityOfStandard_Vehicles)
+			return
+		end
+	end
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		Rule_Remove(Rule_Trigger_Standard_Vehicle_Attacks)
+		Rule_Remove(Rule_CheckProximityOfStandard_Vehicles)
+		return
+	end
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) and EnemyTransportName ~= nil and Srvl_PlayerInfo.Level[i] <= Surv_Max_Waves then
+			local vehicle = "sg_standard_vehicle_srvvl"..i
+			if SGroup_CountSpawned(vehicle)==0 then
+				SGroup_DestroyAllSquads(vehicle)
+				local marker = "mk_enemy_player_"..(i+1)
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, vehicle, EnemyTransportName, marker, 1, 1)
+				if SGroup_CountSpawned(vehicle)==1 then
+					World_FXEvent("unit_ability_fx/machine_spirit", SGroup_GetPosition(vehicle))
+					Modifier_ApplyToSquad(Modifier_Create(MAT_Squad,"health_maximum_modifier",MUT_Multiplication,false,2.0,""), SGroup_GetSpawnedSquadAt(vehicle,1))
+					Rule_LockSGroupSurvivalPlayer(vehicle)
+					Command_SquadPos(Srvl_PlayerInfo.PlayerID[i], vehicle, SCMD_Move, Srvl_PlayerInfo.HQpos[i])
+				end
+			end
+		end
+	end
+end
+function Rule_CheckProximityOfStandard_Vehicles()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		return
+	end
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) and EnemyTransportName ~= nil then
+			local vehicle = "sg_standard_vehicle_srvvl"..i
+			if SGroup_CountSpawned(vehicle)>0 then
+				local veh_pos = SGroup_GetPosition(vehicle)
+				if g_troops_delivered_P[i] then
+				-- Troops delivered, return to base!
+					Rule_LockSGroupSurvivalPlayer(vehicle)
+					Command_SquadPos(Srvl_PlayerInfo.PlayerID[i], vehicle, SCMD_Move, g_enemy_base_HQ_position[1])
+					if World_DistancePointToPoint(veh_pos, g_enemy_base_HQ_position[1])< 34 then
+					-- Vehicle has returned to base and is ready to re-attack!
+						g_troops_delivered_P[i]=false
+					end
+				else
+				-- Troops NOT delivered, attack player base!
+					Rule_LockSGroupSurvivalPlayer(vehicle)
+					Command_SquadPos(Srvl_PlayerInfo.PlayerID[i], vehicle, SCMD_Move, Srvl_PlayerInfo.HQpos[i])
+					if World_DistancePointToPoint(veh_pos, Srvl_PlayerInfo.HQpos[i])< 20 then
+					-- Vehicle has REACHED player base, unload troops!
+						local troops = "sg_vehicle_troops_survvl"..i
+						Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,troops,EnemyTransportedSquad[1],veh_pos,EnemyTransportedSquad[2],EnemyTransportedSquad[3])
+						g_troops_delivered_P[i]=true
+						Rule_LockSGroupSurvivalPlayer(troops)
+						Cmd_AttackMovePos(troops,Srvl_PlayerInfo.HQpos[i])
+					end
+				end
+			end
+		end
+	end
+end
+
+
+function Rule_Trigger_HonourGuard()
+	if g_Survival_Enemy_Waves_Have_Failed or (not Player_IsAlive(g_enemy_PlayerID)) then
+		Rule_Remove(Rule_Trigger_HonourGuard)
+		Rule_Remove(Rule_Trigger_HonourGuard_ForceAttack)
+		return
+	end
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) and Srvl_PlayerInfo.Level[i] <= Surv_Max_Waves then
+			local h_g = "sg_honour_guard_srvvl"..i
+			if SGroup_CountSpawned(h_g)==0 then
+				SGroup_DestroyAllSquads(h_g)
+				local marker = "mk_enemy_player_"..(i+1)
+				if EnemyHonourGuardSquad1 ~= nil then
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,h_g,EnemyHonourGuardSquad1[1],marker,EnemyHonourGuardSquad1[2],EnemyHonourGuardSquad1[3])
+				end
+				if EnemyHonourGuardSquad2 ~= nil then
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,h_g,EnemyHonourGuardSquad2[1],marker,EnemyHonourGuardSquad2[2],EnemyHonourGuardSquad2[3])
+				end
+				if EnemyHonourGuardSquad3 ~= nil then
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,h_g,EnemyHonourGuardSquad3[1],marker,EnemyHonourGuardSquad3[2],EnemyHonourGuardSquad3[3])
+				end
+				if EnemyHonourGuardSquad4 ~= nil then
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,h_g,EnemyHonourGuardSquad4[1],marker,EnemyHonourGuardSquad4[2],EnemyHonourGuardSquad4[3])
+				end
+				-- The Uber Heroic squad is spawned starting at Wave 5
+				if EnemyHonourGuardSquad_Uber ~= nil and Srvl_PlayerInfo.Level[i] >= 5 then
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,h_g,EnemyHonourGuardSquad_Uber[1],marker,EnemyHonourGuardSquad_Uber[2],EnemyHonourGuardSquad_Uber[3])
+				end
+				Rule_LockSGroupSurvivalPlayer(h_g)
+				Cmd_AttackMovePos(h_g,Srvl_PlayerInfo.HQpos[i])
+			end
+		end
+	end
+end
+function Rule_Trigger_HonourGuard_ForceAttack()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		return
+	end
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then
+			local h_g = "sg_honour_guard_srvvl"..i
+			Rule_LockSGroupSurvivalPlayer(h_g)
+			Cmd_AttackMovePos(h_g,Srvl_PlayerInfo.HQpos[i])
+		end
+	end
+end

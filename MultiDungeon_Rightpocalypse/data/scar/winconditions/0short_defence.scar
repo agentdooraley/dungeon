@@ -1,0 +1,24 @@
+----------------------------------
+-- Vehicle and Heroic Spawnings --
+-- Adds harsh challenges to the --
+-- Survival short gaming mode			--
+-- Code/Conception by Argonaut  --
+-- Coded by fuggles 19/08/2022 --
+-- Ver 1.00 					--
+----------------------------------
+
+import("ScarUtil.scar")
+
+function Rule_OpeningSettings_Short()
+G_ShortDefenceSwitchEnabled = true
+print "Short defence - This one's for you Laughing Max!"
+
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Heroic Defence (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+
+end
+
+
+Scar_AddInit(Rule_OpeningSettings_Short)

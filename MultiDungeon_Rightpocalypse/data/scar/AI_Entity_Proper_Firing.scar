@@ -1,0 +1,112 @@
+------------------------------------------
+-- Entity_Proper_Firing.SCAR  V0.12		--
+-- Enables firing from structures with	--
+--  artillery projectiles.				--
+-- Required, because they do not rotate --
+-- and... The engine misbehaves.		--
+--    CODED by Gambit @6/05/2022		--
+------------------------------------------
+
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("Community_Functions.scar")
+
+
+-- Note: There is no support for attacking against buildings. Only against enemy squads. I prefer it like this.
+-- If someone wishes, he can easily code it with the following command, using the method I used.
+-- Command_EntityEntity( PlayerID, EGroupID, 10, EGroupID )
+
+
+function Unif_Proper_Firing_OnInit()
+	-- Stores player IDs [i][1] and an array i[2] with all player Artillery Structures [i][2][1] and their firing range [i][2][2]
+	g_PIDs_ArtStructures = {}
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+		if Global_RaceStats[race_name].ArtilleryAI_Structures ~= nil then
+			table.insert(g_PIDs_ArtStructures, {playerID, Global_RaceStats[race_name].ArtilleryAI_Structures})
+		end
+	end
+	if table.getn(g_PIDs_ArtStructures) > 0 then
+		print("AI Artillery rule Started.")
+		Rule_AddIntervalDelay(Unif_Proper_Firing_Rule, 4, 8)
+	end
+end
+
+
+Scar_AddInit(Unif_Proper_Firing_OnInit)
+
+
+-- Scan for Artillery structures, and put them in a table
+Proper_Firing_Find_Artillery = function(egroupid, itemindex, entityID)
+	local entity_name = Entity_GetBlueprintName(entityID)
+	for i = 1, table.getn(g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][2]) do
+		if entity_name == g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][2][i][1] then
+			if Entity_GetBuildingProgress(entityID) >= 1.0 then
+				EGroup_Add("eg_Artillery_Firing_Proper_Temp", entityID)
+			end
+		end
+	end
+end
+
+
+-- Orders Artillery to strike at valid enemies
+Proper_Firing_Order_Artillery = function(egroupid, itemindex, entityID)
+	local entity_name = Entity_GetBlueprintName(entityID)
+	local artillery_pos = Entity_GetPosition(entityID)
+	local enemy_pos, squadID = nil,nil
+	local dist = 20
+	-- Find actual distance
+	for i = 1, table.getn(g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][2]) do
+		if entity_name == g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][2][i][1] then
+			dist = g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][2][i][2]
+			break
+		end
+	end
+	local squad_decetion = function(sgroupid, itemindex, squadID)
+		-- if Entity_CanSeeSquad(entityID, squadID) then
+			enemy_pos = Squad_GetPosition(squadID)
+			local actual_dist = World_DistancePointToPoint(artillery_pos, enemy_pos)
+			if actual_dist < dist and actual_dist > 9 then
+				EGroup_Clear(EGroup_CreateIfNotFound("eg_PFOA_Temp")); EGroup_Add("eg_PFOA_Temp", entityID)
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_PFOA_Temp")); SGroup_Add("sg_PFOA_Temp", squadID)
+				-- I do not know why, but 10... WORKS!! I tested up to this integer, manually :)
+				Command_EntitySquad(g_PIDs_ArtStructures[G_Pr_Fing_ArIdx][1], "eg_PFOA_Temp", 10, "sg_PFOA_Temp")
+				return true
+			end
+		-- end
+	end	
+	SGroup_ForEachAllOrAnyEx("sg_UPFR_Enemy_Squads_SG_Temp", false, squad_decetion, true, false)
+end
+
+
+function Unif_Proper_Firing_Rule()
+	for i = table.getn(g_PIDs_ArtStructures), 1, -1  do
+		local player_ID = g_PIDs_ArtStructures[i][1]
+		if Player_IsAlive(player_ID) then
+			if G_Player_Artillery_ProperFire_Enable == true or not Player_IsHuman(player_ID) then
+				G_Pr_Fing_ArIdx = i
+				EGroup_Clear(EGroup_CreateIfNotFound("eg_Artillery_Firing_Proper_Temp"))
+				EGroup_ForEach(Player_GetEntities(player_ID), Proper_Firing_Find_Artillery)
+				if EGroup_CountSpawned("eg_Artillery_Firing_Proper_Temp") > 0 then
+					local player_team = Player_GetTeam(player_ID)
+					for idx = 0, World_GetPlayerCount()-1 do
+						local enemy_ID = World_GetPlayerAt(idx)
+						if player_team ~= Player_GetTeam(enemy_ID) then
+							SGroup_Clear(SGroup_CreateIfNotFound("sg_UPFR_Enemy_Squads_SG_Temp"))
+							SGroup_AddGroup("sg_UPFR_Enemy_Squads_SG_Temp", Player_GetSquads(enemy_ID))
+						end
+					end
+					EGroup_ForEach("eg_Artillery_Firing_Proper_Temp", Proper_Firing_Order_Artillery)
+				end
+			end
+		else
+			table.remove(g_PIDs_ArtStructures, i)
+			if table.getn(g_PIDs_ArtStructures) == 0 then
+				Rule_Remove(Unif_Proper_Firing_Rule)
+				print("AI Artillery rule not needed. Removed.")
+				return
+			end
+		end
+	end
+end

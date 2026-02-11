@@ -1,0 +1,884 @@
+----------------------------------------------
+-- SPACE HULK Game Mode main code
+-- Coded rewrite and Redesigned by fuggles2k 08/09/2022
+-- Version 1.00
+----------------------------------------------
+import("Community_Functions.scar")
+import("CameraShake.scar")
+import("World_Race_GeneralStats.scar")
+import("World_Race_Entities.scar")
+
+
+-- Global flag, used to distinguish Last Stand maps.
+G_Is_SpaceHulk_Map = true
+
+--[[
+-- This must be put ON EACH MAP.
+-- The number of Map players must be as many squads as are below, +1 for the Enemy.
+-- For example, for 4 Termies, the map must be 5p.
+-- Placing the same squad more than once, increases the number of players (if no more variants)
+-- Max squad array number: 8
+G_SpHkGM_SquadType_Names = {
+"space_marine_squad_terminator_dwsh_assault",
+"space_marine_squad_terminator_dwsh_ranged",
+"space_marine_squad_terminator_dwsh_apothecary",
+"space_marine_squad_terminator_dwsh_librarian"}
+
+-- This must be put ON EACH MAP.
+-- The timer beyond which a spawn must happen and attack the players, IF they are idle (not progressing)
+-- We do not want them WAIT to recharge/recover, unannoyed! It is modified by difficulty.
+SpHkGM_TMR_Idle = 60
+]]
+
+------- Gambit @ 4/8/2021 -------
+--  Remove model Precaching!!  --
+-- Monumental breakthrough  :) --
+---------------------------------
+-- Do NOT Precache unneeded model for the races! 
+print("Starting Removing Precaching...")
+-- Create the array with all the entities
+local total_noPrecachingArray_SpHk = {}
+for race_name_no_pc, entities_array_no_pc in pairs(Global_RaceEntities) do
+	for i = 1, table.getn(entities_array_no_pc.building_list) do
+		table.insert(total_noPrecachingArray_SpHk,entities_array_no_pc.building_list[i])
+	end
+	for i = 1, table.getn(entities_array_no_pc.infantry_list) do
+		table.insert(total_noPrecachingArray_SpHk,entities_array_no_pc.infantry_list[i])
+	end
+	for i = 1, table.getn(entities_array_no_pc.vehicle_list) do
+		table.insert(total_noPrecachingArray_SpHk,entities_array_no_pc.vehicle_list[i])
+	end
+	for i = 1, table.getn(entities_array_no_pc.aircraft_list) do
+		table.insert(total_noPrecachingArray_SpHk,entities_array_no_pc.aircraft_list[i])
+	end
+end	
+for player_idx_noprecache = 0, World_GetPlayerCount()-1 do
+	for i = 1, table.getn(total_noPrecachingArray_SpHk) do
+		pcall(Player_DoNotPrecache, World_GetPlayerAt(player_idx_noprecache), {total_noPrecachingArray_SpHk[i]})
+	end
+end
+-- Memory cleanup
+local total_noPrecachingArray_SpHk = nil
+local entities_array_no_pc = nil
+print("Removing Precaching Commenced.")
+
+
+----------------------------------
+
+
+function SpaceHulkGM_Init()
+	-- Global Vars initiation
+	SpHkGM_PlayerIDs = {}				-- Global table that stores Player IDs
+	SpHkGM_SquadIDs = {}				-- The IDs of the squads
+	SpHkGM_SquadPositions = {}			-- The current positions of the spawned squads
+	SpHkGM_SquadDeadPositions = {}		-- The positions the squads fell
+	SpHkGM_ReviveEntityIDs = {}			-- The entityIDs of the spawned dummy "revives"
+	SpHkGM_EnemySpawnPositions = {}		-- The positions where the map's random spawn enemy attacks are located
+	SpHkGM_TMRs_Per_SpawnPosition = {}	-- The timers for map's random spawns. Has the same entries as SpHkGM_EnemySpawnPositions
+	SpHkGM_EnemyPlayerID = World_GetPlayerAt(World_GetPlayerCount()-1)
+	SpHkGM_LocalPlayerID = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+	SpHkGM_Enemy_RaceName = Player_GetRaceName(SpHkGM_EnemyPlayerID)			-- For now, let use choose TYRANIDS or the SWARM manually...
+	SpHkGM_Difficulty = ""
+	SpHkGMAllPlayersHaveChosen = {}				-- Global, single boolean Switch for various win conditions (like Change Players)
+	SpHkGMAllPlayersHaveChosen[0] = false		-- ... so initial value is false.
+	SpHkGM_UnitsKilledPlayer = {}				-- holds the number of killed units per player, using his INDEX
+	-- Help variables for start
+	SpHkGM_PlayerHasChosenSquad = {}
+	SpHkGM_Total_Human_Players = 0
+
+	-- Start by darkening everything!
+	FOW_Reset()
+
+	-- Player Initialisation
+	local all_players = World_GetPlayerCount()
+	for i=1, all_players-1  do
+		WinWarning_Add( "ui_ktls_gm"..i, SpHkGM_LocalPlayerID, "", "", "" )
+	end
+	for idx = 0, all_players-1  do
+		local playerID = World_GetPlayerAt(idx)
+		table.insert(SpHkGM_PlayerIDs, playerID)
+		SpHkGM_UnitsKilledPlayer[idx] = 0
+		-- Zero original resources
+		Player_SetResource(playerID, RT_Requisition, 0)
+		Player_SetResource(playerID, RT_Power, 0)
+		Player_SetResource(playerID, RT_Faith, 0)
+		Player_SetResource(playerID, RT_Souls, 0)
+		Player_SetResource(playerID, RT_Pop, 0)
+		-- Disable the AI components. NOT needed by ANY player.
+		pcall(Cpu_EnableComponent, playerID, false, CT_Attacking)
+		pcall(Cpu_EnableComponent, playerID, false, CT_Tactics)
+		pcall(Cpu_EnableComponent, playerID, false, CT_BuildBuildings)
+		pcall(Cpu_EnableComponent, playerID, false, CT_BuildResearch)
+		pcall(Cpu_EnableComponent, playerID, false, CT_Defending)
+		pcall(Cpu_EnableComponent, playerID, false, CT_BuildUnits)
+		pcall(Cpu_EnableComponent, playerID, false, CT_BuildAddOns)
+		pcall(Cpu_EnableComponent, playerID, false, CT_Resourcing)
+		pcall(Cpu_Enable, playerID, false )
+		-- Destroy original entities and squads
+		local despawnEntities = function(egroupid, itemindex, entityID)
+			pcall(Entity_DeSpawn, entityID); pcall(Entity_Destroy, entityID)
+		end
+		local despawnSquads = function(sgroupid, itemindex, squadID)
+			pcall(Squad_DeSpawn, squadID); pcall(Squad_Destroy, squadID)
+		end
+		EGroup_ForEachEx(Player_GetEntities(playerID), despawnEntities, true, true)
+		SGroup_ForEachEx(Player_GetSquads(playerID), despawnSquads, true, true)
+		-- Zero original max caps and Zero Req/Pow income rates!
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "max_squad_cap_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "max_support_cap_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_requisition_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_power_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "research_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "reinforce_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "recruit_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+		-- Set proper team, at the beginning ALL are same team, so that to give the squads to the later-to-be-enemy player!
+		Player_SetTeam( playerID, 0 )
+		-- Discern amongst players and enemies, and do what is right for each
+		if idx ~= all_players-1 then
+			-- Code for the players
+			if Player_IsHuman(playerID) then
+				table.insert(SpHkGM_PlayerHasChosenSquad, false)
+				SpHkGM_Total_Human_Players = SpHkGM_Total_Human_Players + 1
+			else
+				-- No CPU players allowed to team up with the HUMAN players. KILL any such CPU player.
+				Player_Kill(playerID)
+			end
+		else
+			table.insert(SpHkGM_PlayerHasChosenSquad, true)
+			-- Code for the enemy
+			if Player_IsHuman(playerID) then
+				-- Human enemies, or Humans at last position are not allowed!
+				Rule_AddDelay(SpaceHulkGM_Display_UnsupportedEnemyPlayer, 1)
+				return
+			end
+		end
+	end
+
+	-- Set Difficulty manually in MP game, otherwise proceed normally
+	if SpHkGM_Total_Human_Players > 1 then
+		-- MP game. Difficulty cannot be detected at 100% 
+		print("MP game, Difficulty MUST ALSO be set by the first player as set in settings!")
+	else
+		-- Single-PC game
+		print("Single-PC game. Difficulty is always calculated correctly...")
+		local difs = {"easy", "standard", "hard", "harder", "insane"}
+		SpHkGM_Difficulty = difs[Cpu_GetDifficulty(SpHkGM_EnemyPlayerID)+1]
+		print("MP Final Difficulty: "..SpHkGM_Difficulty)
+	end
+
+	-- Place the units on the map and initialise all necessary stats
+	-- ALSO: Give them to the last player, at the beginning (he is an "ally" at start, he becomes "enemy" later)
+	for i = 1, table.getn(G_SpHkGM_SquadType_Names) do
+		local unit_pos = Marker_GetPosition(Marker_FromName("space_hulk_start_marker_unit_"..i, "basic_marker" ))
+		-- Player_GetStartPosition(World_GetPlayerAt(i-1))
+		SpHkGM_SquadIDs[i] = Squad_Create(G_SpHkGM_SquadType_Names[i], SpHkGM_EnemyPlayerID, unit_pos, 1)
+		Squad_Spawn(SpHkGM_SquadIDs[i], unit_pos)
+		SpHkGM_SquadPositions[i] = Squad_GetPosition(SpHkGM_SquadIDs[i])
+		SpHkGM_SquadDeadPositions[i] = nil
+		SpHkGM_ReviveEntityIDs[i] = nil
+		-- Initiate single-entry SGroups, to hold each squad.
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_SpHkGM_Squad_Player"..i))
+		SGroup_Add("sg_SpHkGM_Squad_Player"..i, SpHkGM_SquadIDs[i])
+	end
+
+	-- Have the players choose units
+	if SpHkGM_Total_Human_Players == 1 then
+		-- One player gets ALL units
+		Rule_AddOneShot(SpaceHulkGM_AssignAllSquadsToP1, 0)
+	elseif SpHkGM_Total_Human_Players == 2 then
+		-- Two players, each get to choose TWO units
+		Rule_AddDelay(SpaceHulkGM_Display_Message_TWO_Player, 0.125)
+		Rule_Add(SpaceHulkGM_ChoosePlayersSquadsRule)
+	else
+		-- Three or four players, each get to choose ONE unit
+		Rule_AddDelay(SpaceHulkGM_Display_Message_MORE_Player, 0.125)
+		Rule_Add(SpaceHulkGM_ChoosePlayersSquadsRule)
+	end
+
+	-- Populate the enemy spawn positions
+	-- Each marker has the space_hulk_spawn_marker_n name, and the SpHkGM_EnemySpawnPositions[n] position.
+	local counter = 0
+	for i = 1, 100 do
+		local marker_name = "space_hulk_spawn_marker_"..i
+		if Marker_Exists(marker_name,"basic_marker") then
+			SpHkGM_EnemySpawnPositions[i] = Marker_GetPosition(Marker_FromName(marker_name,"basic_marker"))
+			-- Also set the timer for each spawn location
+			table.insert(SpHkGM_TMRs_Per_SpawnPosition,0)
+			counter = counter + 1
+		end
+	end
+	-- Check if marker counting was proper
+	if counter ~= table.getn(SpHkGM_EnemySpawnPositions) then
+		print("Something was wrong with the Enemy Spawn Markers counting!")
+	end
+
+	Rule_AddInterval(SpaceHulkGM_ConstantDarkness, 0.25)
+end
+
+
+Scar_AddInit(SpaceHulkGM_Init)
+
+
+function SpaceHulkGM_ConstantDarkness()
+	FOW_Reset()
+end
+
+
+function SpaceHulkGM_Display_UnsupportedEnemyPlayer()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("The Enemy CANNOT be human!  Game ABORTED")
+		Rule_Remove(SpaceHulkGM_Display_UnsupportedEnemyRace)
+	end
+end
+function SpHkGM_Display_MP_Diff_Choice()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Multi-Player game! You must re-choose the proper difficulty, within 10 seconds!")
+		Rule_Remove(SpHkGM_Display_MP_Diff_Choice)
+	end
+end
+function SpaceHulkGM_Display_Message_TWO_Player()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Select TWO Terminator types by moving your selector near your choices.")
+		Rule_Remove(SpaceHulkGM_Display_Message_TWO_Player)
+		Rule_AddDelay(SpaceHulkGM_Display_Message2,3)
+	end
+end
+function SpaceHulkGM_Display_Message_MORE_Player()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Select your Terminator type by moving your selector near your choice.")
+		Rule_Remove(SpaceHulkGM_Display_Message_MORE_Player)
+		Rule_AddDelay(SpaceHulkGM_Display_Message2,3)
+	end
+end
+function SpaceHulkGM_Display_Message2()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Make your choice while you can, orelse it will be chosen randomly.")
+		Rule_Remove(SpaceHulkGM_Display_Message2)
+	end
+end
+function SpaceHulkGM_Display_Message_START()
+	if Event_IsAnyRunning()==false then
+		local player_name = Player_GetDisplayName(World_GetPlayerAt(Tut_GetLocalPlayerIndex()))[1]
+		Util_MissionTitle("Commander "..player_name..", you must control and upgrade your Terminators, to fulfil the objectives!")
+		Rule_Remove(SpaceHulkGM_Display_Message_START)
+	end
+end
+function SpaceHulkGM_Display_Message_START_More()
+	if Event_IsAnyRunning()==false then
+		local player_name = Player_GetDisplayName(World_GetPlayerAt(Tut_GetLocalPlayerIndex()))[1]
+		Util_MissionTitle("Now Commander "..player_name..", control and upgrade your Terminator, to fulfil the objectives!")
+		Rule_Remove(SpaceHulkGM_Display_Message_START_More)
+	end
+end
+
+
+function SpaceHulkGM_MP_Game_Difficulty()
+	SpaceHulkPlayerID_DifficultyChoose = {}
+	SpaceHulkPlayerID_DifficultyChoose[0] = World_GetPlayerAt(0)
+	for i=1, table.getn(SpHkGM_PlayerIDs) do
+		if Player_IsHuman(SpHkGM_PlayerIDs[i]) and Player_IsAlive(SpHkGM_PlayerIDs[i]) then
+			SpaceHulkPlayerID_DifficultyChoose[0] = SpHkGM_PlayerIDs[i]
+			break
+		end
+	end 
+	SpHkGM_Surv_DifficultyTimer = World_GetGameTime()
+	-- Spawn difficulty building for player one.
+	local test_pos = Player_GetStartPosition(SpaceHulkPlayerID_DifficultyChoose[0]); test_pos.x = test_pos.x + 5; test_pos.z = test_pos.z - 5
+	local pos = Community_Extended_SpawnablePositionSearch(test_pos,"surv_diff_building_dummy",nil,nil)
+	SpHkGM_DifficultySpawnEntity = Entity_Create("surv_diff_building_dummy", SpaceHulkPlayerID_DifficultyChoose[0], pos)
+	Entity_Spawn(SpHkGM_DifficultySpawnEntity)
+	local eg_SpHkGM_diff_dummyID = EGroup_CreateIfNotFound( "eg_Surv_diff_dummy_group0" )
+	EGroup_Add("eg_Surv_diff_dummy_group0", SpHkGM_DifficultySpawnEntity)
+	if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(SpaceHulkPlayerID_DifficultyChoose[0]) then
+		W40k_SelectEGroup(eg_SpHkGM_diff_dummyID)
+		Camera_FocusOnTargetPos(pos, 1)
+	end
+	-- Start checking which difficulty hew chose
+	Rule_Add(SpHkGM_DifficultyChosenByAliveHumanPlayer)
+	Rule_Add(SpHkGM_Display_MP_Diff_Choice)
+end
+function SpHkGM_DifficultyChosenByAliveHumanPlayer()
+	local dif = ""
+	local checkDiff = function( sgroupid, itemindex, squadID )
+		local name = Squad_GetBlueprintName( squadID )
+		if name == "surv_squad_diff_easy_dummy" then dif = "easy"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_normal_dummy" then dif = "standard"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_hard_dummy" then dif = "hard"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_harder_dummy" then dif = "harder"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_insane_dummy" then dif = "insane"; Squad_Destroy(squadID); return true end
+	end
+	if SGroup_ForEachAllOrAnyEx( Player_GetSquads(SpaceHulkPlayerID_DifficultyChoose[0]), false, checkDiff, true, true ) then
+		Entity_DeSpawn(SpHkGM_DifficultySpawnEntity)
+		Entity_Destroy(SpHkGM_DifficultySpawnEntity)
+		SpHkGM_Difficulty = dif
+		Rule_AddOneShot(SpHkGM_DifficultyModificationHPs,0.125)
+		Rule_Remove(SpHkGM_DifficultyChosenByAliveHumanPlayer)
+		print("MP Final Difficulty: "..SpHkGM_Difficulty)
+	elseif World_GetGameTime() > SpHkGM_Surv_DifficultyTimer + 10 then
+		-- Time is up, randomly choose difficulty
+		Entity_DeSpawn(SpHkGM_DifficultySpawnEntity)
+		Entity_Destroy(SpHkGM_DifficultySpawnEntity)
+		local random = World_GetRand(1,20)
+		if random < 4 then SpHkGM_Difficulty = "easy"
+		elseif random < 7 then SpHkGM_Difficulty = "standard"
+		elseif random < 10 then SpHkGM_Difficulty = "hard"
+		elseif random < 15 then SpHkGM_Difficulty = "harder"
+		else SpHkGM_Difficulty = "insane" end
+		Rule_AddOneShot(SpHkGM_DifficultyModificationHPs,0.125)
+		Rule_Remove(SpHkGM_DifficultyChosenByAliveHumanPlayer)
+		print("MP Final Difficulty: "..SpHkGM_Difficulty)
+	end
+end
+function SpHkGM_DifficultyModificationHPs()
+	local mdfr = 1	-- for normal Difficulty
+	if     SpHkGM_Difficulty=="easy"   then mdfr = 0.75
+	elseif SpHkGM_Difficulty=="hard"   then mdfr = 1.10
+	elseif SpHkGM_Difficulty=="harder" then mdfr = 1.20
+	elseif SpHkGM_Difficulty=="insane" then mdfr = 1.30
+	end
+	if SpHkGM_Total_Human_Players == 3 then
+		print("3 Human Players, mission will start with 3 Termies, thus lower Enemy Health Modif.")
+		mdfr = mdfr * 0.75
+	end
+	if mdfr~=1 then
+		print("...Applying Max Health Enemy modifier for *"..SpHkGM_Difficulty.."* Difficulty.")
+		local all_entities = Global_RaceEntities[SpHkGM_Enemy_RaceName]
+		for i=1, table.getn(all_entities.infantry_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.infantry_list[i]), SpHkGM_EnemyPlayerID) end
+		for i=1, table.getn(all_entities.vehicle_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.vehicle_list[i]), SpHkGM_EnemyPlayerID) end
+		for i=1, table.getn(all_entities.aircraft_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.aircraft_list[i]), SpHkGM_EnemyPlayerID) end
+		-- Modify idle timer
+		SpHkGM_TMR_Idle = SpHkGM_TMR_Idle / mdfr
+	end
+	-- Game starts! HERE ARE THE GAME RULES!
+	if SpHkGM_Total_Human_Players == 1 then
+		Rule_AddDelay(SpaceHulkGM_Display_Message_START,0.25)
+	else
+		Rule_AddDelay(SpaceHulkGM_Display_Message_START_More,0.25)
+	end
+	-- Add the Main Game Rule here, as well as the defeat, objectives, etc.
+end
+
+
+function SpaceHulkGM_AssignAllSquadsToP1()
+	for i = 1, table.getn(G_SpHkGM_SquadType_Names) do
+		Squad_SetPlayerOwner(SpHkGM_SquadIDs[i],World_GetPlayerAt(0))
+	end
+	-- Reset last player to ENEMY!
+	Player_SetTeam( SpHkGM_EnemyPlayerID, 1 )
+	-- Now that the teams are properly set, assign enemy HP modification in accordance with difficulty for single player.
+	Rule_AddOneShot(SpHkGM_DifficultyModificationHPs,0.5)
+end
+
+
+--[[
+
+
+	-- Now that the teams are properly set, assign enemy HP modification in accordance with difficulty for Multi-Player Game.
+	Rule_AddOneShot(SpaceHulkGM_MP_Game_Difficulty,0.5)
+
+
+function SpaceHulkGM_ChoosePlayersSquadsRule()
+	for i = 1, table.getn(SpHkGM_PlayerIDs) do
+		local playerID = SpHkGM_PlayerIDs[i]
+		if Player_IsAlive(playerID) then
+			if not SpHkGM_PlayerHasChosenSquad[i] then				
+				if true then -- HERE, PUT IF DUMMY IS CLOSE TO THE SQUAD!
+					SpHkGM_PlayerHasChosenSquad[i] = true
+					local idx = World_GetPlayerIndex(playerID)
+					SGroup_Add("sg_SpHkGM_Squad_Player"..idx, SpHkGM_SquadIDs[i])
+					if i == Tut_GetLocalPlayerIndex() + 1 then
+						CameraShake_Large( SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 3 )
+						SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()] = Squad_GetPosition(SpHkGM_SquadIDs[i])
+						Rule_Remove(SpaceHulkGM_LockCameraRule)
+					end
+
+				elseif false then -- ADD GAME TIMER HERE!
+					SpHkGM_PlayerHasChosenSquad[i] = true
+					local race_name = Player_GetRaceName(playerID)
+					local all_quads = table.getn(Global_RaceStats[race_name].KTGM.squad)
+					local choice = World_GetRand(1, all_quads)
+					local start_pos = SpHkGM_Proper_Starting_Positions[World_GetPlayerIndex(playerID)]
+					SpHkGM_InitialPlayerSquadNames[i] = Global_RaceStats[race_name].KTGM.squad[choice]
+					SpHkGM_SquadIDs[i] = Squad_Create( Global_RaceStats[race_name].KTGM.squad[choice], playerID, start_pos, 0)
+					local idx = World_GetPlayerIndex(playerID)
+					SGroup_Add("sg_SpHkGM_Squad_Player"..idx, SpHkGM_SquadIDs[i])
+					local proper_pos = Community_Extended_SpawnablePositionSearch(start_pos,"space_marine_turret_bolter",playerID,nil)
+					Squad_Spawn(SpHkGM_SquadIDs[i], proper_pos)
+					if i == Tut_GetLocalPlayerIndex() + 1 then
+						CameraShake_Large( SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 3 )
+						SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()] = Squad_GetPosition(SpHkGM_SquadIDs[i])
+						Rule_Remove(SpaceHulkGM_LockCameraRule)
+					end
+				end
+			end
+		else
+			-- The player is dropped. Disallow choosing and continue the game with one less
+			SpHkGM_PlayerHasChosenSquad[i] = true
+			SpHkGM_InitialPlayerSquadNames[i] = "None"
+			SpHkGM_SquadIDs[i] = nil
+		end
+	end
+
+
+	SpHkGMAllPlayersHaveChosen[0] = true
+	for i = 1, table.getn(SpHkGM_PlayerIDs) do
+		if not SpHkGM_PlayerHasChosenSquad[i] then
+			SpHkGMAllPlayersHaveChosen[0] = false; break
+		end
+	end
+	if SpHkGMAllPlayersHaveChosen[0] then
+		obj_table_KTGM = { title_id = 5802065, short_desc_id = 5802066, help_tip_id = 5802066 }
+		Objective_Add( obj_table_KTGM, 1 )
+		WinWarning_Add( "ui_resLevel", World_GetPlayerAt(0), "", "", "" )
+		--WinWarning_SetText( "ui_resLevel", "Resource Level - SP:"..tostring( SpHkGM_StrategicPointBonus[0] ).." / CL: "..tostring( SpHkGM_CriticalLocationBonus[0] ).." / REL: "..tostring( SpHkGM_RelicBonus[0] ))
+		SpaceHulkGM_SetOriginalResources()
+		for i = 1, table.getn(SpHkGM_PlayerIDs) do
+			if SpHkGM_SquadIDs[i] ~= nil then
+				Squad_SetPlayerOwner(SpHkGM_SquadIDs[i],SpHkGM_PlayerIDs[i])
+			end
+			pcall(Ping_Stop,SpHkGM_Pings[i])
+		end
+		Camera_FocusOnTargetPos(SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 1)
+		World_FXEvent("data:Art/Events/sisters/emperorstouch_impact", SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()])
+		if Rule_Exists(SpaceHulkGM_Display_Message_TWO_Player) then Rule_Remove(SpaceHulkGM_Display_Message_TWO_Player) end
+		if Rule_Exists(SpaceHulkGM_Display_Message_MORE_Player) then Rule_Remove(SpaceHulkGM_Display_Message_MORE_Player) end
+		if Rule_Exists(SpaceHulkGM_Display_Message2) then Rule_Remove(SpaceHulkGM_Display_Message2) end
+		Rule_Add(SpaceHulkGM_GetPlayerPositions)
+		if SpHkGM_Total_Human_Players == 1 then
+			Rule_AddDelay(SpaceHulkGM_Display_Message_START,1)
+		else
+			Rule_AddDelay(SpaceHulkGM_Display_Message_START_More,1)
+		end
+		Rule_AddInterval(SpaceHulkGM_MainRule,0.5)
+		Rule_AddOneShot(SpaceHulkGM_ButtonInitialisation, 0.75)
+		Rule_AddIntervalDelay(SpaceHulkGM_CPU_AI_Attacks, 2.25, 10)
+		Rule_Remove(SpaceHulkGM_ChoosePlayersSquadsRule)
+		Rule_Remove(SpaceHulkGM_RevealInitialPlayerPositions)
+		-- In MP games, difficulty must be set manually
+		if SpHkGM_MP_Game then
+			Rule_AddOneShot(SpaceHulkGM_MP_Game_Difficulty, 0.375)
+		end
+		return
+	end
+end
+
+]]
+
+--[[
+-- NO MATTER the player configuration, put 4 Termies on the map. (we shall see on how many...)
+-- Each player chooses one or more (based on number of players).
+-- NO AI players allowed.
+-- NO High Resources
+-- NO RANDOM positions! MUST BE FIXED
+-- Change PLayers need MORE coding!! See the Last Stand case
+--
+
+
+Camera_FocusOnTargetPos(SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 2)
+
+-- Start the rules
+
+Rule_AddInterval(SpaceHulkGM_LockCameraRule, 0.25)
+Rule_AddInterval(SpaceHulkGM_RevealInitialPlayerPositions,1)
+
+
+function SpaceHulkGM_LockCameraRule()
+	Camera_FocusOnTargetPos(SpHkGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 1)
+	W40k_SelectEGroup(Player_GetEntities(World_GetPlayerAt(Tut_GetLocalPlayerIndex())))
+end
+
+
+function SpaceHulkGM_RevealInitialPlayerPositions()
+	local local_player_team = Player_GetTeam(SpHkGM_Local_PlayerID)
+	for i = 1, table.getn(SpHkGM_PlayerIDs) do
+		local playerID = SpHkGM_PlayerIDs[i]
+		if local_player_team == Player_GetTeam(playerID) then
+			local start_pos = SpHkGM_Proper_Starting_Positions[World_GetPlayerIndex(playerID)]
+			FOW_RevealArea( start_pos.x, start_pos.z, 10, 2 )
+		end
+	end
+end
+
+
+
+function SpaceHulkGM_GetPlayerPositions()
+	for i = 1, table.getn(SpHkGM_PlayerIDs) do
+		if SpHkGM_SquadIDs[i] ~= nil and Squad_Exists(SpHkGM_SquadIDs[i].id) and Squad_GetHealth(SpHkGM_SquadIDs[i]) > 0 then
+			SpHkGM_SquadPositions[i] = Squad_GetPosition(SpHkGM_SquadIDs[i])
+			SpHkGM_SquadDeadPositions[i] = SpHkGM_SquadPositions[i]
+		end
+	end
+end
+
+
+
+function SpaceHulkGM_ButtonInitialisation()
+	SpHkGMSquadButton = Button_Add( "btn_ScarUI1", true, true, false )
+	Button_SetTooltip( SpHkGMSquadButton, "$17473095", "$17473096" )
+	Button_SetTextures( SpHkGMSquadButton, "event_cue_icons/player_host_migrated", "event_cue_icons/player_host_migrated", "event_cue_icons/player_host_migrated" )
+	SpHkGMBuildingButton = Button_Add( "btn_ScarUI2", true, true, false )
+	Button_SetTooltip( SpHkGMBuildingButton, "$17473097", "$17473098" )
+	Button_SetTextures( SpHkGMBuildingButton, "speech_icons/dc_archivist_icon", "speech_icons/dc_archivist_icon", "speech_icons/dc_archivist_icon" )
+	Rule_Add(SpaceHulkGM_ButtonPressing)
+end
+function SpaceHulkGM_ButtonPressing()
+	if Button_GetPressed(SpHkGMSquadButton) then
+		local sgroup = "sg_SpHkGM_Squad_Player"..Tut_GetLocalPlayerIndex()
+		if SGroup_CountSpawned(sgroup) > 0 then
+			local pos = SGroup_GetPosition(sgroup)
+			if not (pos.x == 0 and pos.y == 0 and pos.z == 0) then
+				Camera_FocusOnTargetPos(pos, 1)
+				W40k_SelectSGroup(sgroup)
+			end
+		elseif SpHkGM_SquadDeadPositions[Tut_GetLocalPlayerIndex()+1] ~= nil then
+			Camera_FocusOnTargetPos(SpHkGM_SquadDeadPositions[Tut_GetLocalPlayerIndex()+1], 1)
+		end
+	elseif Button_GetPressed(SpHkGMBuildingButton) then
+		W40k_SelectEGroup("eg_SpHkGM_Building_Player"..Tut_GetLocalPlayerIndex())
+	end
+end
+
+SpHkGM_TMR - >SpHkGM_TMRs_Per_SpawnPosition[i]
+function SpaceHulkGM_MainRule()
+	local playersNbr = table.getn(SpHkGM_PlayerIDs)
+	-- Spawning waves command
+	if SGroup_CountSpawned("sg_SpHkGM_wave_squads") == 0 and World_GetGameTime() > SpHkGM_TMR then
+		SpHkGM_TMR = World_GetGameTime() + SpHkGM_Time_Between_waves + 1
+		SGroup_Clear("sg_SpHkGM_wave_squads")
+		-- Reward players after 1st wave is spawned (the counter changes later, that is why it is -1, below)
+		if SpHkGM_Wave > 1 then
+			if LS_HunterModeEnabled ~= nil and SpHkGM_Wave <= SpHkGM_Total_Waves then
+				local Wave_Kills_Player = {}
+				for i=1, table.getn(SpHkGM_PlayerIDs) do
+					local playerID = SpHkGM_PlayerIDs[i]
+					if Player_IsAlive(playerID) then
+						local player_kills = Stats_PlayerUnitsKilled(Player_GetID(playerID))
+						local wave_kills = player_kills - SpHkGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(playerID)]
+						table.insert(Wave_Kills_Player, {pID = playerID, kills = wave_kills, name = Player_GetDisplayName(playerID)[1]}) 
+						SpHkGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(playerID)] = player_kills
+					end
+				end
+				local players = table.getn(Wave_Kills_Player)
+				if players > 1 then
+					local max_kills = Wave_Kills_Player[1].kills
+					for i=2, players do
+						if Wave_Kills_Player[i].kills > max_kills then max_kills = Wave_Kills_Player[i].kills end
+					end
+					local winners = {}
+					for i=1, players do
+						if Wave_Kills_Player[i].kills == max_kills then
+							Player_AddResource(Wave_Kills_Player[i].pID, RT_Requisition, SpHkGM_ResourcesGainedWave[SpHkGM_Wave-1]/2)
+							Player_AddResource(Wave_Kills_Player[i].pID, RT_Power, SpHkGM_ResourcesGainedWave[SpHkGM_Wave-1]/2)
+							table.insert(winners, Wave_Kills_Player[i].name)
+						end
+					end	
+					g_LS_Hunter_Message = "Best Hunter Resources, are won by"
+					local all_winners = table.getn(winners)
+					if all_winners == 1 then
+						g_LS_Hunter_Message = g_LS_Hunter_Message.." "..winners[1].." !!  WAVE KILLS: "..max_kills
+					else
+						local mssg = ""
+						for i=1, all_winners do
+							if i == all_winners then
+								mssg = mssg.." "..winners[i].." "
+							else
+								mssg = mssg.." "..winners[i].." And"
+							end
+						end
+						g_LS_Hunter_Message = g_LS_Hunter_Message..mssg.." !!  WAVE KILLS: "..max_kills
+					end
+					Rule_AddOneShot(SpaceHulkGM_HUNTERWINS, 0)
+				end
+			end
+			for i=1, table.getn(SpHkGM_PlayerIDs) do
+				if Player_IsAlive(SpHkGM_PlayerIDs[i]) then
+					-- Create the wave dummy requirement building. No need to spawn it
+					Entity_Create("last_stand_wave_"..(SpHkGM_Wave-1), SpHkGM_PlayerIDs[i], Player_GetStartPosition(SpHkGM_PlayerIDs[i]))
+					Player_AddResource(SpHkGM_PlayerIDs[i], RT_Requisition, SpHkGM_ResourcesGainedWave[SpHkGM_Wave-1])
+					Player_AddResource(SpHkGM_PlayerIDs[i], RT_Power, SpHkGM_ResourcesGainedWave[SpHkGM_Wave-1])
+					SpHkGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(SpHkGM_PlayerIDs[i])] = Stats_PlayerUnitsKilled(Player_GetID(SpHkGM_PlayerIDs[i]))
+				end
+			end
+		end
+		-- See if this is the last wave, otherwise prepare then next
+		if SpHkGM_Wave < SpHkGM_Total_Waves then
+			Rule_AddOneShot(SpaceHulkGM_SpawnWave, SpHkGM_Time_Between_waves)
+		elseif SpHkGM_Wave == SpHkGM_Total_Waves then
+			Rule_AddOneShot(SpaceHulkGM_LASTWAVE, 5)
+			Rule_AddOneShot(SpaceHulkGM_SpawnWave, SpHkGM_Time_Between_waves)
+		else
+			-- Game ended successfully!
+			Rule_Remove(SpaceHulkGM_MainRule)
+			Rule_AddOneShot(SpaceHulkGM_EndGameWIN, 3)
+			return
+		end
+	end
+	-- Check for dead players
+	local all_defeated = 0
+	for i = 1, playersNbr do
+		SpHkGM_UnitsKilledPlayer[World_GetPlayerIndex(SpHkGM_PlayerIDs[i])] = Stats_PlayerUnitsKilled(Player_GetID(SpHkGM_PlayerIDs[i]))
+		if SpHkGM_SquadIDs[i] == nil or not Squad_Exists(SpHkGM_SquadIDs[i].id) then
+			all_defeated = all_defeated + 1
+			if LS_HardCoreModeEnabled ~= nil then
+				if table.getn(SpHkGM_PlayerIDs) > 1 then
+					Player_Kill(SpHkGM_PlayerIDs[i])
+				end
+				-- One less player, one less spawn position
+				SpHkGM_ActiveSpawnPositions = SpHkGM_ActiveSpawnPositions - 1
+				table.remove(SpHkGM_PlayerIDs,i)
+				table.remove(SpHkGM_SquadIDs,i)
+				return
+			else
+				-- Player defeated, spawn the revival dummy ONCE, at the place of defeat.
+				if SpHkGM_SquadPositions[i] ~= nil then
+					SpHkGM_SquadPositions[i] = Community_Extended_SpawnablePositionSearchRevival(SpHkGM_SquadPositions[i],SpHkGM_PlayerIDs[i])
+					SpHkGM_ReviveEntityIDs[i] = Entity_Create("last_stand_revival_struct_dummy", SpHkGM_PlayerIDs[i], SpHkGM_SquadPositions[i])
+					Entity_Spawn(SpHkGM_ReviveEntityIDs[i])
+					EGroup_Clear(EGroup_CreateIfNotFound("eg_SpHkGM_Dummy_Revival_Player"..i))
+					EGroup_Add("eg_SpHkGM_Dummy_Revival_Player"..i, SpHkGM_ReviveEntityIDs[i])
+					-- Store dead player pos
+					SpHkGM_SquadDeadPositions[i] = SpHkGM_SquadPositions[i]
+					-- This way, we ensure it is spawned ONCE
+					SpHkGM_SquadPositions[i] = nil
+				else
+				-- Now check if an ally has captured this "point", so that to revive the player
+					local revive_pos = nil
+					for j = 1, playersNbr do
+						local eg_name = "eg_SpHkGM_Dummy_Revival_Player"..i
+						if EGroup_Exists(eg_name) and EGroup_IsCapturedByPlayer(eg_name,SpHkGM_PlayerIDs[j],true) then
+							revive_pos = EGroup_GetPosition(eg_name)
+							EGroup_DeSpawn(eg_name); EGroup_Destroy(eg_name)
+							break
+						end
+					end
+					if revive_pos ~= nil then
+						local playerID = SpHkGM_PlayerIDs[i]
+						local race_name = Player_GetRaceName(playerID)
+						SpHkGM_SquadIDs[i] = Squad_Create(SpHkGM_InitialPlayerSquadNames[i], playerID, revive_pos, 0)
+						local idx = World_GetPlayerIndex(playerID)
+						SGroup_Add("sg_SpHkGM_Squad_Player"..idx, SpHkGM_SquadIDs[i])
+						local proper_pos = Community_Extended_SpawnablePositionSearch(revive_pos,"space_marine_turret_bolter",playerID,nil)
+						Squad_Spawn(SpHkGM_SquadIDs[i], proper_pos)
+						World_FXEvent("data:Art/Events/sisters/emperorstouch_impact", Squad_GetPosition(SpHkGM_SquadIDs[i]))
+					end
+				end		
+			end
+		end
+	end
+	-- Check if we have NO player left
+	if all_defeated == playersNbr then
+		--Util_CheckOneTeamLeft( "5KillTeam_Gamemode" )
+		-- Game ended in defeat!
+		Rule_Remove(SpaceHulkGM_MainRule)
+		Rule_AddOneShot(SpaceHulkGM_EndGameLOSE, 1)
+		return
+	end
+	-- Display Kills
+	local wave = nil
+	if SpHkGM_Wave > SpHkGM_Total_Waves then
+		wave = "LAST! ("..(SpHkGM_Wave-1)..")"
+	else
+		wave = (SpHkGM_Wave-1).."/"..SpHkGM_Total_Waves
+	end
+	--local count = "Wave: "..wave.." / Body Count - "
+	for i=1, SpHkGM_AllPlayersNumber do
+		local pID = SpHkGM_UnitsKilledPlayerIDs[i]
+		if Player_IsAlive(pID) then
+			local pIDX = World_GetPlayerIndex(pID)
+			local text = Player_GetDisplayName(pID)[1].." Kills: "..SpHkGM_UnitsKilledPlayer[pIDX].." Wave: "..wave
+			WinWarning_SetText( "ui_ktls_gm"..i, text )
+		end
+	end
+end
+
+
+function SpaceHulkGM_SpawnWave()
+	-- First, perform the AI researches for THIS wave, if enabled
+	if LS_EnemyAdvancementEnabled ~= nil and LS_EnemyAdvancementEnabled == true then
+		for i = 1, table.getn(SpHkGM_ResearchesCompletedForTheAI[SpHkGM_Wave]) do
+			-- We do not know if the research exists (in case a race is NOT in play)
+			pcall(Player_GrantResearch, SpHkGM_EnemyPlayerID, SpHkGM_ResearchesCompletedForTheAI[SpHkGM_Wave][i])
+		end
+	end
+	local random_SpawnPosition = {}	-- Array with randomised order of spawn positions
+	for i = 1, SpHkGM_ActiveSpawnPositions do
+		random_SpawnPosition[i] = SpHkGM_EnemySpawnPositions[World_GetRand(1,SpHkGM_TotalSpawnPositions)]
+	end
+	local wave_type = {}
+	for i = 1, SpHkGM_TotalSpawnPositions do
+		wave_type[i] = i
+	end
+	for map_pos = 1, SpHkGM_ActiveSpawnPositions do
+		local chosen_wave_type = wave_type[World_GetRand(1, table.getn(wave_type))]
+		table.remove(wave_type, chosen_wave_type)
+		local position = random_SpawnPosition[map_pos]
+		for squad_type = 1, table.getn(SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type]) do
+			local squad_name = SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].name
+			local squad_loadout = SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].loadout
+			for instances = 1, SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].nmbr do
+				local squadID = Squad_Create(squad_name, SpHkGM_EnemyPlayerID, position, squad_loadout)
+				if LS_AI_Enabled == nil then
+					Cpu_LockSquad(SpHkGM_EnemyPlayerID,Squad_GetGameID(squadID))
+				end
+				local pos = Community_Extended_SpawnablePositionSearch(position,nil,SpHkGM_EnemyPlayerID,nil)
+				Squad_Spawn(squadID, pos)
+				World_FXEvent("unit_ability_fx/machine_spirit", Squad_GetPosition(squadID))
+				-- Add Weapons, if any
+				if SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].weapons ~= nil then
+					for weapon = 1, table.getn(SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].weapons) do
+						local weapon_name = SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].weapons[weapon]
+						for t = 1, SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].weapons_nmbr[weapon] do
+							Squad_UpgradeWeapon(squadID, weapon_name)
+						end
+					end
+				end
+				-- Add Leaders, if any
+				if SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].leaders ~= nil then
+					for leader = 1, table.getn(SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].leaders) do
+						for j = 1, SpHkGM_Wave_Stats[SpHkGM_Enemy_RaceName][SpHkGM_Wave][chosen_wave_type][squad_type].leaders[leader] do
+							Squad_AddLeaderAtIndex(squadID, leader)
+						end
+					end
+				end
+				SGroup_Add("sg_SpHkGM_wave_squads", squadID)
+			end
+		end
+	end
+	-- Increase wave counter
+	SpHkGM_Wave = SpHkGM_Wave + 1	
+end
+
+
+function SpaceHulkGM_CPU_AI_Attacks()
+	if LS_AI_Enabled ~= nil and Cpu_IsCpuPlayer(SpHkGM_EnemyPlayerID) then
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_Attacking)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, true, CT_Tactics)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_BuildBuildings)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_BuildResearch)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_Defending)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_BuildUnits)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_BuildAddOns)
+		Cpu_EnableComponent(SpHkGM_EnemyPlayerID, false, CT_Resourcing)
+	end
+	-- Modifier for disabling waves squad reinforcement, in case it is needed
+	g_LS_ReinforcementModifier = Modifier_Create(MAT_Squad,"enable_squad_reinforcement",MUT_Enable,true,-10,"")
+	for i = 1, SGroup_CountSpawned("sg_SpHkGM_wave_squads") do
+		local squadID = SGroup_GetSpawnedSquadAt("sg_SpHkGM_wave_squads",i)
+		if squadID ~= nil and Squad_Exists(squadID.id) then
+			pcall(Modifier_ApplyToSquad, g_LS_ReinforcementModifier, squadID)
+			if LS_AI_Enabled == nil then
+				Cpu_LockSquad(SpHkGM_EnemyPlayerID, Squad_GetGameID(squadID))
+			end
+			if LS_AI_Enabled ~= nil and Squad_IsMoraleBroken(squadID) then
+				-- Do nothing, in case the AI decides to retreat
+			elseif not Squad_IsUnderAttack(squadID) or Squad_GetActiveCommand(squadID) == 0 then
+				-- Choose a random player to attack
+				local alive_players = table.getn(SpHkGM_SquadIDs)
+				if alive_players > 0 then
+					local sID_distances = {}
+					local player_pos = nil
+					local enemy_pos = Squad_GetPosition(squadID)
+					for j = 1, alive_players do
+						if SpHkGM_SquadIDs[j].id ~= nil and Squad_Exists(SpHkGM_SquadIDs[j].id) then
+							player_pos = Squad_GetPosition(SpHkGM_SquadIDs[j])
+							local dist = World_DistancePointToPoint ( player_pos, enemy_pos )
+							table.insert(sID_distances, {SpHkGM_SquadIDs[j],dist})
+						end
+					end
+					if table.getn(sID_distances) > 0 then
+						table.sort(sID_distances, function(oUnit1, oUnit2) return oUnit1[2] < oUnit2[2] end)
+						local player_pos = Squad_GetPosition(sID_distances[1][1])
+						SGroup_Clear("sg_SpHkGM_singe_squad")
+						SGroup_Add("sg_SpHkGM_singe_squad", squadID)
+						Cmd_AttackMovePos("sg_SpHkGM_singe_squad", player_pos)
+					end
+				end
+			end
+		end
+	end
+end
+
+
+function SpaceHulkGM_HUNTERWINS()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle(g_LS_Hunter_Message)
+	end
+end
+function SpaceHulkGM_LASTWAVE()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Prepare for the FINAL WAVE!!!!")
+	end
+end
+function SpaceHulkGM_EndGameWIN()
+	print("Game WON by players!")
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("YOU WON!!!!")
+	end
+	Rule_AddOneShot(SpaceHulkGM_WinCurtains, 8)
+end
+function SpaceHulkGM_EndGameLOSE()
+	print("Game LOST...!")
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("YOU LOSE...")
+	end
+	Rule_AddOneShot(SpaceHulkGM_LoseCurtains, 2)
+end
+function SpaceHulkGM_WinCurtains()
+	W40k_ImageFade("white", 10, 0.25, 10)
+	Rule_AddOneShot(SpaceHulkGM_WinEnd, 6.5)
+end
+function SpaceHulkGM_LoseCurtains()
+	W40k_ImageFade("black", 7, 0.45, 4)
+	Rule_AddOneShot(SpaceHulkGM_LoseEnd, 5.5)
+end
+function SpaceHulkGM_WinEnd()
+	pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+	World_SetTeamWin( World_GetPlayerAt(Tut_GetLocalPlayerIndex()), "5KillTeam_Gamemode")
+	World_SetGameOver()
+	Player_Kill(SpHkGM_EnemyPlayerID)
+end
+function SpaceHulkGM_LoseEnd()
+	pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+	World_SetTeamWin( SpHkGM_EnemyPlayerID, "5KillTeam_Gamemode")
+	World_SetGameOver()
+	for idx = 0, World_GetPlayerCount()-2 do
+		pcall(Player_Kill,World_GetPlayerAt(idx))
+	end
+end
+
+----------------------------- Help Function -----------------------------
+
+function Community_Extended_SpawnablePositionSearchRevival(initial_pos, player_id)
+	local spwnpstn1 = World_Pos(0,10,0)
+	local spwnpstn2 = World_Pos(0,10,0)
+	local found, dstnc = false, 0
+	local entityID = Entity_Create("space_marine_turret_bolter", player_id, initial_pos)
+	repeat
+		for i=1, 12 do
+			spwnpstn2.x = initial_pos.x + (Community_Vectors12[i].x * dstnc)
+			spwnpstn2.z = initial_pos.z + (Community_Vectors12[i].z * dstnc)
+			spwnpstn1 = spwnpstn2
+			spwnpstn2 = World_GetSpawnablePosition(spwnpstn2,entityID)
+			if (spwnpstn1.x ~= spwnpstn2.x or spwnpstn1.z ~= spwnpstn2.z) and spwnpstn1.y ~= spwnpstn2.y then
+				for j=1, 4 do
+					local iPos = SpHkGM_SquadDeadPositions[j]
+					if iPos ~= nil then
+						if (iPos.x ~= spwnpstn2.x or iPos.z ~= spwnpstn2.z) and iPos.y ~= spwnpstn2.y then
+							found = true
+							break
+						end
+					end
+				end
+				if found then break end
+			end
+		end
+		dstnc = dstnc + 1
+		if dstnc>10 then
+			Entity_Destroy(entityID)
+			return World_GetSpawnablePosition(initial_pos,entityID)
+		end
+	until found
+	Entity_Destroy(entityID)
+	return spwnpstn2
+end
+]]

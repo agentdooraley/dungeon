@@ -1,0 +1,13 @@
+-------------------------------------
+-- Conceived and coded by fuggles --
+-- 
+-- 			Ver 1.0		   --
+-------------------------------------
+
+function Supersize_Me()
+	g_SPMP = 1
+	print("Would you like fries with that?")
+end
+
+
+Scar_AddInit(Supersize_Me)

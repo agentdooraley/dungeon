@@ -1,0 +1,386 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "sisters_squad_novitiate"
+DeCapturingSquadMmbrs = 6
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "sisters_infantry"
+EnemyBuilding1Squad1 = {"sisters_squad_celestian", 2, 5}
+EnemyBuilding1Squad2 = {"sisters_squad_retributor", 1, 9}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "sisters_vehicle_building"
+EnemyBuilding2Squad1 = {"sisters_squad_repentia", 2, 5}
+EnemyBuilding2Squad2 = {"sisters_squad_zephyrim", 1, 9}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"sisters_squad_exorcist_tank2",1,1}
+EnemyBuilding2SquadA2 = {"sisters_squad_exorcist_tank2",1,1}
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "sisters_squad_rhino"
+EnemyTransportedSquad = {"sisters_squad_battle_sister_hg_dxp3",3,4}
+EnemyHonourGuardSquad1 = {"sisters_squad_battle_sister_hg_dxp3",2,6}
+EnemyHonourGuardSquad2 = {"sisters_squad_missionary_hg_dxp3",2,1}
+EnemyHonourGuardSquad3 = {"sisters_squad_confessor_hg_dxp3",1,1}
+EnemyHonourGuardSquad4 = {"sisters_squad_seraphim_hg_dxp3",2,3}
+EnemyHonourGuardSquad5 = {"sisters_squad_celestian",2,4}
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"sisters_squad_missionary_hg_dxp3"}
+EnemyCommanderSquadName2 = {"sisters_squad_veteran_superior_hg_dxp3"}
+EnemyCommanderSquadName3 = {"sisters_squad_assassin_hg_dxp3"}
+EnemyCommanderSquadName4 = {"sisters_squad_assassin_hg_dxp3"}
+EnemyCommanderSquadName5 = {"sisters_squad_canoness_advance_sp"}
+EnemyCommanderSquadName6 = {"sisters_squad_canoness_abbess"} 
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_living_saint_emeline", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_living_saint_arabella", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_immolator_tank", "mk_uberspawn_2", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_faithblade", "mk_uberspawn_2", 1, 1)	
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_penitent_engine", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_castigator", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_exorcist_tank", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "sisters_squad_lightning", "mk_enemy_pos", 4, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_novitiate", marker, 2, 3)	
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_novitiate", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_confessor_hg_dxp3", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_celestian", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_retributor", marker, 2, 5)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_confessor_hg_dxp3", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_celestian", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_repentia", marker, 1, 5)
+	end
+end
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 5, 1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_novitiate", marker, 2, 3)		
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_novitiate", marker, 2, 3)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_confessor_hg_dxp3", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_celestian", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_missionary", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_battle_sister", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_retributor", marker, 2, 5)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_confessor_hg_dxp3", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_celestian", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "sisters_squad_repentia", marker, 1, 5)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_missionary", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_novitiate", marker, 2, 5)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_novitiate", marker, 2, 6)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_novitiate", marker, 2, 6)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_seraphim", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_rhino", marker, 1, 1)
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 4, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_seraphim", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_zephyrim", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_confessor", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_lightning", marker, 2, 1)
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_heavy_flamer_retributor",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 6, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_seraphim", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_celestian", marker, 4, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_confessor", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_penitent_engine", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_rhino", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_lightning", marker, 2,1 )
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_heavy_flamer_retributor",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_multi_melta_retributor",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_zephyrim", marker, 1, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_plasma_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_inferno_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_power_sword_zephyrim",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 4, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank2", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_confessor", marker, 1, 1)
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_celestian", marker, 5, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_castigator", marker, 3, 1)
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_heavy_flamer_retributor",4)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_volkite_culverin_retributor",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_zephyrim", marker, 1, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_plasma_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_inferno_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_power_sword_zephyrim",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 4, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_battle_sister","sisters_heavy_bolter_battle_sister",5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank",marker,2,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_penitent_engine", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_castigator", marker, 2, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_repentia", marker, 8, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_dogmata", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_assassin", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_penitent_engine", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_castigator", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_lightning", marker, 4,1 )
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_multi_melta_retributor",4)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_volkite_culverin_retributor",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 1, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_paragon", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 4, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_battle_sister","sisters_heavy_bolter_battle_sister",5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_zephyrim", marker, 1, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_plasma_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_inferno_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_power_sword_zephyrim",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_castigator", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_faithblade", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank2", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_celestian", marker, 5, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_assassin", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_silvana", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_mina", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_sabbat", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 2, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_multi_melta_retributor",4)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_retributor","sisters_volkite_culverin_retributor",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_paragon", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_zephyrim", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_plasma_pistol_zephyrim",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_zephyrim","sisters_inferno_pistol_zephyrim",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_battle_sister", marker, 5, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"sisters_squad_battle_sister","sisters_heavy_bolter_battle_sister",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_retributor", marker, 2, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_castigator", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_repentia", marker, 4, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_penitent_engine_hg_dxp3", marker, 4, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_junith_eruita", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint",marker,2,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_immolator_tank", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_exorcist_tank2", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_lightning", marker, 4,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_silvana", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_mina", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_living_saint_sabbat", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_archangel", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)		
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+				Rule_AddOneShot(Rule_Silence_Falls, 70)
+			elseif g_difficulty=="insane"	then mdfr = 4
+				Rule_AddOneShot(Rule_Silence_Falls_Hard, 70)
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_paragon", "mk_uberspawn_1", 1, 3)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_assassin_hg_dxp3", "mk_uberspawn_1", 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "sisters_squad_canoness_abbess", "mk_uberspawn_1", 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "sisters_canoness_abbess"), g_enemy_PlayerID)
+		end
+
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_Sisters_Sinners_Repent,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1)+20,Get_NextRule_InitiationTMR_Survival())
+end
+
+function Rule_Sisters_Sinners_Repent()
+	if g_Survival_Enemy_Waves_Have_Failed then
+		if g_difficulty ~= "insane" then
+			Rule_Remove(Rule_Sisters_Sinners_Repent)
+			return
+		end
+	end
+	Rule_AddInterval(Rule_Display_Mission_Message_SL1,0.25)
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_Sisters_Repent_Group"))
+	local num = 1*Srvl_PlayerInfo.Techlvl[g_player_to_attack_IDX[0]]
+	local pos = Srvl_PlayerInfo.HQpos[World_GetPlayerCount()-1]
+	
+	Util_CreateSquadsAtPositionRandomEx(g_enemy_PlayerID, "sg_Sisters_Repent_Group", "sisters_squad_repentia", pos, num, 7)
+	Util_CreateSquadsAtPositionRandomEx(g_enemy_PlayerID, "sg_Sisters_Repent_Group", "sisters_squad_repentia", pos, num, 6)
+	Util_CreateSquadsAtPositionRandomEx(g_enemy_PlayerID, "sg_Sisters_Repent_Group", "sisters_squad_penitent_engine", pos, num, 1)
+	Util_CreateSquadsAtPositionRandomEx(g_enemy_PlayerID, "sg_Sisters_Repent_Group", "sisters_squad_penitent_engine_hg_dxp3", pos, num, 1)	
+	Util_CreateSquadsAtPositionRandomEx(g_enemy_PlayerID, "sg_Sisters_Repent_Group", "sisters_squad_dogmata", pos, num, 1)
+	Rule_LockSGroupSurvivalPlayer("sg_Sisters_Repent_Group")
+
+	Cmd_AttackMovePos("sg_Sisters_Repent_Group",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+end
+
+
+function Rule_Display_Mission_Message_SL1()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("Death in service to the Emperor is its own reward.")
+		Rule_Remove(Rule_Display_Mission_Message_SL1)
+		Rule_AddIntervalDelay(Rule_Display_Mission_Message_SL2,0.25,7)
+	end
+end
+function Rule_Display_Mission_Message_SL2()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("Life in failure to Him is its own condemnation!")
+		Rule_Remove(Rule_Display_Mission_Message_SL2)
+		Rule_LockSGroupSurvivalPlayer("sg_Sisters_Repent_Group")
+		Cmd_AttackMovePos("sg_Sisters_Repent_Group",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+	end
+end
+
+
+function Rule_Silence_Falls()
+	g_silence_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_silencesis_attack"))
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local silence_pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	g_silence_pos[0] = Community_Extended_SpawnablePositionSearch(silence_pos,"spawn_test_entity",g_enemy_PlayerID,10)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_SOS_attackers"))
+	Util_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_SOS_attackers", "sisters_squad_legio_custodes_squad_sister_seeker", Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]], 2, 8)
+	SGroup_UpgradeSquadsWithWeapon	("sg_SOS_attackers","sisters_squad_legio_custodes_squad_sister_seeker","sisters_legio_custodes_flamer_sister",4)
+ 	Cmd_SetStance( "sg_SOS_attackers", STANCE_StandGround ) 
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+	Cmd_AttackMovePos("sg_SOS_attackers",sg,Srvl_PlayerInfo.HQpos[0])
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+end
+
+
+
+function Rule_Silence_Falls_Hard()
+	g_silence_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_silencesis_attack"))
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local silence_pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	g_silence_pos[0] = Community_Extended_SpawnablePositionSearch(silence_pos,"spawn_test_entity",g_enemy_PlayerID,10)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_SOS_attackers"))
+	Util_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_SOS_attackers", "sisters_squad_legio_custodes_squad_sister_seeker", Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]], 3, 8)
+	SGroup_UpgradeSquadsWithWeapon	("sg_SOS_attackers","sisters_squad_legio_custodes_squad_sister_seeker","sisters_legio_custodes_flamer_sister",4)
+ 	Cmd_SetStance( "sg_SOS_attackers", STANCE_StandGround ) 
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+	Cmd_AttackMovePos("sg_SOS_attackers",sg,Srvl_PlayerInfo.HQpos[0])
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+	Rule_LockSGroupSurvivalPlayer("sg_SOS_attackers")
+	
+
+end

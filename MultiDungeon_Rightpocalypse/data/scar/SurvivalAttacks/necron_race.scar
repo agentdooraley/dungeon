@@ -1,0 +1,365 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "necron_builder_scarab_squad"
+DeCapturingSquadMmbrs = 3
+DeCapturingSquadName_2 = "necron_pariah_squad"
+DeCapturingSquadMmbrs_2 = 2
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "necron_summoning_core"
+EnemyBuilding1Squad1 = {"necron_pariah_squad", 1, 8}
+EnemyBuilding1Squad2 = {"necron_lychguard_squad", 1, 6}
+EnemyBuilding1Squad3 = {"necron_triarch_praetorian_squad", 1, 6}
+EnemyBuilding2Name = "necron_forbidden_archive"
+EnemyBuilding2Squad1 = {"necron_destroyer_squad", 1, 1}
+EnemyBuilding2Squad2 = {"necron_canoptek_spyder_squad", 1, 1}
+EnemyBuilding2Squad3 = {"necron_tomb_blade_squad", 1, 1}
+EnemyBuilding2SquadA1 = {"necron_doomsday_ark_squad",1,1}
+EnemyBuilding2SquadA2 = {"necron_doomsday_ark_squad",1,1}
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "necron_ghost_ark_squad"
+EnemyTransportedSquad = {"necron_basic_warrior_squad_advance_sp",3,3}
+EnemyHonourGuardSquad1 = {"necron_immortal_squad_advance_sp", 1, 6}
+EnemyHonourGuardSquad2 = {"necron_pariah_squad_advance_sp", 1, 5}
+EnemyHonourGuardSquad3 = {"necron_lord_squad_advance_sp", 1, 1}
+EnemyHonourGuardSquad4 = nil
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"necron_wraith_squad_advance_sp"}
+EnemyCommanderSquadName2 = {"necron_pariah_squad_advance_sp"}
+EnemyCommanderSquadName3 = {"necron_lord_squad"}
+EnemyCommanderSquadName4 = {"necron_tomb_spyder_squad_advance_sp"}
+EnemyCommanderSquadName5 = {"necron_lord_destroyer_squad"}
+EnemyCommanderSquadName6 = {"necron_lord_squad_advance_sp"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_seraptek_titan_squad", "mk_uberspawn_1", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_restored_monolith_squad", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_destroyer_squad", "mk_uberspawn_2", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_pariah_squad", "mk_enemy_pos", 2, 8)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_scarab_squad", "mk_enemy_pos", 1, 2)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "necron_night_scythe_squad", "mk_enemy_pos", 4, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_immortal_squad_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_immortal_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_pariah_squad_advance_sp", marker, 1, 4)
+	end
+	Rule_LockSGroupSurvivalPlayer( "sg_random_squads_start_p"..slot )
+	Cmd_AttackMovePos( "sg_random_squads_start_p"..slot,Srvl_PlayerInfo.HQpos[slot])
+end
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 4, 3)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_immortal_squad_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_basic_warrior_squad", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_wraith_squad_advance_sp", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_flayed_one_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_immortal_squad_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "necron_pariah_squad_advance_sp", marker, 1, 4)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_lord_squad", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_lord_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_wraith_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 1, 3)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 1,1 )
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 3, 5)	
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_wraith_squad", marker, 6, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 1, 6)
+		end	
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 4, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 1, 6)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 4, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		end
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 5,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 4, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 2,6 )
+		end
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 5,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_tomb_spyder_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 3, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_wraith_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 4, 6)
+		end
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 6,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_tomb_spyder_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 3, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 5,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 4, 6)
+		end
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 6,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_tomb_spyder_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 3, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 2,1 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 5,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 4,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 4, 6)
+		end
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 7,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_tomb_spyder_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 4, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 4, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 5,1 )
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_annihilation_barge_squad", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_doomsday_ark_squad", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 3, 6)
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_seraptek_titan_squad", marker, 1, 1)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_basic_warrior_squad", marker, 10,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_tomb_spyder_squad", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_immortal_squad", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_deathmark_squad", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_destroyer_squad", marker, 2, 1)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_annihilation_barge_squad", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_doomsday_ark_squad", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_pariah_squad", marker, 2,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_heavy_destroyer_squad", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_flayed_one_squad", marker, 2, 6)
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_seraptek_titan_squad", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_aeonic_orb_squad", marker, 1, 1)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_lychguard_squad", "mk_uberspawn_1", 1, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_lychguard_spear_squad", "mk_uberspawn_1", 1, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "necron_lord_imotekh_squad", "mk_uberspawn_1", 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "necron_lord_imotekh_squad"), g_enemy_PlayerID)
+		end
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_SpawnNecronMonoliths,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1),Get_NextRule_InitiationTMR_Survival()+60)
+end
+
+
+function Rule_SpawnNecronMonoliths()
+	g_Monolith_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	g_Monolith_pos[0] = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	Util_StartIntel(EVENTS.IE_Necron_Arrive_P1)
+	pg_Monolith_Plr = Ping_Position(g_Monolith_pos[0],true)
+	World_FXEvent("data:Art/Events/necron/sp/beacon_pulse.events", g_Monolith_pos[0])
+	Rule_AddOneShot(Rule_Spawn_Monolith,15)
+end
+
+
+function Rule_Spawn_Monolith()
+	Ping_Stop(pg_Monolith_Plr)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_attacking_monolith"))
+	Util_CreateSquadsAtPosition(g_enemy_PlayerID, "sg_attacking_monolith", "necron_restored_monolith_squad", g_Monolith_pos[0], 1)
+	Cmd_AttackMovePos("sg_attacking_monolith",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+	Rule_AddOneShot(Rule_SpawnTheUberNecrons,20)
+end
+
+
+function Rule_SpawnTheUberNecrons()
+	if SGroup_Count("sg_attacking_monolith") > 0 then
+		local lith_pos = SGroup_GetPosition("sg_attacking_monolith")
+		Util_CreateSquadsAtPosition(g_enemy_PlayerID, "sg_crons_1", "necron_immortal_squad_advance_sp", lith_pos, 1)
+		Util_CreateSquadsAtPosition(g_enemy_PlayerID, "sg_crons_1", "necron_pariah_squad_advance_sp", lith_pos, 1)
+		Util_CreateSquadsAtPosition(g_enemy_PlayerID, "sg_crons_1", "necron_basic_warrior_squad_advance_sp", lith_pos, 1)
+		Util_CreateSquadsAtPosition(g_enemy_PlayerID, "sg_crons_1", "necron_pariah_squad_advance_sp", lith_pos, 1)
+		Rule_LockSGroupSurvivalPlayer("sg_crons_1")
+		Cmd_AttackMovePos("sg_crons_1",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+		Rule_AddOneShot(Rule_RemoveMonolith,20)
+	end
+end
+
+
+function Rule_RemoveMonolith()
+	World_FXEvent("data:Art/Events/necron/sp/beacon_pulse.events", SGroup_GetPosition("sg_attacking_monolith"))
+	SGroup_DeSpawn("sg_attacking_monolith")
+	SGroup_DestroyAllSquads("sg_attacking_monolith")
+end
+
+
+--[[Necron morale destroyers fx and spawns.
+function Rule_NecronPowerfulDestroyers()
+	marker = .....
+	Util_CreateSquadsAtMarker(g_enemy_PlayerID,"sg_standard_vehicle_survival","necron_destroyer_squad_advance_sp",marker,2)
+	Rule_Check_AddInterval(Rule_FX_ForNecrons,5)
+	Rule_LockSGroupSurvivalPlayer("sg_standard_vehicle_survival")
+	Cmd_AttackMovePos("sg_standard_vehicle_survival",Srvl_PlayerInfo.HQpos[0])
+end
+
+function Rule_FX_ForNecrons()
+	if SGroup_Exists("sg_standard_vehicle_survival") and SGroup_Count(SGroup_FromName("sg_standard_vehicle_survival"))>0 then
+		World_FXEventSquad("data:Art/Events/necron/sp/beacon_pulse.events",SGroup_FromName("sg_standard_vehicle_survival"))
+		local necron_pos = SGroup_GetPosition(SGroup_FromName("sg_standard_vehicle_survival"))
+		Player_GetAllSquadsNearPos(g_Player1,"sg_morale_dying",necron_pos,30)
+		SGroup_SetAvgMorale("sg_morale_dying",0.0)
+	else
+		SGroup_DestroyAllSquads("sg_standard_vehicle_survival")
+		Rule_Remove(Rule_FX_ForNecrons)
+	end
+end
+]]
+
+
+
+--------------------------------------------------------------------------
+--            SPECIAL RULES that apply for this race ONLY           ------
+-- Include your code here, that is race-specific and it is outside  ------
+-- and beyond the scope of the standard code !!!!!				 	------
+--------------------------------------------------------------------------
+
+function Check_ModifyNecronCapsPerEnemyTech()
+	Modifier_ApplyToPlayer(Modifier_Create(MAT_Player,"squad_cap_player_modifier",MUT_Addition,false,20,""), g_enemy_PlayerID)
+	Modifier_ApplyToPlayer(Modifier_Create(MAT_Player,"support_cap_player_modifier",MUT_Addition,false,20,""), g_enemy_PlayerID)
+	Modifier_ApplyToPlayer(Modifier_Create(MAT_Player,"research_time_player_modifier",MUT_Percentage,false,-0.8,""), g_enemy_PlayerID)
+	Modifier_ApplyToPlayer(Modifier_Create(MAT_Player,"reinforce_time_player_modifier",MUT_Percentage,false,-0.8,""), g_enemy_PlayerID)
+	Modifier_ApplyToPlayer( Modifier_Create(MAT_Player,"recruit_time_player_modifier",MUT_Percentage,false,-0.8,""), g_enemy_PlayerID)
+	Modifier_ApplyToPlayer( Modifier_Create(MAT_Player,"applied_bonus_player_modifier",MUT_Addition,false,75,""), g_enemy_PlayerID)
+end
+
+
+-- Scar_AddInit won't work. This, DOES!!! 
+if g_Global_Rule_Initiation_Switch then
+	g_Global_Rule_Initiation_Switch = false
+	Rule_AddOneShot(Check_ModifyNecronCapsPerEnemyTech,8)
+end

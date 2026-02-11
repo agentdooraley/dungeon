@@ -1,0 +1,117 @@
+------------------------------------------------------------------
+-- 1] Initiates the Space Hulk Stats, ONLY in Space Hulk games		--
+--     ... games, respectively									--
+-- Made by fuggles2k @ 08/10/2022
+------------------------------------------------------------------
+
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("Community_Functions.scar")
+
+
+function SpaceHulkFix_OnInit()
+
+	-- First, disallow the optional turrets, if any for the race
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+	end
+
+	local max_slot = World_GetPlayerCount()-1
+
+--fuggles, need to set this up on the maps
+	if G_Is_SpaceHulk_Map == true then -- Survival map, disallow standard defences for players only
+	print("Disallowing turrets")
+	-- Survival Game
+		-- First, create the GLOBAL array witgh Survival Player stats - each entry uses the IDX of the player (0,1,..7)
+		SpaceHulk_PlayerInfo = { IsAlive={}, PlayerID={}, RaceName={}, PlayerName={}, HQpos={}, HQName={}, LPName={}, CmndrEntName={}, CmndrSqdName={}, PriBuilderSqdName={}, TurretSndrdName={}, TurretNoLimName={}, TurretSpecialName={}, MinesName={}, SurvMinesName={}, Techlvl={}, Tech2Info={}, Tech3Info={}, Tech4Info={}, Tech1Bonus={}, Tech2Bonus={}, Tech3Bonus={}, Tech4Bonus={}, TechUberBonus={}, Level={}, TMR = {}, LvlSwitch={}, IsVanilla = {} }
+
+		-- 1] Calculate player stats, and populate the Array!!! The last player (max_slot) will ALWAYS be the Attacking AI
+		for i = 0, max_slot do
+			local player_id = World_GetPlayerAt(i)
+			local race_name = Player_GetRaceName(player_id)
+			local enemy_ai_player = (i == max_slot)
+			if Global_RaceStats[race_name] ~= nil then
+			-- this gets all the things from the racestats, so if I need to add pgens and stuff, it needs to go here.
+				SpaceHulk_PlayerInfo.IsAlive[i] = true
+				SpaceHulk_PlayerInfo.PlayerID[i] = player_id
+				SpaceHulk_PlayerInfo.RaceName[i] = race_name
+				SpaceHulk_PlayerInfo.PlayerName[i] = Player_GetDisplayName(player_id)[1]
+				SpaceHulk_PlayerInfo.HQpos[i] = Player_GetStartPosition(player_id)
+				SpaceHulk_PlayerInfo.HQName[i] = Global_RaceStats[race_name].HQ
+				SpaceHulk_PlayerInfo.LPName[i] = Global_RaceStats[race_name].LP
+				SpaceHulk_PlayerInfo.PriBuilderSqdName[i] = Global_RaceStats[race_name].BuilderSquad
+				SpaceHulk_PlayerInfo.TurretSndrdName[i] = Global_RaceStats[race_name].Turret
+				SpaceHulk_PlayerInfo.TurretNoLimName[i] = Global_RaceStats[race_name].Turret_Srvl
+				if Global_RaceStats[race_name].Turret_Special ~= nil then
+					SpaceHulk_PlayerInfo.TurretSpecialName[i] = Global_RaceStats[race_name].Turret_Special
+				else
+					SpaceHulk_PlayerInfo.TurretSpecialName[i] = {}
+				end
+				SpaceHulk_PlayerInfo.MinesName[i] = Global_RaceStats[race_name].Mine
+				SpaceHulk_PlayerInfo.SurvMinesName[i] = Global_RaceStats[race_name].Mine_Srvl
+				SpaceHulk_PlayerInfo.Techlvl[i] = 1
+				SpaceHulk_PlayerInfo.Tech2Info[i] = Global_RaceStats[race_name].Tier2
+				SpaceHulk_PlayerInfo.Tech3Info[i] = Global_RaceStats[race_name].Tier3
+				SpaceHulk_PlayerInfo.Tech4Info[i] = Global_RaceStats[race_name].Tier4
+				SpaceHulk_PlayerInfo.Tech1Bonus[i] = Global_RaceStats[race_name].Tech1BonusSquads_Srvl
+				SpaceHulk_PlayerInfo.Tech2Bonus[i] = Global_RaceStats[race_name].Tech2BonusSquads_Srvl
+				SpaceHulk_PlayerInfo.Tech3Bonus[i] = Global_RaceStats[race_name].Tech3BonusSquads_Srvl
+				SpaceHulk_PlayerInfo.Tech4Bonus[i] = Global_RaceStats[race_name].Tech4BonusSquads_Srvl
+				SpaceHulk_PlayerInfo.TechUberBonus[i] = Global_RaceStats[race_name].Tech4BonusUberSquads_Srvl
+				SpaceHulk_PlayerInfo.Level[i] = 1
+				SpaceHulk_PlayerInfo.TMR[i] = 0
+				SpaceHulk_PlayerInfo.LvlSwitch[i] = -1
+				SpaceHulk_PlayerInfo.IsVanilla[i] = Global_RaceStats[race_name].IsVanilla
+				if SpaceHulk_PlayerInfo.IsVanilla[i] == true then 
+					if Is_Hero_Wargear_Enabled_Survival ~= nil and not enemy_ai_player then
+						if race_name == "necron_race" then
+							if g_Necrons_PlayersIDXs[i] == 1 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG4
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG4
+								g_Necrons_PlayersIDXs[i] = 4
+							elseif g_Necrons_PlayersIDXs[i] == 2 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG5
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG5
+								g_Necrons_PlayersIDXs[i] = 5
+							elseif g_Necrons_PlayersIDXs[i] == 3 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG6
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG6
+								g_Necrons_PlayersIDXs[i] = 6
+							end
+						else
+							SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG
+							SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG
+						end
+					else
+						if race_name == "necron_race" then
+							if g_Necrons_PlayersIDXs[i] == 1 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity1
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad1
+							elseif g_Necrons_PlayersIDXs[i] == 2 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity2
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad2
+							elseif g_Necrons_PlayersIDXs[i] == 3 then
+								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity3
+								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad3
+							end
+						else
+							SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
+							SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
+						end
+					end
+				else
+					SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
+					SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
+				end
+			else
+				print("Unsupported Space Hulk Player Race: "..race_name.." !!!")
+				g_SpaceHulk_Unsupported_Race = race_name
+			end
+		end
+
+	end
+end
+
+
+Scar_AddInit(SpaceHulkFix_OnInit)

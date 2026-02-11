@@ -1,0 +1,355 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "chaos_squad_cultist"
+DeCapturingSquadMmbrs = 6
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "chaos_temple"
+EnemyBuilding1Squad1 = {"chaos_squad_obliterator", 3, 4}
+EnemyBuilding1Squad2 = {"chaos_havoc_marine_squad", 1, 5}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "chaos_armoury"
+EnemyBuilding2Squad1 = {"chaos_squad_defiler", 2, 1}
+EnemyBuilding2Squad2 = {"chaos_squad_predator", 1, 1}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"chaos_squad_vindicator",1,1}
+EnemyBuilding2SquadA2 = {"chaos_squad_vindicator",1,1}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "chaos_squad_rhino"
+EnemyTransportedSquad = {"chaos_plague_marine_squad",2,6}
+EnemyHonourGuardSquad1 = {"chaos_rubric_marine_squad",2,8}
+EnemyHonourGuardSquad2 = {"chaos_squad_psyker",4,1}
+EnemyHonourGuardSquad3 = {"chaos_squad_sorcerer_advance_sp",1,1}
+EnemyHonourGuardSquad4 = {"chaos_squad_lord_nurgle",1,1}
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"chaos_squad_sp_champion"}
+EnemyCommanderSquadName2 = {"chaos_squad_khorne_berserker_sp_msd02"}
+EnemyCommanderSquadName3 = {"chaos_squad_sorcerer"}
+EnemyCommanderSquadName4 = {"chaos_squad_lord"}
+EnemyCommanderSquadName5 = {"chaos_squad_lord_sp_msd01"}
+EnemyCommanderSquadName6 = {"chaos_squad_lord_advance_sp"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_reaver_titan", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_land_raider", "mk_uberspawn_1", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_brass_scorpion", "mk_uberspawn_1", 1, 2)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_bloodthirster", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_predator", "mk_uberspawn_2", 4, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_possessed_marine", "mk_enemy_pos", 2, 6)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_hell_talon", "mk_enemy_pos", 4, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "chaos_squad_hell_talon", "mk_enemy_pos", 2, 1)
+
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_cultist", marker, 1, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_marine_squad", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_plasma_gun_tactical", 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_plague_marine_squad", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker", marker, 1, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_marine_squad", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_plasma_gun_tactical", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_havoc_marine_squad", marker, 1, 8)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_terminator", marker, 1, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_heavy_flamer_terminator", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker", marker, 1, 8)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_cultist", marker, 5, 4)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_cultist", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_plague_marine_squad", marker, 1, 4)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_plasma_gun_tactical", 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_plague_marine_squad", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker_sp_elites", marker, 2, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_marine_squad", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_plasma_gun_tactical", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_havoc_marine_squad", marker, 2, 8)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_terminator", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "chaos_heavy_flamer_terminator", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_khorne_berserker_sp_elites", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "chaos_squad_daemon_prince_advance_sp", marker, 1, 1)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_Lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 2, 6)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 1, 1)
+		end
+	elseif wave == 3 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_furious_charge_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_Lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_marine_squad","chaos_heavy_bolter_tactical",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_raptor", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_horror", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		end
+	elseif wave == 4 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_infiltration_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_cultist_sight_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_commander_health_research_1")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_raptor", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		end
+	elseif wave == 5 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_purge_the_weak")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_max_weapons_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 1, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_raptor", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		end	
+	elseif wave == 6 then
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_autocannon_havoc",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_lascannon_havoc",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_dreadnought", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_hell_talon", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 3, 6)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_ranged_skill_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_commander_health_research_2")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_possessed_daemon_fire_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_accuracy_upgrade_research")				
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_obliterator", marker, 4, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_horror", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 4, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 3, 6)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_lord", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_marine_squad","chaos_volkite_caliver",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_terminator", marker, 3, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_squad_terminator","chaos_reaper_terminator",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_hell_talon", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_hell_talon", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_daemon_prince", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 5)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_volkite_culverin",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker,4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_dreadnought", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator_volkide", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_cultist", marker, 5, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_mutilator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_vindicator", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_keeper_of_secrets", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_land_raider", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_brass_scorpion", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_guo", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 5)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_volkite_culverin",5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer_advance_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_marine_squad", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator_volkide", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_brass_scorpion", marker, 1, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_marine_squad","chaos_volkite_caliver",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_possessed_marine", marker, 5, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_terminator", marker, 2, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_squad_terminator","chaos_reaper_terminator",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_obliterator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker,3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_predator", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_bloodthirster", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_land_raider", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_reaver_titan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_reaver_titan", marker, 1, 1)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_terminator", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_rubric_marine_squad", marker, 3, 8)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_lord_of_change", marker, 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "chaos_squad_lord_of_change"), g_enemy_PlayerID)
+		end
+		SGroup_AddLeaders(sgroupName)
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_Spawn_Chaos_Portal_Event,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1),Get_NextRule_InitiationTMR_Survival())
+end
+
+function Rule_Spawn_Chaos_Portal_Event()
+	Util_StartIntel(EVENTS.IE_Chaos_Arrive_P1)
+	Rule_AddOneShot(Rule_SpawnChaosPortals,20)
+end
+
+-- Chaos Warp daemonic spawn
+function Rule_SpawnChaosPortals()
+	g_warp_portal_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	g_warp_portal_pos[0] = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	pg_Chaos_Warp_P1 = Ping_Position(g_warp_portal_pos[0],true)
+	World_FXEvent("data:Art/Events/khorne.events", g_warp_portal_pos[0])
+	Rule_AddOneShot(Rule_Spawn_Chaos_Warp_Troops,14)
+end
+
+
+function Rule_Spawn_Chaos_Warp_Troops()
+	Ping_Stop(pg_Chaos_Warp_P1)
+	World_FXEvent("data:Art/Events/chaos_fx/possession_fx.events",g_warp_portal_pos[0])
+	SGroup_CreateIfNotFound("sg_warp_gate_chaos")
+	Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_chaos","chaos_squad_obliterator",g_warp_portal_pos[0],5,1)
+	Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_chaos","chaos_squad_bloodthirster",g_warp_portal_pos[0],1,1)
+	if not g_Survival_Enemy_Waves_Have_Failed then
+		Rule_LockSGroupSurvivalPlayer("sg_warp_gate_chaos")
+	end
+	Cmd_AttackMovePos("sg_warp_gate_chaos",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+end

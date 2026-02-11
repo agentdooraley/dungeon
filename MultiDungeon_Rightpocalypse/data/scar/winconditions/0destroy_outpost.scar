@@ -1,0 +1,249 @@
+--Outposts
+-------------------------------------
+-- Conceived and coded By Argonaut --
+-- Re-coded by Gambit 10/2/2018    --
+-- 			Ver 1.23			   --
+-------------------------------------
+
+function Trigger_Buildings()
+	if survival_firebase == true then
+	print "firebases"
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_fb_1"))
+	else
+	print "firebases not detected"
+	end
+
+	survival_outpost = true
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Destroy Elite Base (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	--Check if there is at least ONE marker on the map of the specific name, otherwise do not initiate the rule
+	if not Marker_Exists( "mk_detonate_1", "basic_marker") then
+		print("Warning: *[S] Destroy Enemy Outpost * wincondition CANNOT start, because the map does not have the required markers!")
+		return
+	end
+	g_Buildings_Marker_Survival = {"",""}
+	EventCue_DoEvent ("blue_skull", "/event_cue_notifications/team_change", "Enemy Advanced Outposts!","Field reckon reports of well-hidden enemy sub-bases, specialising in subterfuge and independent sabotage missions.")
+	-- 1st building units
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_1")) -- 1st sgroup of the 1st building
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_2")) -- 2nd sgroup of the 1st building (optional)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_3")) -- 3rd sgroup of the 1st building (optional)
+	-- 2nd building units
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_4")) -- 1st sgroup of the 2nd building
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_5")) -- 2nd sgroup of the 2nd building (optional)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_defenders_db_6")) -- 3rd sgroup of the 2nd building (optional)
+	-- Decide which markers we use
+	local total_markers = 1
+	while Marker_Exists("mk_detonate_"..total_markers,"basic_marker") do total_markers=total_markers+1 end; total_markers = total_markers - 1
+	print("Total Map's different Secondary Outpost Building positions: "..total_markers)
+	if total_markers == 1 then
+		g_Buildings_Marker_Survival[1] = "mk_detonate_1"
+		g_Buildings_Marker_Survival[2] = "mk_detonate_1"
+	elseif total_markers == 2 then
+		g_Buildings_Marker_Survival[1] = "mk_detonate_1"
+		g_Buildings_Marker_Survival[2] = "mk_detonate_2"
+	else
+		local candidate_markers = {}
+		for i=1, total_markers do table.insert(candidate_markers,"mk_detonate_"..i) end
+		local chosen_map = World_GetRand(1,total_markers)
+		g_Buildings_Marker_Survival[1] = candidate_markers[chosen_map]
+		table.remove(candidate_markers,chosen_map)
+		chosen_map = World_GetRand(1,total_markers-1)
+		g_Buildings_Marker_Survival[2] = candidate_markers[chosen_map]
+	end
+	-- Start the show at a random future point
+	local timer = World_GetRand(600,920)
+	if g_surv_high_resources ~= nil and g_surv_high_resources then
+		timer = World_GetRand(210,600)
+	end
+	Rule_AddOneShot(Rule_Destroy_Buildings,timer)
+end
+
+
+function Rule_Destroy_Buildings()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		return
+	end
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_enemy_buildings_survival1"))
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_enemy_buildings_survival2"))
+	local pos1 = Marker_GetPosition(Marker_FromName(g_Buildings_Marker_Survival[1],"basic_marker"))
+	local pos2 = Marker_GetPosition(Marker_FromName(g_Buildings_Marker_Survival[2],"basic_marker"))
+	local enemy_building1_pos = Community_Extended_SpawnablePositionSearch(pos1, EnemyBuilding1Name, g_enemy_PlayerID, 10)
+	local enemy_building2_pos = Community_Extended_SpawnablePositionSearch(pos2, EnemyBuilding2Name, g_enemy_PlayerID, 10)
+	g_Buildings_Marker_Survival[1] = enemy_building1_pos; g_Buildings_Marker_Survival[2] = enemy_building2_pos -- Yeah, I know, I swapped vary types..
+	if not (Community_DoSquadsExistNearPos(enemy_building1_pos, 7) or Community_DoBuildingsExistNearPos(enemy_building1_pos, 7)) then
+		pcall( Entity_CreateBuildingPositionForce, g_enemy_PlayerID, "eg_enemy_buildings_survival1", EnemyBuilding1Name, enemy_building1_pos, 1 )
+	end
+	if not (Community_DoSquadsExistNearPos(enemy_building2_pos, 7) or Community_DoBuildingsExistNearPos(enemy_building2_pos, 7)) then
+		pcall( Entity_CreateBuildingPositionForce, g_enemy_PlayerID, "eg_enemy_buildings_survival2", EnemyBuilding2Name, enemy_building2_pos, 1 )
+	end
+	PingsAndNotificationsDB = {nil, nil}
+	if EGroup_Count("eg_enemy_buildings_survival1") ~= 0 then
+		PingsAndNotificationsDB[1] = Ping_Position(enemy_building1_pos,true,"destroy")
+	end
+	if EGroup_Count("eg_enemy_buildings_survival2") ~= 0 then
+		PingsAndNotificationsDB[2] = Ping_Position(enemy_building2_pos,true,"destroy")
+	end
+	if PingsAndNotificationsDB[1] == nil and PingsAndNotificationsDB[2] == nil then
+		-- No place for the enemy base, abort the condition!
+		EventCue_DoEvent ("blue_skull", "/event_cue_notifications/team_change", "Destroy the Enemy Elite Base Aborted!","Field reckon reports that the initial suspicions about the existence of an enemy outpost were false. Mission aborted!")
+		return
+	end
+	obj_table_dest_sec_buildings_surv = { title_id = 5800307, short_desc_id = 5800308, help_tip_id = 5800308 }
+	Objective_Add( obj_table_dest_sec_buildings_surv, false )
+	EventCue_DoEvent ("blue_skull", "/event_cue_notifications/team_change", "Destroy the Enemy Elite Base!","You have discovered an advanced enemy outpost. Destroy it to weaken the enemy and receive a good amount of resources.")
+	Rule_AddOneShot(Rule_CheckDefenders,0)
+	Rule_AddInterval(Rule_CheckEnemyBuildingsDB,5.25)
+end
+
+
+function Rule_CheckEnemyBuildingsDB()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		pcall(Rule_Remove,Rule_CheckEnemyBuildingsDB)
+		return
+	end
+	-- Start counting buildings
+	local building1count = EGroup_Count("eg_enemy_buildings_survival1")
+	local building2count = EGroup_Count("eg_enemy_buildings_survival2")
+	if building1count == 0 and PingsAndNotificationsDB[1] ~= nil then
+		Ping_Stop(PingsAndNotificationsDB[1])
+		PingsAndNotificationsDB[1] = nil
+	end
+	if building2count == 0 and PingsAndNotificationsDB[2] ~= nil then
+		Ping_Stop(PingsAndNotificationsDB[2])
+		PingsAndNotificationsDB[2] = nil
+	end
+	if building1count + building2count == 0 then
+		for i=0, World_GetPlayerCount()-2 do
+			local amount = Stats_PlayerUnitsKilled(Player_GetID(Srvl_PlayerInfo.PlayerID[i]))*5
+			Player_AddResource(Srvl_PlayerInfo.PlayerID[i],RT_Requisition,amount)
+			Player_AddResource(Srvl_PlayerInfo.PlayerID[i],RT_Power,amount)
+		end
+		EventCue_DoEvent ("warning", "/event_cue_notifications/team_change", "You destroyed the Enemy Elite Base!","This completed objective has weaken the enemy forces, and you are rewarded with a hefty amount of resources, proportionate to your kills.")
+		print("Destroy Elite Base secondary objective complete!")
+		Util_ObjectiveComplete(obj_table_dest_sec_buildings_surv.title_id)
+		Rule_Remove(Rule_CheckEnemyBuildingsDB)
+	end
+end
+
+
+----------------------------------------------------------
+--Created Defending Squads per Race
+---------------------------------------------------------
+function Rule_CheckDefenders()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		return
+	end
+	local building1count = EGroup_Count("eg_enemy_buildings_survival1")
+	local building2count = EGroup_Count("eg_enemy_buildings_survival2")
+	-- Do not make them attack if buildings are destroyed, in the case of Human Attacking Player
+	if not g_Survival_Enemy_AI_Is_Human then
+		if building1count == 0 then
+			-- if we have remaining squads after the building 1 is destroyed, retreat them to defend the enemy base.
+			local enemy_position = Player_GetStartPosition(g_enemy_PlayerID)
+			Cmd_AttackMovePos("sg_defenders_db_1",enemy_position); Cmd_AttackMovePos("sg_defenders_db_2",enemy_position)
+			Cmd_AttackMovePos("sg_defenders_db_3",enemy_position)
+		end
+		if building2count == 0 then
+			-- if we have remaining squads after the building 2 is destroyed, retreat them to defend the enemy base.
+			local enemy_position = Player_GetStartPosition(g_enemy_PlayerID)
+			Cmd_AttackMovePos("sg_defenders_db_4",enemy_position); Cmd_AttackMovePos("sg_defenders_db_5",enemy_position)
+			Cmd_AttackMovePos("sg_defenders_db_6",enemy_position)
+		end
+	end
+	if building1count + building2count == 0 then return end
+	local squads1 = SGroup_Count("sg_defenders_db_1")+SGroup_Count("sg_defenders_db_2")+SGroup_Count("sg_defenders_db_3")
+	if building1count ~= 0 and squads1 == 0 then
+		if EnemyBuilding1Squad1 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_1", EnemyBuilding1Squad1[1], g_Buildings_Marker_Survival[1], EnemyBuilding1Squad1[2], EnemyBuilding1Squad1[3])
+		end
+		if EnemyBuilding1Squad2 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_2", EnemyBuilding1Squad2[1], g_Buildings_Marker_Survival[1], EnemyBuilding1Squad2[2], EnemyBuilding1Squad2[3])
+		end
+		if EnemyBuilding1Squad3 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_3", EnemyBuilding1Squad3[1], g_Buildings_Marker_Survival[1], EnemyBuilding1Squad3[2], EnemyBuilding1Squad3[3])
+		end
+
+
+	end
+	local squads2 = SGroup_Count("sg_defenders_db_4")+SGroup_Count("sg_defenders_db_5")+SGroup_Count("sg_defenders_db_6")
+	if building2count ~= 0 and squads2 == 0 then
+		if EnemyBuilding2Squad1 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_4", EnemyBuilding2Squad1[1], g_Buildings_Marker_Survival[2], EnemyBuilding2Squad1[2], EnemyBuilding2Squad1[3])
+		end
+		if EnemyBuilding2Squad2 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_5", EnemyBuilding2Squad2[1], g_Buildings_Marker_Survival[2], EnemyBuilding2Squad2[2], EnemyBuilding2Squad2[3])
+		end
+		if EnemyBuilding2Squad3 ~= nil then
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_db_6", EnemyBuilding2Squad3[1], g_Buildings_Marker_Survival[2], EnemyBuilding2Squad3[2], EnemyBuilding2Squad3[3])
+		end
+
+		if survival_firebase == true then
+		--print "firebases check"
+		SGroup_CreateIfNotFound("sg_defenders_fb_1")
+			if EnemyBuilding2SquadA1 ~= nil then
+				--print "make me an artillery"
+				local squads3 = SGroup_Count("sg_defenders_fb_1")		
+				if squads3 == 0 then
+				--print "This is zero"
+					Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_defenders_fb_1", EnemyBuilding2SquadA1[1], g_Buildings_Marker_Survival[2], EnemyBuilding2SquadA1[2], EnemyBuilding2SquadA1[3])
+				end
+			end
+		end
+	end
+	-- Do not "lock" squads, in the case of a Human Attacking Player, and NOT make them attack enemy Players
+	if not g_Survival_Enemy_AI_Is_Human then
+		Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_1" );	Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_2" )
+		Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_3" );	Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_4" )
+		Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_5" );	Rule_LockSGroupSurvivalPlayer( "sg_defenders_db_6" )
+		-- NOTE: Here, I could use Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_defenders_db_1") based on difficulty...
+
+		-- Attack a random existing enemy base. Rule runs every 15.5, so even existing squads will possibly attack at some future time...
+		-- Perform the attack, based on ALIVE defending players !
+		local alive_players = {}
+		for i=0, World_GetPlayerCount()-2 do
+			if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+		end
+		local total_alive = table.getn(alive_players)
+		if total_alive > 0 then
+			local max_chance = 2 -- value for insane Difficulty
+			if g_difficulty == "easy" then max_chance = 6 elseif g_difficulty == "standard" then max_chance = 5
+			elseif g_difficulty == "hard" then max_chance = 4 elseif g_difficulty == "harder" then max_chance = 3 end
+			if World_GetRand(1,max_chance) == 1 then
+				local sqds1 = SGroup_Count("sg_defenders_db_1")+SGroup_Count("sg_defenders_db_2")+SGroup_Count("sg_defenders_db_3")
+				if sqds1 > 0 then
+					local attackpos1 = Srvl_PlayerInfo.HQpos[alive_players[World_GetRand(1,total_alive)]]
+					Cmd_AttackMovePos("sg_defenders_db_1",attackpos1)
+					Cmd_AttackMovePos("sg_defenders_db_2",attackpos1)
+					Cmd_AttackMovePos("sg_defenders_db_3",attackpos1)
+				end
+			end
+			if World_GetRand(1,max_chance) == 1 then
+				local sqds2 = SGroup_Count("sg_defenders_db_4")+SGroup_Count("sg_defenders_db_5")+SGroup_Count("sg_defenders_db_6")
+				if sqds2 > 0 then
+					local attackpos2 = Srvl_PlayerInfo.HQpos[alive_players[World_GetRand(1,total_alive)]]
+					Cmd_AttackMovePos("sg_defenders_db_4",attackpos2)
+					Cmd_AttackMovePos("sg_defenders_db_5",attackpos2)
+					Cmd_AttackMovePos("sg_defenders_db_6",attackpos2)
+				end
+			end
+		end
+	end
+	Rule_AddOneShot(Rule_CheckDefenders_Next,1)
+end
+
+
+function Rule_CheckDefenders_Next()
+	local timer = World_GetRand(20,90) + 0.25
+	Rule_AddOneShot(Rule_CheckDefenders,timer)
+end
+
+
+function Trigger_Buildings_Init()
+	survival_outpost = true
+	Rule_AddOneShot(Trigger_Buildings,602)
+end
+
+
+Scar_AddInit(Trigger_Buildings_Init)

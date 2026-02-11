@@ -1,0 +1,526 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "guard_squad_guardsmen"
+DeCapturingSquadMmbrs = 6
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "guard_infantry"
+EnemyBuilding1Squad1 = {"guard_squad_kasrkin", 2, 9}
+EnemyBuilding1Squad2 = {"guard_squad_ogryns", 2, 6}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "guard_mechanized"
+EnemyBuilding2Squad1 = {"guard_squad_lemanruss", 1, 1}
+EnemyBuilding2Squad2 = {"guard_squad_sentinel", 2, 1}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"guard_squad_basilisk",1,1}
+EnemyBuilding2SquadA2 = {"guard_squad_basilisk",1,1}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "guard_squad_chimera"
+EnemyTransportedSquad = {"guard_squad_kasrkin", 2, 8}
+EnemyHonourGuardSquad1 = {"guard_squad_kasrkin", 2, 4}
+EnemyHonourGuardSquad2 = {"guard_squad_colonel", 1, 1}
+EnemyHonourGuardSquad3 = nil
+EnemyHonourGuardSquad4 = nil
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+-- LEADERS: If a commander squad has leaders, add the number of		------
+-- each, after the name. The first number, is the number of leaders ------
+-- of the first type (index 1), etc. 								------
+-- WARNING: DO NOT add non-existing ones or you will get a CTD!!!	------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"guard_squad_priest"}
+EnemyCommanderSquadName2 = {"guard_squad_commissar_advance_sp"}
+EnemyCommanderSquadName3 = {"guard_squad_inquisitor"}
+EnemyCommanderSquadName4 = {"guard_squad_general_sturnn"}
+EnemyCommanderSquadName5 = {"guard_squad_general_castor_skirmish"}
+EnemyCommanderSquadName6 = {"guard_squad_command_squad_advance_sp", 1, 1, 1, 1}
+			
+-- If a payer attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_baneblade", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_doomhammer_titan", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_shadowsword_titan", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_lemanruss", "mk_uberspawn_2", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_basilisk", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_medusa", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_psyker", "mk_enemy_pos", 5, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_vendetta", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "guard_squad_marauder", "mk_enemy_pos", 2, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if(Srvl_PlayerInfo.Techlvl[slot]==1)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 2, 5)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==2)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 2, 5)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==3)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_kasrkin_veteran", marker, 1, 4)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==4)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 1, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_kasrkin_veteran", marker, 1, 5)
+	    Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_ogryns", marker, 1, 5)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 6, 4)
+	if(Srvl_PlayerInfo.Techlvl[slot]==1)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen", marker, 2, 4)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==2)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen_advance_sp", marker, 2, 4)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==3)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_kasrkin_advance_sp", marker, 1, 4)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==4)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_guardsmen_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_kasrkin_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "guard_squad_ogryns_advance_sp", marker, 1, 4)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 2, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 3,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_priest", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 2, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 4,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_priest", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 2, 1)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 2,5 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 3, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 3,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 2,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 1,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 3, 1)
+		if g_surv_high_resources then 
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",3)
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 3,5 )
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 4,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_heavy_stubber_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 2,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 2,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_droppers", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 3, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 6, 1)
+		if g_surv_high_resources then 
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",3)
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 3,5 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 5,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_heavy_stubber_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 3,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 2,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vulture", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vendetta", marker, 1, 1)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_destroyer", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 3,5 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 3, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 5,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_heavy_stubber_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 2,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 3,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hwt_atgm", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_griffon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 3, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 4, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_destroyer", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vulture", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vendetta", marker, 1, 1)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 2,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 2,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 4,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 1,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 2,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_assassin", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hwt_atgm", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 8, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_priest", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 3, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 4, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_destroyer", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_griffon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vulture", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vendetta", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 4,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_heavy_stubber_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 4,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 5,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_plasma_gun_kasrkin",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 2,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 3,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_assassin", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hwt_atgm", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 8, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_priest", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_droppers", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 3, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 4, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_chimera", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_destroyer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_griffon", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_baneblade", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vendetta", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vulture", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_imperial_knight_titan", marker, 1, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_imperial_knight_titan","guard_knight_chaingun_l",1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen", marker, 4,9 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_plasma_gun_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_grenade_launcher_guardsmen",3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_guardsmen","guard_heavy_stubber_guardsmen",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_ogryns", marker, 2,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin", marker, 5,8 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_kasrkin","guard_grenade_launcher_kasrkin",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hwt_atgm", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_kasrkin_veteran", marker, 4,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_shadow", marker, 2, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_shadow","guard_asc_volkite",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_conscripts", marker, 2,19 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_conscripts","guard_flamer_conscripts",5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_command_squad_advance_sp", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 2, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 3, 2 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_command_squad_advance_sp", 4, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_general_castor_skirmish", marker, 1, 1)
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_general_castor_skirmish", 1, 1 )
+		SGroup_AddSquadsWithLeaders( sgroupName, "guard_squad_general_castor_skirmish", 2, 1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_guardsmen_specialist", marker, 4,3 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hwt_atgm", marker, 3,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_reaper", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_assassin", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_sentinel", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_commissar", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_droppers", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_psyker", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellhound", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_destroyer", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_medusa", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_griffon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_basilisk", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_baneblade", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_hellsword", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vulture", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_vendetta_command", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_avenger_alpha", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_dominus_knight_titan", marker, 1, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"guard_squad_dominus_knight_titan","guard_dominus_knight_plasma_cannon_r",1)
+         if G_HeroicDefenceSwitchEnabled ~= nil then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_lemanruss_command", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "guard_squad_deathstrike", marker, 1, 1)
+		end		
+		SGroup_AddLeaders(sgroupName)
+
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	g_Valkyrie_Total_Passes_Per_Run = {}
+	g_Valkyrie_Total_Passes_Per_Run[0] = 4 * (World_GetPlayerCount()-1)
+	-- Note: Each run (4 passes) lasts close to 1 min. We want the next to happen AFTER the runs, orelse duplicate rule!
+	local min_interval = g_Valkyrie_Total_Passes_Per_Run[0] * 16.5
+	local interval = Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1)+30
+	if interval < min_interval then interval = min_interval end
+	Rule_AddIntervalDelay(Rule_Valkyrie_Bombing_Run, interval, Get_NextRule_InitiationTMR_Survival())
+end
+
+function Rule_Valkyrie_Bombing_Run()
+	g_valkyrie_target_structures = {}
+	Valkyrie_Hits_Nmbr = {}
+	Valkyrie_Hits_Nmbr[0] = 0
+	Valkyrie_Hit_Pos = {}
+	Valkyrie_Hit_Pos[0] = nil
+	Valkyrie_DoneAttacks = {}
+	Valkyrie_DoneAttacks[0] = false
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_all_players_buildings"))
+	local isBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) then -- and Player_CanSeeEntity(g_enemy_PlayerID,entityID) then
+			EGroup_Add("eg_all_players_buildings", entityID)
+		end
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			EGroup_ForEach(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]), isBuilding)
+		end
+	end
+	local contents = EGroup_Count("eg_all_players_buildings")
+	if contents > 0 then
+		for i=1, g_Valkyrie_Total_Passes_Per_Run[0] do
+			local target = World_GetRand(1,contents)
+			local eID = EGroup_GetSpawnedEntityAt("eg_all_players_buildings",target)
+			if eID ~= nil then
+				table.insert(g_valkyrie_target_structures, Entity_GetPosition(eID))
+			end
+		end
+		if table.getn(g_valkyrie_target_structures) > 0 then
+			Util_StartIntel(EVENTS.IE_IG_Arrive_P1)
+			Rule_AddOneShot(Rule_Valkyrie_First_Bombing_Hit,20)
+			Valkyrie_Hits_Nmbr[0] = Valkyrie_Hits_Nmbr[0] + 1
+			pg_IG_Valkyrie = Ping_Position(g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]],true)
+		end
+	end
+end
+
+
+function Rule_Valkyrie_First_Bombing_Hit()
+	Ping_Stop(pg_IG_Valkyrie)
+	local squadID = Squad_Create( "npc_valkyrie_squad_survival", g_enemy_PlayerID, g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]], 1 )
+	Squad_Spawn( squadID,  g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]] )
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_Val_bomber_1"))
+	SGroup_Add("sg_Val_bomber_1", squadID)
+	Anim_PlaySGroupAnim("sg_Val_bomber_1", "flyby_left")
+	Valkyrie_Hit_Pos[0] = g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]]
+	Rule_AddOneShot(Rule_Valkyrie_Damage_Pass, 2)
+	Rule_AddOneShot(Rule_Destroy_Valkyrie_Passed, 6)
+	if table.getn(g_valkyrie_target_structures) > 1 then
+		Valkyrie_Hits_Nmbr[0] = Valkyrie_Hits_Nmbr[0] + 1
+		Rule_AddInterval(Rule_Valkyrie_Subsequent_Bombing_Hits,9.5)
+	end
+end
+
+
+function Rule_Valkyrie_Subsequent_Bombing_Hits()
+	Ping_Stop(pg_IG_Valkyrie)
+	local squadID = Squad_Create( "npc_valkyrie_squad_survival", g_enemy_PlayerID, g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]], 1 )
+	Squad_Spawn( squadID,  g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]] )
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_Val_bomber_1"))
+	SGroup_Add("sg_Val_bomber_1", squadID)
+	Anim_PlaySGroupAnim("sg_Val_bomber_1", "flyby_left")
+	Valkyrie_Hit_Pos[0] = g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]]
+	Rule_AddOneShot(Rule_Valkyrie_Damage_Pass, 2)
+	Rule_AddOneShot(Rule_Destroy_Valkyrie_Passed, 6)
+	if Valkyrie_Hits_Nmbr[0] == table.getn(g_valkyrie_target_structures) then
+		Valkyrie_DoneAttacks[0] = true
+		Rule_Remove(Rule_Valkyrie_Subsequent_Bombing_Hits)	
+	else
+		Valkyrie_Hits_Nmbr[0] = Valkyrie_Hits_Nmbr[0] + 1
+	end
+end
+
+
+function Rule_Destroy_Valkyrie_Passed()
+	SGroup_DestroyAllSquads("sg_Val_bomber_1")
+end
+
+
+function Rule_Valkyrie_Damage_Pass()
+	World_FXEvent("data:Art/Events/ground_impact/titan_cannon_hit.events",Valkyrie_Hit_Pos[0])
+	local squad_damage = function(sgroupid, itemindex, squadID)
+		local totalhealth = Squad_GetHealthMax(squadID)
+		local currenthealth = Squad_GetHealth(squadID)
+		local pain = 500
+		local newhealth = currenthealth - pain
+		if newhealth > 1 then
+			local sethealth = (newhealth / totalhealth)
+			Squad_SetHealth(squadID,sethealth)
+		else
+			Squad_SetHealth(squadID,0)
+		end
+	end
+	local building_damage = function( egroupid, itemindex, EntityID )
+		local totalhealth = Entity_GetHealthMax( EntityID)
+		local currenthealth = Entity_GetHealth( EntityID)
+		local bombrand = World_GetRand(4,6)
+		local minhealth = totalhealth / bombrand
+		if currenthealth > minhealth then
+			local newhealth = currenthealth - minhealth
+			sethealth = (newhealth / totalhealth)
+			Entity_SetHealth(EntityID,sethealth)
+		else
+			Entity_SetHealth(EntityID,0)
+    	end
+    end
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_deadGuys_Val"))
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_deadGuys_Val"))
+	for pIDX=0, g_number_of_players-1 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			Player_GetAllSquadsNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"sg_deadGuys_Val",Valkyrie_Hit_Pos[0],10)
+			Player_GetAllEntitiesNearPos(Srvl_PlayerInfo.PlayerID[pIDX],"eg_deadGuys_Val",Valkyrie_Hit_Pos[0],10)
+		end
+	end
+	SGroup_ForEach("sg_deadGuys_Val", squad_damage )
+	EGroup_ForEach("eg_deadGuys_Val", building_damage )
+	Rule_AddOneShot(Rule_NextPing_Valkyrie_Pass, 2)
+end		
+
+
+function Rule_NextPing_Valkyrie_Pass()
+	if not Valkyrie_DoneAttacks[0] then
+		pg_IG_Valkyrie = Ping_Position(g_valkyrie_target_structures[Valkyrie_Hits_Nmbr[0]],true)
+	end
+end
+

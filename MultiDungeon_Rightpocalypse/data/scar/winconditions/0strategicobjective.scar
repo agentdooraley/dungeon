@@ -1,0 +1,169 @@
+----------------------------------------------------------------------
+-- Take and Hold modified Win condition: Taking the critical locations
+-- will give you reinforcements rather than win the game
+-- Updated by Gambit to v2.9
+----------------------------------------------------------------------
+
+import("ScarUtil.scar")
+
+
+--Check the critical locations
+function Rule_CheckWhoOwnsCrits()
+	for i=0, World_GetPlayerCount()-2 do
+		local playerID = Srvl_PlayerInfo.PlayerID[i]
+		if Player_IsAlive(playerID) then
+			local got_reinforcement = false
+			for eg = 1, 36 do
+				local critEG = "eg_crit_"..eg
+				--print ("checking crit "..critEG)
+				if EGroup_Exists(critEG) then
+					-- Check if we have that Critical in full possession
+					if EGroup_IsCapturedByPlayer(critEG,playerID,false) then
+						Rule_SpawnPlayer_BonusTroops(i)
+						got_reinforcement = true
+						break
+					end
+				else
+					break
+				end
+			end
+			-- Update mission progress based on local player
+			if Tut_GetLocalPlayerIndex() == i then
+				if got_reinforcement then
+					if Objective_GetState(obj_table_str_obj_surv.title_id) ~= OS_Complete then
+						Util_ObjectiveComplete(obj_table_str_obj_surv.title_id)
+					end
+				else
+					if Objective_GetState(obj_table_str_obj_surv.title_id) == OS_Complete then
+						Objective_SetState( obj_table_str_obj_surv.title_id, OS_Failed )
+						Sound_PlayStinger( "stinger_newobjective" )
+					end
+					EventCue_DoEvent("warning", "event_cue_notifications/general_alert", "Reinforcements Lost!","You failed to acquire reinforcements for this phase. Capture at least one Critical Location, to get them!")
+				end
+			end	
+		end
+	end
+	Rule_AddOneShot(Rule_NextCheckOnWhoOwnsCrits,1)
+end
+
+
+function Rule_NextCheckOnWhoOwnsCrits()
+	-- Next reinforcements dependent upon difficulty. Below, the time is in seconds.
+	local min_wait = 300
+	local max_wait = 600
+	if g_difficulty == "easy" then
+		-- 4 to 8 mins
+		min_wait = 240
+		max_wait = 480
+	elseif g_difficulty == "standard" then
+		-- 5 to 9 mins
+		min_wait = 300
+		max_wait = 540
+	elseif g_difficulty == "hard" then
+		-- 5 to 10 mins
+		min_wait = 300
+		max_wait = 600
+	elseif g_difficulty == "harder" then
+		-- 6 to 10 mins
+		min_wait = 360
+		max_wait = 600
+	elseif g_difficulty == "insane" then
+		-- 7 to 12 mins
+		min_wait = 420
+		max_wait = 720
+	end
+	local time = World_GetRand(min_wait,max_wait)
+	-- Make an announcement some time before reinforcements are inbound
+	Rule_AddIntervalDelay(Rule_Announce_Critical_Imminent, 2, time - 30)
+	Rule_AddOneShot(Rule_CheckWhoOwnsCrits, time)
+end
+
+
+function Rule_Announce_Critical_Imminent()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Reinforcements Imminently Inbound. Try and maintain possession of Critical Locations!")
+		Rule_Remove(Rule_Announce_Critical_Imminent)
+	end
+end
+
+
+function Rule_TriggerCritLocTest()
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Take and Hold - Reinforcements (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	-- Initiate variables
+	SO_Surv_Bonus_Squads = {}
+	for i=0, World_GetPlayerCount()-2 do
+		-- Pre-create the squad groups for relic units, for all players (not the attacker AI)
+		SGroup_CreateIfNotFound("sg_activeUberBonus"..i)
+		-- Define the table with the bonus squads per tech (1,2,3,4, relic)
+		SO_Surv_Bonus_Squads[i] = { Srvl_PlayerInfo.Tech1Bonus[i], Srvl_PlayerInfo.Tech2Bonus[i], Srvl_PlayerInfo.Tech3Bonus[i], Srvl_PlayerInfo.Tech4Bonus[i], Srvl_PlayerInfo.TechUberBonus[i] }
+	end
+	-- Objective Notification
+	obj_table_str_obj_surv = { title_id = 5800310, short_desc_id = 5800311, help_tip_id = 5800311 }	
+	Objective_Add( obj_table_str_obj_surv, false )
+	Rule_AddOneShot(Rule_CheckWhoOwnsCrits,240)
+end
+
+
+-- Initiate the wincondition
+Scar_AddInit(Rule_TriggerCritLocTest)
+
+
+function Rule_SpawnPlayer_BonusTroops(pIDX)
+	-- Spawn Reinforcements, based on player research level
+	local player_tech_level = Srvl_PlayerInfo.Techlvl[pIDX]
+	local pID = Srvl_PlayerInfo.PlayerID[pIDX]
+	local marker = "mk_bonus_P"..(pIDX+1)
+
+	if not Marker_Exists(marker, "basic_marker") then
+		print("Marker: "..marker.." does NOT EXIST for this map! Update it...")
+		marker = "mk_bonus_P1"
+		if not Marker_Exists(marker, "basic_marker") then
+			print("There is not even a Marker for P1! So, NO Reinforcements...")
+			return
+		end
+	end
+
+	if player_tech_level == 4 and (g_difficulty=="insane" or g_difficulty=="harder") then
+		if SGroup_Count("sg_activeUberBonus"..pIDX)==0 then
+		-- Time to spawn the Relic Units (5th, in the array), if NONE spawned or left from previous spawning
+			for i=1, table.getn(SO_Surv_Bonus_Squads[pIDX][5]) do
+				local squad_name = SO_Surv_Bonus_Squads[pIDX][5][i]
+				local max_squad_loadout = Squad_GetMaxFromName(squad_name)
+				Util_CreateSquadsAtMarkerEx( pID, "sg_activeUberBonus"..pIDX, squad_name , marker, 1, max_squad_loadout )
+				SGroup_AddLeaders("sg_activeUberBonus"..pIDX)
+			end
+		else
+		-- In Harder or Insane, if the player at T4, already has the relic, give him ALL squads (all tiers) up to 4th
+			for tier=1, 4 do
+				for i=1, table.getn(SO_Surv_Bonus_Squads[pIDX][tier]) do
+					SGroup_CreateIfNotFound("sg_so_temp_bonusSQD")
+					local squad_name = SO_Surv_Bonus_Squads[pIDX][tier][i]
+					local max_squad_loadout = Squad_GetMaxFromName(squad_name)
+					Util_CreateSquadsAtMarkerEx( pID, "sg_so_temp_bonusSQD", squad_name , marker, 1, max_squad_loadout )
+					SGroup_AddLeaders("sg_so_temp_bonusSQD")
+					SGroup_Destroy("sg_so_temp_bonusSQD")
+				end
+			end
+		end
+	else
+	-- Spawn the tech 1,2,3 and 4 bonus squads, normally
+		for i=1, table.getn(SO_Surv_Bonus_Squads[pIDX][player_tech_level]) do
+			SGroup_CreateIfNotFound("sg_so_temp_bonusSQD")
+			local squad_name = SO_Surv_Bonus_Squads[pIDX][player_tech_level][i]
+			local max_squad_loadout = Squad_GetMaxFromName(squad_name)
+			Util_CreateSquadsAtMarkerEx( pID, "sg_so_temp_bonusSQD", squad_name , marker, 1, max_squad_loadout )
+			SGroup_AddLeaders("sg_so_temp_bonusSQD")
+			SGroup_Destroy("sg_so_temp_bonusSQD")
+		end
+	end
+	-- Display the bonus squad notification for the local player
+	local local_player_idx = Tut_GetLocalPlayerIndex()
+	if local_player_idx == pIDX then
+		local ping = Ping_Marker(marker, false)
+		EventCue_DoEvent("recruit_commander", "/event_cue_notifications/cheats!", "Reinforcements Have Arrived!","Heavily armed reinforcements have arrived at the Dropzone.")
+	end
+end
+

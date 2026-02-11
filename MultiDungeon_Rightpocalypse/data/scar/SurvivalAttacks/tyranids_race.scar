@@ -1,0 +1,581 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "tyranids_squad_genestealer"
+DeCapturingSquadMmbrs = 8
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "tyranids_warrior_hive"
+EnemyBuilding1Squad1 = {"tyranids_squad_genestealer", 2, 14}
+EnemyBuilding1Squad2 = {"tyranids_squad_ravener", 1, 8}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "tyranids_gaunt_hive"
+EnemyBuilding2Squad1 = {"tyranids_squad_genestealer", 2, 14}
+EnemyBuilding2Squad2 = {"tyranids_squad_warrior", 1, 8}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"tyranids_squad_biovores",1,2}
+EnemyBuilding2SquadA2 = {"tyranids_squad_biovores",1,2}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = nil
+EnemyTransportedSquad = nil
+EnemyHonourGuardSquad1 = {"tyranids_squad_ravener", 2, 6}
+EnemyHonourGuardSquad2 = {"tyranids_squad_warrior", 2, 8}
+EnemyHonourGuardSquad3 = {"tyranids_squad_zoanthropes", 1, 3}
+EnemyHonourGuardSquad4 = {"tyranids_squad_lictor", 2, 1}
+EnemyHonourGuardSquad_Uber = {"tyranids_squad_carnifex", 1, 1}		-- Optional. Spawned starting Wave 5.
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+-- LEADERS: If a commander squad has leaders, add the number of		------
+-- each, after the name. The first number, is the number of leaders ------
+-- of the first type (index 1), etc. 								------
+-- WARNING: DO NOT add non-existing ones or you will get a CTD!!!	------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"tyranids_squad_broodlord"}
+EnemyCommanderSquadName2 = {"tyranids_squad_carnifex_khazi"}
+EnemyCommanderSquadName3 = {"tyranids_squad_carnifex_skiller"}
+EnemyCommanderSquadName4 = {"tyranids_squad_trygon"}
+EnemyCommanderSquadName5 = {"tyranids_squad_hive_tyrant"}
+EnemyCommanderSquadName6 = {"tyranids_squad_carnifex_uber"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_carnifex_uber", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_carnifex_skiller", "mk_uberspawn_2", 5, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_carnifex_khazi", "mk_enemy_pos", 5, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_biovores", "mk_enemy_pos", 5, 3)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_zoanthropes", "mk_enemy_pos", 5, 3)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_gargoyle", "mk_enemy_pos", 4, 8)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "tyranids_squad_hierophant_titan", "mk_uberspawn_1", 4, 1)	
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 1, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 1, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_warrior", marker, 1, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "tyranids_deathspitter_warrior", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 2, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_warrior", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "tyranids_deathspitter_warrior", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_lictor", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_carnifex", marker, 1, 1)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 1, 8)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 2, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 3, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 1, 8)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_warrior", marker, 3, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "tyranids_deathspitter_warrior", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 3, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 2, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_warrior", marker, 4, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "tyranids_deathspitter_warrior", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_genestealer", marker, 4, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_lictor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_termagant", marker, 2, 8)
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "tyranids_squad_carnifex", marker, 2, 1)
+
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 3,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_termagant", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 1, 1)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 4,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_termagant", marker, 1, 8)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2,8 )
+		end
+	elseif wave == 4 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_gaunt_upgrade_research_1")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_upgrade_research_1")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_lictor_upgrade_research_1")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 3,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 1, 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker,4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_termagant", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_spinegaunt", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 1, 8)
+		if g_surv_high_resources then 
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 4,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+		end
+	elseif wave == 5 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_xeno_upgrade_research_1")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_warrior_ext_carapace_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_carnifex_regeneration_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 4,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_termagant", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hormagaunt", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_spinegaunt", marker, 1, 8)
+		if g_surv_high_resources then
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 4,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+		end
+	elseif wave == 6 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_gaunt_upgrade_research_2")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_upgrade_research_2")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_lictor_upgrade_research_2")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_heavy_armor")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_hivetyrant_carapace_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 3, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 4,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hormagaunt", marker, 3, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 2, 3)
+		if g_surv_high_resources then
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_skiller", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_khazi", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
+		end
+	elseif wave == 7 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_bl_infiltration_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_carnifex_ext_carapace_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_gaunt_won")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_warrior_adrenal_glands_research")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_hivetyrant_adrenal_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 4, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 3,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_skiller", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hormagaunt", marker, 1, 10)
+	elseif wave == 8 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_gaunt_upgrade_research_3")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_upgrade_research_3")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_lictor_upgrade_research_3")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 4, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 1, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 2,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hive_tyrant", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_skiller", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_khazi", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hormagaunt", marker, 2, 10)
+	elseif wave == 9 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_genestealer_won")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 4, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_devourer_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 2,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hive_tyrant", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_skiller", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_khazi", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 3, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_ravener", marker, 1, 5)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 4, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_deathspitter_warrior",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2, 10)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_devourer_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 2,10 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hive_tyrant", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_skiller", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_khazi", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 3, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 3, 3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_ravener", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_trygon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hierophant_titan", marker, 1, 1)
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+-- If enabled, one out of six times ALL enemy troops/squads will be targeted!
+G_Enable_Global_Spores = true
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_TyranidsSporesHorror,Get_NextRule_InitiationTMR_Survival()+10,Get_NextRule_InitiationTMR_Survival())
+	Rule_AddOneShot(Tyranids_InitialRavenerRules, 8)
+end
+
+
+function Rule_TyranidsSporesHorror()
+	W40k_ImageFade("black", 7, 1, 5)
+	Rule_AddIntervalDelay(Rule_Display_Mission_Message_Tyr1,0.25,0.125)
+	if G_Enable_Global_Spores == true then
+		if World_GetRand(1,6) == 1 then
+			Rule_AddOneShot(Rule_TyranidsSporesCount_ALL,10)
+		else
+			Rule_AddOneShot(Rule_TyranidsSporesCount,10)
+		end
+	else
+		Rule_AddOneShot(Rule_TyranidsSporesCount,10)
+	end
+end
+
+
+function Rule_Display_Mission_Message_Tyr1()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("The sky darkens with spore mines!!")
+		Rule_Remove(Rule_Display_Mission_Message_Tyr1)
+	end
+end
+
+
+function Rule_TyranidsSporesCount()
+	SporesTargetsAllPlPos = {}
+	local isBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) then
+			table.insert(SporesTargetsAllPlPos, Entity_GetPosition(entityID))
+		end
+	end
+	local squad_adder = function(sgroupid, itemindex, squadID)
+		table.insert(SporesTargetsAllPlPos, Squad_GetPosition(squadID))
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			EGroup_ForEach(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]), isBuilding)
+			SGroup_ForEachAllOrAnyEx(Player_GetSquads(Srvl_PlayerInfo.PlayerID[pIDX]), false, squad_adder, true, false)
+		end
+	end
+	local drop_spores = false
+	if table.getn(SporesTargetsAllPlPos) > 5 then
+		if World_GetRand(1,5) > 1 then
+			drop_spores = true
+		end
+	elseif World_GetRand(1,2) == 1 then
+		drop_spores = true
+	end
+	if drop_spores then
+		G_Centre_Of_Spore_Impact = SporesTargetsAllPlPos[World_GetRand(1,table.getn(SporesTargetsAllPlPos))]
+		Ping_Position(G_Centre_Of_Spore_Impact, false)
+		Rule_AddOneShot(Rule_TyranidsSporesFall,1.5)
+	else
+		Rule_AddIntervalDelay(Rule_Display_Mission_Message_Tyr2,0.25,0.25)
+	end
+end
+
+
+function Rule_TyranidsSporesFall()
+	local radius = World_GetRand(30,60)
+	-- Remove targets out of the radius
+	for i = table.getn(SporesTargetsAllPlPos), 1, -1 do
+		if World_DistancePointToPoint(G_Centre_Of_Spore_Impact, SporesTargetsAllPlPos[i]) > radius then
+			table.remove(SporesTargetsAllPlPos, i)
+		end
+	end
+	for i = 1, table.getn(SporesTargetsAllPlPos) do
+		World_FXEvent("data:Art/Events/tyranids/spore_drop_med_surv", SporesTargetsAllPlPos[i])
+		World_FXEvent("data:Art/Events/unit_ability_fx/buildingmiasma", SporesTargetsAllPlPos[i])
+		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_orbit_surv1mbr", SporesTargetsAllPlPos[i],1,1)
+	end
+end
+
+
+function Rule_TyranidsSporesCount_ALL()
+	SporesTargetsAllPlPos = {}
+	SporesTargetsWaves = {0,0,0,0}
+	SporesWavesCount = {}
+	SporesWavesCount[0] = 1
+	local isBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) then
+			table.insert(SporesTargetsAllPlPos, Entity_GetPosition(entityID))
+		end
+	end
+	local squad_adder = function(sgroupid, itemindex, squadID)
+		table.insert(SporesTargetsAllPlPos, Squad_GetPosition(squadID))
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			EGroup_ForEach(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]), isBuilding)
+			SGroup_ForEachAllOrAnyEx(Player_GetSquads(Srvl_PlayerInfo.PlayerID[pIDX]), false, squad_adder, true, false)
+		end
+	end
+	local spore_barrage = table.getn(SporesTargetsAllPlPos)
+	local drop_spores = false
+	if spore_barrage > 5 then
+		if World_GetRand(1,5) > 1 then
+			drop_spores = true
+		end
+	elseif World_GetRand(1,2) == 1 then
+		drop_spores = true
+	end
+	if drop_spores then
+		local wave12 = math.floor(spore_barrage/3)
+		local wave3 = spore_barrage - 2*wave12
+		SporesTargetsWaves[2] = wave12
+		SporesTargetsWaves[3] = 2*wave12
+		SporesTargetsWaves[4] = 2*wave12 + wave3
+		Rule_AddInterval(Rule_TyranidsSporesFall_ALL,0.5)
+	else
+		Rule_AddIntervalDelay(Rule_Display_Mission_Message_Tyr2,0.25,0.25)
+	end
+end
+
+
+function Rule_TyranidsSporesFall_ALL()
+	for i=SporesTargetsWaves[SporesWavesCount[0]]+1, SporesTargetsWaves[SporesWavesCount[0]+1] do
+		World_FXEvent("data:Art/Events/tyranids/spore_drop_med_surv", SporesTargetsAllPlPos[i])
+		World_FXEvent("data:Art/Events/unit_ability_fx/buildingmiasma", SporesTargetsAllPlPos[i])
+		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_orbit_surv1mbr", SporesTargetsAllPlPos[i],1,1) 
+	end
+	SporesWavesCount[0] = SporesWavesCount[0] + 1
+	if SporesWavesCount[0] == 4 then Rule_Remove(Rule_TyranidsSporesFall_ALL) end
+end
+
+
+function Rule_Display_Mission_Message_Tyr2()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("The Spores exploded in the atmosphere!")
+		Rule_Remove(Rule_Display_Mission_Message_Tyr2)
+	end
+end
+
+
+--------------------------------------------------------------------------
+--            SPECIAL RULES that apply for this race ONLY           ------
+-- Include your code here, that is race-specific and it is outside  ------
+-- and beyond the scope of the standard code !!!!!				 	------
+--------------------------------------------------------------------------
+
+function Tyranids_InitialRavenerRules()
+	-- Special addition for Tyranids: Increase max Influence, in case the map has not enough SPs. DOES NOT work, the code resets max faith.
+	-- Modifier_ApplyToPlayer(Modifier_Create(MAT_Player,"faith_max_modifier",MUT_Addition,false,50,""),g_enemy_PlayerID)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_Raveners_Tyr_All_Squads"))		-- Despawned squads cannon be AI-Locked, so we have to have a rule...
+	Rule_AddInterval(Rule_Tyranids_RavenersAttack,Get_NextRule_InitiationTMR_Survival()/2)
+	Rule_AddIntervalDelay(Rule_Tyranids_Ravener_AI_Locked,0.25,(Get_NextRule_InitiationTMR_Survival()/2)-5)
+end
+
+
+function Rule_Tyranids_RavenersAttack()
+	Rule_AddInterval(Rule_Display_Mission_Message_Tyr3,0.25)
+	-- Denotes how many Ravener attacks will happen amongst all players.
+	local max_attacks = 3 * (g_number_of_players - 1)
+	building_attacks = {}; squad_attacks = {}
+	local disallowed_buildings = {}		-- Do not add turrets or mines in the list
+	local isBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) then
+			local building_name = Entity_GetBlueprintName(entityID)
+			for j = 1, table.getn(disallowed_buildings) do
+				if building_name == disallowed_buildings[j] then
+					return
+				end
+			end
+			table.insert(building_attacks, entityID)
+		end
+	end
+	local squad_adder = function(sgroupid, itemindex, squadID)
+		table.insert(squad_attacks, squadID)
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			-- Reset and re-calculate buildings per player (LESS calculations if many players are involved)
+			disallowed_buildings = {}
+			race_name = Player_GetRaceName(Srvl_PlayerInfo.PlayerID[pIDX])
+			for i=1, table.getn(Global_RaceStats[race_name].Turret) do
+				table.insert(disallowed_buildings, Global_RaceStats[race_name].Turret[i])
+			end
+			for i=1, table.getn(Global_RaceStats[race_name].Turret_Srvl) do
+				table.insert(disallowed_buildings, Global_RaceStats[race_name].Turret_Srvl[i])
+			end
+			for i=1, table.getn(Global_RaceStats[race_name].Mine) do
+				table.insert(disallowed_buildings, Global_RaceStats[race_name].Mine[i])
+			end
+			for i=1, table.getn(Global_RaceStats[race_name].Mine_Srvl) do
+				table.insert(disallowed_buildings, Global_RaceStats[race_name].Mine_Srvl[i])
+			end
+			EGroup_ForEach(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]), isBuilding)
+			SGroup_ForEachAllOrAnyEx(Player_GetSquads(Srvl_PlayerInfo.PlayerID[pIDX]), true, squad_adder, true, false)
+		end
+	end	
+	local all_buildings = table.getn(building_attacks)
+	local all_squads = table.getn(squad_attacks)
+	for i=1, max_attacks do
+		-- 50% we attack a building, 50% a squad
+		if World_GetRand(1,2) == 1 then		-- Buildings
+			if all_buildings > 1 then
+				local rvnr_mbrs = math.ceil(World_GetRand(3,8))
+				local target_id = building_attacks[World_GetRand(1,all_buildings)]
+				local target_pos = Entity_GetPosition(target_id)
+				local ravenerSpawnID = Squad_Create("tyranids_squad_ravener",g_enemy_PlayerID,target_pos,rvnr_mbrs)
+				-- Squad_Spawn(ravenerSpawnID,target_pos)
+				-- World_FXEvent("Data:art/events/unit_fx/reinforce_ravener", Squad_GetPosition(ravenerSpawnID))
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_Raveners_Tyr_Dummy"))
+				SGroup_Add("sg_Raveners_Tyr_Dummy",ravenerSpawnID)
+				SGroup_Add("sg_Raveners_Tyr_All_Squads",ravenerSpawnID)
+				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_single_player_only_warrior_hive", target_pos )
+				-- Rule_LockSGroupSurvivalPlayer("sg_Raveners_Tyr_Dummy")
+				-- Cmd_AttackMovePos("sg_Raveners_Tyr_Dummy",target_pos)
+			end
+		else	-- Squads
+			if all_squads >= 1 then
+				local rvnr_mbrs = math.ceil(World_GetRand(3,8))
+				local target_id = squad_attacks[World_GetRand(1,all_squads)]
+				local target_pos = Squad_GetPosition(target_id)
+				local ravenerSpawnID = Squad_Create("tyranids_squad_ravener",g_enemy_PlayerID,target_pos,rvnr_mbrs)
+				-- Squad_Spawn(ravenerSpawnID,target_pos)
+				-- World_FXEvent("Data:art/events/unit_fx/reinforce_ravener", Squad_GetPosition(ravenerSpawnID))
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_Raveners_Tyr_Dummy"))
+				SGroup_Add("sg_Raveners_Tyr_Dummy",ravenerSpawnID)
+				SGroup_Add("sg_Raveners_Tyr_All_Squads",ravenerSpawnID)
+				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_single_player_only_warrior_hive", target_pos )
+				-- Rule_LockSGroupSurvivalPlayer("sg_Raveners_Tyr_Dummy")
+				-- Cmd_AttackMovePos("sg_Raveners_Tyr_Dummy",target_pos)
+			end
+		end
+	end
+end
+
+
+function Rule_Tyranids_Ravener_AI_Locked()
+	if g_Survival_Enemy_Waves_Have_Failed then
+		Rule_Remove(Rule_Tyranids_Ravener_AI_Locked)
+	end
+	if SGroup_CountSpawned("sg_Raveners_Tyr_All_Squads") > 0 then
+		pcall(Command_SquadPos, g_enemy_PlayerID, "sg_Raveners_Tyr_All_Squads", SCMD_AttackMove, SGroup_GetPosition("sg_Raveners_Tyr_All_Squads"))
+	end
+	Rule_LockSGroupSurvivalPlayer("sg_Raveners_Tyr_All_Squads")
+end
+
+
+function Rule_Display_Mission_Message_Tyr3()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("Watch out for terrors attacking from below ground!!")
+		Rule_Remove(Rule_Display_Mission_Message_Tyr3)
+	end
+end
+
+
+-- Scar_AddInit won't work. This, DOES!!! 
+if g_Global_Rule_Initiation_Switch then
+	g_Global_Rule_Initiation_Switch = false
+--	Rule_AddOneShot(Tyranids_InitialRavenerRules, 8)
+end

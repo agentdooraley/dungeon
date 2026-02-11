@@ -1,0 +1,12 @@
+-------------------------------------
+-- Conceived and coded by Argonaut and fuggles --
+-- 
+-- 			Ver 1.0		   --
+-------------------------------------
+
+function Allow_Rankings()
+	ranking_condition_toggle = true
+end
+
+
+Scar_AddInit(Allow_Rankings)

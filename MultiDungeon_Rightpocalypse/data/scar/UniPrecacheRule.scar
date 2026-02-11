@@ -1,0 +1,23 @@
+-- Created by CornCobMan @ 2/4/2023
+
+import("UniEntityPrecache.scar")
+
+function Uni_PrecacheRule_Init()
+	local is_campaign = pcall(MetaMap_GetAttackerRaceIndex)
+	
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+		if is_campaign then
+			if idx == 0 then race_name = MetaMap_GetPlayerRaceName()
+			else race_name = MetaMap_GetDefenderRaceName()
+			end
+		else 
+			race_name = Player_GetRaceName(playerID)
+		end
+		Uni_DoNotPrecacheForRace(playerID, race_name)
+	end
+	print("Precache Test Rule Enabled.")
+end
+
+Scar_AddInit(Uni_PrecacheRule_Init)

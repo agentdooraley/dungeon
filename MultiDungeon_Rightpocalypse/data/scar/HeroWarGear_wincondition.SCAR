@@ -1,0 +1,56 @@
+--------------------------------------------------
+-- Optional WarGear, made by Gambit @ 27/8/2014	--
+-- Allows to use hero wargear for the custom	--
+--  races as a wincondition.					--
+-- Necron AI Rule added by Gambit @ 15/07/2017  --
+-- Enables both types of Lord C'Tan Possessions --
+--------------------------------------------------
+
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("Community_Functions.scar")
+
+
+-- Lists of Commander Wargear Researches per SS Vanilla Race (9) --------------------
+g_ChaosMarinesWG_List = { "chaos_wargear01", "chaos_wargear02", "chaos_wargear03", "chaos_wargear04", "chaos_wargear05", "chaos_wargear06", "chaos_wargear07", "chaos_wargear08", "chaos_wargear09", "chaos_wargear10" }
+
+g_DarkEldarWG_List = { "dark_eldar_wargear01", "dark_eldar_wargear02", "dark_eldar_wargear03", "dark_eldar_wargear04", "dark_eldar_wargear05", "dark_eldar_wargear06", "dark_eldar_wargear07", "dark_eldar_wargear08", "dark_eldar_wargear09", "dark_eldar_wargear10" }
+
+g_EldarWG_List = { "eldar_wargear01", "eldar_wargear02", "eldar_wargear03", "eldar_wargear04", "eldar_wargear05", "eldar_wargear06", "eldar_wargear07", "eldar_wargear08", "eldar_wargear09", "eldar_wargear10" }
+
+g_ImperialGuardWG_List = { "guard_wargear01", "guard_wargear02", "guard_wargear03", "guard_wargear04", "guard_wargear05", "guard_wargear06", "guard_wargear07", "guard_wargear08", "guard_wargear09", "guard_wargear10" }
+
+g_NecronWG_List = { "necron_wargear01", "necron_wargear02", "necron_wargear03", "necron_wargear04", "necron_wargear05", "necron_wargear06", "necron_wargear07", "necron_wargear08", "necron_wargear09", "necron_wargear10" }
+
+g_OrksWG_List = { "ork_wargear01", "ork_wargear02", "ork_wargear03", "ork_wargear04", "ork_wargear05", "ork_wargear06", "ork_wargear07", "ork_wargear08", "ork_wargear09", "ork_wargear10" }
+
+g_SistersOfBattleWG_List = { "sisters_wargear01", "sisters_wargear02", "sisters_wargear03", "sisters_wargear04", "sisters_wargear05", "sisters_wargear06", "sisters_wargear07", "sisters_wargear08", "sisters_wargear09", "sisters_wargear10" }
+
+g_SpaceMarinesWG_List = { "marine_wargear01", "marine_wargear02", "marine_wargear03", "marine_wargear04", "marine_wargear05", "marine_wargear06", "marine_wargear07", "marine_wargear08", "marine_wargear09", "marine_wargear10" }
+
+g_TauEmpireWG_List = { "tau_wargear01", "tau_wargear02", "tau_wargear03", "tau_wargear04", "tau_wargear05", "tau_wargear06", "tau_wargear07", "tau_wargear08", "tau_wargear09", "tau_wargear10" }
+
+g_ECWG_List = { "emperors_children_daemon_prince_research_wg" }
+
+-- Unused, but this is the order followed by the various lord types (6 in total)
+g_NecronLordTypes = { "necron_lord_squad", "necron_lord_squad_dc", "necron_lord_squad_nb", "necron_lord_squad_advance_sp_wg", "necron_lord_squad_advance_sp_wg_dc", "necron_lord_squad_advance_sp_wg_nb" }
+------------------------------------------------------------------------------------
+
+
+function WGear_OnInit() -- Disables wargear for normal games.
+
+	-- Global table that stores ONLY Necrons players' IDs and necron lord types.
+	-- ALSO USED IN NecronLordsBodiesFix.SCAR and Assassinate.SCAR !!
+	g_Necrons_PlayersIDXs = { 0, 0, 0, 0, 0, 0, 0, 0 }
+	g_Necrons_PlayersIDXs[0] = 0 -- start enumeration from zero index!
+
+	-- Global Flag used for Assassinate/Wargear Wincodition interaction
+	Is_Hero_Wargear_Enabled = {false}
+	for i = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(i)
+		local race_name = Player_GetRaceName(playerID)
+	end
+end
+
+
+Scar_AddInit(WGear_OnInit)

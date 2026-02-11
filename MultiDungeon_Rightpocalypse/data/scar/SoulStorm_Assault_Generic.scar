@@ -1,0 +1,1839 @@
+--v1.4 26/08/2024
+-- Fixed a buggo.
+--v1.3 21/01/2024
+-- Nerfing the spam.
+--v1.2 15/04/2023
+-- added multiple titan support
+--v1.1 06/10/2022
+--QoL added, still just getting it working.
+--v1.0 02/10/2022
+--To DO
+--Tidy this bastard up.
+--------------------------------------------------------------
+-- Assault code, reworked (V1.00)						--
+-- Conceived and originally coded by Dark40k.				--
+-- Imported to Unification and totally re-coded by fuggles2k.	--
+		--
+--------------------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("Community_Functions.scar")
+import("SoulStorm_Assault_Generic_NIS.nis")
+import("World_Race_Entities.scar")
+-- this is a good way to identify the actual error and not just have it say "error"
+--import("guard_race.scar")
+
+-- Difficulty override for MP games. Set to [true], and then choose one: "easy", "standard", "hard", "harder", "insane".
+Override_Auto_Difficulty_2HP = false
+Override_Difficulty_Chosen_Assault = "insane"
+G_Is_Assault_Map = true
+--print "Setting the assault flag now1"
+
+--------------------------------------------------------------------------------------------------------
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- Trick, to make the proper import On load, before anything else!
+if g_enemy_RaceName~=nil then
+	print("Re-Importing Attack stats for "..g_enemy_RaceName.." on load...")
+	import("AssaultAttacks/"..g_enemy_RaceName..".scar")
+	import("winconditions/3destroyhq.scar")
+end
+
+
+
+-- Global flag, used to distinguish Assault maps.
+G_Is_Assault_Map = true
+--print "Setting the assault flag now2"
+
+
+function Assault_OnInit()
+G_Is_Assault_Map = true
+--print "Setting the assault flag now3"
+	-- Initialise Global Variables
+	-- Global var set to true, so that other win conditions to know when waves have failed
+	g_Global_Rule_Initiation_Switch = true
+	-- Table that holds stats for each player's wave spawn time and position of the most remote attacking squad
+	g_fallen_tracker = 0
+	g_AssaultPlayerWaveSpawnTimeAndPosition = {}
+	g_Assault_Enemy_Waves_Have_Failed = false
+	g_Assault_Enemy_AI_Is_Human = false
+	g_Assault_SinglePC_Match = false
+	g_Assault_playerID_Difficulty_Choose = World_GetPlayerAt(0)
+	g_difficulty = ""
+	g_wavetimer = 100
+	g_spamtimer = 90
+	g_airspamtimer = 90
+	g_playerattack = 1
+	g_assault_high_resources = false
+	g_final_music = 0
+	g_number_of_human_defending_players = 0
+	g_number_of_players = World_GetPlayerCount()
+	-- Calculate the number of Human Defending Players
+	addoncheck = 0
+	for i=0, g_number_of_players-2 do
+		if Player_IsHuman(Assault_PlayerInfo.PlayerID[i]) then
+			g_number_of_human_defending_players = g_number_of_human_defending_players + 1
+		end
+		g_AssaultPlayerWaveSpawnTimeAndPosition[i] = {Time = 0, Pos = nil, SGPos = nil}
+	end
+	print("Human Attacking Players: "..g_number_of_human_defending_players)
+	-- Set Teams properly, if not already
+	for i=0, g_number_of_players-2 do Player_SetTeam( Assault_PlayerInfo.PlayerID[i], 0 ) end
+	Player_SetTeam( Assault_PlayerInfo.PlayerID[g_number_of_players-1], 1 )
+
+	-- Store the enemy Player ID and Race Name in separate vars, for convenience
+	g_enemy_PlayerID = Assault_PlayerInfo.PlayerID[g_number_of_players-1]
+	g_enemy_RaceName = Assault_PlayerInfo.RaceName[g_number_of_players-1]
+	print ("who is this "..g_enemy_RaceName)
+
+
+	-- Unsupported Survival Game Setup Checks
+	g_ProblematicStartMessageASSAULT = ""
+	-- Check for unsupported attacking AI enemy races. IMPORT the race stats if supported!
+	-- import('AssaultAttacks/XXXXXXXXXXXXXXXXXXX.scar') -- Use for testing, commenting the following if
+	if pcall(import, 'AssaultAttacks/'..g_enemy_RaceName..'.scar') then
+		print("Importing stats for Enemy AI Attacking Race: "..g_enemy_RaceName)
+	else
+		print "here?"
+		g_ProblematicStartMessageASSAULT = "UNSUPPORTED ENEMY AI RACE ("..g_enemy_RaceName.."), OR SCaR ERROR IN RACE's PROFILE - GAME STOPPED !!!"
+		Rule_AddInterval(Rule_Display_Start_Failure_ASSAULT,3)
+		return
+	end
+	-- Check if a Human player is controlling the defender!! --------------------
+	
+	if Player_IsHuman(g_enemy_PlayerID) then 
+		--g_ProblematicStartMessageASSAULT = "UNSUPPORTED POSITIONING DETECTED - GAME STOPPED !!! You MUST have an ENEMY computer at the LAST Map Slot."
+		--Rule_AddInterval(Rule_Display_Start_Failure_ASSAULT,3)
+		g_Assault_Enemy_AI_Is_Human = true
+	end
+	-- Check if it is Single-PC, or Multi-Player human Game.
+	if (g_number_of_human_defending_players == 1 and not g_Assault_Enemy_AI_Is_Human)
+	or g_number_of_human_defending_players == 0 then
+		g_Assault_SinglePC_Match = true
+	end
+
+	--This is incase the race does not use builders
+	--print("My builder is "..RepairingSquadName)
+		if RepairingSquadName ~= Nil then
+		g_Uses_builders = 1
+		--print "uses builders"
+		else
+		g_Uses_builders = 0
+		--print "we don't need roads where we're going"
+		end
+
+	g_numAssaultPoints = World_GetNumStrategicObjectives()
+	g_numAssaultTurrets = 0
+	g_numAssaultBarracks = 0
+	g_numAssaultMines = 0
+	g_numAssaultVehicles = 0
+	g_numAssaultBigVehicles = 0
+	g_numAssaultHQs = 0
+	g_numAssaultTechs = 0
+-- Only one titan?
+	g_numAssaultTitans = 0
+	g_numAssaultGens = 0
+	g_numRepairResurs = 0
+	g_titancounter = 0
+	g_numLostAssaultHQs = 0
+	g_numLostAssaultHQscompare = 1
+
+		for j=1, 100 do
+			if Marker_Exists("mk_turret_"..(5)..j,"basic_marker") then
+			g_numAssaultTurrets = g_numAssaultTurrets +1
+			end
+			if Marker_Exists("mk_barracks_"..(5)..j,"basic_marker") then
+			g_numAssaultBarracks = g_numAssaultBarracks +1
+			end
+			if Marker_Exists("mk_mines_"..(5)..j,"basic_marker") then
+			g_numAssaultMines = g_numAssaultMines +1
+			end
+			if Marker_Exists("mk_vehicle_"..(5)..j,"basic_marker") then
+			g_numAssaultVehicles = g_numAssaultVehicles +1
+			end
+			if Marker_Exists("mk_bigvehicle_"..(5)..j,"basic_marker") then
+			g_numAssaultBigVehicles = g_numAssaultBigVehicles +1
+			end
+			if Marker_Exists("mk_hq_"..(5)..j,"basic_marker") then
+			g_numAssaultHQs = g_numAssaultHQs +1
+			end
+			if Marker_Exists("mk_tech_"..(5)..j,"basic_marker") then
+			g_numAssaultTechs = g_numAssaultTechs +1
+			end
+			if Marker_Exists("mk_titan_"..(5)..j,"basic_marker") then
+			g_numAssaultTitans = g_numAssaultTitans +1
+			end
+			if Marker_Exists("mk_gen_"..(5)..j,"basic_marker") then
+			g_numAssaultGens = g_numAssaultGens +1
+			end
+			if Marker_Exists("mk_Repair_Resur_"..j,"basic_marker") then
+			g_numRepairResurs = g_numRepairResurs +1
+			end
+		end
+
+
+--if Marker_Exists("mk_bigvehicle_"..(5)..j,"basic_marker") then
+--if Marker_Exists("mk_vehicle_"..(5)..j,"basic_marker") then
+--if Marker_Exists("mk_tech_"..(5)..j,"basic_marker") then
+--if Marker_Exists("mk_hq_"..(5)..j,"basic_marker") then
+
+
+
+
+	--print ("Total players is "..	g_number_of_players)
+	--print ("This many CPs: "..g_numAssaultPoints)
+	--print ("This many Turrets: "..g_numAssaultTurrets)
+	--print ("This many Vehicles: "..g_numAssaultVehicles)
+	--print ("This many HQs: "..g_numAssaultHQs)
+	
+
+	-- First thing, place any race turrets that maps may support!
+	--fuggles, this is now the main function
+	Rule_Place_Initial_Race_Turrets()
+
+	Rule_AddInterval(Rule_CheckIfAssaultAttackerIsHuman,0.5)
+	Rule_AddOneShot(Rule_GetHowMuchReq,1)
+	Rule_AddOneShot(Rule_KickThingsOff,16.5)
+	Rule_AddOneShot(Rule_Setup_Cycle_Timers,2)
+	-- If the player has not activated an actual condition for wining
+	Rule_AddOneShot(Rule_CheckWinConditionChosen,0.5)
+	--Rule_SetDifficultyChosen()
+	--Rule_AddOneShot(Rule_SetUpTheMusic,5)
+	Assault_PrintStats()
+	Rule_AddOneShot(Rule_BodyCountAndLevel_Triggers,6)
+
+
+
+--stats from dark40k
+--this is easy, can be set to hard
+Repair_Entity_InitWaitCycles = 18 
+t_Repair_WaitCycles = {}
+Repair_Defend_InitWaitCycles = 120 
+t_Defend_WaitCycles = {}
+Repair_Recover_InitWaitCycles = 10 
+t_Recover_WaitCycles = {}
+Repair_Rebuild_InitWaitCycles = 10 
+t_Rebuild_WaitCycles = {}
+Repair_Attack_InitWaitCycles = 48
+t_Attack_WaitCycles = {}
+g_Spam_WaitCycles = 120
+t_turrets_ASSAULT_timer = {}
+t_turrets_ASSAULT_lives = {}
+g_Aircraft_WaitCycles = 120
+EGTracker_List={}
+Rule_Repair_AllZone_Interval = 1.0
+Rule_Rebuild_AllZone_Interval = 1.0
+Rule_Defend_AllZone_Interval = 1.0
+Rule_Defend_AllZone_Precision = 2.5
+Rule_Recover_AllZone_Interval = 5.0
+Rule_Attack_AllZone_Interval = 5.0
+Rule_Fill_AllEntities_Interval = 5.0
+Rule_Upgrade_AllSquads_Interval = 5.0
+Rule_Attach_Units_Interval=1.0
+g_CPU = World_GetPlayerAt(World_GetPlayerCount()-1)
+sg_AllCPU_ID=Player_GetSquads( g_CPU )
+sg_AllCPU=SGroup_GetName(sg_AllCPU_ID)
+Rule_attack_level = 1
+Last_Builder_User = 1
+--1 is easy, 2 is normal, 3 is hard, 4 is harder, 5 is insane
+difficulty_flag = 1
+difficulty_counter = 1
+vehicle_target = 1
+flier_num = 1
+t_vehicles_deployed = {0,0,0,0,0,0,0}
+g_vehicles_deployed = 0
+t_team_deployed = {}
+last_builder_used = 1
+Cpu_Enable( g_enemy_PlayerID, false) 
+--Cpu_EnableAll(false)
+		
+		Level_Table={
+			[1]={level=AD_Easy, msg="Easy"},
+			[2]={level=AD_Standard, msg="Standard"},
+			[3]={level=AD_Hard, msg="Hard"},
+			[4]={level=AD_Advanced, msg="Advanced"},
+			[5]={level=AD_Insane, msg="Insane"}}
+		
+		Level_Set=1
+		
+		if not Marker_Exists("mk_SetLevel","basic_marker") then
+			print "Warning: mk_SetLevel marker not found, using standard level"
+			InitLevel(AD_Standard)
+		else
+			Rule_Level_Ctr=30
+			--sg_LevelSet_ID=SGroup_Create("sg_LevelSet")
+			--Util_CreateSquadsAtMarker(World_GetPlayerAt(0), "sg_LevelSet", "space_marine_squad_skull_probe", "mk_SetLevel", 1)
+			Rule_AddOneShot(new_difficulty_select,1)
+		end
+
+end
+
+
+
+Scar_AddInit(Assault_OnInit)
+
+
+function Rule_CheckIfAssaultAttackerIsHuman()
+	if Player_IsAlive(g_enemy_PlayerID) then
+		if Player_IsHuman(g_enemy_PlayerID) then 
+			g_Assault_Enemy_AI_Is_Human = true
+		else
+			g_Assault_Enemy_AI_Is_Human = false
+		end
+	else
+		Rule_Remove(Rule_CheckIfAssaultAttackerIsHuman)
+	end
+end
+
+
+function Assault_PrintStats()
+	G_Is_Assault_Map = true
+	--print "Setting the assault flag now4"
+	print("-------------------------")
+	local ih,sp = "No", "No"
+	if g_Assault_Enemy_AI_Is_Human then ih = "Yes" end
+	if g_Assault_SinglePC_Match then sp = "Yes" end
+	print("Attacker Human: "..ih)
+	print("Single-PC Game: "..sp)
+	print("Defending Humans: "..g_number_of_human_defending_players)
+	for idx=0, g_number_of_players-1 do
+		local playerID = World_GetPlayerAt(idx)
+		if Player_IsHuman(playerID) then ih = "Yes" else ih = "No" end
+		print("Player "..(idx+1)..", IDX "..idx..", Team "..Player_GetTeam(playerID)..", Human: "..ih..", Name: "..Player_GetDisplayName(playerID)[1].." ("..Player_GetRaceName(playerID)..")")
+	end
+	print(">>Player "..(World_GetPlayerIndex(g_enemy_PlayerID)+1).." ("..g_enemy_RaceName.."), is the ATTACKER")
+	print("-------------------------")
+end
+
+
+function Rule_Place_Initial_Race_Turrets()
+	local function race_turret_name(idx)
+		local max = table.getn(Assault_PlayerInfo.TurretNoLimName[idx])
+		-- is this why guard are weird? Let's try this
+		max = 1
+		
+		if max>0 then
+			if Assault_PlayerInfo.TurretNoLimName[idx][1] == "race_tyranid_bio_turret_no_limit" then -- Tyranid Swarm has a SQUAD 2nd turret!
+				return Assault_PlayerInfo.TurretNoLimName[idx][1]
+			else
+				return Assault_PlayerInfo.TurretNoLimName[idx][World_GetRand(1,max)]
+			end
+		else
+			print("NO unlimited turrets defined for race "..Assault_PlayerInfo.RaceName[idx].." !!")
+			print("Using Space Marines Turrets, as an alternative...")
+			return "space_marine_turret_bolter_no_limit"
+		end
+	end
+
+	local function race_mine_name(idx)
+		local max = table.getn(Assault_PlayerInfo.MinesName[idx])
+		if max>0 then
+			return Assault_PlayerInfo.TurretNoLimName[idx][1]
+		else
+			print("NO mines defined for race "..Assault_PlayerInfo.RaceName[idx].." !!")
+			print("Using Guard Mines, as an alternative...")
+			return "guard_mines"
+		end
+	end
+
+
+--fuggles, I don't get this code yet so this will do for now
+
+
+
+
+	--fuggles this will do the bulk of the lifting
+	-- Place turrets for the Defending AI Enemy
+	for j=1, g_numAssaultTurrets do
+ 
+		if Marker_Exists("mk_turret_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_turret_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+				if TurretName ~= Nil then
+				Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_turrets_ASSAULT"..j, TurretName, pos, 1)
+				end
+		else
+			break
+		end
+	end	
+
+		
+
+
+
+	-- Place mines for the Defending AI Enemy
+	for j=1, g_numAssaultMines do
+		if Marker_Exists("mk_mines_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_turret_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+				if MinesName ~= Nil then
+				Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_mines_ASSAULT"..t, MinesName, pos, 1)
+				else
+				Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_mines_ASSAULT"..t, "guard_mines", pos, 1)
+				end
+		else
+			break
+		end
+	end
+
+	-- Place barracks for the Defending AI Enemy
+	for j=1, g_numAssaultBarracks do
+		if Marker_Exists("mk_barracks_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_barracks_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if BarracksName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_barracks_ASSAULT"..t, BarracksName, pos, 1)
+			end
+		else
+			break
+		end
+	end
+
+	for j=1, g_numAssaultVehicles do
+		if Marker_Exists("mk_vehicle_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_vehicle_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if VehicleName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_vehicle_ASSAULT"..j, VehicleName, pos, 1)
+			--print ("This one is called ".."eg_vehicle_ASSAULT"..j)
+			end
+		else
+			break
+		end
+	end
+
+	for j=1, g_numAssaultBigVehicles do
+		if Marker_Exists("mk_bigvehicle_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_bigvehicle_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if BigVehicleName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_bigvehicle_ASSAULT"..j, BigVehicleName, pos, 1)
+			end
+		else
+			break
+		end
+	end
+
+	for j=1, g_numAssaultTechs do
+		if Marker_Exists("mk_tech_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_tech_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if TechName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_tech_ASSAULT"..j, TechName, pos, 1)
+			end
+		else
+			break
+		end
+	end
+
+
+	for j=1, g_numAssaultHQs do
+		if Marker_Exists("mk_hq_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_hq_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if HQName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_hq_ASSAULT"..j, HQName, pos, 1)
+			end
+		else
+			break
+		end
+	end
+
+	for j=1, g_numAssaultGens do
+		if Marker_Exists("mk_gen_"..(5)..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mk_gen_"..(5)..j,"basic_marker"))
+			local t = g_number_of_players-1
+			if GenName ~= Nil then
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_gen_ASSAULT"..j, GenName, pos, 1)
+			end
+		else
+			break
+		end
+	end
+	
+	if g_Uses_builders == 1 then
+		for j=1, g_numAssaultPoints do
+			if Marker_Exists("mk_Repair_DefPos_"..j,"basic_marker") then
+				--local pos = Marker_GetPosition(Marker_FromName("mk_Repair_DefPos_"..j,"basic_marker"))
+				local t = g_number_of_players-1
+				buildernum = World_GetRand(2,3)
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_repair_"..j, RepairingSquadName, "mk_Repair_DefPos_"..j, 1, buildernum )
+			else
+				break
+			end
+		end
+	end
+
+	if g_Uses_builders == 1 then
+		for j=1, 4 do
+			if Marker_Exists("mk_enemy_pos","basic_marker") then
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_rebuild_recover_"..j, RepairingSquadName, "mk_enemy_pos", 1, 1)
+			else
+				break
+			end
+		end
+	end
+
+	for j=1, g_numAssaultPoints do
+	--print ("at this time this number is "..g_numAssaultPoints)
+		if Marker_Exists("mk_Repair_DefPos_"..j,"basic_marker") then
+			--local pos = Marker_GetPosition(Marker_FromName("mk_Repair_DefPos_"..j,"basic_marker"))
+			print ("adding a dude to "..j)
+			local t = g_number_of_players-1
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_repair_recover_"..j, DeCapturingSquadName, "mk_Repair_DefPos_"..j, 1, DeCapturingSquadMmbrs)
+		else
+			break
+		end
+	end
+
+--Add Titans
+	for j=1, g_numAssaultTitans do
+		if Marker_Exists("mk_titan_5"..j,"basic_marker") then
+			SGroup_CreateIfNotFound("sg_titan"..j)
+			SGroup_CreateIfNotFound("sg_titan_spawn")
+			if g_titancounter == 0 then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_titan_spawn"..j, TitanName1, "mk_titan_5"..j, 1, 1 )
+			g_titancounter = g_titancounter +1
+			elseif g_titancounter == 1 then
+				if TitanName2 ~= Nil then
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_titan_spawn"..j, TitanName2, "mk_titan_5"..j, 1, 1 )
+				else
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_titan_spawn"..j, TitanName1, "mk_titan_5"..j, 1, 1 )
+				end
+			g_titancounter = 0
+			end
+			SGroup_AddGroup( "sg_titan"..j, "sg_titan_spawn"..j)
+			Cpu_LockSGroup(g_enemy_PlayerID, "sg_titan"..j)
+		end
+	end
+
+--fuggles this sucks but ignore lock commands otherwise :\
+--wave one "sg_guard_squads_one"
+SGroup_CreateIfNotFound("sg_guard_squads_one_start") 
+SGroup_CreateIfNotFound("sg_guard_squads_one") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_one_start", SmallTank1, "mk_Repair_Resur_1", 2, 1)
+SGroup_AddGroup( "sg_guard_squads_one_start", "sg_guard_squads_one")
+if Transport1 ~= Nil then
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_one_start", Transport1, "mk_Repair_Resur_1", 1, 1)
+end
+SGroup_AddGroup( "sg_guard_squads_one_start", "sg_guard_squads_one")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_one_start", Elite2, "mk_Repair_Resur_1", 2, 1)
+SGroup_AddLeaders("sg_guard_squads_one_start")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_one_start", Squad1, "mk_Repair_Resur_1", 2, 6)
+SGroup_AddGroup( "sg_guard_squads_one_start", "sg_guard_squads_one")
+if Squad1Upgrade1 ~= Nil then
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_guard_squads_one_start"), 1), Squad1Upgrade1, 4)
+end
+SGroup_AddLeaders("sg_guard_squads_one_start")
+SGroup_AddGroup( "sg_guard_squads_one", "sg_guard_squads_one_start")
+Cmd_SetStance("sg_guard_squads_one",STANCE_Hold)
+Cpu_LockSGroup( g_enemy_PlayerID,"sg_guard_squads_one")
+---"sg_guard_squads_two"
+SGroup_CreateIfNotFound("sg_guard_squads_two_start") 
+SGroup_CreateIfNotFound("sg_guard_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_two_start", MainTank1, "mk_Repair_Resur_2", 1, 1)
+SGroup_AddGroup( "sg_guard_squads_two_start", "sg_guard_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_two_start", SmallTank1, "mk_Repair_Resur_3", 1, 1)
+SGroup_AddGroup( "sg_guard_squads_two_start", "sg_guard_squads_two")
+if Transport1 ~= Nil then
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_two_start", Transport1, "mk_Repair_Resur_2", 1, 1)
+end
+SGroup_AddGroup( "sg_guard_squads_two_start", "sg_guard_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_two_start", Elite2, "mk_Repair_Resur_2", 2, 1)
+SGroup_AddLeaders("sg_guard_squads_two_start")
+SGroup_AddGroup( "sg_guard_squads_two_start", "sg_guard_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_two_start", Elite1, "mk_Repair_Resur_2", 2, 6)
+if Elite1Upgrade2 ~= Nil then
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_guard_squads_two_start"), 1), Elite1Upgrade2, 4)
+end
+SGroup_AddLeaders("sg_guard_squads_two_start")
+SGroup_AddGroup( "sg_guard_squads_two", "sg_guard_squads_two_start")
+Cmd_SetStance("sg_guard_squads_two",STANCE_Hold)
+Cpu_LockSGroup( g_enemy_PlayerID,"sg_guard_squads_two")
+---"sg_guard_squads_three"
+SGroup_CreateIfNotFound("sg_guard_squads_three_start") 
+SGroup_CreateIfNotFound("sg_guard_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_three_start", MainTank2, "mk_Repair_Resur_3", 2, 1)
+SGroup_AddGroup( "sg_guard_squads_three_start", "sg_guard_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_three_start", SmallTank2, "mk_Repair_Resur_3", 1, 1)
+SGroup_AddGroup( "sg_guard_squads_three_start", "sg_guard_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_three_start", Hero1, "mk_Repair_Resur_3", 1, 1)
+SGroup_AddGroup( "sg_guard_squads_three_start", "sg_guard_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_three_start", Elite2, "mk_Repair_Resur_3", 3, 1)
+SGroup_AddLeaders("sg_guard_squads_three_start")
+SGroup_AddGroup( "sg_guard_squads_three_start", "sg_guard_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_three_start", RelicName1, "mk_Repair_Resur_3", 1, 1)
+SGroup_AddGroup( "sg_guard_squads_three", "sg_guard_squads_three_start")
+Cmd_SetStance("sg_guard_squads_three",STANCE_Hold)
+Cpu_LockSGroup( g_enemy_PlayerID,"sg_guard_squads_three")
+-----
+---Let's allow optional ones for big maps
+
+	if g_numRepairResurs > 3 then
+		for v=1, g_numRepairResurs do
+			SGroup_CreateIfNotFound("sg_guard_squads_guard_start"..v) 
+			SGroup_CreateIfNotFound("sg_guard_squads_guard"..v)
+			random = World_GetRand(1,3)
+				if random == 1 then
+				Pick = Hero1
+				elseif random == 2 then
+				Pick = Hero2
+				elseif random == 3 then
+				Pick = Hero3
+				end
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_guard_start"..v, Pick, "mk_Repair_Resur_"..v, 1, 1)
+			SGroup_AddGroup( "sg_guard_squads_guard_start"..v, "sg_guard_squads_guard"..v)
+			random = World_GetRand(1,1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_guard_start"..v, MainTank1, "mk_Repair_Resur_"..v, random, 1)
+			SGroup_AddGroup( "sg_guard_squads_guard_start"..v, "sg_guard_squads_guard"..v)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_guard_start"..v, SmallTank2, "mk_Repair_Resur_"..v, random, 1)
+			SGroup_AddGroup( "sg_guard_squads_guard_start"..v, "sg_guard_squads_guard"..v)
+			random = World_GetRand(1,2)
+				if random == 1 then
+				Pick = Elite1
+				elseif random == 2 then
+				Pick = Elite2
+				elseif random == 3 then
+				Pick = DeCapturingSquadName
+				end
+			random = World_GetRand(1,2)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_guard_start"..v, Pick, "mk_Repair_Resur_"..v, random, 9)
+			SGroup_AddLeaders("sg_guard_squads_guard_start"..v)
+			SGroup_AddGroup( "sg_guard_squads_guard_start"..v, "sg_guard_squads_guard"..v)
+			random = World_GetRand(1,3)
+				if random == 1 then
+				Pick = Elite1
+				elseif random == 2 then
+				Pick = Elite2
+				elseif random == 3 then
+				Pick = DeCapturingSquadName
+				end
+			random = World_GetRand(1,2)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_guard_squads_guard_start"..v, Pick, "mk_Repair_Resur_"..v, random, 9)
+			if Elite1Upgrade2 ~= Nil then
+			Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_guard_squads_guard_start"..v), 1), Elite1Upgrade2, 4)
+			end
+			SGroup_AddLeaders("sg_guard_squads_guard_start"..v)
+			SGroup_AddGroup( "sg_guard_squads_guard"..v, "sg_guard_squads_guard_start"..v)
+			Cmd_SetStance("sg_guard_squads_guard"..v,STANCE_Hold)
+			Cpu_LockSGroup( g_enemy_PlayerID,"sg_guard_squads_guard"..v)
+		end
+	end
+
+
+--SGroup_CreateIfNotFound("sg_titan")
+--Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_titan_spawn", TitanName1, "mk_titan_51", 1, 1 )
+--SGroup_AddGroup( "sg_titan", "sg_titan_spawn")
+--Cpu_LockSGroup(g_enemy_PlayerID, "sg_titan")
+
+--fuggles
+-- These set up the first 8 initial spawning troops from their race .scar in /AssaultAttacks, allowing for custom setup
+Rule_Critical_One_Squads(1)
+Rule_Critical_Two_Squads(2)
+Rule_Critical_Three_Squads(3)
+Rule_Critical_Four_Squads(4)
+Rule_Critical_Five_Squads(5)
+Rule_Critical_Six_Squads(6)
+Rule_Critical_Seven_Squads(7)
+Rule_Critical_Eight_Squads(8)
+Rule_Final_Stand_Squads(9)
+
+--add chaff
+	if g_numAssaultPoints > 8 then
+	--print ("adding chaff")
+		for j= 8, g_numAssaultPoints do
+		spawnpos = EGroup_GetPosition("eg_Repair_Ctrl_"..j)
+		random = World_GetRand(1,6)
+				if random == 1 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Hero1, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Elite1, spawnpos, 1, 9)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Elite2, spawnpos, 1, 9)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, SmallTank1, spawnpos, 1, 1)
+				elseif random == 2 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Hero2, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Elite2, spawnpos, 1, 9)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, MainTank1, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, SmallTank1, spawnpos, 1, 1)
+				elseif random == 3 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Artillery2 , spawnpos, 2, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, RelicName2, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, MainTank1, spawnpos, 1, 2)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, SmallTank1, spawnpos, 1, 2)
+				elseif random == 4 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, RelicName1 , spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, RelicName2, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Hero1, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, DeCapturingSquadName, spawnpos, 1, 9)
+				elseif random == 5 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Artillery2 , spawnpos, 2, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, MainTank1, spawnpos, 2, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Hero2, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Elite1, spawnpos, 1, 9)
+				elseif random == 6 then
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, SmallTank1 , spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, MainTank1, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Hero2, spawnpos, 1, 1)
+				Util_CreateSquadsAtPositionEx(g_enemy_PlayerID, "sg_guard_squads_chaff_"..j, Elite2, spawnpos, 1, 9)
+				end
+
+		Cmd_SetStance("sg_guard_squads_chaff_"..j,STANCE_StandGround)
+		Cpu_LockSGroup( g_enemy_PlayerID,"sg_guard_squads_chaff_"..j)
+		end
+
+
+	end
+--fuggles
+--these probably need action timers, to keep the cooldown on spawner ticking but also delay spamming capture commands.
+Rule_AddOneShot(Rule_Difficulty_Control,31)
+
+end
+
+
+--Legit, fuggles2k has done an amazing job with Assault. Kek.
+function Rule_Display_Credits()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Our enemy is well dug-in and prepared. Assemble your forces and strike at their stronghold and its sentinels!")
+		Rule_Remove(Rule_Display_Credits)
+	end
+end
+
+
+
+-- Support function, see Rule_Force_Attack_Idle_Squads function, below
+function Sgroup_RemoveSgroupAssault( GroupID, GroupToRemoveID)
+	local function Remove( sgroupid, itemindex, squadID )
+		SGroup_Remove(GroupID,squadID)
+	end
+	SGroup_ForEach(GroupToRemoveID, Remove)
+end
+
+
+
+-- Always use Destroy HQ wincondition
+function Rule_CheckWinConditionChosen()
+	if DestroyHQ_WC_Enabled ~= nil then
+		print("DestroyHQ already chosen - started!")
+	else
+		print("DestroyHQ was not chosen. Force it!")
+		import("winconditions/3destroyhq.scar"); DestroyHQ()
+	end
+end
+
+
+--[[Display Failed Init]]--
+function Rule_Display_Start_Failure_ASSAULT()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle(g_ProblematicStartMessageASSAULT)
+	end
+end
+
+function Rule_SetDifficultyChosen()
+			Rule_AddOneShot(new_difficulty_select,4)
+end
+
+
+function Rule_SetDifficultyChosen2()
+	if g_Assault_SinglePC_Match then
+	-- Single-PC game. Either Human vs AI, or Human + AIs Vs AI (3p map and up) or AIs Vs Human Attacker
+		print("Single-PC game. Difficulty is always calculated correctly...")
+		local difs = {"easy", "standard", "hard", "harder", "insane"}
+		g_difficulty = difs[Cpu_GetDifficulty(g_enemy_PlayerID)+1]
+		print("MP Final Difficulty: "..g_difficulty)
+		Rule_AddOneShot(Rule_DifficultyModificationHPs,0.5)
+		Rule_AddInterval(Rule_Display_Credits,10)
+	else
+	-- MP game. Difficulty cannot be detected at 100% 
+		if Override_Auto_Difficulty_2HP then
+		-- Difficulty manually set. See at the top of the file.
+			print("MP game, g_difficulty was set manually by the CODE...")
+			g_difficulty = Override_Difficulty_Chosen_Assault
+			print("MP Final Difficulty: "..g_difficulty)
+			Rule_AddOneShot(Rule_DifficultyModificationHPs,0.5)
+			Rule_AddInterval(Rule_Display_Credits,10)
+		else
+		-- Difficulty calculated by the code impossible, NOT consistent. The following will not work for now
+		-- print("MP game, Difficulty calculation NOT always consistent..!")
+		-- g_difficulty = Cpu_GetMPDifficulty()
+		-- ...So we spawn a difficulty selection building for the FIRST player (the one creating the game)
+			print("MP game, Difficulty MUST ALSO be set by the first player as set in settings!")
+			Rule_DifficultySetByFirstHumanPlayer()
+		end
+	end
+end
+
+
+function Rule_DifficultySetByFirstHumanPlayer()
+	g_assault_DifficultyTimer = World_GetGameTime()
+	-- Spawn difficulty building for first Human player.
+	for idx=0, g_number_of_players-1 do
+		local pID = World_GetPlayerAt(idx)
+		if Player_IsHuman(pID) then
+			g_Assault_playerID_Difficulty_Choose = pID
+			break
+		end
+	end
+	local pos = Player_GetStartPosition(g_Assault_playerID_Difficulty_Choose); pos.x = pos.x - 13
+	Assault_DifficultySpawnEntity = Entity_Create("assault_diff_building_dummy", g_Assault_playerID_Difficulty_Choose, pos)
+	Entity_Spawn(Assault_DifficultySpawnEntity)
+	local eg_Assault_diff_dummyID = EGroup_CreateIfNotFound( "eg_Assault_diff_dummy_group0" )
+	EGroup_Add("eg_Assault_diff_dummy_group0", Assault_DifficultySpawnEntity)
+	if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(g_Assault_playerID_Difficulty_Choose) then
+		W40k_SelectEGroup(eg_Assault_diff_dummyID)
+		Camera_FocusOnTargetPos(pos, 1)
+	end
+	-- Start checking which difficulty hew chose
+	Rule_Add(Rule_DifficultyChosenByFirstHumanPlayer)
+	Rule_Add(Rule_Display_MP_Diff_Choice_ASSAULT)
+end
+
+
+function Rule_DifficultyChosenByFirstHumanPlayer()
+	local dif = ""
+	local checkDiff = function( sgroupid, itemindex, squadID )
+		local name = Squad_GetBlueprintName( squadID )
+		if name == "assault_squad_diff_easy_dummy" then dif = "easy"; Squad_Destroy(squadID); return true
+		elseif name == "assault_squad_diff_normal_dummy" then dif = "standard"; Squad_Destroy(squadID); return true
+		elseif name == "assault_squad_diff_hard_dummy" then dif = "hard"; Squad_Destroy(squadID); return true
+		elseif name == "assault_squad_diff_harder_dummy" then dif = "harder"; Squad_Destroy(squadID); return true
+		elseif name == "assault_squad_diff_insane_dummy" then dif = "insane"; Squad_Destroy(squadID); return true end
+	end
+	if SGroup_ForEachAllOrAnyEx( Player_GetSquads(g_Assault_playerID_Difficulty_Choose), false, checkDiff, true, true ) then
+		Entity_DeSpawn(Assault_DifficultySpawnEntity)
+		Entity_Destroy(Assault_DifficultySpawnEntity)
+		g_difficulty = dif
+		Rule_Remove(Rule_DifficultyChosenByFirstHumanPlayer)
+		Rule_AddOneShot(Rule_DifficultyModificationHPs,0.5)
+		Rule_AddInterval(Rule_Display_Credits,6)
+		print("MP Final Difficulty: "..g_difficulty)
+		local squadID = SGroup_GetSpawnedSquadAt(Player_GetSquads(g_Assault_playerID_Difficulty_Choose),1)
+		if squadID ~= nil then
+			local sg_Assault_diff_dummyID = SGroup_CreateIfNotFound( "sg_Assault_diff_dummy_group0" )
+			SGroup_Add("sg_Assault_diff_dummy_group0", squadID )
+			if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(g_Assault_playerID_Difficulty_Choose) then
+				W40k_SelectSGroup(sg_Assault_diff_dummyID)
+				Camera_FocusOnTargetPos(SGroup_GetPosition("sg_Assault_diff_dummy_group0"), 0)
+			end
+		end	
+	elseif World_GetGameTime() > g_Assault_DifficultyTimer + 12 then
+		-- Time is up, randomly choose difficulty
+		local random = World_GetRand(1,20)
+		if random < 4 then g_difficulty = "easy"
+		elseif random < 7 then g_difficulty = "standard"
+		elseif random < 10 then g_difficulty = "hard"
+		elseif random < 15 then g_difficulty = "harder"
+		else g_difficulty = "insane" end
+		Entity_DeSpawn(Assault_DifficultySpawnEntity)
+		Entity_Destroy(Assault_DifficultySpawnEntity)
+		Rule_Remove(Rule_DifficultyChosenByFirstHumanPlayer)
+		Rule_AddOneShot(Rule_DifficultyModificationHPs,0.5)
+		Rule_AddInterval(Rule_Display_Credits,6)
+		print("MP Final Difficulty: "..g_difficulty)
+	end
+end
+
+
+--[[Display MP time limit Init]]--
+function Rule_Display_MP_Diff_Choice_ASSAULT()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Multi-Player game! You must re-choose difficulty, within 10 seconds!")
+		Rule_Remove(Rule_Display_MP_Diff_Choice_ASSAULT)
+	end
+end
+
+
+function Rule_DifficultyModificationHPs()
+	local mdfr = 1	-- for normal Difficulty
+	if     g_difficulty=="easy"   then mdfr = 0.75
+	elseif g_difficulty=="hard"   then mdfr = 1.20
+	elseif g_difficulty=="harder" then mdfr = 1.25
+	elseif g_difficulty=="insane" then mdfr = 1.20
+	end
+	if mdfr~=1 then
+		print("...Applying Max Health Enemy modifier for current Difficulty.")
+		local all_entities = Global_RaceEntities[g_enemy_RaceName]
+		for i=1, table.getn(all_entities.infantry_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.infantry_list[i]), g_enemy_PlayerID) end
+		for i=1, table.getn(all_entities.vehicle_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.vehicle_list[i]), g_enemy_PlayerID) end
+		for i=1, table.getn(all_entities.aircraft_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.aircraft_list[i]), g_enemy_PlayerID) end
+	end
+
+--Cpu_Enable( g_enemy_PlayerID, false) 
+--print "did this happen?"
+end
+
+
+
+function Rule_RewardComp()
+	if g_Assault_Enemy_AI_Is_Human then return end
+	local factor = 0.5
+	if g_difficulty == "hard" or g_difficulty == "harder" then factor = 1
+	elseif g_difficulty=="insane" then factor = 1.5 end
+	local req = (g_number_of_players-1) * factor * 50
+	local pow = (g_number_of_players-1) * factor * 25
+	Player_AddResource(g_enemy_PlayerID,RT_Requisition,req)
+	Player_AddResource(g_enemy_PlayerID,RT_Power,pow)
+end
+
+
+--fuggles, put assault_script_functions_here
+--[[TRIGGER THE MAIN RULES TO SET THINGS GOING]]--
+function Rule_KickThingsOff()
+	if not (g_Assault_Enemy_AI_Is_Human or g_difficulty == "insane" or g_difficulty == "harder") then
+		Player_SetResource(g_enemy_PlayerID,RT_Requisition,0)
+		Player_SetResource(g_enemy_PlayerID,RT_Power,0)
+	end
+	-- Random spamming squad attacks rule
+--	Rule_AddInterval(Rule_HarassingSquadsBegin,g_spamtimer)
+	-- HQ detection rule
+	Rule_AddIntervalDelay(Rule_DetectPlayersHQLocations,2,0.5)
+	print("Rules added!")
+	-- AI Difficulty rules
+	if Cpu_IsCpuPlayer(g_enemy_PlayerID) then
+		print("Local PC, initially CONTROLS the attacking AI!!!")
+	else
+		print("Local PC, initially does NOT control the attacking AI.")
+	end
+
+
+
+	Rule_AddOneShot(Rule_SetDifficultyTimer,4)
+	--Rule_AddOneShot(Rule_BodyCountAndLevel_Triggers,6)
+	--Rule_AddIntervalDelay(Rule_RewardComp,30,13.5)
+end
+
+function Rule_Enable_CPU()
+	if G_Assault_Artificial_Stupidity ~= nil then
+	Cpu_Enable( g_enemy_PlayerID, false)
+	else
+	Cpu_Enable( g_enemy_PlayerID, true) 
+	end
+end
+
+function Rule_UpgradeTurrets()
+--print ("looking for turrets "..TurretName)
+
+	local AssTurrets = function(egroupid, itemindex, entityID)
+	local spawnID = Entity_GetBlueprintName(entityID)
+	--print ("I found a "..spawnID)
+	if spawnID == TurretName then
+	--print "found one!"
+		if TurretAddonName ~= Nil then
+			if addoncheck == 1 then
+			--print "addon"
+			Entity_ForceAddOn(entityID, TurretAddonName)
+			addoncheck = 0
+			else
+			--print "no addon"
+			addoncheck = 1
+			end
+		end
+	elseif spawnID == "guard_turret_heavy_bolter" then
+	--print "old turret?"
+	else
+	--print "none of the above"
+	end
+
+	end
+
+	EGroup_ForEach(Player_GetEntities(g_enemy_PlayerID),AssTurrets)
+	
+end
+
+function Rule_UpgradeLPs()
+--print ("looking for egroups "..TurretName)
+--If Level_Set > 3 then
+--LP2Name
+--LP1Name
+--LPName
+
+	for i = 1, 100 do
+		if EGroup_Exists("lp"..i) then
+			EGroup_SetPlayerOwner("lp"..i, g_enemy_PlayerID)
+			--print ("adding to lp"..i)
+			EGroup_Create( "eg_ListeningPosts"..i)
+			Entity_CreateBuildingPosition(g_enemy_PlayerID, "eg_ListeningPosts"..i, LPName, EGroup_GetPosition("lp"..i), 1)
+			if EGroup_CountSpawned( "eg_ListeningPosts"..i) > 0 then
+					if LP1Name ~= Nil then
+					EGroup_ForceAddOn("eg_ListeningPosts"..i, LP1Name)
+					end
+					if LP2Name ~= Nil then
+						if Level_Set > 3 then
+						EGroup_ForceAddOn("eg_ListeningPosts"..i, LP2Name)
+						end
+					end
+			else
+			print ("something bad with lp"..i)
+			end
+		end
+	end
+
+	for i = 1, 10 do
+		if EGroup_Exists("thermo"..i) then
+			--print ("adding to thermo"..i)
+			EGroup_Create( "eg_Thermo"..i)
+			if Thermo ~= Nil then
+			Entity_CreateBuildingPosition(g_enemy_PlayerID, "eg_Thermo"..i, Thermo, EGroup_GetPosition("thermo"..i), 1)
+			end
+		end
+	end
+
+	
+end
+
+
+function Rule_SetDifficultyTimer()
+	if g_difficulty == "easy" then
+		if g_assault_high_resources then
+			g_wavetimer = 180; g_spamtimer = 900
+		else
+			g_wavetimer = 220; g_spamtimer = 900
+		end
+	elseif g_difficulty == "standard" then
+		if g_assault_high_resources then
+			g_wavetimer = 150; g_spamtimer = 840
+		else
+			g_wavetimer = 190; g_spamtimer = 840
+		end
+	elseif g_difficulty == "hard" then
+		if g_assault_high_resources then
+			g_wavetimer = 120; g_spamtimer = 780
+		else
+			g_wavetimer = 150; g_spamtimer = 780
+		end
+	elseif g_difficulty == "harder" then
+		if g_assault_high_resources then
+			g_wavetimer = 90; g_spamtimer = 720
+		else
+			g_wavetimer = 120; g_spamtimer = 720
+		end
+	elseif g_difficulty == "insane" then
+		if g_assault_high_resources then
+			g_wavetimer = 60; g_spamtimer = 660
+		else
+			g_wavetimer = 90; g_spamtimer = 660
+		end
+	end
+	-- Now that the g_wavetimer/g_spamtimer are calculated, adjust it based on map size
+	local map_size = Community_GetMapSize()
+	print("Wave Time = "..g_wavetimer.." / Spammer Time = "..g_spamtimer)
+	print("Map Size: "..map_size..".  Modifying times for this size...")
+	if		map_size == "small" then		g_wavetimer = math.floor(g_wavetimer * 2.5) ; g_spamtimer = math.floor(g_spamtimer * 2.5)
+	elseif	map_size == "medium" then		g_wavetimer = math.floor(g_wavetimer * 1.7) ; g_spamtimer = math.floor(g_spamtimer * 1.7)
+	elseif	map_size == "large" then		g_wavetimer = math.floor(g_wavetimer * 1.0) ; g_spamtimer = math.floor(g_spamtimer * 1.0) 
+	elseif	map_size == "huge" then			g_wavetimer = math.floor(g_wavetimer * 0.6) ; g_spamtimer = math.floor(g_spamtimer * 0.6)
+	elseif	map_size == "impossible" then	g_wavetimer = math.floor(g_wavetimer * 0.4) ; g_spamtimer = math.floor(g_spamtimer * 0.4) end
+	print("Wave Time = "..g_wavetimer.." / Spammer Time = "..g_spamtimer)
+end
+
+
+function Rule_GetHowMuchReq()
+	print("How much req when start?")
+	for i=0, g_number_of_players-2 do
+		g_req_level = Player_GetResource(Assault_PlayerInfo.PlayerID[i],RT_Requisition)
+		g_pow_level = Player_GetResource(Assault_PlayerInfo.PlayerID[i],RT_Power)
+		if (g_req_level > 3000 or g_pow_level > 3000) then
+			g_assault_high_resources = true
+			print("High Resources!!")
+			break
+		end
+	end
+end
+
+
+----------------------------------------------
+--     AI locking/Unlocking Functions       --
+----------------------------------------------
+
+function Rule_LockSGroupAssaultPlayer(sgroup)
+	if not Player_IsHuman(g_enemy_PlayerID) then
+		local lock = function(sgroupid,itemindex,squadID)
+			pcall(Cpu_LockSquad,g_enemy_PlayerID,Squad_GetGameID(squadID))
+		end
+		SGroup_ForEach(sgroup,lock)
+	end
+end
+
+
+function Rule_UnlockSGroupAssaultPlayer(sgroup)
+	if not Player_IsHuman(g_enemy_PlayerID) then
+		local unlock = function( sgroupid, itemindex, squadID )
+			pcall(Cpu_UnlockSquad,g_enemy_PlayerID,Squad_GetGameID(squadID))
+		end
+		SGroup_ForEach(sgroup,unlock)
+	end
+end
+
+
+
+--------------------------------------------------
+--       Search for the Players Base (HQ)       --
+--------------------------------------------------
+function Rule_DetectPlayersHQLocations()
+	for i=0, g_number_of_players-2 do
+		local detected_hq = nil
+		local hq_nmbr = table.getn(Assault_PlayerInfo.HQName[i])
+		local assault_hq_decetion = function(egroupid, itemindex, entityID)
+			local name = Entity_GetBlueprintName(entityID)
+			for j = 1, hq_nmbr do
+				if name == Assault_PlayerInfo.HQName[i][j] then
+					detected_hq = entityID; return true
+				end
+			end
+		end
+		if EGroup_ForEachAllOrAny(Player_GetEntities(Assault_PlayerInfo.PlayerID[i]), false, assault_hq_decetion) then
+			Assault_PlayerInfo.HQpos[i] = Entity_GetPosition(detected_hq)
+		-- For races that have mobile HQs spawned!!!
+		else
+			local race_name = Player_GetRaceName(World_GetPlayerAt(i))
+			if Global_RaceStats[race_name].HQSquad ~= nil then
+				hq_nmbr = table.getn(Global_RaceStats[race_name].HQSquad)
+				local mobile_hq_decetion = function(sgroupid, itemindex, squadID)
+					local name = Squad_GetBlueprintName(squadID)
+					for j = 1, hq_nmbr do
+						if name == Global_RaceStats[race_name].HQSquad[j] then
+							detected_hq = squadID; return true
+						end
+					end
+				end				
+				if SGroup_ForEachAllOrAnyEx(Player_GetSquads(Assault_PlayerInfo.PlayerID[i]), false, mobile_hq_decetion, true, false) then
+					Assault_PlayerInfo.HQpos[i] = Squad_GetPosition(detected_hq)
+				end
+			end
+		end
+	end
+end
+
+
+
+--fuggles - keep, maybe add air too
+--+++++++++++++++++++++++++++++++++++++++++++++++
+-- PLAYER RANDOM SPAMMING ENEMY ATTACK ROUTINE --
+--+++++++++++++++++++++++++++++++++++++++++++++++
+
+function Rule_HarassingSquadsBegin()
+--print "harrassment wave"
+--Util_MissionTitle("Harrassing wave!")
+
+	if g_Assault_Enemy_AI_Is_Human or (not Player_IsAlive(g_enemy_PlayerID)) then
+		return
+	end
+
+	g_numLostAssaultHQscompare = 1
+	g_numLostAssaultHQs = 0
+
+	for j=1, g_numAssaultHQs do
+		if EGroup_CountSpawned("eg_hq_ASSAULT"..j)==0 then
+		g_numLostAssaultHQs  = g_numLostAssaultHQs +1
+		end
+		--print ("HQ Boost is "..g_numLostAssaultHQs )
+	end
+
+	g_numLostAssaultHQscompare = g_numLostAssaultHQscompare + g_numLostAssaultHQs
+
+--This is per player, and they are probably in the same place, so be mindful.
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Assault_PlayerInfo.PlayerID[i]) then
+			SGroup_CreateIfNotFound("sg_random_squads_start_p"..i)
+			if SGroup_CountSpawned(SGroup_FromName("sg_random_squads_start_p"..i))==0 then
+				--print("Spammer against Player "..i+1)
+
+					--if g_assault_high_resources then Rule_RandomSpammingAttacks_Quickstart_Player(i)
+					--	else Rule_RandomSpammingAttacks(i)
+					--end
+					--if G_Assault_Escalating_Tensions == true then
+					--	if g_assault_high_resources then Rule_RandomSpammingAttacks(i)
+					--	end
+					--end
+
+					-- People didn't want quickstart punishment
+					-- remember this is doubling up.
+					if g_assault_high_resources then Rule_RandomSpammingAttacks(i)
+						else Rule_RandomSpammingAttacks(i)
+					end
+
+					--if G_Assault_Escalating_Tensions == true then
+					--	if g_assault_high_resources then Rule_RandomSpammingAttacks(i)
+					--	end
+					--end
+
+					Cmd_AttackMovePos("sg_random_squads_start_p"..i,Assault_PlayerInfo.HQpos[i])
+					Rule_LockSGroupAssaultPlayer("sg_random_squads_start_p"..i)
+					-- Add escalation, but sensible
+					if G_Assault_Escalating_Tensions == true then
+						if g_numLostAssaultHQs > 3 then
+						g_numLostAssaultHQs  = 3
+						end					
+					-- bonus enemies as things pick up, ala the escalating tension
+						if g_numLostAssaultHQs > 0 then
+						EGroup_CreateIfNotFound("mk_enemy_hq_check") 
+						EGroup_Clear("mk_enemy_hq_check") 
+						Player_GetAllEntitiesNearMarker( g_enemy_PlayerID, "mk_enemy_hq_check", "mk_enemy_pos")
+							if EGroup_Count( "mk_enemy_hq_check" ) > 0 then
+							SGroup_CreateIfNotFound("sg_relief_squads_escalation_p"..i) 
+							Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_escalation_p"..i, Elite3, "mk_enemy_pos", g_numLostAssaultHQs, 6)
+							Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_escalation_p"..i, Squad1, "mk_enemy_pos", g_numLostAssaultHQs, 6)
+							Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_escalation_p"..i, MainTank1, "mk_enemy_pos", g_numLostAssaultHQs, 1)
+							Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_escalation_p"..i, SmallTank1, "mk_enemy_pos", g_numLostAssaultHQs, 1)
+							Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_escalation_p"..i, SmallTank2, "mk_enemy_pos", g_numLostAssaultHQs, 1)
+							Cmd_AttackMovePos("sg_random_squads_start_p"..i,Assault_PlayerInfo.HQpos[i])
+							Rule_LockSGroupAssaultPlayer("sg_random_squads_start_p"..i)
+
+							end
+						end
+					end
+
+				
+			end
+		end
+	end
+end
+
+	
+
+
+function Rule_HarassingAirSquadsBegin()
+g_numLostAssaultHQs = 0
+
+	if g_Assault_Enemy_AI_Is_Human or (not Player_IsAlive(g_enemy_PlayerID)) then
+		return
+	end
+
+	for j=1, g_numAssaultHQs do
+		if EGroup_CountSpawned("eg_hq_ASSAULT"..j)==0 then
+		g_numLostAssaultHQs  = g_numLostAssaultHQs  +1
+		end
+		--print ("Aircraft HQ Boost is "..g_numLostAssaultHQs )
+	end
+
+	-- fuggles, tune using this, it could get silly and is per player
+	if g_numLostAssaultHQs > 2 then
+	g_numLostAssaultHQs = 2
+	end
+
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Assault_PlayerInfo.PlayerID[i]) then
+			SGroup_CreateIfNotFound("sg_random_squads_air_p"..i)
+			if SGroup_CountSpawned(SGroup_FromName("sg_random_squads_air_p"..i))==0 then
+				--print("Air Spammer against Player "..i+1)
+					local random1 = World_GetRand(1,2)
+					if random1 < 2 then
+						aircraftype = AircraftType1
+						else
+						aircraftype = AircraftType2
+					end
+
+				if g_enemy_RaceName == "tyranids_race" then
+				aircraftnumber = 8
+				else
+				aircraftnumber = 1
+				end
+			
+				if G_Assault_Escalating_Tensions == true then
+				aircraftsquadnumber = 1 + g_numLostAssaultHQs 
+				else
+				aircraftsquadnumber = 1
+				end
+
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_air_p"..i, aircraftype, "mk_aircraft_5"..i+1, aircraftsquadnumber, aircraftnumber)
+				Rule_LockSGroupAssaultPlayer("sg_random_squads_air_p"..i)	
+				Cmd_AttackMovePos("sg_random_squads_air_p"..i,Assault_PlayerInfo.HQpos[i])
+
+			end
+		end
+	end
+end
+
+
+
+--Need this for a fun message, or just bundle in with start gloat
+--Rule_Add(Rule_Display_First_Attack_ASSAULT)
+
+
+
+function Rule_Display_First_Attack_ASSAULT()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("The Assault of the enemy is nigh... Prepare your defences!")
+		Rule_Remove(Rule_Display_First_Attack_ASSAULT)
+	end
+end
+function Rule_Display_Enemy_Human_Player_ASSAULT()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("WARNING: The enemy is a HUMAN player!! Be EXTRA careful!!")
+		Rule_Remove(Rule_Display_Enemy_Human_Player_ASSAULT)
+	end
+end
+
+
+--------------------------------------------------------------------------------------------
+-- Assistant function, used in the "Rule_SpecialRaceAttackingMethodAssault" of each race --
+--------------------------------------------------------------------------------------------
+function Get_NextRule_InitiationTMR_Assault()
+	if     g_difficulty == "easy"		then g_TMR_Modifier = 5; return World_GetRand(450,600)
+	elseif g_difficulty == "standard"	then g_TMR_Modifier = 4; return World_GetRand(400,550)
+	elseif g_difficulty == "hard"		then g_TMR_Modifier = 3; return World_GetRand(350,500)
+	elseif g_difficulty == "harder"		then g_TMR_Modifier = 2; return World_GetRand(300,500)
+	elseif g_difficulty == "insane"		then g_TMR_Modifier = 1; return World_GetRand(250,450)
+	else   g_difficulty = "standard"	g_TMR_Modifier = 4; return World_GetRand(400,550)
+	end
+end
+
+---------------------------------------------------------
+--RACE SPECIFIC VICTORY MUSIC??
+--------------------------------------------------------
+function Rule_SetUpTheMusic()
+	t_music = {"battle_01","battle_02","battle_03","battle_04","battle_05","battle_06","battle_07","battle_08"}
+	Rule_AddOneShot(Rule_Player1_Music,1)
+	print"Music triggered!"
+end
+
+function Rule_Player1_Music()
+	Playlist_Manager( PC_Music,t_music, true , false , {10, 10})
+end
+
+function Rule_Level()
+
+	if Rule_Level_Ctr==0 then
+	
+		W40k_HideSystemMessage(Level_Msg)
+		Level_Msg="Difficulty = " .. Level_Table[Level_Set].msg .. " - LOCKED"
+		W40k_ShowSystemMessage(Level_Msg)
+		
+	elseif Rule_Level_Ctr<-5 then
+		
+		W40k_HideSystemMessage(Level_Msg)
+		Rule_Remove(Rule_Level)
+		
+		-- Reactive les CPU
+		Cpu_EnableAll(true)
+		
+		--fuggles need to sort this
+		--InitLevel(Level_Table[Level_Set].level)
+		
+	elseif Rule_Level_Ctr>0 then
+		
+		if Level_Msg~=nil then
+			W40k_HideSystemMessage(Level_Msg)
+		end
+		
+		Level_Msg="Difficulty = " .. Level_Table[Level_Set].msg .. " - Player1 sacrifice probe to increase - Time=" .. Rule_Level_Ctr
+		W40k_ShowSystemMessage(Level_Msg)
+		
+		if (SGroup_Count(sg_LevelSet_ID)==0) and (Level_Set<5) then
+			Level_Set=Level_Set+1
+			if Level_Set<5 then
+--hilariously if you hammer delete to kill the probe you take out your HQ and cause a SCAR error on death.
+				if Player_IsAlive( World_GetPlayerAt(0) ) then
+				Util_CreateSquadsAtMarker(World_GetPlayerAt(0), "sg_LevelSet", "space_marine_squad_skull_probe", "mk_SetLevel", 1)
+				end
+			end
+		end
+		
+	end
+	
+	Rule_Level_Ctr=Rule_Level_Ctr-1
+	
+end
+
+function Rule_Setup_Cycle_Timers()
+
+	for i=1,8 do
+	t_Attack_WaitCycles[i] = Repair_Attack_InitWaitCycles
+	t_Repair_WaitCycles[i] = Repair_Entity_InitWaitCycles
+	t_Defend_WaitCycles[i] = Repair_Defend_InitWaitCycles
+	t_Recover_WaitCycles[i] = Repair_Recover_InitWaitCycles
+	t_Attack_WaitCycles[i] = Repair_Attack_InitWaitCycles
+	end
+end
+
+-- check for loss of LP and then spam a Rule_XXX_level_relief
+-- fuggles is not happy with this.
+-- fuggles will remember that.
+function Rule_CounterAttack_CP()
+	for j=1,8 do
+		if  EGroup_IsCapturedByPlayer( "eg_Repair_Ctrl_"..j, g_enemy_PlayerID, false ) then
+		--lost one
+			if t_Attack_WaitCycles[j] == 0 then
+			attackpos = EGroup_GetPosition("eg_Repair_Ctrl_"..j)
+			Rule_First_Level_Relief(i)
+			Cmd_AttackMovePos("sg_relief_squads_one", attackpos)
+			t_Attack_WaitCycles[j] = Repair_Attack_InitWaitCycles
+			else
+			--fuggles error bad
+			counter = t_Attack_WaitCycles[j]
+			counter = (counter -1)
+			t_Attack_WaitCycles[j] = counter
+			end
+		end
+	end
+end
+
+--for fixing things
+function Rule_Repair_CP()
+	if g_Uses_builders == 1 then
+		for j=1,8 do
+			if  EGroup_IsCapturedByPlayer( "eg_Repair_Ctrl_"..j, g_enemy_PlayerID, true) then
+			--lost one
+				if SGroup_Count("sg_repair_"..j) > 0 then
+				-- still alive, so do something dammit
+				repairpos = EGroup_GetPosition("eg_Repair_Ctrl_"..j)
+				Cmd_AttackMovePos("sg_repair_"..j, repairpos)
+				else
+				--dead, start the timer
+				t_Repair_WaitCycles[j] = t_Repair_WaitCycles[j]-1
+					if t_Repair_WaitCycles[j] == 0 then
+					--make more
+					repairpos = EGroup_GetPosition("eg_Repair_Ctrl_"..j)
+					buildernum = World_GetRand(1,3)
+					Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_repair_"..j, RepairingSquadName, "mk_enemy_pos", 1, buildernum )
+					Cmd_AttackMovePos("sg_repair_"..j, repairpos)
+					t_Repair_WaitCycles[j] = Repair_Entity_InitWaitCycles
+					end
+				
+				end
+			end
+
+
+		end
+	end
+end
+
+--for getting the good guns, although AI seems to do this okay.
+function Rule_Upgrade_All()
+end
+
+--for piling into barracks, again, meh?
+function Rule_Fill_All()
+end
+
+--need rules for resources and tech, reinforcement
+
+function Rule_BigCaps()
+--print "adding the big caps!"
+local oModMaxSquadCap	= Modifier_Create(MAT_Player, "max_squad_cap_player_modifier", MUT_Multiplication, false, g_fArmySquadCapModifier, "")
+	local oModMaxSupportCap	= Modifier_Create(MAT_Player, "max_support_cap_player_modifier", MUT_Multiplication, false, g_fArmySquadCapModifier, "")
+	local oModSquadCap		= Modifier_Create(MAT_Player, "squad_cap_player_modifier", MUT_Multiplication, false, g_fArmySquadCapModifier, "")
+	local oModSupportCap	= Modifier_Create(MAT_Player, "support_cap_player_modifier", MUT_Multiplication, false, g_fArmySquadCapModifier, "")
+	Modifier_ApplyToPlayer (oModMaxSquadCap, g_enemy_PlayerID)
+	Modifier_ApplyToPlayer (oModMaxSupportCap, g_enemy_PlayerID)
+	Modifier_ApplyToPlayer (oModSquadCap, g_enemy_PlayerID)
+	Modifier_ApplyToPlayer (oModSupportCap, g_enemy_PlayerID)
+
+end
+
+function Rule_Difficulty_Control()
+--problem?
+--if SGroup_Count("sg_LevelSet") > 0 then
+--SGroup_DestroyAllSquads("sg_LevelSet")
+--end
+
+--do wave control from here?
+-- if the bastards won't stop attacking then need a delay on relief waves
+-- or just spawn at start and despawn now
+print ("difficulty is "..Level_Set)
+	if Level_Set == 1 then
+	removal_limit = 4
+		if AircraftType1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingAirSquadsBegin, 360, 180)
+		end
+		if Transport1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingTransportSquadsBegin, 420, 240)
+		Rule_AddIntervalDelay(Rule_CheckProximityOfTransportAttackSpam, 2, 662)
+		end
+	--Rule_AddIntervalDelay(Rule_RandomSpammingAttacks, 480,600)
+	--fuggles turret thingy here
+	
+
+
+
+
+
+	TransportedType = DeCapturingSquadName
+	SGroup_DestroyAllSquads("sg_guard_squads_one")
+	SGroup_DestroyAllSquads("sg_guard_squads_two")
+	SGroup_DestroyAllSquads("sg_guard_squads_three")
+		for j=1, g_numAssaultTitans do
+		SGroup_DestroyAllSquads("sg_titan"..j)
+		end
+	elseif Level_Set == 2 then
+	removal_limit = 8
+		if AircraftType1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingAirSquadsBegin, 360, 180)
+		end
+		if Transport1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingTransportSquadsBegin, 420, 240)
+		Rule_AddIntervalDelay(Rule_CheckProximityOfTransportAttackSpam, 2, 662)
+		end
+	--Rule_AddIntervalDelay(Rule_RandomSpammingAttacks, 480,600)
+	TransportedType = DeCapturingSquadName
+	SGroup_DestroyAllSquads("sg_guard_squads_two")
+	SGroup_DestroyAllSquads("sg_guard_squads_three")
+		for j=1, g_numAssaultTitans do
+		SGroup_DestroyAllSquads("sg_titan"..j)
+		end
+	--SGroup_DestroyAllSquads("sg_titan")
+	elseif Level_Set == 3 then
+		if AircraftType1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingAirSquadsBegin, 360, 180)
+		end
+		if Transport1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingTransportSquadsBegin, 360, 180)
+		Rule_AddIntervalDelay(Rule_CheckProximityOfTransportAttackSpam, 2, 542)
+		end
+	--Rule_AddIntervalDelay(Rule_RandomSpammingAttacks, 420,600)
+	TransportedType = Elite1
+	removal_limit = 12
+	SGroup_DestroyAllSquads("sg_guard_squads_two")
+	SGroup_DestroyAllSquads("sg_guard_squads_three")
+		for j=1, g_numAssaultTitans do
+		SGroup_DestroyAllSquads("sg_titan"..j)
+		end
+	--SGroup_DestroyAllSquads("sg_titan")
+	elseif Level_Set == 4 then
+		if AircraftType1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingAirSquadsBegin, 360, 180)
+		end
+		if Transport1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingTransportSquadsBegin, 360, 180)
+		Rule_AddIntervalDelay(Rule_CheckProximityOfTransportAttackSpam, 2 , 542)
+		end
+	--Rule_AddIntervalDelay(Rule_RandomSpammingAttacks, 360,600)
+	SGroup_DestroyAllSquads("sg_guard_squads_three")
+	TransportedType = Elite1
+	removal_limit = 16
+	elseif Level_Set == 5 then
+		if AircraftType1  ~= Nil then
+		--print "airwaves"
+		Rule_AddIntervalDelay(Rule_HarassingAirSquadsBegin, 360, 180)
+		end
+		if Transport1  ~= Nil then
+		Rule_AddIntervalDelay(Rule_HarassingTransportSquadsBegin, 300, 180)
+		Rule_AddIntervalDelay(Rule_CheckProximityOfTransportAttackSpam, 2, 482)
+		end
+	--Rule_AddIntervalDelay(Rule_RandomSpammingAttacks, 300,600)
+	TransportedType = Elite2
+	removal_limit = (g_numAssaultTurrets +1) 
+	end
+
+	for j=1, g_numAssaultTurrets do
+	--print ("removal limit is "..removal_limit)
+		if difficulty_counter == removal_limit then
+			--if EGroup_Exists("eg_turrets_ASSAULT"..j)
+		EGroup_DestroyAllEntities("eg_turrets_ASSAULT"..j)
+		t_turrets_ASSAULT_lives[j] = 0
+		--print "turret blasted"
+		difficulty_counter = difficulty_counter + 1
+			if difficulty_counter < removal_limit then
+			difficulty_counter = 1
+			end
+		end
+	end
+
+
+--fuggles
+--these change army cap size based on level (the bigger the more spam the AI gets to have)
+g_fArmySquadCapModifier = (Level_Set + 2)
+-- Change the global value of the Map Pop. Used in the OrksPopLimitRule.scar
+G_ArmySquadCapModifier_OrkPop = { Max_POP = 500 , Start_POP = 75, Increase_Step = 50 }
+Rule_AddOneShot(Rule_BigCaps,1)
+
+--fuggles nerf this nonsense, we probably don't need the random spam?
+-- tuning
+-- ie (Rule_RandomSpammingAttacks)
+g_spamtimer = 600 - (Level_Set * 60)
+g_spamtimer2 = 900 - (Level_Set * 60)
+g_spamtimer3 = 360 - (Level_Set * 60)
+Rule_AddIntervalDelay(Rule_HarassingSquadsBegin, g_spamtimer3, 180)
+
+--keep this one as is probably
+Rule_AddOneShot(Rule_UpgradeTurrets,1)
+Rule_AddOneShot(Rule_Turret_Toughness,1)
+
+Rule_AddOneShot(Rule_UpgradeLPs,1)
+
+--fuggles you plum, it's this one.
+--Rule_AddOneShot(Rule_Enable_CPU,g_spamtimer2)
+-- This one is more pleasant, or we just yeet
+Rule_AddOneShot(Rule_Enable_CPU,g_spamtimer)
+
+Rule_AddInterval(Rule_Defend_Thy_Self,2)
+--fuggles - this is hard to get right
+-- This spawns free troops to go cap
+--Rule_AddIntervalDelay(Rule_Captain_Cappers,180, 90)
+Rule_AddInterval(Rule_Captain_Cappers,600)
+
+end
+
+
+function Rule_HarassingTransportSquadsBegin()
+	if g_Assault_Enemy_AI_Is_Human or (not Player_IsAlive(g_enemy_PlayerID)) then
+		Rule_Remove(Rule_HarassingTransportSquadsBegin)
+		Rule_Remove(Rule_CheckProximityOfTransportAttackSpam)
+		return
+	end
+
+
+
+	for i=0, g_number_of_players-2 do
+
+		if Player_IsAlive(Assault_PlayerInfo.PlayerID[0]) then
+			SGroup_CreateIfNotFound("sg_random_squads_transport_p"..i)
+			if SGroup_CountSpawned(SGroup_FromName("sg_random_squads_transport_p"..i))==0 then
+				--print("Transport Spammer against Player "..i+1)
+					for j = 1, g_numAssaultVehicles do
+						if Marker_Exists("mk_vehicle_"..(5)..j,"basic_marker") then
+							if EGroup_CountSpawned(EGroup_FromName("eg_vehicle_ASSAULT"..j))== 1 then
+								if g_vehicles_deployed <= 2 then
+								g_vehicles_deployed = g_vehicles_deployed + 1
+								Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_transport_p"..i, Transport1, "mk_vehicle_"..(5)..j, 1, 1)	
+								Rule_LockSGroupAssaultPlayer("sg_random_squads_transport_p"..i)
+								Cmd_AttackMovePos("sg_random_squads_transport_p"..i,Assault_PlayerInfo.HQpos[i])
+								end
+							end
+						end
+					end
+			end
+		end
+	end
+
+g_vehicles_deployed = 0
+end
+
+function Rule_CheckProximityOfTransportAttackSpam()
+
+	for i=0, g_number_of_players-2 do
+		if SGroup_CountSpawned("sg_random_squads_transport_p"..i) > 0 then
+		local veh_pos = SGroup_GetPosition("sg_random_squads_transport_p"..i)
+		local posgoal = Assault_PlayerInfo.HQpos[i]
+		if World_DistancePointToPoint(veh_pos, posgoal) < 50 then
+			-- Vehicle has REACHED player base, unload troops!
+			local troops = "sg_vehicle_troops_assault"
+			Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,troops,TransportedType,veh_pos,1,9)
+			Cmd_AttackMovePos(troops,posgoal)
+			end
+		end
+	end
+end
+
+-----------------------------------------------
+function Rule_Transport_Attack()
+
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		Rule_Remove(Rule_Transport_Attack)
+		Rule_Remove(Rule_CheckProximityOfTransportAttack)
+		return
+	end
+
+SGroup_CreateIfNotFound("sg_standard_vehicle_assault")
+local vehicle = "sg_standard_vehicle_assault"
+	if SGroup_CountSpawned(vehicle)==0 then
+	SGroup_DestroyAllSquads(vehicle)
+	local marker = "mk_enemy_pos"
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, vehicle, Transport1, marker, 1, 1)
+			if SGroup_CountSpawned(vehicle)==1 then
+					World_FXEvent("unit_ability_fx/machine_spirit", SGroup_GetPosition(vehicle))
+					Cpu_LockSGroup( g_enemy_PlayerID,"sg_standard_vehicle_assault")
+						local random1 = World_GetRand(1,2)
+						if random1 == 1 then
+						Cmd_AttackMoveMarker(vehicle,"mk_P1_pos")
+						vehicle_target = 1
+						else
+						Cmd_AttackMoveMarker(vehicle,"mk_P2_pos")
+						vehicle_target = 2
+						end
+
+			end
+	end
+
+
+
+end
+
+
+
+function Rule_CheckProximityOfTransportAttack()
+
+			local vehicle = "sg_standard_vehicle_assault"
+			if SGroup_CountSpawned(vehicle) > 0 then
+				local veh_pos = SGroup_GetPosition(vehicle)
+				if vehicle_target == 1 then
+				postarget = "mk_P1_pos"
+				else
+				postarget = "mk_P2_pos"
+				end
+				
+				local posgoal = Marker_GetPosition(Marker_FromName(postarget,"basic_marker"))
+				if World_DistancePointToPoint(veh_pos, posgoal) < 50 then
+					-- Vehicle has REACHED player base, unload troops!
+						local troops = "sg_vehicle_troops_assault"
+						Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,troops,TransportedType,veh_pos,1,9)
+						Cmd_AttackMovePos(troops,posgoal)
+				end
+			end
+end
+
+
+
+function Rule_BodyCountAndLevel_Triggers()
+	local pID = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+	WinWarning_Add( "Player_body_count_assault", pID, "", "wincondition_name", "help tip text" )
+	Rule_AddInterval(Rule_BodyCount_Players,2.25)
+end
+
+
+function Rule_BodyCount_Players()
+	local count = "Body Count - "
+	for i=0, g_number_of_players-2 do
+		count = count..Assault_PlayerInfo.PlayerName[i]..": "..Stats_PlayerUnitsKilled(Player_GetID(Assault_PlayerInfo.PlayerID[i])).. " "
+	end
+	WinWarning_SetText( "Player_body_count_assault", count )
+end
+
+function Rule_Defend_Thy_Self()
+--SGroup_IsUnderAttack( String sgroupname, false) 
+	
+	if SGroup_IsUnderAttack( "sg_guard_squads_one", false) == true then
+	Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_guard_squads_one" ) 
+	end
+	if SGroup_IsUnderAttack( "sg_guard_squads_two", false) == true then
+	Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_guard_squads_two" ) 
+	end
+	if SGroup_IsUnderAttack( "sg_guard_squads_three", false) == true then
+	Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_guard_squads_three" ) 
+	end
+
+
+--fuggles, probably cause an error, but do I want this?
+	if SGroup_IsUnderAttack( "sg_final_defend_1", false) == true then
+	Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_final_defend_1" ) 
+	end
+
+	if g_numRepairResurs > 3 then
+		for b=1, g_numRepairResurs do
+			if SGroup_IsUnderAttack( "sg_guard_squads_guard_start"..b, false) == true then
+			Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_guard_squads_guard_start"..b ) 
+			end
+		end
+	end
+
+	for j=1, g_numAssaultTitans do
+		if SGroup_IsUnderAttack( "sg_titan"..j, false) == true then
+		Cpu_UnlockSGroup(g_enemy_PlayerID, "sg_titan"..j ) 
+		end
+	end
+
+
+
+end
+
+function Rule_Turret_Toughness()
+	for j=1, g_numAssaultTurrets do
+	t_turrets_ASSAULT_timer[j] = 6-Level_Set
+	t_turrets_ASSAULT_lives[j] = Level_Set
+	end
+end
+
+function Rule_Captain_Cappers()
+capping_number = 0
+capping_random = World_GetRand(1,g_numAssaultHQs)
+	for d=1, g_numAssaultHQs do
+		if Marker_Exists("mk_hq_"..(5)..d,"basic_marker") then
+		SGroup_CreateIfNotFound("sg_cappers_"..d)
+			if EGroup_CountSpawned(EGroup_FromName("eg_hq_ASSAULT"..d))== 1 then
+				if d == capping_random then
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_cappers_"..d, DeCapturingSquadName, "mk_hq_"..(5)..d, 1, DeCapturingSquadMmbrs)
+				capping_number = 1
+				end
+			end
+		end
+	end
+end
+							
+---------------------------------------------------------
+--New Difficulty Select
+--------------------------------------------------------
+function new_difficulty_select()
+
+	local playerID = World_GetPlayerAt(0)
+	Camera_FocusOnTargetMarker( "mk_SetLevel", 1)
+	Util_MissionTitle("Player 1 : Select the difficulty from the Beacon - no selection will lead to Normal being picked.")
+	local pos = Player_GetStartPosition(playerID); pos.x = pos.x - 13
+	Entity_CreateBuildingPositionForce(playerID, "team_selecter", "difficulty_guard_tactica",  pos, 1 )
+	W40k_SelectEGroup("team_selecter")
+	Camera_FocusOnTargetPos(pos, 1)
+	local playerID = World_GetPlayerAt(0)
+	Rule_AddInterval(selector_check,2)
+	Rule_AddOneShot(failsafe,13)
+end
+
+function selector_check()
+	logic_check = EGroup_Count( "team_selecter" )
+	if logic_check == 0 then
+	print "start stuff"
+	Rule_Check_AddOneShot(research_check3, 0)
+	Rule_Remove(selector_check)
+	Rule_AddOneShot(dagnammit_fallen,15)
+	end
+end
+
+function failsafe()
+print "failsafe engaged"
+-- In case you are a dick
+logic_check = EGroup_Count( "team_selecter" )
+	if logic_check == 1 then
+	EGroup_DestroyAllEntities( "team_selecter" )
+	end
+end
+
+function research_check3()
+
+	local playerID = World_GetPlayerAt(0)
+	if Player_GetResearchState(playerID, "difficulty_research_easy") == RS_Complete then
+	Level_Set = 1
+	g_difficulty="easy"
+	Util_MissionTitle("Player 1 has picked EASY difficulty.")
+	elseif Player_GetResearchState(playerID, "difficulty_research_normal") == RS_Complete then
+	Level_Set = 2
+	g_difficulty="standard"
+	Util_MissionTitle("Player 1 has picked NORMAL difficulty.")
+	elseif Player_GetResearchState(playerID, "difficulty_research_hard") == RS_Complete then
+	Level_Set = 3
+	g_difficulty="hard"
+	Util_MissionTitle("Player 1 has picked HARD difficulty.")
+	elseif Player_GetResearchState(playerID, "difficulty_research_harder") == RS_Complete then
+	Level_Set = 4
+	g_difficulty="harder"
+	Util_MissionTitle("Player 1 has picked HARDER difficulty.")
+	elseif Player_GetResearchState(playerID, "difficulty_research_insane") == RS_Complete then
+	Level_Set = 5
+	g_difficulty="insane"
+	Util_MissionTitle("Player 1 has picked INSANE difficulty.")
+	else
+	Level_Set = 2
+	Util_MissionTitle("Player 1 was too lazy to pick, defaulting to Normal difficulty.")
+	g_difficulty="standard"
+	end
+	print("MP Final Difficulty: "..g_difficulty)
+
+	Rule_AddOneShot(Rule_DifficultyModificationHPs,0.5)
+	Rule_AddInterval(Rule_Display_Credits,6)
+
+end
+
+function dagnammit_fallen()
+	for i=0, g_number_of_players-2 do
+		if i > 0 then
+		j = i+1
+			if Assault_PlayerInfo.RaceName[i] == "fallen_angels_race" then
+			g_fallen_tracker = g_fallen_tracker +1
+			Util_MissionTitle("Fallen Angels currently not supported as AI Allies")
+			--Player_GetAllSquadsNearMarker(Assault_PlayerInfo.PlayerID[i], "stragglers"..j, "mk_P"..j.."_pos", 1000 ) 
+			--SGroup_SetPlayerOwner( "stragglers"..j,Assault_PlayerInfo.PlayerID[0] ) 
+			--Player_GetAllEntitiesNearMarker(Assault_PlayerInfo.PlayerID[i], "stragglers"..j, "mk_P"..j.."_pos", 20 ) 
+			--EGroup_DestroyAllEntities( "stragglers"..j ) 
+			--Player_GetAllEntitiesNearMarker(Assault_PlayerInfo.PlayerID[i], "stragglers"..j, "mk_P"..j.."_pos", 100 ) 
+			--EGroup_SetPlayerOwner( "stragglers"..j,Assault_PlayerInfo.PlayerID[0] ) 
+			--EGroup_DestroyAllEntities( "stragglers"..j ) 
+			Player_Kill(Assault_PlayerInfo.PlayerID[i])
+			end
+		end
+	end
+end

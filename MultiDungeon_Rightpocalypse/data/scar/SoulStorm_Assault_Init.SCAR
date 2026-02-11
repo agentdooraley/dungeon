@@ -1,0 +1,121 @@
+------------------------------------------------------------------
+-- 1] Initiates the assault Stats, ONLY in Assault games		--
+-- 2] Enables/Disables unlimited turrets for Assault /Normal	--
+--     ... games, respectively									--
+-- Made by fuggles2k @ 26/9/2022
+------------------------------------------------------------------
+
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("Community_Functions.scar")
+
+
+function AssaultFix_OnInit()
+print("Turret Step 1")
+	-- First, disallow the optional turrets, if any for the race
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+		if Global_RaceStats[race_name].Turret_Special ~= nil then
+			Player_RestrictBuildingList(playerID, Global_RaceStats[race_name].Turret_Special)
+		end
+	end
+
+	local max_slot = World_GetPlayerCount()-1
+
+--fuggles, need to set this up on the maps
+	if G_Is_Assault_Map == true then -- Survival map, disallow standard defences for players only
+	print("Disallowing turrets")
+	-- Survival Game
+		-- First, create the GLOBAL array witgh Survival Player stats - each entry uses the IDX of the player (0,1,..7)
+		Assault_PlayerInfo = { IsAlive={}, PlayerID={}, RaceName={}, PlayerName={}, HQpos={}, HQName={}, LPName={}, CmndrEntName={}, CmndrSqdName={}, PriBuilderSqdName={}, TurretSndrdName={}, TurretNoLimName={}, TurretSpecialName={}, MinesName={}, SurvMinesName={}, Techlvl={}, Tech2Info={}, Tech3Info={}, Tech4Info={}, Tech1Bonus={}, Tech2Bonus={}, Tech3Bonus={}, Tech4Bonus={}, TechUberBonus={}, Level={}, TMR = {}, LvlSwitch={}, IsVanilla = {} }
+
+		-- 1] Calculate player stats, and populate the Array!!! The last player (max_slot) will ALWAYS be the Attacking AI
+		for i = 0, max_slot do
+			local player_id = World_GetPlayerAt(i)
+			local race_name = Player_GetRaceName(player_id)
+			local enemy_ai_player = (i == max_slot)
+			if Global_RaceStats[race_name] ~= nil then
+			-- this gets all the things from the racestats, so if I need to add pgens and stuff, it needs to go here.
+				Assault_PlayerInfo.IsAlive[i] = true
+				Assault_PlayerInfo.PlayerID[i] = player_id
+				Assault_PlayerInfo.RaceName[i] = race_name
+				Assault_PlayerInfo.PlayerName[i] = Player_GetDisplayName(player_id)[1]
+				Assault_PlayerInfo.HQpos[i] = Player_GetStartPosition(player_id)
+				Assault_PlayerInfo.HQName[i] = Global_RaceStats[race_name].HQ
+				Assault_PlayerInfo.LPName[i] = Global_RaceStats[race_name].LP
+				Assault_PlayerInfo.PriBuilderSqdName[i] = Global_RaceStats[race_name].BuilderSquad
+				Assault_PlayerInfo.TurretSndrdName[i] = Global_RaceStats[race_name].Turret
+				Assault_PlayerInfo.TurretNoLimName[i] = Global_RaceStats[race_name].Turret_Srvl
+				if Global_RaceStats[race_name].Turret_Special ~= nil then
+					Assault_PlayerInfo.TurretSpecialName[i] = Global_RaceStats[race_name].Turret_Special
+				else
+					Assault_PlayerInfo.TurretSpecialName[i] = {}
+				end
+				Assault_PlayerInfo.MinesName[i] = Global_RaceStats[race_name].Mine
+				Assault_PlayerInfo.SurvMinesName[i] = Global_RaceStats[race_name].Mine_Srvl
+				Assault_PlayerInfo.Techlvl[i] = 1
+				Assault_PlayerInfo.Tech2Info[i] = Global_RaceStats[race_name].Tier2
+				Assault_PlayerInfo.Tech3Info[i] = Global_RaceStats[race_name].Tier3
+				Assault_PlayerInfo.Tech4Info[i] = Global_RaceStats[race_name].Tier4
+				Assault_PlayerInfo.Tech1Bonus[i] = Global_RaceStats[race_name].Tech1BonusSquads_Srvl
+				Assault_PlayerInfo.Tech2Bonus[i] = Global_RaceStats[race_name].Tech2BonusSquads_Srvl
+				Assault_PlayerInfo.Tech3Bonus[i] = Global_RaceStats[race_name].Tech3BonusSquads_Srvl
+				Assault_PlayerInfo.Tech4Bonus[i] = Global_RaceStats[race_name].Tech4BonusSquads_Srvl
+				Assault_PlayerInfo.TechUberBonus[i] = Global_RaceStats[race_name].Tech4BonusUberSquads_Srvl
+				Assault_PlayerInfo.Level[i] = 1
+				Assault_PlayerInfo.TMR[i] = 0
+				Assault_PlayerInfo.LvlSwitch[i] = -1
+				Assault_PlayerInfo.IsVanilla[i] = Global_RaceStats[race_name].IsVanilla
+				if Assault_PlayerInfo.IsVanilla[i] == true then 
+					if Is_Hero_Wargear_Enabled_Survival ~= nil and not enemy_ai_player then
+						if race_name == "necron_race" then
+							if g_Necrons_PlayersIDXs[i] == 1 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG4
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG4
+								g_Necrons_PlayersIDXs[i] = 4
+							elseif g_Necrons_PlayersIDXs[i] == 2 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG5
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG5
+								g_Necrons_PlayersIDXs[i] = 5
+							elseif g_Necrons_PlayersIDXs[i] == 3 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG6
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG6
+								g_Necrons_PlayersIDXs[i] = 6
+							end
+						else
+							Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG
+							Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG
+						end
+					else
+						if race_name == "necron_race" then
+							if g_Necrons_PlayersIDXs[i] == 1 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity1
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad1
+							elseif g_Necrons_PlayersIDXs[i] == 2 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity2
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad2
+							elseif g_Necrons_PlayersIDXs[i] == 3 then
+								Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity3
+								Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad3
+							end
+						else
+							Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
+							Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
+						end
+					end
+				else
+					Assault_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
+					Assault_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
+				end
+			else
+				print("Unsupported Assault Player Race: "..race_name.." !!!")
+				g_Assault_Unsupported_Race = race_name
+			end
+		end
+
+	end
+end
+
+
+Scar_AddInit(AssaultFix_OnInit)

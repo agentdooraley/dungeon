@@ -1,0 +1,354 @@
+-----------------------------------------------------
+-- Some useful custom functions from the community --
+-----------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+
+-- Checks if a player is Human or CPU in MP games. Cpu_IsCpuPlayer does not suffice in MP games.
+function Player_IsHuman( playerID )
+	-- In the campaign, it works OK
+	if pcall(MetaMap_GetAttackerRaceIndex) then
+		return (not Cpu_IsCpuPlayer(playerID))
+	end
+	local name = Player_GetDisplayName(playerID)[1]
+	if string.len(name) < 3 then return true end
+	
+	--CornCobMan - check for the full "Computer 1" instead of just " 1", etc.
+	if name == "Computer 1" or name == "Computer 2" or name == "Computer 3" or name == "Computer 4" 
+	or name == "Computer 5" or name == "Computer 6" or name == "Computer 7" or name == "Computer 8" then
+		return false
+	elseif name == "Ordinateur 1" or name == "Ordinateur 2" or name == "Ordinateur 3" or name == "Ordinateur 4" 
+	or name == "Ordinateur 5" or name == "Ordinateur 6" or name == "Ordinateur 7" or name == "Ordinateur 8" then
+		return false
+	elseif name == "Ordenador 1" or name == "Ordenador 2" or name == "Ordenador 3" or name == "Ordenador 4" 
+	or name == "Ordenador 5" or name == "Ordenador 6" or name == "Ordenador 7" or name == "Ordenador 8" then
+		return false
+	elseif name == "Computador 1" or name == "Computador 2" or name == "Computador 3" or name == "Computador 4" 
+	or name == "Computador 5" or name == "Computador 6" or name == "Computador 7" or name == "Computador 8" then
+		return false
+	elseif name == "Komputer 1" or name == "Komputer 2" or name == "Komputer 3" or name == "Komputer 4" or 
+	name == "Komputer 5" or name == "Komputer 6" or name == "Komputer 7" or name == "Komputer 8" then
+		return false
+	elseif name == "Компьютер 1" or name == "Компьютер 2" or name == "Компьютер 3" or name == "Компьютер 4" 
+	or name == "Компьютер 5" or name == "Компьютер 6" or name == "Компьютер 7" or name == "Компьютер 8" then
+		return false	
+	elseif name == "Počítač 1" or name == "Počítač 2" or name == "Počítač 3" or name == "Počítač 4" 
+	or name == "Počítač 5" or name == "Počítač 6" or name == "Počítač 7" or name == "Počítač 8" then
+		return false
+	elseif name == "电脑 1" or name == "电脑 2" or name == "电脑 3" or name == "电脑 4" or 
+	name == "电脑 5" or name == "电脑 6" or name == "电脑 7" or name == "电脑 8" then
+		return false
+	elseif name == "電腦 1" or name == "電腦 2" or name == "電腦 3" or name == "電腦 4" or 
+	name == "電腦 5" or name == "電腦 6" or name == "電腦 7" or name == "電腦 8" then
+		return false
+	elseif name == "컴퓨터 1" or name == "컴퓨터 2" or name == "컴퓨터 3" or name == "컴퓨터 4" or 
+	name == "컴퓨터 5" or name == "컴퓨터 6" or name == "컴퓨터 7" or name == "컴퓨터 8" then
+		return false
+	else
+		return true
+	end
+--[[
+	name = string.sub(name, -2)
+	if(	name == " 1" or name == " 2" or name == " 3" or name == " 4"
+	or name == " 5" or name == " 6" or name == " 7" or name == " 8") then
+		return false
+	else
+		return true
+	end
+]]
+	
+end
+
+-- Counts the number of a player's COMPLETED buildings. NOTE: Not tested yet.
+function Player_GetCompletedBuildingsCount(playerID)
+	local count = 0
+	local isDoneBuilding = function(egroupid, itemindex, entityID)
+		if Entity_IsBuilding(entityID) and Entity_GetBuildingProgress(entityID) == 1.0 then
+			count = count + 1
+		end
+	end
+	EGroup_ForEach(Player_GetEntities(playerID), isDoneBuilding)
+	return count
+end
+
+-- Upgrades all specifically-named Squads of an SGroup, with a certain Weapon Upgrade
+function SGroup_UpgradeSquadsWithWeapon( sgroup, sqd_name, wpn_name, wpn_count )
+	local function UpgradeWeapons(groupid, itemindex, itemid)
+		if Squad_GetBlueprintName(itemid) == sqd_name then
+			for i=1, wpn_count do
+				Squad_UpgradeWeapon(itemid,wpn_name)
+			end
+		end
+	end
+	SGroup_ForEach( sgroup, UpgradeWeapons )
+end
+
+
+-- Upgrades all specifically-named Squads of an SGroup, with a certain Leader Type
+-- Note1: You can add as many leaders as you want - the actual AE squad limit, does NOT limit the SCaR code!
+-- Note2: Adding a leader that the squad does NOT have (invalid leader index - ldr_idx) results in a CTD!
+function SGroup_AddSquadsWithLeaders( sgroup, sqd_name, ldr_idx, ldr_cnt )
+	if ldr_cnt == nil then ldr_cnt = 1 end
+	local function AddLeaders(groupid, itemindex, itemid)
+		if Squad_GetBlueprintName(itemid) == sqd_name then
+			for i=1, ldr_cnt do
+				Squad_AddLeaderAtIndex(itemid,ldr_idx)
+			end
+		end
+	end
+	SGroup_ForEach( sgroup, AddLeaders )
+end
+
+
+-- Multiplies (divides) the health value of all squads of an sgroup by healthFraction (0,1).
+function SGroup_MultiplyCurrentHealthBy( groupname, healthFraction )
+	if healthFraction >= 1 or healthFraction <=0 then return end
+	local modify_health = function(sgroupid, itemindex, squadID)
+		local healthPercent = Squad_GetHealth(squadID)/Squad_GetHealthMax(squadID) + 0.01
+		Squad_SetHealth(squadID, healthPercent*healthFraction)
+	end
+	SGroup_ForEach( groupname, modify_health )
+end
+
+
+-- The 12 vectors table, used for finding a valid spawnable position.
+Community_Vectors12 = {{x=0,z=1}, {x=0.5,z=0.866}, {x=0.866,z=0.5}, {x=1,z=0}, {x=0.866,z=-0.5}, {x=0.5,z=-0.866},
+		{x=0,z=-1}, {x=-0.5,z=-0.866}, {x=-0.866,z=-0.5}, {x=-1,z=0}, {x=-0.866,z=0.5}, {x=-0.5,z=0.866}}
+-- Us this, only if you want the vectors to always be in proper order - but it is not really needed...
+Community_Vectors12_Ordered = {{x=0,z=1}, {x=0.5,z=0.866}, {x=0.866,z=0.5}, {x=1,z=0}, {x=0.866,z=-0.5}, {x=0.5,z=-0.866},
+		{x=0,z=-1}, {x=-0.5,z=-0.866}, {x=-0.866,z=-0.5}, {x=-1,z=0}, {x=-0.866,z=0.5}, {x=-0.5,z=0.866}}
+-- GAMBIT 16/03/2023 The following just randomizes the vector order of
+--  the main array above so that we do not check identically each time.
+function randomizeVectors12()
+	local Community_Vectors12_Copy = {{x=0,z=1}, {x=0.5,z=0.866}, {x=0.866,z=0.5}, {x=1,z=0}, {x=0.866,z=-0.5}, {x=0.5,z=-0.866},
+		{x=0,z=-1}, {x=-0.5,z=-0.866}, {x=-0.866,z=-0.5}, {x=-1,z=0}, {x=-0.866,z=0.5}, {x=-0.5,z=0.866}}
+	for i=1, 12 do
+		local rndm_idx = World_GetRand(1, 13-i)
+		Community_Vectors12[i] = Community_Vectors12_Copy[rndm_idx]
+		table.remove(Community_Vectors12_Copy, rndm_idx)
+	end
+end
+-- Has a VERY good chance NOT TO spawn within lakes !!
+-- The y comparison is 100% consistent for lakes, but in large seas, two consecutive positions may be in/out
+-- Returns a valid position
+-- NOTE: Method will NOT work OK in NON-Soulstorm maps... :( The check (found = true) will not work...
+function Community_Extended_SpawnablePositionSearch(initial_pos, entity_name, player_id, max_dist, min_dist)
+	local spwnpstn1 = World_Pos(0,10,0)
+	local spwnpstn2 = World_Pos(0,10,0)
+	if player_id == nil then
+		for i=0, World_GetPlayerCount()-1 do
+			local id = World_GetPlayerAt(i)
+			if Player_IsAlive(id) then
+				player_id = id
+				break
+			end
+		end
+	end
+	if player_id == nil then return initial_pos end
+	if entity_name == nil then entity_name = "chaos_sacrificial_circle" end
+	if max_dist == nil then max_dist = 20 end
+	if min_dist == nil or min_dist > max_dist then min_dist = 0 end
+	local found, dstnc = false, min_dist
+	local entityID = Entity_Create(entity_name, player_id, initial_pos)
+	repeat
+		randomizeVectors12()
+		for i=1, 12 do
+			spwnpstn2.x = initial_pos.x + (Community_Vectors12[i].x * dstnc)
+			spwnpstn2.z = initial_pos.z + (Community_Vectors12[i].z * dstnc)
+			spwnpstn1 = spwnpstn2
+			spwnpstn2 = World_GetSpawnablePosition(spwnpstn2,entityID)
+			if (spwnpstn1.x ~= spwnpstn2.x or spwnpstn1.z ~= spwnpstn2.z) and spwnpstn1.y ~= spwnpstn2.y then
+				if World_DistancePointToPoint(spwnpstn2, initial_pos) >= min_dist then
+					found = true
+					break
+				end
+			end
+		end
+		dstnc = dstnc + 2
+		if dstnc>max_dist then
+			Entity_Destroy(entityID)
+			return World_GetSpawnablePosition(initial_pos,entityID)
+		end
+	until found
+	Entity_Destroy(entityID)
+	return spwnpstn2
+end
+
+
+-- Instantly Repositions all SPAWNED squads of the iSGroup to the iPos
+function Community_RepositionSGroupToPos(iSGroup, iPos, pID)
+	if iSGroup == nil or iPos == nil or pID == nil then return end
+	local repositionSquads = function(sgroupid, itemindex, squadID)
+		Squad_DeSpawn(squadID)
+		Squad_Spawn(squadID, Community_Extended_SpawnablePositionSearch(iPos, nil, nil, 10, 0))
+	end
+	SGroup_ForEachEx(iSGroup, repositionSquads, true, false)
+	Command_SquadPos(pID, iSGroup, SCMD_Move, iPos)
+	--Command_Squad(pID, iSGroup, SCMD_Stop)
+end
+
+
+-- Boolean, checks if squads exist near a position
+function Community_DoSquadsExistNearPos(iPos, iProximity)
+	SGroup_CreateIfNotFound("community_sg_temp_check")
+	for idx = 0, World_GetPlayerCount()-1 do
+		SGroup_Clear("community_sg_temp_check")
+		Player_GetAllSquadsNearPos( World_GetPlayerAt(idx), "community_sg_temp_check", iPos, iProximity )
+		if SGroup_Count("community_sg_temp_check") > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+
+-- Boolean, checks if buildings exist near a position
+function Community_DoBuildingsExistNearPos(iPos, iProximity)
+	EGroup_CreateIfNotFound("community_eg_temp_check")
+	for idx = 0, World_GetPlayerCount()-1 do
+		EGroup_Clear("community_eg_temp_check")
+		Player_GetAllEntitiesNearPos( World_GetPlayerAt(idx), "community_eg_temp_check", iPos, iProximity )
+		if EGroup_Count("community_eg_temp_check") > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+
+--("small", "medium", "large", "huge", "impossible")
+function Community_GetMapSize()
+	for i=0, (World_GetPlayerCount()-1) do
+		local playerID = World_GetPlayerAt(i)
+		if Player_IsAlive(playerID) then
+			local test = Entity_Create("test_building",playerID,World_Pos(1024, 0, 1024))
+			pcall(Entity_Spawn,test)
+			local mapsize = Entity_GetPosition(test)
+			Entity_Destroy(test)
+			local proportions = math.sqrt(mapsize.x*mapsize.x + mapsize.z*mapsize.z)
+			if proportions < 95 then return "small"			-- 128 map
+			elseif proportions < 185 then return "medium"	-- 256 map
+			elseif proportions < 370 then return "large"	-- 512 map
+			elseif proportions < 730 then return "huge"		-- 1024 map
+			else return "impossible"						-- Bigger??
+			end
+		end
+	end
+end 
+
+
+--? @shortdesc Unrestricts a list of names.
+--? @extdesc List should contain an array of buildings to unrestrict.
+--? @result Void
+--? @args PlayerID id, StringTable list
+function Player_UnRestrictBuildingList( playerID, list )
+	for i = 1, table.getn(list) do
+		Player_UnRestrictBuilding( playerID, list[i] )
+	end
+end
+
+
+--? @shortdesc Unrestricts a list of names.
+--? @extdesc List should contain an array of addons to unrestrict.
+--? @result Void
+--? @args PlayerID id, StringTable list
+function Player_UnRestrictAddOnList( playerID, list )
+	for i = 1, table.getn(list) do
+		Player_UnRestrictAddOn( playerID, list[i] )
+	end
+end
+
+
+--? @shortdesc Unrestricts a list of names.
+--? @extdesc List should contain an array of squads to unrestrict.
+--? @result Void
+--? @args PlayerID id, StringTable list
+function Player_UnRestrictSquadList( playerID, list )
+	for i = 1, table.getn(list) do
+		Player_UnRestrictSquad( playerID, list[i] )
+	end
+end
+
+
+
+-- PROBLEMATIC!! Fix it.
+--[[Check the Difficulty the player selected at the game lobby screen and adjust Difficulty accordingly]]--
+function Cpu_GetMPDifficulty()
+	local t_val = {3,8,10,12,14}
+	local difs = {"easy", "standard", "hard", "harder", "insane"}
+	local count = World_GetPlayerCount()-1
+	local res,hum,humgath,gathered,rac,human
+	for i = 0, count do
+		local player = World_GetPlayerAt(i)
+		if Player_IsHuman(player) then
+			human = player
+			if World_DoesRaceUseRequisition(Player_GetRace(player)) then
+				res = RT_Requisition
+				-- Tyranids start with Req +7, NOT +30!
+				if Player_GetRaceName(player) == "tyranids_race" then
+					hum = 7/30
+				else
+					hum = 1
+				end
+			else
+				res = RT_Power
+				hum = 0.5
+			end
+			humgath = (Stats_PlayerResGathered(Player_GetID(human), res))
+			break
+		end
+	end
+	for i = 0, count do
+		local player = World_GetPlayerAt(i)
+		if Player_GetID(player) ~= Player_GetID(human)
+		and not Player_IsHuman(player) then
+			if World_DoesRaceUseRequisition(Player_GetRace(player)) == true then
+				res = RT_Requisition
+				-- Tyranids start with Req +7, NOT +30!
+				if Player_GetRaceName(player) == "tyranids_race" then
+					rac = 7/30
+				else
+					rac = 1
+				end
+			else
+				res = RT_Power
+				rac = 2
+			end
+			gathered = (Stats_PlayerResGathered(Player_GetID(player), res))
+			for j = 1, 5 do
+				if math.ceil((gathered/humgath)*10*rac*hum) == t_val[j]
+				or math.floor((gathered/humgath)*10*rac*hum)== t_val[j]  then
+					return difs[j]
+				end
+			end
+			break
+		end
+	end
+	return nil
+end
+
+function Tau_Drone_Spawn()
+--print "Is the Sunshark down?"
+
+	local InterceptorSpawner = function(egroupid, itemindex, entityID)
+		local InterceptorID = Entity_GetBlueprintName( entityID)
+		-- Check, to Spawned dummy entity.
+			if InterceptorID == "tau_spawn_drones_dummy" then 
+			--print "Yes it is!"
+				local Interceptorpos = Entity_GetPosition(entityID)
+				local Interceptorowner = Entity_GetPlayerOwner(entityID)
+				Entity_DeSpawn( entityID)
+				Entity_Destroy( entityID)
+				spawnSquad = Squad_Create("tau_interceptor_drone_squad", Interceptorowner, Interceptorpos, 1)
+				Squad_Spawn(spawnSquad, Interceptorpos)
+			end
+	end
+	
+	for i=1, table.getn(g_rgTHPlayersIDs) do
+	local playerID = g_rgTHPlayersIDs[i]
+	EGroup_Clear(EGroup_CreateIfNotFound("Interceptorentities"..i))
+	EGroup_AddGroup(EGroup_CreateIfNotFound("Interceptorentities"..i),Player_GetEntities(g_rgTHPlayersIDs[i]))
+	EGroup_ForEach (EGroup_FromName("Interceptorentities"..i),InterceptorSpawner)
+	end
+end

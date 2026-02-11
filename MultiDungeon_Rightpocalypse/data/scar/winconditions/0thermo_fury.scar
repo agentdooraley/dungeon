@@ -1,0 +1,157 @@
+----------------------------------
+-- Thermo Generator Abilities --
+-- Adds something to do in the --
+-- Survival gaming mode			--
+-- Code/Conception by fuggles/kekoulis  --
+-- Coded by fuggles 30/08/2024 --
+-- Ver 1.01 					--
+----------------------------------
+
+import("ScarUtil.scar")
+
+G_SlagFestSwitchEnabled = true
+
+function Rule_OpeningSettings_Slag()
+--print "Slag check"
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Heroic Defence (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+
+	g_slag_wave_current = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+	g_slag_wave_old = {}
+	Surv_Slag_Thermo = {}
+
+	for i=0, World_GetPlayerCount()-2 do
+		-- Define the table with the bonus squads per tech (1,2,3,4, relic)
+		Surv_Slag_Thermo[i]= { Srvl_PlayerInfo.Thermo[i][1]}
+	end
+
+	-- init all rules after a delay, so that difficulty is set
+	Rule_AddOneShot(Rule_OpeningDelayStartRules_Slag, 5)
+end
+
+
+Scar_AddInit(Rule_OpeningSettings_Slag)
+
+
+function Rule_OpeningDelayStartRules_Slag()
+--print "Slag run"
+--Damnit doesn't work as only the enemy
+--Rule_AddOneShot(Rule_SpecialRaceSlagAttackingMethodSurvival,10)
+local map_size = Community_GetMapSize()
+--print("Map Size: " ..map_size)
+--this is smaller than I thought, 256 is medium.
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then
+			--Didn't like this much.
+			if map_size == "small" then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_small_enable" )
+			--print "enabling guns small"
+			elseif	map_size == "medium" then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_medium_enable" )
+			--print "enabling guns medium"
+			else Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_large_enable" )
+			--print "enabling guns large"
+			end
+		end
+	end
+
+	Rule_AddIntervalDelay(Rule_Slag_Space_Marine_Check,5,120)
+	--Rule_AddOneShot(Rule_Slag_Space_Marine_Check2,180)
+	--Rule_AddOneShot(Rule_Slag_Space_Marine_Check3,240)
+	--Rule_AddOneShot(Rule_Slag_Space_Marine_Check4,300)
+	--Rule_AddOneShot(Rule_Slag_Space_Marine_Check5,360)
+	--Rule_AddOneShot(Rule_Slag_Space_Marine_Check6,420)
+	--Rule_AddIntervalDelay(Rule_Slag_Attack,10,10)
+
+
+end
+
+-- You know what? Sod this.
+function Rule_Slag_Attack()
+
+	for i=0, g_number_of_players-2 do
+			local player_id = World_GetPlayerAt(i)
+			local race_name = Player_GetRaceName(player_id)
+			if Global_RaceStats[race_name] ~= nil then
+			g_thermo_Name =  Global_RaceStats[race_name].Thermo
+			end
+	--g_thermo_Name = Srvl_PlayerInfo.Thermo[i]
+	--print ("what is" ..g_thermo_Name)
+	eg_slag_thermoPlasma = EGroup_CreateIfNotFound( "eg_slag_thermoPlasma" )
+	EGroup_Clear( eg_slag_thermoPlasma )
+	EGroup_AddGroup( eg_slag_thermoPlasma, Player_GetEntities( Srvl_PlayerInfo.PlayerID[i] ) )
+	EGroup_CreateFromEGroup( "eg_thermo"..i, "eg_slag_thermoPlasma", Srvl_PlayerInfo.Thermo[i])
+--	EGroup_CreateFromEGroup( "eg_thermo"..i, "eg_slag_thermoPlasma", "space_marine_thermo_generator")
+	SlagCount = EGroup_Count( "eg_thermo"..i )
+		if SlagCount > 0 then
+		EGroup_GetPosition(  "eg_thermo"..i )
+		--print "found one"
+		end
+	end
+end
+
+
+function Rule_Slag_Space_Marine_Check2()
+
+	for i=0, g_number_of_players-2 do
+	Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_1" )
+	end
+end
+
+
+function Rule_Slag_Space_Marine_Check3()
+	for i=0, g_number_of_players-2 do
+	Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_2" )
+	end
+end
+
+function Rule_Slag_Space_Marine_Check4()
+	for i=0, g_number_of_players-2 do
+	Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_3" )
+	end
+end
+function Rule_Slag_Space_Marine_Check5()
+	for i=0, g_number_of_players-2 do
+	Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_4" )
+	end
+end
+function Rule_Slag_Space_Marine_Check6()
+	for i=0, g_number_of_players-2 do
+	Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_5" )
+	end
+end
+
+function Rule_Slag_Space_Marine_Check()
+
+
+	for i=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then
+		g_slag_wave_current[i] = Srvl_PlayerInfo.Level[i]
+			if g_slag_wave_current[i] == 0 then
+			g_slag_wave_old[i] = 0
+			end
+			if g_slag_wave_old[i] == nil then
+			g_slag_wave_old[i] = 0
+			end
+			if g_slag_wave_current[i] > g_slag_wave_old[i] then
+			--print "This is a new wave!"
+			g_slag_wave_old[i] = g_slag_wave_current[i]
+			-- I need to change this to push it back after testing
+				if g_slag_wave_current[i] == 6 then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_1" )
+				--print "enabling guns 1"
+				elseif g_slag_wave_current[i] == 7 then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_2" )
+				--print "enabling guns 2"
+				elseif g_slag_wave_current[i] == 8 then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_3" )
+				--print "enabling guns 3"
+				elseif g_slag_wave_current[i] == 9 then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_4" )
+				--print "enabling guns 4"
+				elseif g_slag_wave_current[i] == 10 then Player_GrantResearch(Srvl_PlayerInfo.PlayerID[i], "0slag_guns_enable_5" )
+				--print "enabling guns 5"
+				end
+
+			end
+		end
+	end
+
+end
+	

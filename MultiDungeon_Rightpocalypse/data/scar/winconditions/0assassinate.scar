@@ -1,0 +1,179 @@
+----------------------------------
+-- Original rule by Argonaut.   --
+-- Re-coded by Gambit 12/2/2018 --
+--  v1.4    20/5/2021			--
+----------------------------------
+
+import("Community_Functions.scar")
+
+
+function Rule_TriggerAssassinate()
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Assassinate (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	Assassinate_LeaderType = {}
+	Assassinate_LeaderType[0] = 0
+	--Set player Commander blueprint table for each player
+	ASSAS_Surv_BlueprintTable = {}
+	for i=0, World_GetPlayerCount()-2 do
+		-- Create the bp table from the array
+		ASSAS_Surv_BlueprintTable[i] = {}
+		for j=1, table.getn(Srvl_PlayerInfo.CmndrSqdName[i]) do
+			local entry = { name = Srvl_PlayerInfo.CmndrSqdName[i][j], count = 1 }
+			table.insert( ASSAS_Surv_BlueprintTable[i], entry )
+		end
+	end
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_enemy_leader_assassinate"))
+	ASSAS_PlayerHasBuiltCommander_Survival = {false,false,false,false,false,false,false,false,false}
+	-- Get the ALLY AI to attack on the 240 second mark (that is why the last player stays out)
+	for i = 0, World_GetPlayerCount()-2 do
+		local player = World_GetPlayerAt(i)
+		if not Player_IsHuman(player) then
+			Cpu_NotifyAssassinate(player)
+		end
+	end
+
+	obj_table_assassinate_surv = { title_id = 5800304, short_desc_id = 5800305, help_tip_id = 5800305 }
+	Objective_Add( obj_table_assassinate_surv, false )
+	-- Rule for Enemy AI
+	Rule_AddOneShot(Rule_AssassinateLeader,300)
+	Rule_AddIntervalDelay(Rule_MoveAssassinateLeader,10,200)
+	-- Rule for Players
+	Rule_AddIntervalDelay(Rule_CheckAssassinateSurvival, 1.75, 6)
+end
+
+
+Scar_AddInit(Rule_TriggerAssassinate)
+
+
+function Rule_AssassinateLeader()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		pcall(Rule_Remove,Rule_MoveAssassinateLeader)
+		return
+	end
+	SGroup_Clear("sg_enemy_leader_assassinate")
+	local leader = {}
+	if     Assassinate_LeaderType[0]==0 then leader = EnemyCommanderSquadName1
+	elseif Assassinate_LeaderType[0]==1 then leader = EnemyCommanderSquadName2
+	elseif Assassinate_LeaderType[0]==2 then leader = EnemyCommanderSquadName3
+	elseif Assassinate_LeaderType[0]==3 then leader = EnemyCommanderSquadName4
+	elseif Assassinate_LeaderType[0]==4 then leader = EnemyCommanderSquadName5
+	elseif Assassinate_LeaderType[0]>=5 then leader = EnemyCommanderSquadName6 end
+	local chosen_leader = World_GetRand(1,table.getn(leader))
+	chosen_leader = 1
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID,"sg_enemy_leader_assassinate",leader[chosen_leader],"mk_enemy_pos",1,1)
+	if leader[2] ~= nil and leader[2] > 0 then SGroup_AddSquadsWithLeaders("sg_enemy_leader_assassinate", leader[1], 1, leader[2]) end
+	if leader[3] ~= nil and leader[3] > 0 then SGroup_AddSquadsWithLeaders("sg_enemy_leader_assassinate", leader[1], 2, leader[3]) end
+	if leader[4] ~= nil and leader[4] > 0 then SGroup_AddSquadsWithLeaders("sg_enemy_leader_assassinate", leader[1], 3, leader[4]) end
+	if leader[5] ~= nil and leader[5] > 0 then SGroup_AddSquadsWithLeaders("sg_enemy_leader_assassinate", leader[1], 4, leader[5]) end
+	if g_Survival_Enemy_AI_Is_Human == false then
+		if not g_Survival_Enemy_Waves_Have_Failed then
+			Cmd_AttackMovePos("sg_enemy_leader_assassinate",Enemy_GetAssassinateCommanderTarget())
+			Rule_LockSGroupSurvivalPlayer( "sg_enemy_leader_assassinate" )
+		end
+	end
+	Rule_AddIntervalDelay(Rule_CheckEnemyLeader,5,3.25)
+end
+
+
+function Enemy_GetAssassinateCommanderTarget()
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	local total_alive = table.getn(alive_players)
+	if total_alive>0 then
+		return Srvl_PlayerInfo.HQpos[alive_players[World_GetRand(1,total_alive)]]
+	else
+		return Srvl_PlayerInfo.HQpos[0]
+	end
+end
+
+
+function Rule_CheckEnemyLeader()
+	--print("Assassinate Computer Leader Type = "..Assassinate_LeaderType[0])
+	if SGroup_Count("sg_enemy_leader_assassinate")==0 then
+		Rule_AddOneShot(Rule_RewardAssassinate,0.25)
+		Rule_AddOneShot(Rule_AssassinateLeader,g_spamtimer+10)
+		Rule_Remove(Rule_CheckEnemyLeader)
+	else
+		g_leader_pos = SGroup_GetPosition("sg_enemy_leader_assassinate")
+		pg_leaderpos = Ping_Position(g_leader_pos,false,"assassinate")
+	end
+end
+
+
+function Rule_MoveAssassinateLeader()
+	if not Player_IsAlive(g_enemy_PlayerID) then
+		return
+	end
+	-- If the Attacking Player is controlled by a Human Player, HE will move the commander!
+	if g_Survival_Enemy_AI_Is_Human == true then
+		return
+	end
+	Rule_LockSGroupSurvivalPlayer( "sg_enemy_leader_assassinate" )
+	-- Do not attack if wounded, retreat to base instead to regen
+	if SGroup_GetAvgHealth("sg_enemy_leader_assassinate") < 0.5 then
+		Cmd_MoveToMarker("sg_enemy_leader_assassinate","mk_enemy_pos")
+	else
+		Cmd_AttackMovePos("sg_enemy_leader_assassinate",Enemy_GetAssassinateCommanderTarget())
+	end
+end
+
+
+function Rule_RewardAssassinate()
+	EventCue_DoEvent ("player_host_migrated", "/event_cue_notifications/team_change", "Enemy leader assassinated","The enemy have been weakened by the death of an inspirational leader!")
+	pcall(Ping_Stop,pg_leaderpos)
+	SGroup_AddGroup(SGroup_CreateIfNotFound("sg_morale_busted_assassinate"), Player_GetSquads(g_enemy_PlayerID))
+	local health_fraction = 0
+	if     Assassinate_LeaderType[0]==0 then health_fraction = 0.75
+	elseif Assassinate_LeaderType[0]==1 then health_fraction = 0.70
+	elseif Assassinate_LeaderType[0]==2 then health_fraction = 0.65
+	elseif Assassinate_LeaderType[0]==3 then health_fraction = 0.60
+	elseif Assassinate_LeaderType[0]==4 then health_fraction = 0.55
+	elseif Assassinate_LeaderType[0]>4 then health_fraction = 0.50 end
+	SGroup_SetAvgMorale("sg_morale_busted_assassinate", 0.0)
+	SGroup_MultiplyCurrentHealthBy("sg_morale_busted_assassinate", health_fraction)
+	SGroup_Destroy("sg_morale_busted_assassinate")
+	Assassinate_LeaderType[0] = Assassinate_LeaderType[0] + World_GetRand(0,1) -- 50% chance to move to next commander type
+	Rule_Check_AddOneShot(Rule_AssassinateLeader,360)
+end
+
+
+
+-------------------------------------------
+--Players Leaders routines
+------------------------------------------
+
+function Rule_CheckAssassinateSurvival()
+	for playerIDX = 0, World_GetPlayerCount()-2 do
+		local playerID = Srvl_PlayerInfo.PlayerID[playerIDX]
+		if Player_IsAlive(playerID) then
+			-- If a player has already created a commander previously, see if he has lost him
+			if ASSAS_PlayerHasBuiltCommander_Survival[playerIDX] then
+				if not SGroup_ContainsBlueprints(Player_GetSquads(playerID), ASSAS_Surv_BlueprintTable[playerIDX], false) then
+					print("Player "..(playerIDX+1).." Commander is Killed!")
+					ASSAS_PlayerHasBuiltCommander_Survival[playerIDX] = false
+					Rule_PlayerHeroDies_Penalty(playerID)
+				end
+			-- Player had not previously created a commander, check if he has now
+			elseif SGroup_ContainsBlueprints(Player_GetSquads(playerID), ASSAS_Surv_BlueprintTable[playerIDX], false) then
+				print("Player "..(playerIDX+1).." Commander is fielded!")
+				ASSAS_PlayerHasBuiltCommander_Survival[playerIDX] = true
+			end
+		end
+	end
+end
+
+
+function Rule_PlayerHeroDies_Penalty(playerID)
+	if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(playerID) then
+		EventCue_DoEvent("player_host_migrated", "/event_cue_notifications/team_change", "Your Leader is Assassinated!","The enemy has weaken your forces by assassinating your leader!")
+	end
+	SGroup_Clear(SGroup_CreateIfNotFound("assassinate_player_squads_sg_survival"))
+	SGroup_AddGroup("assassinate_player_squads_sg_survival", Player_GetSquads(playerID))
+	SGroup_MultiplyCurrentHealthBy("assassinate_player_squads_sg_survival",0.6)
+	SGroup_SetAvgMorale("assassinate_player_squads_sg_survival",0.0)
+end
+

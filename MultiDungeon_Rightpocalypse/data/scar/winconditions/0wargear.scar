@@ -1,0 +1,296 @@
+--------------------------------
+-- Original rule by Argonaut  --
+-- Updated to V 2.8 Gambit    --
+--------------------------------
+
+-- Modifiers used by non-vanilla Commanders (do not increase speed!)
+WG_Health_Modifier_Surv = 1.8
+WG_Speed_Modifier_Surv = 1.2
+WG_Morale_Modifier_Surv = 1.4
+WG_MinWeaponDMG_Modifier_Surv = 1.4	-- Not used for now
+WG_MaxWeaponDMG_Modifier_Surv = 1.6	-- Not used for now
+-- The proximity around the hammers (WG place) that the commander should be
+WG_WarGearProximity = 8.5 -- I set to 8.5, because the hammers are placed at improper places, in some maps... :(
+
+Is_Hero_Wargear_Enabled_Survival = true
+
+function Rule_TriggerWargear_Survival()
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Wargear (selected wincondition) has no effect at all - NO rule started!")
+		Is_Hero_Wargear_Enabled_Survival = nil
+		return
+	end
+	SGroup_CreateIfNotFound("wg_sg_near_marker_survival")
+	WG_Chosen_Marker_Position = {}
+	WG_ALL_Marker_Positions = {}
+	WG_Remaining_Marker_Positions_Player = {}
+	WG_Hammer_Entity = {}
+	WG_PlayersMustCheckWarGear = {0,0,0,0,0,0,0,0}
+	WG_NumberOfDefendingPlayers = {}
+	WG_NumberOfDefendingPlayers[0] = World_GetPlayerCount() - 1
+	WG_Blueprinttable = {}
+	WG_PlayerRaceName = {}
+	WG_PlayerID = {}
+	WG_ResearchPrefix = {}
+	--Set the WG Commander squads
+	Rule_WG_SetVanillaHeroes()
+	for i=1, WG_NumberOfDefendingPlayers[0] do
+		WG_PlayerID[i] = World_GetPlayerAt(i-1)
+		WG_PlayerRaceName[i] = Player_GetRaceName(WG_PlayerID[i])
+		Rule_WG_SetBlueprintTable(WG_PlayerRaceName[i], i)
+	end
+	if Rule_WG_DefineRandomWGPlace() then
+		print("Survival: Hero Wargear enabled for Defending Players!")
+		obj_table_wargear_surv = { title_id = 5800301, short_desc_id = 5800302, help_tip_id = 5800302 }
+		Objective_Add( obj_table_wargear_surv, false )
+		Rule_AddIntervalDelay(Rule_CheckPlayersWargear,1.75, 14)
+	end
+end
+
+
+function Rule_WG_SetBlueprintTable(racename, slot)
+	if racename == "chaos_marine_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("chaos_squad_lord_advance_sp_wg", "chaos_squad_daemon_prince_advance_sp")
+		WG_ResearchPrefix[slot] = "chaos_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "dark_eldar_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("dark_eldar_squad_archon_hg_dxp3_wg")
+		WG_ResearchPrefix[slot] = "dark_eldar_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "eldar_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("eldar_squad_farseer_advance_sp_wg")
+		WG_ResearchPrefix[slot] = "eldar_wargear" WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "guard_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("guard_squad_command_squad_advance_sp_wg")
+		WG_ResearchPrefix[slot] = "guard_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "necron_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("necron_lord_squad_advance_sp_wg", "necron_lord_squad_advance_sp_wg_dc", "necron_lord_squad_advance_sp_wg_nb")
+		WG_ResearchPrefix[slot] = "necron_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "ork_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("ork_squad_warboss_advance_sp_wg")
+		WG_ResearchPrefix[slot] = "ork_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "sisters_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("sisters_squad_canoness_advance_sp_wg")
+		WG_ResearchPrefix[slot] = "sisters_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "space_marine_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("space_marine_squad_force_commander_advance_sp_wg", "space_marine_squad_force_commander_terminator_wg")
+		WG_ResearchPrefix[slot] = "marine_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	elseif racename == "tau_race" then WG_Blueprinttable[slot] = Util_MakeBlueprintTable("tau_commander_squad_advance_sp_wg")
+		WG_ResearchPrefix[slot] = "tau_wargear"; WG_PlayersMustCheckWarGear[slot] = 1;
+	else
+		-- Non-Vanilla races get the general treatment since there is no actual wargear to unlock, only modifiers to apply
+		-- Create the bp table from the array
+		WG_Blueprinttable[slot] = {}
+		for i=1, table.getn(Srvl_PlayerInfo.CmndrSqdName[slot-1]) do
+			local entry = { name = Srvl_PlayerInfo.CmndrSqdName[slot-1][i], count = 1 }
+			table.insert( WG_Blueprinttable[slot], entry )
+		end
+		WG_PlayersMustCheckWarGear[slot] = 2
+	end
+end
+
+
+function Rule_WG_DefineRandomWGPlace()
+	local marker = 1
+	if Marker_Exists("mk_wargear1","basic_marker") then
+		repeat
+			WG_ALL_Marker_Positions[marker] = Marker_GetPosition(Marker_FromName("mk_wargear"..marker, "basic_marker" ))
+			marker = marker + 1
+		until not Marker_Exists("mk_wargear"..marker,"basic_marker")
+		print("Total Map's different Wargear positions: "..marker-1)
+		WG_Chosen_Marker_Position[0] = WG_ALL_Marker_Positions[World_GetRand(1,marker-1)]
+	else
+		print("Problem in Survival Wargear! The map does not have the mk_wargear1 marker! Rule not started.")
+		return false
+	end
+	local pos = WG_Chosen_Marker_Position[0]
+	local pos_modif = {x={1,-2,0.5,1,0,-1,0}, z={0,0,0.7,0,-1.4,0,0}}
+	for i=1, WG_NumberOfDefendingPlayers[0] do
+		-- This is to set all positions to all players
+		WG_Remaining_Marker_Positions_Player[i] =  { time = World_GetRand(1000,2400), positions = WG_ALL_Marker_Positions}
+		WG_Hammer_Entity[i] = Entity_Create("floating_daemon_hammer_survival", WG_PlayerID[i], pos)
+		Entity_SetWorldOwner(WG_Hammer_Entity[i])
+		Entity_Spawn(WG_Hammer_Entity[i])
+		pos.x = pos.x + 2*pos_modif.x[i]; pos.z = pos.z + 2*pos_modif.z[i]
+	end
+	return true
+end
+
+
+WG_DisplayUpgradeFX = function( sgroupid, itemindex, squadID )
+	local attached = false
+	for i=1, table.getn(Srvl_PlayerInfo.CmndrSqdName[WG_SLOT_UPGRADE]) do
+		local check, name = pcall(Squad_GetAttachedBlueprintName, squadID)
+		if check and name == Srvl_PlayerInfo.CmndrSqdName[WG_SLOT_UPGRADE][i] then attached = true end
+		if Squad_GetBlueprintName(squadID) == Srvl_PlayerInfo.CmndrSqdName[WG_SLOT_UPGRADE][i] or attached then
+			SGroup_Clear(SGroup_CreateIfNotFound("wg_temp_commander"))
+			SGroup_Add("wg_temp_commander", squadID)
+			Command_Squad( World_GetPlayerAt(WG_SLOT_UPGRADE), "wg_temp_commander", SCMD_Stop )
+			World_FXEvent("unit_ability_fx/machine_spirit", Squad_GetPosition(squadID))
+			return true
+		end
+	end
+end
+
+
+function Rule_CheckPlayersWargear()
+	local game_time = World_GetGameTime()
+	local rule_remove = true
+	for i = 1, WG_NumberOfDefendingPlayers[0] do
+		-- If a player CANNOT find his WG on the map for a long time, notify him after some time
+		if WG_PlayersMustCheckWarGear[i] ~= 0 and game_time > WG_Remaining_Marker_Positions_Player[i].time then
+			WG_Remaining_Marker_Positions_Player[i].time = game_time + World_GetRand(45,110)
+			local max = table.getn(WG_Remaining_Marker_Positions_Player[i].positions)
+			local pos = WG_Chosen_Marker_Position[0]
+			if max > 1 then
+				pos = WG_Remaining_Marker_Positions_Player[i].positions[World_GetRand(1,max)]
+				-- Remove false reconnaissance, 50% of the times!
+				if pos ~= WG_Chosen_Marker_Position[0] and World_GetRand(1,2) == 1 then
+					table.remove(WG_Remaining_Marker_Positions_Player[i].positions, rand_mrkr)
+				end
+			end
+			if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(WG_PlayerID[i]) then
+				EventCue_DoEvent ("blue_skull", "/event_cue_notifications/team_change", "Field Reconnaissance - WarGear","Field reckon, suggest you should lead you primary Commander to the designated point of interest, to investigate !")
+				Ping_Position(pos, false)
+			end
+		end
+		-- Wargears' Checks
+		if WG_PlayersMustCheckWarGear[i] == 1 then
+			if Player_IsAlive(WG_PlayerID[i]) then
+				rule_remove = false
+				SGroup_Clear("wg_sg_near_marker_survival")
+				Player_GetAllSquadsNearPos(WG_PlayerID[i], "wg_sg_near_marker_survival", WG_Chosen_Marker_Position[0], WG_WarGearProximity)
+				if SGroup_ContainsBlueprints("wg_sg_near_marker_survival", WG_Blueprinttable[i], false) then
+					-- Player got his wargear, so remove one hammer (never mind which, in 2 players)
+					Entity_DeSpawn(WG_Hammer_Entity[1])
+					Entity_Destroy(WG_Hammer_Entity[1])
+					table.remove(WG_Hammer_Entity,1)
+					WG_PlayersMustCheckWarGear[i] = 0
+					-- Enable the researches that grant the WarGear
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."01")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."02")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."03")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."04")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."05")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."06")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."07")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."08")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."09")
+					Player_GrantResearch(WG_PlayerID[i], WG_ResearchPrefix[i].."10")
+					WG_SLOT_UPGRADE = World_GetPlayerIndex(WG_PlayerID[i])
+					local fx = SGroup_ForEachAllOrAny("wg_sg_near_marker_survival",false,WG_DisplayUpgradeFX)
+					if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(WG_PlayerID[i]) then
+						EventCue_DoEvent("newtechavailable", "/event_cue_notifications/upgrade_complete", "Wargear Upgraded!","Your commander has been upgraded with all of his wargear.")
+						if Objective_GetState(obj_table_wargear_surv.title_id) ~= OS_Complete then
+							Util_ObjectiveComplete(obj_table_wargear_surv.title_id)
+						end
+					end
+				end
+			else
+				WG_PlayersMustCheckWarGear[i] = 0
+				-- Player is dead, just remove one hammer (never mind which, in 2 players)
+				Entity_DeSpawn(WG_Hammer_Entity[1])
+				Entity_Destroy(WG_Hammer_Entity[1])
+				table.remove(WG_Hammer_Entity,1)
+			end
+		elseif WG_PlayersMustCheckWarGear[i] == 2 then
+			if Player_IsAlive(WG_PlayerID[i]) then
+				rule_remove = false
+				SGroup_Clear("wg_sg_near_marker_survival")
+				Player_GetAllSquadsNearPos(WG_PlayerID[i], "wg_sg_near_marker_survival", WG_Chosen_Marker_Position[0], WG_WarGearProximity)
+				if SGroup_ContainsBlueprints("wg_sg_near_marker_survival", WG_Blueprinttable[i], false) then
+					-- Player got his wargear, so remove one hammer (never mind which, in 2 players)
+					Entity_DeSpawn(WG_Hammer_Entity[1])
+					Entity_Destroy(WG_Hammer_Entity[1])
+					table.remove(WG_Hammer_Entity,1)
+					WG_PlayersMustCheckWarGear[i] = 0
+					WG_SLOT_UPGRADE = World_GetPlayerIndex(WG_PlayerID[i])
+					-- Give modifier bonuses to primary commander as an alternative, since no vanilla races have WarGear
+					Rule_WG_NonVanillaRacesWG(WG_PlayerID[i])
+					local fx = SGroup_ForEachAllOrAny("wg_sg_near_marker_survival",false,WG_DisplayUpgradeFX)
+					if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(WG_PlayerID[i]) then
+						EventCue_DoEvent("newtechavailable", "/event_cue_notifications/upgrade_complete", "Wargear Upgraded!","Your commander has been upgraded with all of his wargear.")
+						if Objective_GetState(obj_table_wargear_surv.title_id) ~= OS_Complete then
+							Util_ObjectiveComplete(obj_table_wargear_surv.title_id)
+						end
+					end
+				end
+			else
+				WG_PlayersMustCheckWarGear[i] = 0
+				-- Player is dead, just remove one hammer (never mind which, in 2 players)
+				Entity_DeSpawn(WG_Hammer_Entity[1])
+				Entity_Destroy(WG_Hammer_Entity[1])
+				table.remove(WG_Hammer_Entity,1)
+			end
+		end
+	end
+	if rule_remove then
+		Rule_Remove(Rule_CheckPlayersWargear); print("Survival: Wargear rule removed!")
+	end
+end
+
+
+function Rule_WG_NonVanillaRacesWG(playerID)
+	local playerIDX = World_GetPlayerIndex(playerID)
+	for i=1, table.getn(Srvl_PlayerInfo.CmndrEntName[playerIDX]) do
+	-- Health Upgrade
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, WG_Health_Modifier_Surv, Srvl_PlayerInfo.CmndrEntName[playerIDX][i]),playerID)
+	-- Speed Upgrade
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "speed_maximum_modifier", MUT_Multiplication, false, WG_Speed_Modifier_Surv, Srvl_PlayerInfo.CmndrEntName[playerIDX][i]),playerID)
+	end
+	for i=1, table.getn(Srvl_PlayerInfo.CmndrSqdName[playerIDX]) do
+	-- Morale Upgrade
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_SquadType, "morale_maximum_squad_modifier", MUT_Multiplication, false, WG_Morale_Modifier_Surv, Srvl_PlayerInfo.CmndrSqdName[playerIDX][i]),playerID)
+	end
+	--[[ -- Min/Max Weapon Damage Upgrade. I will have to add all commander weapons in the Srvl_PlayerInfo array, and it's too much!!! Perhaps in the future.
+	for i=1, table.getn(Srvl_PlayerInfo.XXXXXXX[playerIDX]) do
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_WeaponType, "min_damage_weapon_modifier", MUT_Multiplication, false, WG_MinWeaponDMG_Modifier_Surv, Srvl_PlayerInfo.XXXXXXX[playerIDX][i]),playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_WeaponType, "max_damage_weapon_modifier", MUT_Multiplication, false, WG_MaxWeaponDMG_Modifier_Surv, Srvl_PlayerInfo.YYYYYYY[playerIDX][i]),playerID)
+	end]]
+end
+
+
+
+function Rule_WG_SetVanillaHeroes()
+	for i = 1, WG_NumberOfDefendingPlayers[0] do
+		local playerID = World_GetPlayerAt(i-1)
+		local race_name = Player_GetRaceName(playerID)
+		if race_name == "chaos_marine_race" then
+			Player_RestrictSquad(playerID, "chaos_squad_lord")
+			Player_RestrictResearch(playerID, "chaos_daemon_prince_research")
+			Player_UnRestrictResearch(playerID, "chaos_daemon_prince_research_wg")
+			Player_UnRestrictSquad(playerID, "chaos_squad_lord_advance_sp_wg")
+		elseif race_name == "dark_eldar_race" then
+			Player_RestrictSquad(playerID, "dark_eldar_squad_archon")
+			Player_UnRestrictSquad(playerID, "dark_eldar_squad_archon_hg_dxp3_wg")
+		elseif race_name == "eldar_race" then
+			Player_RestrictSquad(playerID, "eldar_squad_farseer")
+			Player_UnRestrictSquad(playerID, "eldar_squad_farseer_advance_sp_wg")
+		elseif race_name == "guard_race" then
+			Player_RestrictSquad(playerID, "guard_squad_command_squad")
+			Player_UnRestrictSquad(playerID, "guard_squad_command_squad_advance_sp_wg")
+		elseif race_name == "necron_race" then
+			local index = World_GetPlayerIndex(playerID)  -- index always equals i, but let's be 1000% sure
+			if g_Necrons_PlayersIDXs[index] == 4 then
+				Player_RestrictSquad(playerID, "necron_lord_squad")
+				Player_UnRestrictSquad(playerID, "necron_lord_squad_advance_sp_wg")
+			elseif g_Necrons_PlayersIDXs[index] == 5 then
+				Player_RestrictSquad(playerID, "necron_lord_squad_dc")
+				Player_UnRestrictSquad(playerID, "necron_lord_squad_advance_sp_wg_dc")
+			elseif g_Necrons_PlayersIDXs[index] == 6 then
+				Player_RestrictSquad(playerID, "necron_lord_squad_nb")
+				Player_UnRestrictSquad(playerID, "necron_lord_squad_advance_sp_wg_nb")
+			else print("Survival: Wargear ScaR Problem!!!! Check Necron Commander Index!")
+			end
+		elseif race_name == "ork_race" then
+			Player_RestrictSquad(playerID, "ork_squad_warboss")
+			Player_UnRestrictSquad(playerID, "ork_squad_warboss_advance_sp_wg")
+		elseif race_name == "sisters_race" then
+			Player_RestrictSquad(playerID, "sisters_squad_canoness")
+			Player_UnRestrictSquad(playerID, "sisters_squad_canoness_advance_sp_wg")
+		elseif race_name == "space_marine_race" then
+			Player_RestrictSquad(playerID, "space_marine_squad_force_commander")
+			Player_RestrictSquad(playerID, "space_marine_squad_force_commander_terminator")
+			Player_RestrictResearch(playerID, "marine_terminator_force_commander_research")
+			Player_UnRestrictSquad(playerID, "space_marine_squad_force_commander_advance_sp_wg")
+			Player_UnRestrictSquad(playerID, "space_marine_squad_force_commander_terminator_wg")
+			Player_UnRestrictResearch(playerID, "marine_terminator_force_commander_research_wg")
+		elseif race_name == "tau_race" then
+			Player_RestrictSquad(playerID, "tau_commander_squad")
+			Player_UnRestrictSquad(playerID, "tau_commander_squad_advance_sp_wg")
+		end
+	end
+end
+
+
+Scar_AddInit(Rule_TriggerWargear_Survival)

@@ -1,0 +1,411 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+-- WARNING !!
+-- If new squads are added to Chaos Daemons, remember to add them to the daemons_survival_instability_fix entity!
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "daemon_squad_fury_big_h"
+DeCapturingSquadMmbrs = 12
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "daemon_sacrificial_circle"
+EnemyBuilding1Squad1 = {"daemon_squad_blight_drones", 1, 3}
+EnemyBuilding1Squad2 = {"daemon_squad_warp_spawn", 1, 1}
+EnemyBuilding1Squad3 = {"daemon_squad_jugg", 2, 1}
+EnemyBuilding2Name = "daemon_sacrificial_circle"
+EnemyBuilding2Squad1 = {"daemon_squad_obliterator", 1, 3}
+EnemyBuilding2Squad2 = {"daemon_squad_pink_horror", 2, 6}
+EnemyBuilding2Squad3 = {"daemon_squad_bloodletters", 2, 6}
+EnemyBuilding2SquadA1 = {"daemon_squad_defiler_slaanesh",1,1}
+EnemyBuilding2SquadA2 = {"daemon_squad_defiler_tzeentch",1,1}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = nil
+EnemyTransportedSquad = nil
+EnemyHonourGuardSquad1 = {"daemon_squad_defiler_khorne",1,1}
+EnemyHonourGuardSquad2 = {"daemon_squad_defiler_nurgle",1,1}
+EnemyHonourGuardSquad3 = {"daemon_squad_defiler_slaanesh",1,1}
+EnemyHonourGuardSquad4 = {"daemon_squad_defiler_tzeentch",1,1}
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"daemon_squad_khorne_herald"}
+EnemyCommanderSquadName2 = {"daemon_squad_slaanesh_herald"}
+EnemyCommanderSquadName3 = {"daemon_squad_nurgle_herald"}
+EnemyCommanderSquadName4 = {"daemon_squad_tzeentch_herald"}
+EnemyCommanderSquadName5 = {"daemon_squad_lord"}
+EnemyCommanderSquadName6 = {"daemon_squad_lord_stature"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_bloodthirster", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_keeper_of_secrets", "mk_uberspawn_2", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_lord_of_change", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_guo", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_daemon_prince", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_daemon_prince_khorne", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_daemon_prince_nurgle", "mk_uberspawn_2", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_daemon_prince_slaanesh", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "daemon_squad_daemon_prince_tzeentch", "mk_uberspawn_2", 1, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_flesh_hound", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_plague_bearers", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_bloodletters", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_plague_bearers", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_bloodletters", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_fiends", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_flamers", marker, 1, 9)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_fury_big_h", marker, 2, 10)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_flesh_hound", marker, 2, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_nurgling", marker, 2, 12)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 2, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_plague_bearers", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_bloodletters", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_screamers", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_pink_horror", marker, 2, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_plague_bearers", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_bloodletters", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_screamers", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "daemon_squad_fiends", marker, 2, 3)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flesh_hound", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 1,4 )
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 1,4 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_nurgling", marker, 2, 10)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_warp_spawn", marker, 1, 1)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 2, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletters", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flamers", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flesh_hound", marker, 1, 6)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 2, 3)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 2,4 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_nurgling", marker, 2, 12)
+		end
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletters", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 3,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flesh_hound", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 2, 6)
+		end
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 4, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu", marker, 1, 3)
+		SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 1, 8)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletters", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 3,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_nurgling", marker, 2, 16)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 2, 6)
+		end	
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 3), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu_stature", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 2, 8)
+		SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_khorne", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_nurgle", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flamers", marker, 3, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_obliterator", marker, 1, 5)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 3,6 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flesh_hound", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_fire_lord", marker, 1, 1)			
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_daemonettes_greater_alt", marker, 1, 6)
+		end
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 3), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu_stature", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 4, 6)
+		SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord_stature", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_khorne", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_nurgle", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_obliterator", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_daemonettes_greater_alt", marker, 1, 6)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_slaanesh", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_tzeentch", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 1,8 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_fire_lord", marker, 1, 1)	
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_nurgling", marker, 2, 20)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		end
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 3), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu_stature", marker, 1, 3)
+		SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_obliterator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_mutilator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord_stature", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_fire_lord", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_khorne", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_nurgle", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_slaanesh", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_tzeentch", marker, 1, 1)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 3), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu_stature", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 3, 8)
+		SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_khorne", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_nurgle", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_slaanesh", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_tzeentch", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord_stature", marker, 1, 1)
+        Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_fire_lord", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_obliterator", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_mutilator", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flesh_hound", marker, 5, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_daemonettes_greater_alt", marker, 1, 6)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_pink_horror", marker, 3, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 1), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 2), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName(sgroupName), 3), "daemons_daemon_fire_tzeentch_bolt_lesser", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_horblu_stature", marker, 1, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_bloodletter_elites", marker, 3, 8)
+		SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName);SGroup_AddLeaders(sgroupName)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_obliterator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_mutilator", marker, 2, 5)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_nurgling", marker, 3, 20)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_fire_lord", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_lord_stature", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_jugg", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_flamers", marker, 5, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_khorne", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_nurgle", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_slaanesh", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_defiler_tzeentch", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_soul_grinder", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_greater_brass_scorpion", marker, 1, 1)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "daemon_squad_primarch_angron", marker, 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "daemon_squad_primarch_angron"), g_enemy_PlayerID)
+		end
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_SpawnDaemonsPortals,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1),Get_NextRule_InitiationTMR_Survival()+60)
+	SGroup_CreateIfNotFound("sg_warp_gate_daemons")
+	SGroup_CreateIfNotFound("sg_warp_gate_daemons_angron")
+end
+
+
+-- Chaos Warp daemonic spawn
+function Rule_SpawnDaemonsPortals()
+	g_warp_portal_pos = {}
+	g_player_to_attack_IDX = {}
+	g_portal_choice = {}
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local sg = Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]])
+	if SGroup_Count(sg) == 0 then
+		g_warp_portal_pos[0] = Player_GetStartPosition(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]])
+		g_warp_portal_pos[0].x = g_warp_portal_pos[0].x + 16; g_warp_portal_pos[0].z = g_warp_portal_pos[0].z + 16
+	else
+		g_warp_portal_pos[0] = SGroup_GetPosition(sg)
+	end
+	Util_StartIntel(EVENTS.IE_Daemons_Arrive_P1)
+	pg_Daemons_Warp_P1 = Ping_Position(g_warp_portal_pos[0],true)
+	if g_difficulty == "insane" and SGroup_Count("sg_warp_gate_daemons_angron") == 0 then
+		g_portal_choice[0] = World_GetRand(1,6)
+	else
+		g_portal_choice[0] = World_GetRand(1,5)
+	end
+	if g_portal_choice[0] == 1 then World_FXEvent("data:Art/Events/Daemons/god_slaanesh_ability.events", g_warp_portal_pos[0])
+	elseif g_portal_choice[0] == 2 then World_FXEvent("data:Art/Events/Daemons/god_nurgle_ability.events", g_warp_portal_pos[0])
+	elseif g_portal_choice[0] == 3 then World_FXEvent("data:Art/Events/Daemons/god_tzeentch_ability.events", g_warp_portal_pos[0])
+	elseif g_portal_choice[0] == 4 then World_FXEvent("data:Art/Events/Daemons/god_khorne_ability.events", g_warp_portal_pos[0])
+	elseif g_portal_choice[0] == 5 then World_FXEvent("data:Art/Events/Daemons/god_undivided_ability.events", g_warp_portal_pos[0])
+	else
+		World_FXEvent("data:Art/Events/Daemons/god_undivided_ability.events", g_warp_portal_pos[0])
+		Sound_Play("speech/races/daemons/angron_comes/angron_comes")
+	end
+	Rule_AddOneShot(Rule_Spawn_Daemons_Warp_Troops,7.25)
+end
+
+
+function Rule_Spawn_Daemons_Warp_Troops()
+	Ping_Stop(pg_Daemons_Warp_P1)
+	World_FXEvent("data:Art/Events/chaos_fx/possession_fx.events",g_warp_portal_pos[0])
+	if g_portal_choice[0] == 1 then
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_keeper_of_secrets",g_warp_portal_pos[0],1,1)
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_fiends",g_warp_portal_pos[0],3,3)
+	elseif g_portal_choice[0] == 2 then
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_guo",g_warp_portal_pos[0],1,1)
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_plague_bearers",g_warp_portal_pos[0],2,8)
+	elseif g_portal_choice[0] == 3 then
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_lord_of_change",g_warp_portal_pos[0],1,1)
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_pink_horror",g_warp_portal_pos[0],2,6)
+	elseif g_portal_choice[0] == 4 then
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_bloodthirster",g_warp_portal_pos[0],1,1)
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_bloodletters",g_warp_portal_pos[0],2,6)
+	elseif g_portal_choice[0] == 5 then
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_obliterator",g_warp_portal_pos[0],2,World_GetRand(2,5))
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons","daemon_squad_mutilator",g_warp_portal_pos[0],World_GetRand(1,3),3)
+	else
+		Util_CreateSquadsAtPositionEx(g_enemy_PlayerID,"sg_warp_gate_daemons_angron","daemon_squad_daemon_prince_khorne",g_warp_portal_pos[0],1,1)
+	end
+	if not g_Survival_Enemy_Waves_Have_Failed then
+		Rule_LockSGroupSurvivalPlayer("sg_warp_gate_daemons")
+		Rule_LockSGroupSurvivalPlayer("sg_warp_gate_daemons_angron")
+	end
+	Cmd_AttackMovePos("sg_warp_gate_daemons",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+	Cmd_AttackMovePos("sg_warp_gate_daemons_angron",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+end
+
+
+
+--------------------------------------------------------------------------
+--            SPECIAL RULES that apply for this race ONLY           ------
+-- Include your code here, that is race-specific and it is outside  ------
+-- and beyond the scope of the standard code !!!!!				 	------
+--------------------------------------------------------------------------
+
+function ChaosDaemons_InitialInstabilityProtectionRule()
+	-- Spawn a dummy entity that prevents instability
+	Surv_DaemonsInstabilityFixEntity = Entity_Create("daemons_survival_instability_fix", g_enemy_PlayerID, Player_GetStartPosition(g_enemy_PlayerID))
+	Entity_Spawn(Surv_DaemonsInstabilityFixEntity)
+	Rule_AddInterval(Rule_CheckToRemoveInstabilityProtection, 5.25)
+end
+
+
+function Rule_CheckToRemoveInstabilityProtection()
+	if g_Survival_Enemy_Waves_Have_Failed then
+		Entity_DeSpawn(Surv_DaemonsInstabilityFixEntity)
+		Entity_Destroy(Surv_DaemonsInstabilityFixEntity)	
+		Rule_Remove(Rule_CheckToRemoveInstabilityProtection)
+	end
+end
+
+
+-- Scar_AddInit won't work. This, DOES!!! 
+if g_Global_Rule_Initiation_Switch then
+	g_Global_Rule_Initiation_Switch = false
+	Rule_AddOneShot(ChaosDaemons_InitialInstabilityProtectionRule, 4)
+end

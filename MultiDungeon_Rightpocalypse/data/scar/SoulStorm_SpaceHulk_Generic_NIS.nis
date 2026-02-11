@@ -1,0 +1,108 @@
+-----------------------
+--INTEL EVENTS
+----------------------
+EVENTS = {}
+EVENTS.IE_Orks_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Ork, 17471012 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_IG_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Guard, 17471000 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_SM_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Marine, 17471006 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Chaos_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Chaos, 17471004 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Daemons_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Chaos, 17471004 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_EmpChildDaemonettes_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech({squadID=nil,blueprint="none",icon=[[Data:Art\UI\InGame\speech_icons\ec_slaanesh_portal.tga]]}, 17471028 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Eldar_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Eldar, 17471010 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Tau_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Tau, 17471002 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Tau_Orbital_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Tau, 17471018 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Necron_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Necron, 17471008 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_WitchHunters_Arrive_P1=function()
+	CTRL.Actor_PlaySpeech( ACT.Tutorial_Sisters, 17471020)	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_IF_Defences_Boost_P1=function()
+	CTRL.Actor_PlaySpeech({squadID=nil,blueprint="none",icon=[[Data:Art\ui\ingame\imperial_fists_icons\fuggles_statue.tga]]}, 17471030 )	
+	CTRL.WAIT()
+
+end
+
+EVENTS.IE_Khorne_Portals_P123=function()
+	CTRL.Actor_PlaySpeech({squadID=nil,blueprint="none",icon=[[Data:Art\ui\ingame\khorne_marine_icons\will_of_khorne.tga]]}, 17471032 )	
+	CTRL.WAIT()
+
+end
+
+--------------------------------
+-- Bombardment Win Con Events --
+--------------------------------
+EVENTS.IE_BOMBING_RUN = function()
+	Util_SetIE( true )
+
+	CTRL.Actor_PlaySpeech( {squadID=nil,blueprint="none",icon=[[Data:art\ui\ingame\speech_icons\ss_guardsman_icon03]]}, 5300748)
+	--CTRL.Actor_PlaySpeech( {squadID=nil,blueprint="none",icon=[[Data:art\ui\ingame\speech_icons\ss_guardsman_icon03]]}, 5000177 )	
+	CTRL.WAIT()
+	Util_SetIE( flase )
+
+end
+
+EVENTS.IE_BOMBING_RUN2 = function()
+	
+	Util_SetIE( true )
+	CTRL.Actor_PlaySpeech( {squadID=nil,blueprint="none",icon=[[Data:art\ui\ingame\speech_icons\ss_guardsman_icon03]]}, 5300759)
+	--CTRL.Actor_PlaySpeech(  ACT.Stubbs, 5300759 ) --You can't outgun the Imperial Guard.
+	CTRL.WAIT()
+	
+	
+	Util_SetIE( false )
+	
+end
+--------------------------------
+--------------------------------
