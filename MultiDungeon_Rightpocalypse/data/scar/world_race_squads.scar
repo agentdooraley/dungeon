@@ -248,7 +248,7 @@ infantry_list =
 "chaos_squad_sorcerer_torment_sp",
 "chaos_squad_sorceror_nis",
 "chaos_squad_sp_champion",
-"chaos_squad_terminator",
+"chaos_terminator_squad",
 "chaos_squad_warpsmith",
 "chaos_squad_yor_forger"
 },

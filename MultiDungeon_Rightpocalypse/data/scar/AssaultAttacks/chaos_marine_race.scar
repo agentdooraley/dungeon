@@ -39,7 +39,7 @@ Elite1 = "chaos_squad_havoc"
 Elite1Upgrade1 = "chaos_volkite_culverin"
 Elite1Upgrade2 = "chaos_volkite_culverin"
 --Melee no upgrades by default, adds leader
-Elite2 = "chaos_squad_terminator"
+Elite2 = "chaos_terminator_squad"
 --Entrench
 Elite3 = "chaos_squad_obliterator"
 Hero1 = "chaos_squad_sorcerer"
