@@ -234,10 +234,12 @@ function Rule_WavesAttacks_Player(i,wave)
 		end
 		SGroup_AddLeaders(sgroupName)
 	elseif wave == 8 then
-	if g_difficulty ~= nil then
+		if g_difficulty ~= nil then
 			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
 				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_projectiles")
-				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_possessed_daemon_fire_research")				
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_possessed_daemon_fire_research")
+			end
+	end		
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 9)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 3, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_lord", marker, 2, 1)
@@ -253,8 +255,11 @@ function Rule_WavesAttacks_Player(i,wave)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_daemon_prince", marker, 1, 1)
 		SGroup_AddLeaders(sgroupName)
 	elseif wave == 9 then
+		if g_difficulty ~= nil then
 			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
-				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_vehicle_armor_research")		
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_vehicle_armor_research")
+             end
+        end			
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 5)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_volkite_culverin",2)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_defiler", marker,4, 1)
@@ -276,7 +281,9 @@ function Rule_WavesAttacks_Player(i,wave)
 	elseif wave == 10 then
 	if g_difficulty ~= nil then
 			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
-				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_titan_armor_research")	
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "chaos_titan_armor_research")
+            end
+    end			
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_havoc_marine_squad", marker, 2, 5)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"chaos_havoc_marine_squad","chaos_volkite_culverin",5)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "chaos_squad_sorcerer", marker, 2, 1)
