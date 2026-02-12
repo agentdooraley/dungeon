@@ -12,10 +12,11 @@ RuntimeMode = 3
 
 DataFolder.1 = Data
 
-RequiredMod.1 = DXP3
-RequiredMod.2 = DXP2
-RequiredMod.3 = WXP
-RequiredMod.4 = W40k
+RequiredMod.1 = DOWDE
+RequiredMod.2 = DXP3
+RequiredMod.3 = DXP2
+RequiredMod.4 = WXP
+RequiredMod.5 = W40k
 
 
 
