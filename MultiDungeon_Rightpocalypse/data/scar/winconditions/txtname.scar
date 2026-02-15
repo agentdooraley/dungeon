@@ -80,7 +80,7 @@ supername = {
 "Dessaz"
 }
 
-function OnStart ()
+function TxtName()
         local txtname = ""
 	local num_player = World_GetPlayerCount() 	
 
@@ -88,12 +88,25 @@ function OnStart ()
           local playerID = World_GetPlayerAt( i )
           local playerRace = Player_GetRaceName(playerID)
           local bufer = 0
-	  if Cpu_IsCpuPlayer( playerID ) then
+	  if (player_IsHuman_T(playerID) == false) then
           local numtab = table.getn(supername)
           bufer = World_GetRand( 1, numtab )
            txtname = supername[bufer]
 	      Setup_SetPlayerName(playerID, txtname)
           end
 	end	
+
 end
-Scar_AddInit(OnStart)
+
+Scar_AddInit(TxtName)
+
+function player_IsHuman_T( player )
+	local name = Player_GetDisplayName(player)[1]
+	if string.len(name) < 3 then return true end
+	name = string.sub(name, -2)
+	if( name == " 1" or name == " 2" or name == " 3" or name == " 4" or name == " 5" or name == " 6" or name == " 7" or name == " 8") then
+		return false
+	else
+		return true
+	end
+end
