@@ -92,11 +92,15 @@ function TxtName()
           local numtab = table.getn(supername)
           bufer = World_GetRand( 1, numtab )
            txtname = supername[bufer]
+--              Cpu_SetLippy(playerID, true)
 	      Setup_SetPlayerName(playerID, txtname)
+              print("SetNameNum"..(i+1000).."-"..bufer)
+--Cpu_DebugOnILE(1)
+--Cpu_GetLuaMem(playerID)
           end
 	end	
 
-end
+end 
 
 Scar_AddInit(TxtName)
 
