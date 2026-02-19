@@ -1531,8 +1531,6 @@ print ("difficulty is "..Level_Set)
 --fuggles
 --these change army cap size based on level (the bigger the more spam the AI gets to have)
 g_fArmySquadCapModifier = (Level_Set + 2)
--- Change the global value of the Map Pop. Used in the OrksPopLimitRule.scar
-G_ArmySquadCapModifier_OrkPop = { Max_POP = 500 , Start_POP = 75, Increase_Step = 50 }
 Rule_AddOneShot(Rule_BigCaps,1)
 
 --fuggles nerf this nonsense, we probably don't need the random spam?
