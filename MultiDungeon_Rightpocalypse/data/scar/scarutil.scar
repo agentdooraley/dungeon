@@ -98,6 +98,9 @@ import("CampaignBases.scar")
 -- in order to minimise the engine's load.
 import("CustomModScarImports.scar")
 
+-- We add this, to properly set the pop limit for Orks and OrkA players
+import("OrksPopLimitRule.scar")
+
 -- Precache Test Rule
 import("UniPrecacheRule.scar")
 
