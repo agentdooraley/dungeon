@@ -23,38 +23,6 @@ import("Community_Functions.scar")
 -- Does NOT Precache models for the races
 G_Remove_Precaching_ALL = false
 
-if G_Remove_Precaching_ALL then
-	import("World_Race_Entities.scar")
-	print("Starting Removing Precaching...")
-	-- Create the array with all the entities of all races
-	local total_noPrecachingArray_ALL = {}
-	for race_name_no_pc, entities_array_no_pc in pairs(Global_RaceEntities) do
-		for i = 1, table.getn(entities_array_no_pc.building_list) do
-			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.building_list[i])
-		end
-		for i = 1, table.getn(entities_array_no_pc.infantry_list) do
-			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.infantry_list[i])
-		end
-		for i = 1, table.getn(entities_array_no_pc.vehicle_list) do
-			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.vehicle_list[i])
-		end
-		for i = 1, table.getn(entities_array_no_pc.aircraft_list) do
-			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.aircraft_list[i])
-		end
-	end
-	-- Now that we have ALL entities in the array force the no Precaching for all players
-	for player_idx_noprecache = 0, World_GetPlayerCount()-1 do
-		for i = 1, table.getn(total_noPrecachingArray_ALL) do
-			pcall(Player_DoNotPrecache, World_GetPlayerAt(player_idx_noprecache), {total_noPrecachingArray_ALL[i]})
-		end
-	end
-	-- Memory cleanup
-	local total_noPrecachingArray_ALL = nil
-	local entities_array_no_pc = nil
-	print("Removing Precaching Commenced.")
-end
-
-
 ------------------ CORE SCaR IMPORTS -------------------
 ----   These update the functionality of the game 	----
 ----    DO NOT CHAGE THESE IMPORTS' ORDER !!!!!!	----
@@ -69,46 +37,11 @@ import("SoulStorm_Campaign_AdditionalRulesMeta.scar")
 -- We add this import so FreeUI mod is utilised,
 -- providing custom Taskbars for every race!
 import("FreeUI.scar")
--- More Button Support (Currently Rampage, for UM)
-import("Additional_Taskbar_Buttons.scar")
-
--- This is the Import for War Gear wincondition, initially disabling it
-import("HeroWarGear_wincondition.SCAR")
-
--- This creates the Necron Lords dead bodies, based on lord type per race
--- MUST be put AFTER the HeroWarGear_wincondition import, as it uses a global array defined there
-import("NecronLordsBodiesFix.SCAR")
-
--- 1] Initiates the survival Stats in Survival games, and enables unlimited turrets
--- 2] In non-Survival games, it simply disables the unlimited turrets
-import("SoulStorm_Survival_Init.SCAR")
--- 3] Immediately after that, we check for the optional enabled turrets, for turretless races!
-import("SoulStorm_Optional_Turrets.SCAR")
-import("SoulStorm_Assault_Init.SCAR")
-import("SoulStorm_SpaceHulk_Init.SCAR")
--- This is the Import for the code that takes care of stuck flyers in DC maps
-import("FlyersStuck-JumpFixCode.SCAR")
-
--- We add this import so Campaign Bases is utilised,
--- adding BASE save feature to the Soulstorm campaign!
-import("CampaignBases.scar")
 
 -- We add this, so that any additional SCaR code utilised by
 -- CUSTOM SCaR IMPORTS above, to be initiated only if needed
 -- in order to minimise the engine's load.
 import("CustomModScarImports.scar")
-
--- We add this, to properly set the pop limit for Orks and OrkA players
-import("OrksPopLimitRule.scar")
-
--- Precache Test Rule
-import("UniPrecacheRule.scar")
-
--- We add this, to properly have the AI fire the structures with Artillery projectiles
-import("AI_Entity_Proper_Firing.scar")
-
--- We add this, to play the proper map ambience audio list
-import("ambience.scar")
 
 -- This is a method to short out the btn_ScarUI1 to btn_ScarUI6 available buttons.
 -- The global array must ONLY be defined on_init, not on_load, so that not to override
@@ -121,12 +54,6 @@ function InitialiseCustomGlobalVariables_OnInit()
 	G_Campaign_Victory_Condition_Selector = 0
 end
 Scar_AddInit(InitialiseCustomGlobalVariables_OnInit)
-
-
--- The following are for Campaign Win Conditions !  --
-import("Campaign_Conditions_Config.SCAR")
---	--	--	--	--	--	--	--	--	--	--	--	--	--
-
 
 ------------------------------------------------------------------
 
