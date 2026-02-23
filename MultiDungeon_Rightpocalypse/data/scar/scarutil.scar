@@ -21,8 +21,36 @@ import("Production.scar")
 import("Community_Functions.scar")
 
 -- Does NOT Precache models for the races
-G_Remove_Precaching_ALL = false
-
+if G_Remove_Precaching_ALL then
+	import("World_Race_Entities.scar")
+	print("Starting Removing Precaching...")
+	-- Create the array with all the entities of all races
+	local total_noPrecachingArray_ALL = {}
+	for race_name_no_pc, entities_array_no_pc in pairs(Global_RaceEntities) do
+		for i = 1, table.getn(entities_array_no_pc.building_list) do
+			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.building_list[i])
+		end
+		for i = 1, table.getn(entities_array_no_pc.infantry_list) do
+			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.infantry_list[i])
+		end
+		for i = 1, table.getn(entities_array_no_pc.vehicle_list) do
+			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.vehicle_list[i])
+		end
+		for i = 1, table.getn(entities_array_no_pc.aircraft_list) do
+			table.insert(total_noPrecachingArray_ALL,entities_array_no_pc.aircraft_list[i])
+		end
+	end
+	-- Now that we have ALL entities in the array force the no Precaching for all players
+	for player_idx_noprecache = 0, World_GetPlayerCount()-1 do
+		for i = 1, table.getn(total_noPrecachingArray_ALL) do
+			pcall(Player_DoNotPrecache, World_GetPlayerAt(player_idx_noprecache), {total_noPrecachingArray_ALL[i]})
+		end
+	end
+	-- Memory cleanup
+	local total_noPrecachingArray_ALL = nil
+	local entities_array_no_pc = nil
+	print("Removing Precaching Commenced.")
+end
 ------------------ CORE SCaR IMPORTS -------------------
 ----   These update the functionality of the game 	----
 ----    DO NOT CHAGE THESE IMPORTS' ORDER !!!!!!	----
