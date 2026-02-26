@@ -20,6 +20,8 @@ import("UI.scar")
 import("Production.scar")
 import("Community_Functions.scar")
 
+G_Remove_Precaching_ALL = false
+
 -- Does NOT Precache models for the races
 if G_Remove_Precaching_ALL then
 	import("World_Race_Entities.scar")
@@ -82,6 +84,10 @@ function InitialiseCustomGlobalVariables_OnInit()
 	G_Campaign_Victory_Condition_Selector = 0
 end
 Scar_AddInit(InitialiseCustomGlobalVariables_OnInit)
+
+-- The following are for Campaign Win Conditions !  --
+import("Campaign_Conditions_Config.SCAR")
+--	--	--	--	--	--	--	--	--	--	--	--	--	--
 
 ------------------------------------------------------------------
 
