@@ -19,6 +19,7 @@ import("DifficultyLevel.scar")
 import("UI.scar")
 import("Production.scar")
 import("Community_Functions.scar")
+import("SoulStorm_Survival_Init.SCAR")
 
 G_Remove_Precaching_ALL = false
 
