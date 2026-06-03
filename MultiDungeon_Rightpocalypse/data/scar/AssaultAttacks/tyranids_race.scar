@@ -27,8 +27,8 @@ AircraftType1 = "tyranids_squad_gargoyle_max"
 AircraftType2 = "tyranids_squad_gargoyle_max"
 RelicName1 = "tyranids_squad_trygon"
 RelicName2 = "tyranids_squad_trygon"
-TitanName1 = "tyranids_squad_hierophant_titan"
-TitanName2 = "tyranids_squad_hierophant_titan"
+TitanName1 = "tyranids_squad_hierophant"
+TitanName2 = "tyranids_squad_hierophant"
 --Upgrades and add leader
 Squad1 = "tyranids_squad_warrior"
 -- This can be Nil if no upgrades
