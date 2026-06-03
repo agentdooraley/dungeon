@@ -2696,7 +2696,7 @@ infantry_list =
 "tyranids_squad_spinegaunt_max",
 "tyranids_squad_spore_cluster",
 "tyranids_squad_spore_cluster_orbit",
-"tyranids_squad_spore_cluster_orbit_surv1mbr",
+"tyranids_squad_spore_cluster_max",
 "tyranids_squad_termagant",
 "tyranids_squad_termagant_max",
 "tyranids_squad_trygon",

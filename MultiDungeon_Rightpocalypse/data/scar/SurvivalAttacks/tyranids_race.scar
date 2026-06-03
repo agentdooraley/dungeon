@@ -426,7 +426,7 @@ function Rule_TyranidsSporesFall()
 	for i = 1, table.getn(SporesTargetsAllPlPos) do
 		World_FXEvent("data:Art/Events/tyranids/spore_drop_med_surv", SporesTargetsAllPlPos[i])
 		World_FXEvent("data:Art/Events/unit_ability_fx/buildingmiasma", SporesTargetsAllPlPos[i])
-		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_orbit_surv1mbr", SporesTargetsAllPlPos[i],1,1)
+		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_max", SporesTargetsAllPlPos[i],1,1)
 	end
 end
 
@@ -476,7 +476,7 @@ function Rule_TyranidsSporesFall_ALL()
 	for i=SporesTargetsWaves[SporesWavesCount[0]]+1, SporesTargetsWaves[SporesWavesCount[0]+1] do
 		World_FXEvent("data:Art/Events/tyranids/spore_drop_med_surv", SporesTargetsAllPlPos[i])
 		World_FXEvent("data:Art/Events/unit_ability_fx/buildingmiasma", SporesTargetsAllPlPos[i])
-		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_orbit_surv1mbr", SporesTargetsAllPlPos[i],1,1) 
+		Util_CreateSquadsAtPositionEx( g_enemy_PlayerID, "sporebarrage", "tyranids_squad_spore_cluster_max", SporesTargetsAllPlPos[i],1,1) 
 	end
 	SporesWavesCount[0] = SporesWavesCount[0] + 1
 	if SporesWavesCount[0] == 4 then Rule_Remove(Rule_TyranidsSporesFall_ALL) end
@@ -562,7 +562,7 @@ function Rule_Tyranids_RavenersAttack()
 				SGroup_Clear(SGroup_CreateIfNotFound("sg_Raveners_Tyr_Dummy"))
 				SGroup_Add("sg_Raveners_Tyr_Dummy",ravenerSpawnID)
 				SGroup_Add("sg_Raveners_Tyr_All_Squads",ravenerSpawnID)
-				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_single_player_only_warrior_hive", target_pos )
+				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_squad_ravener", target_pos )
 				-- Rule_LockSGroupSurvivalPlayer("sg_Raveners_Tyr_Dummy")
 				-- Cmd_AttackMovePos("sg_Raveners_Tyr_Dummy",target_pos)
 			end
@@ -577,7 +577,7 @@ function Rule_Tyranids_RavenersAttack()
 				SGroup_Clear(SGroup_CreateIfNotFound("sg_Raveners_Tyr_Dummy"))
 				SGroup_Add("sg_Raveners_Tyr_Dummy",ravenerSpawnID)
 				SGroup_Add("sg_Raveners_Tyr_All_Squads",ravenerSpawnID)
-				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_single_player_only_warrior_hive", target_pos )
+				Squad_DeepStrikeToPos( "sg_Raveners_Tyr_Dummy", "tyranids_squad_ravener", target_pos )
 				-- Rule_LockSGroupSurvivalPlayer("sg_Raveners_Tyr_Dummy")
 				-- Cmd_AttackMovePos("sg_Raveners_Tyr_Dummy",target_pos)
 			end
