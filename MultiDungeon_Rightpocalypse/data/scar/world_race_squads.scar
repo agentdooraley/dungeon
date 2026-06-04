@@ -1610,7 +1610,6 @@ vehicle_list =
 aircraft_list =
 {
 "necron_night_scythe_squad",
-"necron_scarab_squad"
 }
 },
 
