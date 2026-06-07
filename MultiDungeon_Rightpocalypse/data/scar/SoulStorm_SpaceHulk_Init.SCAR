@@ -91,9 +91,6 @@ function SpaceHulkFix_OnInit()
 							elseif g_Necrons_PlayersIDXs[i] == 2 then
 								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity2
 								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad2
-							elseif g_Necrons_PlayersIDXs[i] == 3 then
-								SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity3
-								SpaceHulk_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad3
 							end
 						else
 							SpaceHulk_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity

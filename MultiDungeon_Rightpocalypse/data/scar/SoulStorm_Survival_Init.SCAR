@@ -70,47 +70,6 @@ print("Turret Step 1")
 				Srvl_PlayerInfo.TMR[i] = 0
 				Srvl_PlayerInfo.LvlSwitch[i] = -1
 				Srvl_PlayerInfo.IsVanilla[i] = Global_RaceStats[race_name].IsVanilla
-				if Srvl_PlayerInfo.IsVanilla[i] == true then 
-					if Is_Hero_Wargear_Enabled_Survival ~= nil and not enemy_ai_player then
-						if race_name == "necron_race" then
-							if g_Necrons_PlayersIDXs[i] == 1 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG4
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG4
-								g_Necrons_PlayersIDXs[i] = 4
-							elseif g_Necrons_PlayersIDXs[i] == 2 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG5
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG5
-								g_Necrons_PlayersIDXs[i] = 5
-							elseif g_Necrons_PlayersIDXs[i] == 3 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG6
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG6
-								g_Necrons_PlayersIDXs[i] = 6
-							end
-						else
-							Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity_WG
-							Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad_WG
-						end
-					else
-						if race_name == "necron_race" then
-							if g_Necrons_PlayersIDXs[i] == 1 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity1
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad1
-							elseif g_Necrons_PlayersIDXs[i] == 2 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity2
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad2
-							elseif g_Necrons_PlayersIDXs[i] == 3 then
-								Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity3
-								Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad3
-							end
-						else
-							Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
-							Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
-						end
-					end
-				else
-					Srvl_PlayerInfo.CmndrEntName[i] = Global_RaceStats[race_name].CommanderEntity
-					Srvl_PlayerInfo.CmndrSqdName[i] = Global_RaceStats[race_name].CommanderSquad
-				end
 			else
 				print("Unsupported Survival Player Race: "..race_name.." !!!")
 				g_Surv_Unsupported_Race = race_name
