@@ -6,6 +6,8 @@
 -- Set here the name of the squad you want to attempt decapturing Critical Locations
 DeCapturingSquadName = "tyranids_squad_genestealer"
 DeCapturingSquadMmbrs = 8
+DeCapturingSquadName_2 = "tyranids_squad_genestealer"
+DeCapturingSquadMmbrs_2 = 8
 
 --------------------------------------------------------------------------
 --             Stats for Destroy Enemy Outpost wincondition         ------
@@ -36,7 +38,7 @@ EnemyHonourGuardSquad1 = {"tyranids_squad_ravener", 2, 6}
 EnemyHonourGuardSquad2 = {"tyranids_squad_warrior", 4, 1}
 EnemyHonourGuardSquad3 = {"tyranids_squad_zoanthropes", 1, 1}
 EnemyHonourGuardSquad4 = {"tyranids_squad_lictor", 3, 1}
-EnemyHonourGuardSquad_Uber = {"tyranids_squad_swarmlord", 1, 1}		-- Optional. Spawned starting Wave 5.
+EnemyHonourGuardSquad_Uber = {"tyranids_squad_carnifex_uber", 1, 1}		-- Optional. Spawned starting Wave 5.
 
 
 --------------------------------------------------------------------------
@@ -50,7 +52,7 @@ EnemyHonourGuardSquad_Uber = {"tyranids_squad_swarmlord", 1, 1}		-- Optional. Sp
 --------------------------------------------------------------------------
 EnemyCommanderSquadName1 = {"tyranids_squad_broodlord"}
 EnemyCommanderSquadName2 = {"tyranids_squad_carnifex_uber"}
-EnemyCommanderSquadName3 = {"tyranids_squad_trygon"}
+EnemyCommanderSquadName3 = {"tyranids_squad_zoanthropes"}
 EnemyCommanderSquadName4 = {"tyranids_squad_hive_tyrant"}
 EnemyCommanderSquadName5 = {"tyranids_squad_swarmlord"}
 
@@ -163,10 +165,10 @@ function Rule_WavesAttacks_Player(i,wave)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 3,8 )
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 1, 2)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker,4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker,3, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_termagant", marker, 2, 8)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_spinegaunt", marker, 1, 8)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 1, 4)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hive_tyrant", marker, 1, 1)	
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_hive_tyrant","tyranids_scyth_hivetyrant",1)		
 		if g_surv_high_resources then 
@@ -181,7 +183,7 @@ function Rule_WavesAttacks_Player(i,wave)
 				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_warrior_leaping_research")
 			end
 		end
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 2, 4)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",2)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 4,8 )
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
@@ -265,7 +267,6 @@ function Rule_WavesAttacks_Player(i,wave)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 5, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_tyrant_guard", marker, 1, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 2, 1)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 2, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 2, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
@@ -292,8 +293,7 @@ function Rule_WavesAttacks_Player(i,wave)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_hive_tyrant","tyranids_scyth_hivetyrant",1)			
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_lictor", marker, 5, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_tyrant_guard", marker, 1, 1)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 2, 1)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_carnifex_uber", marker, 3, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_swarmlord", marker, 1, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_zoanthropes", marker, 2, 1)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 2, 3)
@@ -310,13 +310,9 @@ function Rule_WavesAttacks_Player(i,wave)
 				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_squad_swarmlord_regeneration_research")				
 				pcall(Player_GrantResearch, g_enemy_PlayerID, "tyranids_squad_swarmlord_abilities_research")								
 			end
-		end
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_swarmlord", marker, 1, 1)		
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 10, 1)
+		end	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 8, 1)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",10)
-		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_warrior","tyranids_venom_canon_warrior",10)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_warrior", marker, 10, 1)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_swarmlord", marker, 1, 1)		
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_genestealer", marker, 2,10 )
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_broodlord", marker, 1,1 )
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_hive_tyrant","tyranids_scyth_hivetyrant",1)	
@@ -329,8 +325,8 @@ function Rule_WavesAttacks_Player(i,wave)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_biovores", marker, 3, 3)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_biovores","tyranids_biovores_spores_bioacid",2)
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_ravener", marker, 2, 5)
-		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_trygon", marker, 2, 1)
-		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_trygon","tyranids_melee_trygon_crushclaw",8)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_trygon", marker, 1, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_trygon","tyranids_melee_trygon_crushclaw",4)		
 		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "tyranids_squad_hierophant", marker, 1, 1)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_hierophant","tyranids_venom_canon_improved_left_hierophant",1)
 		SGroup_UpgradeSquadsWithWeapon(sgroupName,"tyranids_squad_hierophant","tyranids_venom_canon_improved_hierophant",1)

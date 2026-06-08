@@ -53,7 +53,7 @@ function Trigger_Buildings()
 		g_Buildings_Marker_Survival[2] = candidate_markers[chosen_map]
 	end
 	-- Start the show at a random future point
-	local timer = World_GetRand(600,920)
+	local timer = World_GetRand(300,600)
 	if g_surv_high_resources ~= nil and g_surv_high_resources then
 		timer = World_GetRand(210,600)
 	end

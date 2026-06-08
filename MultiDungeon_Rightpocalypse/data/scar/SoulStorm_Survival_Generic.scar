@@ -54,6 +54,9 @@ function Survival_OnInit()
 	g_slag_wave_old = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
 	-- Calculate the number of Human Defending Players
 	for i=0, g_number_of_players-2 do
+		if Player_IsHuman(Srvl_PlayerInfo.PlayerID[i]) then
+			g_number_of_human_defending_players = g_number_of_human_defending_players + 1
+		end
 		g_SurvPlayerWaveSpawnTimeAndPosition[i] = {Time = 0, Pos = nil, SGPos = nil}
 	end
 
@@ -1263,7 +1266,7 @@ function Rule_StartAttackingWaves()
           --fuggles -> timer here?
           --can I just remove the and?
 			--elseif World_GetGameTime() > Srvl_PlayerInfo.TMR[i] + 6 and SGroup_CountSpawned(sg) == 0 then
-			elseif World_GetGameTime() > Srvl_PlayerInfo.TMR[i] + (Srvl_PlayerInfo.Level[i] * 30) + 120 then
+			elseif World_GetGameTime() > Srvl_PlayerInfo.TMR[i] + (Srvl_PlayerInfo.Level[i] * 30) + 60 then
 				SGroup_Destroy(sg)
 				--fuggles
 
