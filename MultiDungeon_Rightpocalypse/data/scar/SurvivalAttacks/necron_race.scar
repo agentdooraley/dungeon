@@ -21,8 +21,8 @@ EnemyBuilding2Name = "necron_greater_summoning_core"
 EnemyBuilding2Squad1 = {"necron_destroyer_squad", 1, 1}
 EnemyBuilding2Squad2 = {"necron_heavy_destroyer_squad", 1, 1}
 EnemyBuilding2Squad3 = {"necron_tomb_blade_squad", 1, 1}
-EnemyBuilding2SquadA1 = {"necron_annihilation_barge",1,1}
-EnemyBuilding2SquadA2 = {"necron_annihilation_barge",1,1}
+EnemyBuilding2SquadA1 = {"necron_annihilation_barge_squad",1,1}
+EnemyBuilding2SquadA2 = {"necron_annihilation_barge_squad",1,1}
 
 --------------------------------------------------------------------------
 --                Stats for Heroic Defence wincondition             ------
