@@ -1,57 +1,57 @@
 
 AISettings_Easy =
 {
-	iDancing = 0,
-	iAttackDelay = 10,
-	iTechSpeed = 0,
-	iHandicap = 0,
-	bAlternativeStrategies = false,
-	bHarassing = false,
+	iDancing = 2,
+	iAttackDelay = 0,
+	iTechSpeed = 2,
+	iHandicap = -2,
+	bAlternativeStrategies = true,
+	bHarassing = true,
 	bMultiBuildings = false,
-	bRelicUnits = false,
+	bRelicUnits = true,
 	bTurrets = false,
 	bMines = false,
 }
 
 AISettings_Standard =
 {
-	iDancing = 1,
-	iAttackDelay = 4,
-	iTechSpeed = 0,
-	iHandicap = 0,
+	iDancing = 2,
+	iAttackDelay = 0,
+	iTechSpeed = 2,
+	iHandicap = -2,
 	bAlternativeStrategies = true,
-	bHarassing = false,
-	bMultiBuildings = true,
+	bHarassing = true,
+	bMultiBuildings = false,
 	bRelicUnits = true,
-	bTurrets = true,
-	bMines = true,
+	bTurrets = false,
+	bMines = false,
 }
 
 AISettings_Hard =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 0,
-	iHandicap = 0,
+	iTechSpeed = 2,
+	iHandicap = -2,
 	bAlternativeStrategies = true,
 	bHarassing = true,
-	bMultiBuildings = true,
+	bMultiBuildings = false,
 	bRelicUnits = true,
-	bTurrets = true,
-	bMines = true,
+	bTurrets = false,
+	bMines = false,
 }
 
 AISettings_Harder =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 0,
-	iHandicap = 0,
+	iTechSpeed = 2,
+	iHandicap = -2,
 	bAlternativeStrategies = true,
 	bHarassing = true,
-	bMultiBuildings = true,
+	bMultiBuildings = false,
 	bRelicUnits = true,
-	bTurrets = true,
+	bTurrets = false,
 	bMines = false,
 }
 
@@ -59,12 +59,12 @@ AISettings_Insane =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 0,
-	iHandicap = 0,
+	iTechSpeed = 2,
+	iHandicap = -2,
 	bAlternativeStrategies = true,
 	bHarassing = true,
-	bMultiBuildings = true,
+	bMultiBuildings = false,
 	bRelicUnits = true,
-	bTurrets = true,
+	bTurrets = false,
 	bMines = false,
 }

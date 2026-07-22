@@ -1,4 +1,4 @@
-
+-- Edited by [DAG05]Simon
 AISettings_Easy =
 {
 	iDancing = 2,
@@ -9,8 +9,8 @@ AISettings_Easy =
 	bHarassing = true,
 	bMultiBuildings = true,
 	bRelicUnits = true,
-	bTurrets = false,
-	bMines = false,
+	bTurrets = true,
+	bMines = true,
 }
 
 AISettings_Standard =
@@ -23,15 +23,15 @@ AISettings_Standard =
 	bHarassing = true,
 	bMultiBuildings = true,
 	bRelicUnits = true,
-	bTurrets = false,
-	bMines = false,
+	bTurrets = true,
+	bMines = true,
 }
 
 AISettings_Hard =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 1,
+	iTechSpeed = 0,
 	iHandicap = 0,
 	bAlternativeStrategies = true,
 	bHarassing = true,
@@ -45,7 +45,7 @@ AISettings_Harder =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 1,
+	iTechSpeed = 0,
 	iHandicap = 0,
 	bAlternativeStrategies = true,
 	bHarassing = true,
@@ -59,7 +59,7 @@ AISettings_Insane =
 {
 	iDancing = 2,
 	iAttackDelay = 0,
-	iTechSpeed = 1,
+	iTechSpeed = 0,
 	iHandicap = 0,
 	bAlternativeStrategies = true,
 	bHarassing = true,

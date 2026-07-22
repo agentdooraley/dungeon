@@ -1,7 +1,7 @@
 ----------------------------------------
 -- File: 'ability.ai' (For SoulStorm)
 -- Edited by Thudmeizer @ 15.11.2007
-
+-- Edited by [DAG05]Simon
 -------------------------------------------------------------------------
 -- Helper functions to cast abilities ----------------------------
 -------------------------------------------------------------------------
@@ -224,8 +224,7 @@ Filters =
 			if (oStats == nil) then
 				return false
 			end
-			return ((oStats:GetClass() == UnitStatsAI.UC_VehicleHigh) and oSquad:GetNumTroopers() >= iCount) or oStats:GetSquadName() == "space_marine_squad_land_raider" 
-			or oStats:GetSquadName() == "guard_squad_baneblade" or oStats:GetSquadName() =="necron_restored_monolith_squad" or oStats:GetSquadName() =="Ork Squiggoth"
+			return ((oStats:GetClass() == UnitStatsAI.UC_VehicleHigh) and oSquad:GetNumTroopers() >= iCount) 
 		end
 		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
 	end,
@@ -275,6 +274,30 @@ Filters =
 	end,
 	
 	
+	CloseAirEnemy = function(vPosition, iTolerance, iCount)
+
+		-- Make sure that count is valid
+		if (iCount == nil) then
+			iCount = 1
+		end
+
+		-- Quick check
+		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
+			return nil
+		end
+
+		local oFunctor = function(oSquad, iCount)
+			local oStats = oSquad:GetStats()
+			if (oStats == nil) then
+				return false
+			end
+			
+--			local bAirPlane = (eClass == UnitStatsAI.UC_AirLow or eClass == UnitStatsAI.UC_AirMed or eClass == UnitStatsAI.UC_AirHigh)
+
+			return ((oStats:GetClass() == UnitStatsAI.UC_AirLow or oStats:GetClass() == UnitStatsAI.UC_AirMed or oStats:GetClass() == UnitStatsAI.UC_AirHigh) and oSquad:GetNumTroopers() >= iCount)
+		end
+		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
+	end,
 
 	
 	

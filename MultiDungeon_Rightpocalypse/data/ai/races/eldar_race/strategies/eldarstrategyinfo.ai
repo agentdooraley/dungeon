@@ -18,7 +18,7 @@ BuildBaseStrategyInfo =
 
 		--need at least this at all times
 		support_cap_threshold = 3,
-		
+		max_engineers = 5, 
 		--used to calculate wants for engineers
 		Engineers =
 		{

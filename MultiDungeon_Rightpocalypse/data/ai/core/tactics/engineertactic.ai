@@ -1,7 +1,34 @@
 -- Edited by Aliaska_RuS
+-- Edited by [DAG05]Simon
 class 'EngineerTactic' (InfantryTactic)
 
 EngineerTactic.Bufer = {}
+EngineerTactic.HqRepair = {}
+
+EngineerTactic.epoch_builds = {
+	["eldar_soul_shrine"] = true,
+	["tau_research_building"] = true,
+	["tau_shrine_of_montka"] = true,
+	["tau_shrine_of_kauyon"] = true,
+}
+
+function EngineerTactic.IsEpochTransitionBuilding( sBaseName )
+	return EngineerTactic.epoch_builds[sBaseName] == true
+end
+
+function EngineerTactic.GetEpochBuildMaxWorkers( sBaseName )
+	if (not EngineerTactic.IsEpochTransitionBuilding(sBaseName)) then
+		return nil
+	end
+	local iBuildingID = cpu_manager.stats:GetBuildingID(sBaseName)
+	if (iBuildingID == nil) then
+		return nil
+	end
+	if (cpu_manager.player_stats:GetNumBasesByBPID(iBuildingID, true) < 1) then
+		return 2
+	end
+	return nil
+end
 
 function EngineerTactic:__init( squad_ai ) super( squad_ai )
 
@@ -13,14 +40,186 @@ function EngineerTactic:__init( squad_ai ) super( squad_ai )
 	
 	self.m_vDestination = nil
 
-        self.m_Bufer = false
+    self.m_Bufer = false
 	
 	self.m_iValidRange = sqr(35)
 	self.m_bBusy = false
+	self.m_iEpochBuildTargetId = nil
+end
 
-        self.m_numEngineerOnBuild = 0
-        self.m_numEngineerOnBuilding = 0
-        self.m_numEngineerOnRepairVehicle = 0
+function EngineerTactic.GetMaxWorkers( sJobType )
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	if (sJobType == "build" and sRace == "dark_eldar_race") then
+		return 99
+	end
+	if (sRace == "necron_race" or sRace == "ork_race") then
+		return 1
+	end
+	return 2
+end
+
+function EngineerTactic.ShouldDisableGeneralAssist()
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	return sRace == "necron_race" or sRace == "ork_race"
+end
+
+function EngineerTactic.GetOwnDamagedHQ()
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		return nil
+	end
+	if (g_iGMT <= 300) then
+		return nil
+	end
+	if (military_manager:GetNumEngineers() <= 1) then
+		return nil
+	end
+	local oBestHQ = nil
+	local iWorstHealth = 2.0
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:IsConstructionDone() and cpu_manager:IsHQ(oBuilding:GetBlueprintID())) then
+			if (oBuilding:CanBeRepaired() and oBuilding:GetHealthPercentage() < 1.0) then
+				local fHealth = oBuilding:GetHealthPercentage()
+				if (fHealth < iWorstHealth) then
+					iWorstHealth = fHealth
+					oBestHQ = oBuilding
+				end
+			end
+		end
+	end
+	return oBestHQ
+end
+
+function EngineerTactic.EnsureHqRepairWorker( oDamagedHQ )
+	if (oDamagedHQ == nil) then
+		EngineerTactic.HqRepair.worker_id = nil
+		EngineerTactic.HqRepair.target_id = nil
+		return
+	end
+	local iTargetId = oDamagedHQ:GetID()
+	if (EngineerTactic.HqRepair.worker_id ~= nil) then
+		local oWorker = military_manager:GetSquadFromID(EngineerTactic.HqRepair.worker_id)
+		if (oWorker ~= nil and oWorker:IsValid() and oWorker:IsEngineer() and not oWorker:IsLocked() and oWorker:IsBuilding() == 0) then
+			if (EngineerTactic.HqRepair.target_id == iTargetId) then
+				return
+			end
+		end
+	end
+	local vTargetPos = oDamagedHQ:GetPosition()
+	local oBest = nil
+	local iBestDist = 999999999
+	for oSquad in military_manager:GetSquads() do
+		if (oSquad:IsValid() and oSquad:IsEngineer() and not oSquad:IsLocked() and oSquad:IsBuilding() == 0) then
+			local iDistance = distance_sqr(oSquad:GetPosition(), vTargetPos)
+			if (iDistance < iBestDist) then
+				iBestDist = iDistance
+				oBest = oSquad
+			end
+		end
+	end
+	if (oBest ~= nil) then
+		EngineerTactic.HqRepair.worker_id = oBest:GetID()
+		EngineerTactic.HqRepair.target_id = iTargetId
+	else
+		EngineerTactic.HqRepair.worker_id = nil
+		EngineerTactic.HqRepair.target_id = nil
+	end
+end
+
+function EngineerTactic.GetHqRepairBuilding()
+	if (EngineerTactic.HqRepair.target_id == nil) then
+		return nil
+	end
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:GetID() == EngineerTactic.HqRepair.target_id) then
+			if (oBuilding:IsConstructionDone() and cpu_manager:IsHQ(oBuilding:GetBlueprintID()) and
+				oBuilding:CanBeRepaired() and oBuilding:GetHealthPercentage() < 1.0) then
+				return oBuilding
+			end
+			break
+		end
+	end
+	return nil
+end
+
+function EngineerTactic:IsHqRepairWorker()
+	if (EngineerTactic.HqRepair.worker_id == nil) then
+		return false
+	end
+	return EngineerTactic.HqRepair.worker_id == self.squad_ai:GetID()
+end
+
+function EngineerTactic:MaintainHqRepairCommitment()
+	local oDamagedHQ = EngineerTactic.GetOwnDamagedHQ()
+	EngineerTactic.EnsureHqRepairWorker(oDamagedHQ)
+	if (not self:IsHqRepairWorker()) then
+		return false
+	end
+	local oHQ = EngineerTactic.GetHqRepairBuilding()
+	if (oHQ == nil) then
+		return false
+	end
+	self.m_bBusy = true
+	self.m_vDestination = oHQ:GetPosition()
+	if (not self.squad_ai:IsLocked() and self.squad_ai:CanRepair()) then
+		if (not self.squad_ai:IsBuildProgressing()) then
+			self.squad_ai:DoRepairBase(oHQ)
+		end
+	end
+	return true
+end
+
+function EngineerTactic.CleanupBufer()
+	local iLoop1 = 1
+	while iLoop1 <= table.getn(EngineerTactic.Bufer) do
+		local iSquadId = EngineerTactic.Bufer[iLoop1][2]
+		local oSquadAI = nil
+		if (type(iSquadId) == "number") then
+			oSquadAI = military_manager:GetSquadFromID(iSquadId)
+		end
+		if (oSquadAI == nil or not oSquadAI:IsValid() or (oSquadAI:IsIdle() and not oSquadAI:IsBuildProgressing())) then
+			table.remove(EngineerTactic.Bufer, iLoop1)
+		else
+			iLoop1 = iLoop1 + 1
+		end
+	end
+end
+
+function EngineerTactic.CountWorkersOnTarget( iTargetId, vTargetPos )
+	EngineerTactic.CleanupBufer()
+	local iCount = 0
+	local aCounted = {}
+	for iLoop1 in EngineerTactic.Bufer do
+		if (EngineerTactic.Bufer[iLoop1][1] == iTargetId) then
+			local iSquadId = EngineerTactic.Bufer[iLoop1][2]
+			if (type(iSquadId) == "number") then
+				iCount = iCount + 1
+				aCounted[iSquadId] = true
+			end
+		end
+	end
+	if (vTargetPos ~= nil) then
+		for oSquad in military_manager:GetSquads() do
+			if (oSquad:IsValid() and oSquad:IsEngineer() and aCounted[oSquad:GetID()] ~= true) then
+				if (distance_sqr(oSquad:GetPosition(), vTargetPos) < sqr(15)) then
+					if (oSquad:IsBuildProgressing() or (not oSquad:IsIdle() and oSquad:CanRepair())) then
+						iCount = iCount + 1
+					end
+				end
+			end
+		end
+	end
+	return iCount
+end
+
+function EngineerTactic.CanAssignWorker( iTargetId, sJobType, vTargetPos, iMaxWorkers )
+	if (iMaxWorkers == nil) then
+		iMaxWorkers = EngineerTactic.GetMaxWorkers(sJobType)
+	end
+	return EngineerTactic.CountWorkersOnTarget(iTargetId, vTargetPos) < iMaxWorkers
+end
+
+function EngineerTactic.RegisterWorker( iTargetId, oSquadAI )
+	table.insert(EngineerTactic.Bufer, {iTargetId, oSquadAI:GetID()})
 end
 
 function EngineerTactic:IsBufer()
@@ -31,15 +230,11 @@ function EngineerTactic:ValidMove( vDestination )
 	
 	aitrace("Move Engineer to "..tostring(vDestination.x)..", "..tostring(vDestination.z))
 	
-	-- Check distance and jump capability
 	self.m_vDestination = Vector3f(vDestination)
 	local vMyPos = self.squad_ai:GetPosition()
 	if (distance_sqr(vMyPos, vDestination) > sqr(50) and self.squad_ai:CanJump()) then
 	
-		-- Jump only if locked, injured or with threat in range
 		if (self.squad_ai:IsLocked() or self.squad_ai:WasRecentlyHurt() or cpu_manager.terrain_analyzer:HasThreat(vMyPos, 35)) then
-			
-			-- Try to jump
 			if (cpu_manager:JumpBuilder(self.squad_ai, vDestination)) then
 				return
 			end
@@ -56,91 +251,247 @@ function EngineerTactic:IsDefender()
 	return false
 end
 
+function EngineerTactic:CanCaptureGuard()
+	return false
+end
+
+function EngineerTactic:TryDisownFlags()
+	return false
+end
+
+function EngineerTactic:ResolveBuildBaseName( iTargetId )
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:GetEntity():GetID() == iTargetId) then
+			return oBuilding:GetBaseName(), cpu_manager.player_id
+		end
+	end
+	for oPlayer in cpu_manager.stats:GetPlayerStats() do
+		for oBuilding in oPlayer:GetBases() do
+			if (oBuilding:IsValid() and oBuilding:GetEntity():GetID() == iTargetId) then
+				return oBuilding:GetBaseName(), oPlayer:GetPlayerID()
+			end
+		end
+	end
+	return nil, nil
+end
+
+function EngineerTactic:TryAssistBuild( oEntity, vPos, sBaseName )
+	if (oEntity == nil or self:IsHqRepairWorker()) then
+		return false
+	end
+	local iTargetId = oEntity:GetID()
+	local iOwnerId = cpu_manager.player_id
+	if (sBaseName == nil) then
+		sBaseName, iOwnerId = self:ResolveBuildBaseName(iTargetId)
+	end
+	if (iOwnerId ~= cpu_manager.player_id) then
+		return false
+	end
+	local iMaxWorkers = EngineerTactic.GetMaxWorkers("build")
+	local iEpochMax = EngineerTactic.GetEpochBuildMaxWorkers(sBaseName)
+	if (iEpochMax ~= nil) then
+		iMaxWorkers = iEpochMax
+	end
+	if (not EngineerTactic.CanAssignWorker(iTargetId, "build", vPos, iMaxWorkers)) then
+		return false
+	end
+	self.squad_ai:DoFinishBuilding(oEntity)
+	self.m_vDestination = vPos
+	self.m_bBusy = true
+	self.m_Bufer = true
+	EngineerTactic.RegisterWorker(iTargetId, self.squad_ai)
+	if (iEpochMax ~= nil) then
+		self.m_iEpochBuildTargetId = iTargetId
+	end
+	return true
+end
+
+function EngineerTactic:GetCommittedEpochBuilding()
+	if (self.m_iEpochBuildTargetId == nil) then
+		return nil
+	end
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:GetEntity():GetID() == self.m_iEpochBuildTargetId) then
+			if (not oBuilding:IsConstructionDone() and EngineerTactic.IsEpochTransitionBuilding(oBuilding:GetBaseName())) then
+				return oBuilding
+			end
+			break
+		end
+	end
+	self.m_iEpochBuildTargetId = nil
+	return nil
+end
+
+function EngineerTactic:AssistOwnEpochBuildings()
+	if (self:IsHqRepairWorker() or not self.squad_ai:IsIdle()) then
+		return false
+	end
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local sName = oBuilding:GetBaseName()
+			if (EngineerTactic.IsEpochTransitionBuilding(sName)) then
+				if (self:TryAssistBuild(oBuilding:GetEntity(), oBuilding:GetPosition(), sName)) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+function EngineerTactic:TryRepairVehicle( oVehicle )
+	if (oVehicle == nil or self:IsHqRepairWorker()) then
+		return false
+	end
+	local vPos = oVehicle:GetPosition()
+	if (not EngineerTactic.CanAssignWorker(oVehicle:GetID(), "repair_vehicle", vPos)) then
+		return false
+	end
+	self.squad_ai:DoRepairSquad(oVehicle)
+	self.m_vDestination = vPos
+	self.m_bBusy = true
+	self.m_Bufer = true
+	EngineerTactic.RegisterWorker(oVehicle:GetID(), self.squad_ai)
+	return true
+end
+
+function EngineerTactic:TryRepairBuilding( oBuilding )
+	if (oBuilding == nil or self:IsHqRepairWorker()) then
+		return false
+	end
+	local vPos = oBuilding:GetPosition()
+	if (not EngineerTactic.CanAssignWorker(oBuilding:GetID(), "repair_building", vPos)) then
+		return false
+	end
+	self.squad_ai:DoRepairBase(oBuilding)
+	self.m_vDestination = vPos
+	self.m_bBusy = true
+	self.m_Bufer = true
+	EngineerTactic.RegisterWorker(oBuilding:GetID(), self.squad_ai)
+	return true
+end
+
+function EngineerTactic:IsCommittedToWork()
+	if (self.squad_ai:IsLocked()) then
+		return true
+	end
+	if (self.squad_ai:IsBuildProgressing() or self.squad_ai:IsBuilding() ~= 0) then
+		return true
+	end
+	if (self.m_bBusy or self.m_Bufer) then
+		return true
+	end
+	if (self.m_iEpochBuildTargetId ~= nil) then
+		return true
+	end
+	return false
+end
+
+function EngineerTactic:ShouldRetreatToBase()
+	return false
+end
+
+function EngineerTactic:ShouldRetreatAllTheWayHome()
+	return false
+end
+
+function EngineerTactic:IsInEmergencySubState()
+	return false
+end
+
+function EngineerTactic:CheckForDeath(bCheck)
+	if (self:IsCommittedToWork()) then
+		return false
+	end
+	return InfantryTactic.CheckForDeath(self, bCheck)
+end
+
 function EngineerTactic:Update()
 
-	-- State machine
+	if (self.stateID == Tactic.StateID.IsBroken or self.stateID == Tactic.StateID.AvoidDeath) then
+		self.stateID = Tactic.StateID.NoState
+		self.m_eSubStateID = Tactic.StateID.NoState
+	end
+
 	if (not InfantryTactic.Update(self)) then
 		return false
 	end
 
-	-- Arkhan 01.2006: Check state
-	local vSquadPos = self.squad_ai:GetPosition()
-       if self.squad_ai:IsIdle() and not self.squad_ai:IsBuildProgressing() and self.squad_ai:IsBuilding() == 0 then
-        local engineer_squad = nil
-
-        if table.getn(EngineerTactic.Bufer) > 0 then
-         for iLoop1 in EngineerTactic.Bufer do
-                engineer_squad = EngineerTactic.Bufer[iLoop1][2]
-		        if (self.squad_ai:GetSquad():GetID() == engineer_squad:GetID()) then
-			table.remove(EngineerTactic.Bufer, iLoop1)
-                        self.m_Bufer = false
-		end
-	  end
-        end
-
-	if (self.squad_ai:IsLocked()) then
-	
-		-- Arkhan 01.2006: Reset destination if squad is locked
-   		self.m_vDestination = nil
-   		self.m_bBusy = false
-   		
-		-- Release the flag
-		if (self.tagged_flag ~= nil) then
-			self.tagged_flag:TagFlagForEngineer( false )
-			self.tagged_flag = nil
-		end
-		--aitrace("EngineerTactic: Is locked...")
-		return true
-   	
-   	elseif (self.m_vDestination ~= nil and not self.m_bBusy) then
-   	
-   		-- Arkhan 01.2006: Make sure that the squad moves to the target position
-   		if (self.squad_ai:IsInStateMove()) then
-   		
-   			if (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange) then
-   			
-   				if (cpu_manager.terrain_analyzer:HasThreat(self.m_vDestination, 35)) then
-					--aitrace("EngineerTactic: Goto1...")
-   					self:GoToNextPost()
-   				else
-					--aitrace("EngineerTactic: Move...")
-   					self.squad_ai:DoMove(self.m_vDestination)
-   				end
-   				return true
-   			end
-   		end
-   	
-   	elseif (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange and not self.m_bBusy) then
-   	
-   		-- Arkhan 01.2006: The move command seems invalid and the engineer should therefore return to a safe place
-		--aitrace("EngineerTactic: Goto2...")
-		self:GoToNextPost()
+	if (self:MaintainHqRepairCommitment()) then
 		return true
 	end
-   	
-   	if (self.tagged_flag == nil and not self.squad_ai:IsInStateMove()) then
-   	
-   		-- Arkhan 01.2006: Get new job
-		--aitrace("EngineerTactic: Goto3...")
-		self:GoToNextPost()
-	end	
-       end
-	
-	--aitrace("EngineerTactic: Nothing...")
+
+	local oEpochBuilding = self:GetCommittedEpochBuilding()
+	if (oEpochBuilding ~= nil) then
+		self.m_bBusy = true
+		self.m_vDestination = oEpochBuilding:GetPosition()
+		if (not self.squad_ai:IsLocked() and not self.squad_ai:IsBuildProgressing()) then
+			self.squad_ai:DoFinishBuilding(oEpochBuilding:GetEntity())
+		end
+		return true
+	end
+
+	if (self:IsCommittedToWork()) then
+		self.m_vDestination = nil
+		if (self.tagged_flag ~= nil) then
+			self.tagged_flag:TagFlagForEngineer(false)
+			self.tagged_flag = nil
+		end
+		return true
+	end
+
+	local vSquadPos = self.squad_ai:GetPosition()
+	if (self.squad_ai:IsIdle() and not self.squad_ai:IsBuildProgressing() and self.squad_ai:IsBuilding() == 0) then
+		if (table.getn(EngineerTactic.Bufer) > 0) then
+			for iLoop1 in EngineerTactic.Bufer do
+				if (self.squad_ai:GetID() == EngineerTactic.Bufer[iLoop1][2]) then
+					table.remove(EngineerTactic.Bufer, iLoop1)
+					self.m_Bufer = false
+					break
+				end
+			end
+		end
+
+		if (self.m_vDestination ~= nil and not self.m_bBusy) then
+			if (self.squad_ai:IsInStateMove()) then
+				if (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange) then
+					if (cpu_manager.terrain_analyzer:HasThreat(self.m_vDestination, 35)) then
+						if (not EngineerTactic.ShouldDisableGeneralAssist()) then
+							self:GoToNextPost()
+						end
+					else
+						self.squad_ai:DoMove(self.m_vDestination)
+					end
+					return true
+				end
+			end
+		elseif (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange and not self.m_bBusy) then
+			if (not EngineerTactic.ShouldDisableGeneralAssist()) then
+				self:GoToNextPost()
+			end
+			return true
+		end
+
+		if (self.tagged_flag == nil and not self.squad_ai:IsInStateMove()) then
+			if (not EngineerTactic.ShouldDisableGeneralAssist()) then
+				self:GoToNextPost()
+			end
+		end
+	end
+
 	return true
 end
 
 function EngineerTactic:IsAffectedByMorale()
-	return self.squad_ai:IsBuilding() == 0
+	return false
 end
 
 function EngineerTactic:GoToNextPost()
-        
-        self.m_numEngineerOnBuild = 0
-        self.m_numEngineerOnRepairBuilding = 0
-        self.m_numEngineerOnRepairVehicle = 0
 
-	-- Try to reach a save position if HQ is attacked
+	if (self:IsCommittedToWork()) then
+		return
+	end
+        
 	self.m_bBusy = false
 	local vEngineerPos = self.squad_ai:GetPosition()
 	if (self.squad_ai:WasRecentlyHurt()) then
@@ -152,90 +503,43 @@ function EngineerTactic:GoToNextPost()
 		end
 	end
 
-	-- Try to help finish a building
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		return
+	end
+
+	if (self:AssistOwnEpochBuildings()) then
+		aitrace("EngineerTactic: Help finishing epoch building...")
+		return
+	end
+
 	local oBuildingToFinish = cpu_manager:GetUnfinishedBuildingInRange()
-        local oBuildingToFinish_temp = 0
 	if (oBuildingToFinish ~= nil) then
-         if table.getn(EngineerTactic.Bufer) > 0 then
-          for iLoop1 in EngineerTactic.Bufer do
-                oBuildingToFinish_temp = EngineerTactic.Bufer[iLoop1][1]
-		        if (oBuildingToFinish_temp == oBuildingToFinish:GetID()) then
-			self.m_numEngineerOnBuild = self.m_numEngineerOnBuild + 1
-		        end
-	  end
-         end
-              local necronrace = cpu_manager.player_stats:GetPlayerRaceName() == "necron_race"
-              if (self.m_numEngineerOnBuild < 1 and not necronrace) and ((g_iGMT < 300 and not necronrace) or cpu_manager:IsHQ(oBuildingToFinish:GetID())) then
-		aitrace("EngineerTactic: Help finishing a building...")
-		self.squad_ai:DoFinishBuilding(oBuildingToFinish)
-		self.m_vDestination = oBuildingToFinish:GetPosition()
-		self.m_bBusy = true
-                self.m_Bufer = true
-                table.insert(EngineerTactic.Bufer, {oBuildingToFinish:GetID(), self.squad_ai:GetSquad()})
-		return
-              end
+		local vBuildPos = oBuildingToFinish:GetPosition()
+		if (self:TryAssistBuild(oBuildingToFinish, vBuildPos)) then
+			aitrace("EngineerTactic: Help finishing a building...")
+			return
+        end
 	end
-
-	-- Only attempt vehicle repair if we can
-	local iClosestDistance = 0
+ 
 	if (self.squad_ai:CanRepair() and self.squad_ai:IsBuilding() == 0) then
-		-- Find the closest vehicle that can be repaired
 		local oVehicleToRepair = cpu_manager:GetDamagedVehicleInRange()
-                local oVehicleToRepair_temp = 0
 		if (oVehicleToRepair ~= nil) then
-		 local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oVehicleToRepair:GetPosition(), 35, true)
-                  if table.getn(EngineerTactic.Bufer) > 0 then
-                   for iLoop1 in EngineerTactic.Bufer do
-                         oVehicleToRepair_temp = EngineerTactic.Bufer[iLoop1][1]
-	         	        if (oVehicleToRepair_temp == oVehicleToRepair:GetID()) then
-	         		self.m_numEngineerOnRepairVehicle = self.m_numEngineerOnRepairVehicle + 1
-	         	        end
-	           end
-                  end
-                    if vPosThreat<1.1*iAlliedStrength and (self.m_numEngineerOnRepairVehicle < 1) then
-			aitrace("EngineerTactic: Repairing vehicle...")
-			self.squad_ai:DoRepairSquad(oVehicleToRepair)
-			self.m_vDestination = oVehicleToRepair:GetPosition()
-			self.m_bBusy = true
-                        self.m_Bufer = true
-                        table.insert(EngineerTactic.Bufer, {oVehicleToRepair:GetID(), self.squad_ai:GetSquad()})
-			return
-                    end
-                end
-	end	
-	
-	-- Only attempt building repair if we can
-	if (self.squad_ai:CanRepair()) then
-	
-		-- Find the closest building that can be repaired
-		local oBuildingToRepair = cpu_manager:GetDamagedBuildingInRange()
-               if oBuildingToRepair ~= nil then
-		local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oBuildingToRepair:GetPosition(), 35, true)
-                local oBuildingToRepair_temp = 0
-                  if table.getn(EngineerTactic.Bufer) > 0 then
-                   for iLoop1 in EngineerTactic.Bufer do
-                         oBuildingToRepair_temp = EngineerTactic.Bufer[iLoop1][1]
-	         	        if (oBuildingToRepair_temp == oBuildingToRepair:GetID()) then
-	         		self.m_numEngineerOnRepairBuilding = self.m_numEngineerOnRepairBuilding + 1
-	         	        end
-	           end
-                  end
-		if vPosThreat<1.1*iAlliedStrength and ((self.m_numEngineerOnRepairBuilding < 1) or ((self.m_numEngineerOnRepairBuilding < 3) and cpu_manager:HQThreat())) then
-			aitrace("EngineerTactic: Repairing building...")
-			self.squad_ai:DoRepairBase(oBuildingToRepair)
-			self.m_vDestination = oBuildingToRepair:GetPosition()
-			self.m_bBusy = true
-                        self.m_Bufer = true
-                        table.insert(EngineerTactic.Bufer, {oBuildingToRepair:GetID(), self.squad_ai:GetSquad()})
-			return
+			local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oVehicleToRepair:GetPosition(), 35, true)
+			if (vPosThreat < 1.1 * iAlliedStrength and self:TryRepairVehicle(oVehicleToRepair)) then
+				aitrace("EngineerTactic: Repairing vehicle...")
+				return
+			end
 		end
-              end
 	end
-
-	--[[ Return to home base
-	if (distance_sqr(cpu_manager.start_pos, vEngineerPos) > sqr(35)) then
-		aitrace("EngineerTactic: Return to home base")
-		self:ValidMove(cpu_manager.start_pos)
-		return
-	end]]
+	
+	if (self.squad_ai:CanRepair()) then
+		local oBuildingToRepair = cpu_manager:GetDamagedBuildingInRange()
+		if (oBuildingToRepair ~= nil) then
+			local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oBuildingToRepair:GetPosition(), 35, true)
+			if (vPosThreat < 1.1 * iAlliedStrength and self:TryRepairBuilding(oBuildingToRepair)) then
+				aitrace("EngineerTactic: Repairing building...")
+				return
+			end
+		end
+	end
 end

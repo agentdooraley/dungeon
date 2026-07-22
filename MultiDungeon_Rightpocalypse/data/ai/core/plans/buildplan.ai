@@ -2,7 +2,6 @@
 -- File: 'buildplan.ai'
 -- Edited by Thudmeizer @ 23.02.2006
 -- Edited by Flenser    @ 16.06.2005
--- Edited by Aliaska_RuS
 
 class 'BuildPlan' (Plan)
 
@@ -73,8 +72,8 @@ function BuildPlan:BuildingState()
 		Plan.SetComplete(self, true)
 	else
 	
-		self.time_out = self.time_out + 3
-		if (self.time_out > 1) then
+		self.time_out = self.time_out + 1
+		if (self.time_out > 3) then
 			self:Retry()
 			self.time_out = 0
 		end

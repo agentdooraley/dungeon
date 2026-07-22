@@ -8,7 +8,7 @@ BuildBaseStrategyInfo =
 	chaos_marine_race =
 	{
 		post_builder = 1,
-		flag_capture = 3,
+		flag_capture = 2,
 
 		-- Reserve this amount for building units, reinforcing and upgrading
 		req_reserve = 150,
@@ -18,17 +18,17 @@ BuildBaseStrategyInfo =
 
 		--need at least this at all times
 		support_cap_threshold = 3,
-		
+		max_engineers = 5, 
 		--used to calculate wants for engineers
 		Engineers =
 		{
 			--number of engineers we're aiming for
-			want = 2,
-			tier1 = 2,
-			tier2 = 3,
+			want = 3,
+			tier1 = 3,
+			tier2 = 4,
 			tier3 = 5,
-			tier4 = 6,
-            max = 6,
+			tier4 = 5,
+            max = 5,
 		},
 		
 		-- Is used to modify the army strength in the build programs (Allows faster balancing adjustments)

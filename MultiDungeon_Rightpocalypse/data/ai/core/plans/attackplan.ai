@@ -4,7 +4,7 @@
 -- Edited by LarkinVB   @ 20.08.2005
 -- edited by Flenser    @ 03.06.2005
 -- Edited by Arkhan	@ 06.01.2006
-
+-- Edited by [DAG05]Simon
 class 'AttackPlan' (Plan)
 
 function AttackPlan:__init( enemy, attack_pos, start_pos, min_strength, max_percentage ) super( CpuPlayer.CT_Attacking )
@@ -40,6 +40,7 @@ function AttackPlan:__init( enemy, attack_pos, start_pos, min_strength, max_perc
 	self.m_iTargetChange = 0
 	self.m_iLastCaptureTry = 0
 	self.m_iCapturerID = -1
+	self.m_oCaptureStrat = nil
 	
 	self.m_iObtainForcesDelay = 0
 	self.m_vLastAttackPos = self.attack_pos
@@ -50,6 +51,94 @@ function AttackPlan:__init( enemy, attack_pos, start_pos, min_strength, max_perc
 	self.m_iLastUpdate = 0
 	
 	self.m_oSupportDetector = nil
+end
+
+-- Enemy/neutral unbuilt strategic point near attack army (CheckSuccess waits for these)
+function AttackPlan:FindNearbyCapturableStrat(vNearPos, iRange)
+	if (vNearPos == nil) then
+		return nil
+	end
+	if (iRange == nil) then
+		iRange = 55
+	end
+	local iRangeSqr = sqr(iRange)
+	local oBest = nil
+	local iBestDist = nil
+	for oStrategicPoint in resource_manager:GetStrategicPointAIs() do
+		if (oStrategicPoint ~= nil and not oStrategicPoint:HasListeningPost()) then
+			local iOwner = oStrategicPoint:Owner()
+			if (iOwner == 0 or not cpu_manager:IsFriendly(iOwner)) then
+				local iDist = distance_sqr(oStrategicPoint:GetPosition(), vNearPos)
+				if (iDist < iRangeSqr and (oBest == nil or iDist < iBestDist)) then
+					oBest = oStrategicPoint
+					iBestDist = iDist
+				end
+			end
+		end
+	end
+	return oBest
+end
+
+function AttackPlan:UpdateAttackCapturer(vArmyPos)
+	local oStrat = self:FindNearbyCapturableStrat(self.attack_pos, 55)
+	if (oStrat == nil and vArmyPos ~= nil) then
+		oStrat = self:FindNearbyCapturableStrat(vArmyPos, 55)
+	end
+	if (oStrat == nil) then
+		self.m_oCaptureStrat = nil
+		self.m_iCapturerID = -1
+		return
+	end
+	self.m_oCaptureStrat = oStrat
+
+	local oCapturer = nil
+	if (self.m_iCapturerID >= 0) then
+		for iLoop1 in self.attack_units do
+			local oSquad = self.attack_units[iLoop1]
+			if (oSquad:IsValid() and oSquad:GetID() == self.m_iCapturerID and oSquad:CanCapture()) then
+				oCapturer = oSquad
+				break
+			end
+		end
+	end
+	if (oCapturer == nil) then
+		self.m_iCapturerID = -1
+		local iBestDist = nil
+		local vFlagPos = oStrat:GetPosition()
+		for iLoop1 in self.attack_units do
+			local oSquad = self.attack_units[iLoop1]
+			if (oSquad:IsValid() and oSquad:CanCapture()) then
+				local oTactic = oSquad:GetTactic()
+				if (oTactic == nil or not oTactic:IsInEmergencySubState()) then
+					local iDist = distance_sqr(oSquad:GetPosition(), vFlagPos)
+					if (oCapturer == nil or iDist < iBestDist) then
+						oCapturer = oSquad
+						iBestDist = iDist
+					end
+				end
+			end
+		end
+		if (oCapturer ~= nil) then
+			self.m_iCapturerID = oCapturer:GetID()
+		end
+	end
+	if (oCapturer == nil) then
+		return
+	end
+
+	local vFlagPos = oStrat:GetPosition()
+	local oTactic = oCapturer:GetTactic()
+	if (distance_sqr(vFlagPos, oCapturer:GetPosition()) < sqr(35)) then
+		if (not oCapturer:IsCapturing()) then
+			oCapturer:DoDefault(oStrat:GetEntity())
+		end
+	else
+		cpu_manager:DoMove(oCapturer, vFlagPos, false, "AttackPlan capture strat")
+	end
+	if (oTactic ~= nil) then
+		oTactic:SetTarget(vFlagPos, Tactic.Variant.Vector)
+		oTactic:SetState(Tactic.States.Hold)
+	end
 end
 
 function AttackPlan:SplitArmy()
@@ -522,15 +611,19 @@ end
 function AttackPlan:Attacking()
 	
 	aitrace("AttackPlan: Attacking...")
+
+	local iArmyStrength, vArmyPos = self:GetArmyStrength()
+	self.m_iAttackPower = iArmyStrength
+
+	-- Always keep capturing nearby enemy strats (even during target-change cooldown)
+	self:UpdateAttackCapturer(vArmyPos)
 		
-	-- Don't change target to often
+	-- Don't change attack target too often
 	if (g_iGMT < self.m_iTargetChange + 10) then
 		return
 	end
 
 	-- Check if any of my units are under attack -- if so, get idle guys rest of my guys to attack
-	local iArmyStrength, vArmyPos = self:GetArmyStrength()
-	self.m_iAttackPower = iArmyStrength
 	local attack_now_pos = nil
 	local iClosestDistance = 0
 	local vDetectorTarget = nil
@@ -627,6 +720,45 @@ function AttackPlan:Attacking()
 		else
 			self.m_iCapturerID = -1
 			attack_now_pos = self.attack_pos
+
+			-- Idle on cleared attack_pos: without being shot we never enter combat retarget → AFK.
+			-- Combat / HQ threat already wake the army; this wakes it without waiting for that.
+			local bLocalClear = (
+				cpu_manager.cpu_player:FindFirstBaseEnemy(self.attack_pos, AttackStrategy.iLocalRange, 1) == nil and
+				cpu_manager.cpu_player:FindFirstEnemy(self.attack_pos, AttackStrategy.iLocalRange, 1) == nil)
+			if (bLocalClear) then
+				local oAttackStrat = cpu_manager:StrategyExists("AttackStrategy")
+				local vNext = self:GetBestAttackPosition(vArmyPos, 120)
+
+				if (vNext == nil and oAttackStrat ~= nil) then
+					if (oAttackStrat:IsMultiEnemyMatch()) then
+						local oNext, vPos = oAttackStrat:FindBestRemainingEnemyTarget(vArmyPos, self.enemy)
+						if (vPos ~= nil) then
+							vNext = vPos
+							if (oNext ~= nil) then
+								self.enemy = oNext
+								if (oAttackStrat.m_oAttackPlan == self) then
+									oAttackStrat.m_oEnemy = oNext
+								end
+							end
+						end
+					elseif (self.enemy ~= nil and not self.enemy:IsPlayerDead()) then
+						vNext = oAttackStrat:FindClosestEnemyBuilding(self.enemy, vArmyPos)
+						if (vNext == nil and cpu_manager:GetArmyStrength(self.enemy) > 0) then
+							vNext = oAttackStrat:GetEnemyArmyAnchor(self.enemy)
+						end
+					end
+				end
+
+				if (vNext ~= nil and distance_sqr(vNext, self.attack_pos) > sqr(25)) then
+					self.attack_pos = Vector3f(vNext)
+					attack_now_pos = Vector3f(vNext)
+					self.m_iTargetChange = g_iGMT
+					if (oAttackStrat ~= nil and oAttackStrat.m_oAttackPlan == self) then
+						oAttackStrat.m_vAttackPosition = Vector3f(vNext)
+					end
+				end
+			end
 		end
 	end
 	self.m_vLastAttackPos = Vector3f(attack_now_pos)
@@ -635,37 +767,36 @@ function AttackPlan:Attacking()
 	local bValidCapturer = false
 	for iLoop1 in self.attack_units do
 	
-		-- Get squad position
-		local vSquadPosition = self.attack_units[iLoop1]:GetPosition()	
-		
-		-- Set attack position
-		local vAttackPos = self.attack_pos
-					
-		-- Support my forces
-		if (self.m_iAttackPower < 4000 or self.attack_units[iLoop1]:CanJump() or
-			self.attack_units[iLoop1]:IsIdle() or self.m_iCapturerID >= 0) then
-			vAttackPos = attack_now_pos
-		end
-		
-		-- If there is a capturer, then move him to the point to capture
-		if (self.attack_units[iLoop1]:GetID() == self.m_iCapturerID) then
-			vAttackPos = self.attack_pos
+		-- Capturer is handled by UpdateAttackCapturer — don't pull back to attack_pos
+		if (self.m_iCapturerID >= 0 and self.attack_units[iLoop1]:GetID() == self.m_iCapturerID) then
 			bValidCapturer = true
-		end
-		
-		-- Check if unit should gather
-		local vGatherPos = self:GatherUnit(self.attack_units[iLoop1])
-
-		-- Order unit to target position
-		local oTactic = self.attack_units[iLoop1]:GetTactic()
-		if (vGatherPos ~= nil and self.m_iAttackPower < 3000) then
-			oTactic:GatherMove(vGatherPos)
 		else
-		
-			-- Check if we should update tactic
-			if (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vAttackPos) > 1) then
-				oTactic:SetTarget(vAttackPos, Tactic.Variant.Vector)
-				oTactic:SetState(Tactic.States.Attack)
+			-- Get squad position
+			local vSquadPosition = self.attack_units[iLoop1]:GetPosition()	
+			
+			-- Set attack position
+			local vAttackPos = self.attack_pos
+						
+			-- Support my forces
+			if (self.m_iAttackPower < 4000 or self.attack_units[iLoop1]:CanJump() or
+				self.attack_units[iLoop1]:IsIdle() or self.m_iCapturerID >= 0) then
+				vAttackPos = attack_now_pos
+			end
+			
+			-- Check if unit should gather
+			local vGatherPos = self:GatherUnit(self.attack_units[iLoop1])
+
+			-- Order unit to target position
+			local oTactic = self.attack_units[iLoop1]:GetTactic()
+			if (vGatherPos ~= nil and self.m_iAttackPower < 3000) then
+				oTactic:GatherMove(vGatherPos)
+			else
+			
+				-- Check if we should update tactic
+				if (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vAttackPos) > 1) then
+					oTactic:SetTarget(vAttackPos, Tactic.Variant.Vector)
+					oTactic:SetState(Tactic.States.Attack)
+				end
 			end
 		end
 	end
@@ -673,6 +804,7 @@ function AttackPlan:Attacking()
 	-- Check if capturer was moved
 	if (not bValidCapturer) then
 		self.m_iCapturerID = -1
+		self.m_oCaptureStrat = nil
 	end
 	
 	-- Move support detector
@@ -789,6 +921,8 @@ function AttackPlan:RemoveLosses()
 	elseif (cpu_manager:GetTierLevel() >= 3) then
 		iMinStrength = 180
 	end
+	-- Same retreat anchor for all weak squads (args identical each iteration)
+	local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(self.attack_pos, cpu_manager.start_pos, true, false)
 	local iSquadCount = table.getn( self.attack_units )
 	for iLoop1 = iSquadCount, 1, -1 do
 	
@@ -808,10 +942,9 @@ function AttackPlan:RemoveLosses()
 			local oTactic = oSquad:GetTactic()
 			local bWeak	= (oSquad:CanReinforce(false, 0) and oTactic:GetUnitStrength() < iMinStrength)
 			local bCanRetreat = (oSquad:IsRanged() or not oSquad:IsInCombat())
-			if (not oTactic:IsAttacker() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack())) then
+			if (not oTactic:IsOverwhelmSpamMode() and (not oTactic:IsAttacker() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
 		
 				-- Send severly hurt squads back to base
-				local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(self.attack_pos, cpu_manager.start_pos, true, false)
 				if (vBasePos ~= nil) then
 					Plan.UnlockResource(self, oSquad)
 					table.remove(self.attack_units, iLoop1)
@@ -819,7 +952,7 @@ function AttackPlan:RemoveLosses()
 					oTactic:SetTarget(vBasePos, Tactic.Variant.Vector)
 				end
 				
-			elseif (oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
+			elseif (not oTactic:IsOverwhelmSpamMode() and oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
 		
 				-- Send severly hurt vehicles back to base for repair
 				Plan.UnlockResource(self, oSquad)
@@ -843,7 +976,6 @@ function AttackPlan:RemoveLosses()
 		elseif (not cpu_manager:EnemyHasUnitInfiltrators() and not cpu_manager:EnemyHasBaseInfiltrators()) then
 		
 			-- Release support detector
-			local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(self.attack_pos, cpu_manager.start_pos, true, false)
 			if (vBasePos ~= nil) then
 				Plan.UnlockResource(self, self.m_oSupportDetector)
 				local oTactic = self.m_oSupportDetector:GetTactic()

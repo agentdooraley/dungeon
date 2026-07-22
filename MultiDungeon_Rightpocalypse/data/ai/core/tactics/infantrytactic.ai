@@ -6,7 +6,7 @@
 -- Edited by Excedrin   @ 18.07.2005
 -- Edited by Arkhan	@ 13.01.2006
 -- Edited by Aliaska_RuS
-
+-- Edited by [DAG05]Simon
 ----
 
 
@@ -51,8 +51,8 @@ function InfantryTactic:__init( squad_ai ) super( squad_ai )
 
 	self.morale_threshold = 300
 
-        --Life Time
-        self.time_life = 0
+    --Life Time
+    self.time_life = 0
 
 	self.strat_ai = nil
 	
@@ -131,6 +131,50 @@ end
 
 function InfantryTactic:IsTransportable()
 	return self.m_iTransportable
+end
+
+
+
+function InfantryTactic:CanTakeCoverAt( vSearchPos, iCheckRange )
+	if (vSearchPos == nil) then
+		return false
+	end
+	if (iCheckRange == nil) then
+		iCheckRange = 25
+	end
+	local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSearchPos, iCheckRange, true)
+	if (iEnemyStrength == 0) then
+		return true
+	end
+	if (iAlliedStrength >= 3 * iEnemyStrength) then
+		return true
+	end
+	return false
+end
+
+
+
+function InfantryTactic:TryTakeCover( vSearchPos, iSearchRange )
+	if (not self.m_bTakeCover or vSearchPos == nil) then
+		return false
+	end
+	if (iSearchRange == nil) then
+		iSearchRange = 35
+	end
+	local iCheckRange = 25
+	if (not self:CanTakeCoverAt(vSearchPos, iCheckRange)) then
+		self.m_iCoverDelay = g_iGMT + 8
+		return false
+	end
+	local vSquadPos = self.squad_ai:GetPosition()
+	if (not self:IsDisengageRouteClear(vSquadPos, vSearchPos, 20)) then
+		self.m_iCoverDelay = g_iGMT + 5
+		return false
+	end
+	if (self.squad_ai:DoMoveToClosestCover(vSearchPos, iSearchRange)) then
+		return true
+	end
+	return false
 end
 
 function InfantryTactic:HarrasingAttack()
@@ -221,6 +265,45 @@ function InfantryTactic:BeginHoldState()
 	if (self:UrgentCapturing()) then
 		return
 	end
+
+	if (self:IsCapturePlanMove()) then
+		if (self.squad_ai:IsCapturing()) then
+			return
+		end
+
+		local vSquadPos = self.m_vCurrentPosition
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		if (iDistance > sqr(25)) then
+			if (g_iGMT >= self.m_iMoveDelay + 8) then
+				cpu_manager:DoMove(self.squad_ai, self:GetTarget(), false, "CapturePlanMove")
+				self.m_iMoveDelay = g_iGMT
+			end
+		end
+
+		Tactic.SetSubState( self, self.HoldState, "Holding" )
+		return
+	end
+
+	if (self:IsCaptureGuardMove() and not self:IsCaptureGuardAttack()) then
+		if (self.squad_ai:IsCapturing()) then
+			return
+		end
+
+		local vSquadPos = self.m_vCurrentPosition
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		if (iDistance > sqr(25)) then
+			if (g_iGMT >= self.m_iMoveDelay + 6) then
+				cpu_manager:DoMove(self.squad_ai, self:GetTarget(), false, "CaptureGuardEscort")
+				self.m_iMoveDelay = g_iGMT
+			end
+		elseif (iDistance < sqr(20) and not self.squad_ai:IsAttacking() and not self.squad_ai:IsInStateAttackMove()) then
+			self.squad_ai:DoStop()
+			self.m_iMoveDelay = g_iGMT
+		end
+
+		Tactic.SetSubState( self, self.HoldState, "Holding" )
+		return
+	end
 	
 	-- Check if our capturing was interrupted
 	if (self.squad_ai:IsCapturing()) then
@@ -232,7 +315,7 @@ function InfantryTactic:BeginHoldState()
 	end
 	
 	-- Check if we're busy
-	if (self:IsInSubState() or self.squad_ai:IsBroken()) then
+	if (self:IsInSubState() or (self:IsAffectedByMorale() and self.squad_ai:IsBroken())) then
 		return
 	end
 
@@ -241,8 +324,8 @@ function InfantryTactic:BeginHoldState()
 		return
 	end
 
-	-- Try to jump
-	if (self:JumpAttack()) then
+	-- Jump into planned target fight, or assist a distant fight if AFK
+	if (self:JumpAttack() or self:TryJumpAssistFight()) then
 		self.m_iMoveDelay = 0
 		return
 	end
@@ -269,14 +352,16 @@ function InfantryTactic:BeginHoldState()
 		return
 	end
 		
-	-- Check for cover and bunkers
-	if (iDistance < sqr(35) and self.squad_ai:IsRanged() and g_iGMT > self.m_iCoverDelay) then
+	-- Check for cover and bunkers (near plan target OR under pressure — bunker is local)
+	local bBunkerPressure = (self.squad_ai:WasRecentlyHurt() or self.squad_ai:IsUnderAttack() or
+		self.squad_ai:GetHealthPercentage() < 0.55)
+	if ((iDistance < sqr(35) or bBunkerPressure) and self.squad_ai:IsRanged() and g_iGMT > self.m_iCoverDelay) then
         local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 40, true)			
 		-- Check if squad is able to occupy bunkers
 		if (self.m_bBunkerSquad) then
 			
 			-- Try to occupy a close bunker	
-			if (cpu_manager:OccupyBunker(self.squad_ai, 25)) then
+			if (cpu_manager:OccupyBunker(self.squad_ai, 20)) then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.HoldState, "Holding" )
@@ -285,10 +370,10 @@ function InfantryTactic:BeginHoldState()
 		end
 		
 		-- Check if we should try to take cover
-		if (self.m_bTakeCover and not self.squad_ai:HasSetupTime() and self.squad_ai:WasRecentlyHurt()) and vPosThreat<iAlliedStrength then
+		if (self.m_bTakeCover and not self.squad_ai:HasSetupTime() and self.squad_ai:WasRecentlyHurt()) and vPosThreat<iAlliedStrength and not self.squad_ai:IsInCombat() and not self.squad_ai:IsUnderAttack() then
 		
 			-- Try to take cover
-			if (self.squad_ai:DoMoveToClosestCover(self.squad_ai:GetPosition(), 35)) then
+			if (self:TryTakeCover(self.squad_ai:GetPosition(), 35)) then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.HoldState, "Holding" )
@@ -297,9 +382,27 @@ function InfantryTactic:BeginHoldState()
 		end
 	end
 	
+	if (self.squad_ai:IsRanged() and self:TryCombatDisengage()) then
+		self.m_iMoveDelay = g_iGMT
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+
+	if (self.squad_ai:IsRanged() and self:MaintainInfantryRangedRange()) then
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+
+	local iCloseDist = 25
+	local iFarDist = 60
+	if (self.squad_ai:IsRanged()) then
+		iCloseDist = math.floor(self:GetRangedCombatRange() * 0.85)
+		iFarDist = self:GetRangedCombatRange() + 15
+	end
+
 	-- Check distance
-	if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
-        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
+	if (iDistance > sqr(iCloseDist) and not self.squad_ai:IsInCombat() and 
+        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) and self.squad_ai:GetNumTroopers() > 1 then
 	
 		-- Check for a close transporter
 		local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -313,7 +416,7 @@ function InfantryTactic:BeginHoldState()
 		end
 		cpu_manager:DoMove(self.squad_ai, self:GetTarget(), false, "HoldState")
 	
-	elseif (iDistance > sqr(60)) then
+	elseif (iDistance > sqr(iFarDist)) then
 	
 		-- If we get near the target area, then make an attack move
 		cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "HoldState")
@@ -325,7 +428,7 @@ function InfantryTactic:BeginHoldState()
 			
 			-- Get closest enemy unit
 			local oUnit = self:GetClosestUnitForMelee(50)
-			if (oUnit ~= nil and ((not oUnit:IsInfiltrating() or oUnit:IsAttacking() or self.squad_ai:IsDetector()) or oUnit:IsEngineer())) then
+			if (oUnit ~= nil and ((not oUnit:IsInfiltrating() or oUnit:IsAttacking()) or oUnit:IsEngineer())) then --or self.squad_ai:IsDetector()
 				cpu_manager:DoMove(self.squad_ai, oUnit:GetPosition(), true, "HoldState")
 				self.m_iMoveDelay = g_iGMT + 3
 			else
@@ -353,13 +456,17 @@ function InfantryTactic:BeginHoldState()
 		else
 				
 			-- Check for close and near distance
-			if (iDistance < sqr(20) and not self.squad_ai:WasRecentlyHurt() and not cpu_manager.terrain_analyzer:HasThreat(self:GetTarget(), 35)) then
+			if (self:MaintainInfantryRangedRange()) then
+				Tactic.SetSubState(self, self.HoldState, "Holding")
+				return
+			end
+			if (iDistance < sqr(iCloseDist) and not self.squad_ai:WasRecentlyHurt() and not cpu_manager.terrain_analyzer:HasThreat(self:GetTarget(), 35)) then
 			
 				-- Try to take cover in close distance
 			 	if (self.squad_ai:IsIdle() and g_iGMT > self.m_iCoverDelay and self.m_bTakeCover) then
 								
 					-- Try to take cover
-					if (self.squad_ai:DoMoveToClosestCover(self:GetTarget(), 35)) then
+					if (self:TryTakeCover(self:GetTarget(), 35)) then
 						self.m_iMoveDelay = g_iGMT
 						self.m_iCoverDelay = g_iGMT
 					end
@@ -370,8 +477,10 @@ function InfantryTactic:BeginHoldState()
 				Tactic.SetSubState( self, self.HoldState, "Holding" )
 				return
 			end
-			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "HoldState")
-			self.m_iMoveDelay = g_iGMT
+			if (iDistance > sqr(iFarDist)) then
+				cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "HoldState")
+				self.m_iMoveDelay = g_iGMT
+			end
 		end
 	end
 
@@ -379,10 +488,47 @@ function InfantryTactic:BeginHoldState()
 	Tactic.SetSubState( self, self.HoldState, "Holding" )
 end
 
+-- OccupyBunker used to live only in BeginHold/Attack — after anti-stutter those rarely re-run in combat
+function InfantryTactic:TryEnterNearbyBunker()
+	if (not self.m_bBunkerSquad or self.squad_ai == nil or not self.squad_ai:IsValid()) then
+		return false
+	end
+	if (self.squad_ai:IsCapturing()) then
+		return false
+	end
+	if (g_iGMT <= self.m_iCoverDelay) then
+		return false
+	end
+
+	local fHP = self.squad_ai:GetHealthPercentage()
+	local bHurt = (self.squad_ai:WasRecentlyHurt() or self.squad_ai:IsUnderAttack() or fHP < 0.55)
+	if (not bHurt) then
+		local vPos = self.m_vCurrentPosition
+		if (vPos == nil) then
+			vPos = self.squad_ai:GetPosition()
+		end
+		local iEnemy, iAllied = cpu_manager:GetArmyStrengthAtPos(vPos, 35, true)
+		if (iEnemy <= 0 or iEnemy < iAllied * 1.2) then
+			return false
+		end
+	end
+
+	if (not cpu_manager:OccupyBunker(self.squad_ai, 20)) then
+		return false
+	end
+	self.m_iMoveDelay = g_iGMT
+	self.m_iCoverDelay = g_iGMT + 2
+	return true
+end
+
 function InfantryTactic:HoldState()
 
-	-- Try to jump
-	if (not self.squad_ai:IsCapturing() and self:JumpAttack()) then
+	if (self:IsCapturePlanMove() or self:IsCaptureGuardMove()) then
+		return
+	end
+
+	-- Try to jump into combat / assist distant fights
+	if (not self.squad_ai:IsCapturing() and (self:JumpAttack() or self:TryJumpAssistFight())) then
 		self.m_iMoveDelay = 0
 		return
 	end
@@ -392,14 +538,27 @@ function InfantryTactic:HoldState()
 		self.m_iMoveDelay = g_iGMT
 		return
 	end
+
+	-- Bunker refuge while engaged (BeginHold no longer restarts mid-fight)
+	if (self:TryEnterNearbyBunker()) then
+		return
+	end
 	
-	-- If I'm idle, restart
-	if (self.squad_ai:IsIdle() or not self:IsMoving() or self.squad_ai:WasRecentlyHurt()) then
-		Tactic.SetState( self, self:GetState() )
+	-- If idle, restart — but not while shooting/in combat (re-BeginHold DoMove = walk-stop stutter)
+	if (not self:IsInEmergencySubState() and not self:NeedsRangedDisengage()) then
+		if (self.squad_ai:IsAttacking() or self.squad_ai:IsInCombat()) then
+			return
+		end
+		if (self.squad_ai:IsIdle() or not self:IsMoving() or (self.squad_ai:WasRecentlyHurt() and not self.squad_ai:IsRanged())) then
+			Tactic.SetState( self, self:GetState() )
+		end
 	end
 end
 
 function InfantryTactic:BeginRetreatState()
+	if (self:IsOverwhelmSpamMode() and not self.squad_ai:IsLocked()) then
+		return
+	end
 	local vSquadPos = self.m_vCurrentPosition
 	local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, 40, true)
 	-- Check if we're desperatly capturing
@@ -417,7 +576,12 @@ function InfantryTactic:BeginRetreatState()
 	end
 	
 	-- Check if we're busy
-	if (self:IsInSubState() or self.squad_ai:IsBroken()) then
+	if (self:IsInSubState()) then
+		return
+	end
+
+	-- Melee winning/equal fight: don't micro-retreat / jump-flee
+	if (self:ShouldStayInFight()) then
 		return
 	end
 
@@ -453,7 +617,7 @@ function InfantryTactic:BeginRetreatState()
 		if (self.m_bBunkerSquad) then
 			
 			-- Try to occupy a close bunker	
-			if (cpu_manager:OccupyBunker(self.squad_ai, 25)) then
+			if (cpu_manager:OccupyBunker(self.squad_ai, 20)) then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.HoldState, "Holding" )
@@ -465,7 +629,7 @@ function InfantryTactic:BeginRetreatState()
 		if (self.m_bTakeCover and iDistance < sqr(35) and self.squad_ai:WasRecentlyHurt()) and vPosThreat<iAlliedStrength then
 		
 			-- Try to take cover
-			if (self.squad_ai:DoMoveToClosestCover(self.squad_ai:GetPosition(), 35)) then
+			if (self:TryTakeCover(self.squad_ai:GetPosition(), 35)) and not self.squad_ai:IsInCombat() and not self.squad_ai:IsUnderAttack() then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.HoldState, "Holding" )
@@ -476,7 +640,7 @@ function InfantryTactic:BeginRetreatState()
 	
 	-- Check distance
 	if (iDistance > sqr(25) and 
-        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
+        self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3 and self.squad_ai:GetNumTroopers() > 1) then
 	
 		-- Check for a close transporter
 		local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -510,6 +674,25 @@ end
 
 function InfantryTactic:BeginAttackState()
 	local vSquadPos = self.m_vCurrentPosition
+
+	if (self:IsCapturePlanMove()) then
+		return
+	end
+
+	if (self:IsCaptureGuardMove()) then
+		if (self.squad_ai:IsCapturing()) then
+			return
+		end
+		local vSquadPos = self.m_vCurrentPosition
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		if (iDistance > sqr(20) and g_iGMT >= self.m_iMoveDelay + 6) then
+			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), self:IsCaptureGuardAttack(), "CaptureGuardAttack")
+			self.m_iMoveDelay = g_iGMT
+		end
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+
 	-- Check if we're desperatly capturing
 	if (self:UrgentCapturing()) then
 		return
@@ -521,14 +704,14 @@ function InfantryTactic:BeginAttackState()
 		local iMaxCapturingSquadCost = cpu_manager:GetArmyStrength() / 5
 	
 
-		if (self.squad_ai:WasRecentlyHurt() or self:GetUnitStrength() > iMaxCapturingSquadCost) then
+		if (not self:IsCapturePlanMove() and (self.squad_ai:WasRecentlyHurt() or self:GetUnitStrength() > iMaxCapturingSquadCost)) then
 			cpu_manager:DoMove(self.squad_ai, self.squad_ai:GetPosition(), true, "Interrupt capturing!")
 		end
 		return
 	end
 	
 	-- Check if we're busy
-	if (self:IsInSubState() or self.squad_ai:IsBroken()) then
+	if (self:IsInSubState() or (self:IsAffectedByMorale() and self.squad_ai:IsBroken())) then
 		return
 	end
 
@@ -537,8 +720,8 @@ function InfantryTactic:BeginAttackState()
 		return
 	end
 
-	-- Try to jump
-	if (self:JumpAttack()) then
+	-- Try to jump into attack target / assist if sitting out
+	if (self:JumpAttack() or self:TryJumpAssistFight()) then
 		self.m_iMoveDelay = 0
 		return
 	end
@@ -572,7 +755,7 @@ function InfantryTactic:BeginAttackState()
 		if (self.m_bBunkerSquad) then
 			
 			-- Try to occupy a close bunker	
-			if (cpu_manager:OccupyBunker(self.squad_ai, 35)) then
+			if (cpu_manager:OccupyBunker(self.squad_ai, 20)) then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.AttackingState, "Attacking" )
@@ -584,7 +767,7 @@ function InfantryTactic:BeginAttackState()
 		if (self.m_bTakeCover and not self.squad_ai:HasSetupTime() and self.squad_ai:WasRecentlyHurt()) and vPosThreat<iAlliedStrength then
 		
 			-- Try to take cover
-			if (self.squad_ai:DoMoveToClosestCover(self.squad_ai:GetPosition(), 35)) then
+			if (self:TryTakeCover(self.squad_ai:GetPosition(), 35)) then
 				self.m_iMoveDelay = g_iGMT
 				self.m_iCoverDelay = g_iGMT
 				Tactic.SetSubState( self, self.AttackingState, "Attacking" )
@@ -593,9 +776,27 @@ function InfantryTactic:BeginAttackState()
 		end
 	end
 
+	if (self.squad_ai:IsRanged() and self:TryCombatDisengage()) then
+		self.m_iMoveDelay = g_iGMT
+		Tactic.SetSubState(self, self.AttackingState, "Attacking")
+		return
+	end
+
+	if (self.squad_ai:IsRanged() and self:MaintainInfantryRangedRange()) then
+		Tactic.SetSubState(self, self.AttackingState, "Attacking")
+		return
+	end
+
+	local iCloseDist = 25
+	local iFarDist = 60
+	if (self.squad_ai:IsRanged()) then
+		iCloseDist = math.floor(self:GetRangedCombatRange() * 0.85)
+		iFarDist = self:GetRangedCombatRange() + 15
+	end
+
 		-- Check distance
-		if (iDistance > sqr(25) and not self.squad_ai:IsInCombat() and 
-                                self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) then
+		if (iDistance > sqr(iCloseDist) and not self.squad_ai:IsInCombat() and 
+            self.squad_ai:GetHealthPercentage() > 0.5 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 3) and self.squad_ai:GetNumTroopers() > 1 then
 		
 			-- Check for a close transporter
 			local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -614,8 +815,8 @@ function InfantryTactic:BeginAttackState()
 	if (not self.squad_ai:IsAttacking() and not self.squad_ai:IsInStateAttackMove()) then
 	
 		-- Check distance
-		if (iDistance > sqr(30) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
-			self.squad_ai:GetHealthPercentage() > 0.6 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 2) then
+		if (iDistance > sqr(iCloseDist) and not self.squad_ai:IsInCombat() and not self.squad_ai:WasRecentlyHurt() and
+			self.squad_ai:GetHealthPercentage() > 0.6 and self.squad_ai:GetNumTroopers() > self.squad_ai:GetMaxTroopers() / 2) and self.squad_ai:GetNumTroopers() > 1 then
 		
 			-- Check for a close transporter
 			local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable)
@@ -629,7 +830,7 @@ function InfantryTactic:BeginAttackState()
 			end
 			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "AttackState")
 		
-		elseif (iDistance > sqr(60)) then
+		elseif (iDistance > sqr(iFarDist)) then
 		
 			-- If we are too far away from the target, then make a simple attack move
 			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "AttackState")
@@ -640,7 +841,7 @@ function InfantryTactic:BeginAttackState()
 			
 				-- Get closest enemy unit
 				local oUnit = self:GetClosestUnitForMelee(50)
-				if (oUnit ~= nil and ((not oUnit:IsInfiltrating() or oUnit:IsAttacking() or self.squad_ai:IsDetector()) or oUnit:IsEngineer())) then
+				if (oUnit ~= nil and ((not oUnit:IsInfiltrating() or oUnit:IsAttacking()) or oUnit:IsEngineer())) then --self.squad_ai:IsDetector()
 					cpu_manager:DoMove(self.squad_ai, oUnit:GetPosition(), true, "AttackState")
 					self.m_iMoveDelay = g_iGMT + 3
 				else
@@ -666,17 +867,23 @@ function InfantryTactic:BeginAttackState()
 					end
 				end
 			else
-			
-				-- If we are close to the target area, then make an attack move
-				if (iDistance < sqr(25) and not self.squad_ai:WasRecentlyHurt() and
+				
+				-- If we are close to the target area, then hold fire at weapon range
+				if (self:MaintainInfantryRangedRange()) then
+					Tactic.SetSubState(self, self.HoldState, "Attacking")
+					return
+				end
+				if (iDistance < sqr(iCloseDist) and not self.squad_ai:WasRecentlyHurt() and
 					not cpu_manager.terrain_analyzer:HasThreat(self:GetTarget(), 35)) then
 					self.squad_ai:DoStop()
 					self.m_iMoveDelay = g_iGMT
 					Tactic.SetSubState(self, self.HoldState, "Attacking")
 					return
 				end
-				cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "AttackState")
-				self.m_iMoveDelay = g_iGMT
+				if (iDistance > sqr(iFarDist)) then
+					cpu_manager:DoMove(self.squad_ai, self:GetTarget(), true, "AttackState")
+					self.m_iMoveDelay = g_iGMT
+				end
 			end
 		end
 	end
@@ -687,8 +894,8 @@ end
 
 function InfantryTactic:AttackingState()
 	
-	-- Try to jump
-	if (not self.squad_ai:IsCapturing() and self:JumpAttack()) then
+	-- Try to jump into attack target / assist if sitting out
+	if (not self.squad_ai:IsCapturing() and (self:JumpAttack() or self:TryJumpAssistFight())) then
 		self.m_iMoveDelay = 0
 		return
 	end
@@ -699,9 +906,18 @@ function InfantryTactic:AttackingState()
 		return
 	end
 
-	-- If I'm idle or was hurt, restart
-	if (self.squad_ai:IsIdle() or not self:IsMoving() or self.squad_ai:WasRecentlyHurt()) then
-		Tactic.SetState( self, self:GetState() )
+	if (self:TryEnterNearbyBunker()) then
+		return
+	end
+
+	-- If idle or was hurt, restart — not while already engaged (avoids DoMove spam)
+	if (not self:IsInEmergencySubState() and not self:NeedsRangedDisengage()) then
+		if (self.squad_ai:IsAttacking() or self.squad_ai:IsInCombat()) then
+			return
+		end
+		if (self.squad_ai:IsIdle() or not self:IsMoving() or (self.squad_ai:WasRecentlyHurt() and not self.squad_ai:IsRanged())) then
+			Tactic.SetState( self, self:GetState() )
+		end
 	end
 end
 
@@ -779,33 +995,63 @@ function InfantryTactic:Reinforce()
 end
 
 function InfantryTactic:BrokenMorale()
-	
-	-- In threat area, or was attacked since we last checked
-	if (cpu_manager.terrain_analyzer:HasThreat(self.safe_point, self.tolerance) and not self:MoveToDisengage()) then
-		self.squad_ai:DoMoveToClosestSafePoint(self.safe_point, self.tolerance)
+
+	if (cpu_manager.m_bOverwhelmActive) then
+		self.stateID = Tactic.StateID.NoState
+		self.m_eSubStateID = Tactic.StateID.NoState
+		Tactic.SetState(self, self:GetState())
+		return
 	end
-	
-	-- Increase safe tolerance
-	if (self.last_time ~= nil and self.squad_ai:WasAttackedSince(self.last_time))  then
+
+	local vPos = self.squad_ai:GetPosition()
+
+	if (not self.squad_ai:IsBroken()) then
+		if (self.squad_ai:GetMoralePercentage() > 0.7) then
+			self.m_eSubStateID = Tactic.StateID.NoState
+			self.stateID = Tactic.StateID.NoState
+			self.last_time = nil
+			Tactic.SetState(self, self:GetState())
+		end
+		return
+	end
+
+	self.safe_point = self:GetHomeRetreatPos()
+	local bUnderFire = (self.squad_ai:IsUnderAttack() or self.squad_ai:WasRecentlyHurt() or
+		cpu_manager.terrain_analyzer:HasThreat(vPos, 40) or
+		cpu_manager.cpu_player:FindFirstEnemy(vPos, 40, 1) ~= nil)
+
+	if (bUnderFire) then
+		if (not self:MoveToDisengage()) then
+			local vDeep = cpu_manager.start_pos
+			if (distance_sqr(vPos, vDeep) > sqr(20)) then
+				cpu_manager:DoMove(self.squad_ai, vDeep, false, "BrokenMorale HQ")
+			else
+				self.squad_ai:DoMoveToClosestSafePoint(self.safe_point, self.tolerance)
+			end
+		end
+	elseif (distance_sqr(vPos, self.safe_point) > sqr(25)) then
+		cpu_manager:DoMove(self.squad_ai, self.safe_point, false, "BrokenMorale home")
+	else
+		self.squad_ai:DoStop()
+	end
+
+	if (self.last_time ~= nil and self.squad_ai:WasAttackedSince(self.last_time)) then
 		self.tolerance = self.tolerance + 10
 	end
 	self.last_time = g_iGMT
-	
-	-- Check if I have enough morale or health if attached
-	if (not self.squad_ai:IsBroken() and self.squad_ai:GetMoralePercentage() > 0.7) then
-	
-		self.m_eSubStateID = Tactic.StateID.NoState
-		self.stateID = Tactic.StateID.NoState
-		
-		-- Go back in the fray - reset my state
-		self.last_time = nil
-		Tactic.SetState(self, self:GetState())
-	else
-		self.m_eSubStateID = self.stateID
-	end
+	self.m_eSubStateID = self.stateID
 end
 
 function InfantryTactic:AvoidDeath()
+
+	if (cpu_manager.m_bOverwhelmActive and not self.squad_ai:IsEngineer()) then
+		if (self.stateID == Tactic.StateID.AvoidDeath) then
+			self.m_eSubStateID = Tactic.StateID.NoState
+			self.stateID = Tactic.StateID.NoState
+			Tactic.SetState(self, self:GetState())
+		end
+		return
+	end
 
 	if (self.stateID == Tactic.StateID.AvoidDeath and not self:CheckForDeath(true)) then 
 	  	  
@@ -862,42 +1108,203 @@ function InfantryTactic:DoAbilities()
 	end
 end
 
+-- Melee stay-in-fight: cached, uses army strength tables (no full squad scan per gate).
+function InfantryTactic:ShouldStayInFight()
+	if (self.squad_ai == nil or not self.squad_ai:IsValid()) then
+		return false
+	end
+	if (self.squad_ai:IsRanged() or self.squad_ai:IsEngineer()) then
+		return false
+	end
+	-- Commanders must still peel to attach / AvoidDeath
+	if (self:IsCommander()) then
+		return false
+	end
+	if (cpu_manager.m_bOverwhelmActive) then
+		return true
+	end
+	if (not (self.squad_ai:IsInCombat() or self.squad_ai:IsUnderAttack() or self.squad_ai:WasRecentlyHurt())) then
+		return false
+	end
+
+	-- Cache ~1s — many gates/tick; strength cell-cache already smooths jumps
+	if (self.m_iStayInFightCacheTime ~= nil and g_iGMT < self.m_iStayInFightCacheTime) then
+		return self.m_bStayInFightCached
+	end
+
+	local vPos = self.m_vCurrentPosition
+	if (vPos == nil) then
+		vPos = self.squad_ai:GetPosition()
+	end
+	local iEnemyStr, iAlliedStr = cpu_manager:GetArmyStrengthAtPos(vPos, 40, true)
+	local bStay = (iEnemyStr > 0 and iAlliedStr >= iEnemyStr)
+
+	self.m_bStayInFightCached = bStay
+	self.m_iStayInFightCacheTime = g_iGMT + 1.0
+	return bStay
+end
+
+-- Idle jump/teleport melee: join a fight within jump range instead of AFK at base.
+function InfantryTactic:TryJumpAssistFight()
+	if (self.squad_ai:IsRanged() or not self.squad_ai:CanJump()) then
+		return false
+	end
+	if (self:IsCommander()) then
+		return false
+	end
+	if (self.squad_ai:IsCapturing() or self.squad_ai:IsEngineer()) then
+		return false
+	end
+	if (self:IsInEmergencySubState() or self:IsInSubState()) then
+		return false
+	end
+	if (self:IsCapturePlanMove() or self:IsCaptureGuardMove()) then
+		return false
+	end
+	if (g_iGMT < self.last_jump + 15) then
+		return false
+	end
+	if (self.squad_ai:IsInCombat() or self.squad_ai:IsUnderAttack()) then
+		return false
+	end
+	if (self.m_iCommanderAttachTargetId ~= nil) then
+		return false
+	end
+
+	local vMyPos = self.squad_ai:GetPosition()
+	if (self.squad_ai:IsLocked()) then
+		local vPlanTarget = self:GetTarget()
+		if (vPlanTarget ~= nil and distance_sqr(vMyPos, vPlanTarget) > sqr(50)) then
+			return false
+		end
+	end
+
+	local iJumpDist = self.squad_ai:GetJumpDistance()
+	if (iJumpDist == nil or iJumpDist < 30) then
+		return false
+	end
+
+	-- Throttle after cheap early-outs (don't burn slot when already in combat)
+	if (g_iGMT < self.m_iLastJumpAssistCheck + 2.5) then
+		return false
+	end
+	-- Stagger jumpers across ticks when many units (same quality, spread CPU)
+	local iSid = self.squad_ai:GetID()
+	if (iSid ~= nil and math.mod(iSid + math.floor(g_iGMT), 2) ~= 0) then
+		return false
+	end
+	self.m_iLastJumpAssistCheck = g_iGMT
+
+	local iMyStrength = self:GetUnitStrength()
+	local iMinRangeSqr = sqr(40)
+	local iMaxRangeSqr = sqr(iJumpDist)
+	local oVictim = nil
+	local iBest = 0
+	local iChecked = 0
+	local aJumpTargets = cpu_manager:GetJumpTargets()
+	for iLoop1 in aJumpTargets do
+		local vPos = aJumpTargets[iLoop1][2]
+		local iDist = distance_sqr(vMyPos, vPos)
+		if (iDist > iMinRangeSqr and iDist < iMaxRangeSqr) then
+			iChecked = iChecked + 1
+			if (iChecked > 4) then
+				break
+			end
+			local iEnemyPower, iAllyPower = cpu_manager:GetArmyStrengthAtPos(vPos, 35, true)
+			local iStr = aJumpTargets[iLoop1][3]
+			if (iAllyPower > 0 and iEnemyPower > 0 and iEnemyPower <= (iAllyPower + iMyStrength) and iStr > iBest) then
+				iBest = iStr
+				oVictim = aJumpTargets[iLoop1][1]
+			end
+		end
+	end
+
+	if (oVictim ~= nil) then
+		local vEnemyPos = oVictim:GetPosition()
+		if (self.squad_ai:CanJumpToPosition(vEnemyPos)) then
+			self.squad_ai:DoJump(vEnemyPos)
+			self.target = Vector3f(vEnemyPos)
+			self.last_jump = g_iGMT
+			self.m_iLastGatherMove = self.last_jump - 10
+			return true
+		end
+	end
+
+	-- Fallback: one threat blob (not all)
+	local iThreatChecked = 0
+	for iLoop1 in cpu_manager.m_aThreatPositions do
+		local vPos = cpu_manager.m_aThreatPositions[iLoop1]
+		local iDist = distance_sqr(vMyPos, vPos)
+		if (iDist > iMinRangeSqr and iDist < iMaxRangeSqr) then
+			iThreatChecked = iThreatChecked + 1
+			if (iThreatChecked > 3) then
+				break
+			end
+			local iEnemyPower, iAllyPower = cpu_manager:GetArmyStrengthAtPos(vPos, 35, true)
+			if (iAllyPower > 0 and iEnemyPower > 0 and iEnemyPower <= (iAllyPower + iMyStrength)) then
+				if (self.squad_ai:CanJumpToPosition(vPos)) then
+					self.squad_ai:DoJump(vPos)
+					self.target = Vector3f(vPos)
+					self.last_jump = g_iGMT
+					self.m_iLastGatherMove = self.last_jump - 10
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 function InfantryTactic:MoveToDisengage(bDanceflag)
+
+	if (cpu_manager.m_bOverwhelmActive and not self.squad_ai:IsEngineer()) then
+		return false
+	end
+	if (bDanceflag ~= true and self:ShouldStayInFight()) then
+		return false
+	end
 	
 	-- Check if squad is able to occupy bunkers
 	if (self.m_bBunkerSquad) then
 		
 		-- Try to occupy a close bunker	
-		if (cpu_manager:OccupyBunker(self.squad_ai, 35)) then
+		if (cpu_manager:OccupyBunker(self.squad_ai, 20)) then
 			self.m_iMoveDelay = g_iGMT
 			self.m_iCoverDelay = g_iGMT
 			return true
 		end
 	end
-        local iRangeTemp = 60
-        if bDanceflag==nil then
-              bDanceflag=false
-              iRangeTemp = 20
-        end
-
-	-- Check for a close transporter
-    local vSquadPos = self.m_vCurrentPosition
-	local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable, iRangeTemp)
-	if (oTransporterTactic ~= nil) and self.squad_ai:IsUnderAttack() then
-		
-			-- Try to enter transporter
-			oTransporterTactic:LoadSquadDisengage(self.squad_ai, self:GetUnitStrength(), bDanceflag)
-			self.m_iMoveDelay = g_iGMT - 4
-			return true
+	local iRangeTemp = 60
+	if (bDanceflag == nil) then
+		bDanceflag = false
+		iRangeTemp = 20
 	end
 
-	-- Call basic move to disengage method
-	return Tactic.MoveToDisengage(self)
+	-- Check for a close transporter
+	local vSquadPos = self.m_vCurrentPosition
+	local oTransporterTactic = cpu_manager:GetTransporterInRange(vSquadPos, self.m_iTransportable, iRangeTemp)
+	if (oTransporterTactic ~= nil) and self.squad_ai:IsUnderAttack() then
+		oTransporterTactic:LoadSquadDisengage(self.squad_ai, self:GetUnitStrength(), bDanceflag)
+		self.m_iMoveDelay = g_iGMT - 4
+		return true
+	end
+
+	self.m_bDanceDisengage = (bDanceflag == true)
+	local bResult = Tactic.MoveToDisengage(self)
+	self.m_bDanceDisengage = false
+	return bResult
 end
 
 --avoid being beaten by close combat troops
 function InfantryTactic:CheckForDance()
   
+	if (cpu_manager.m_bOverwhelmActive and not self.squad_ai:IsEngineer()) then
+		return false
+	end
+	if (self:ShouldStayInFight()) then
+		return false
+	end
+
 	local bRanged = self.squad_ai:IsRanged()
 	local bEnemyCommander = false
 
@@ -1006,13 +1413,21 @@ end
 -- Avoid being killed in firefight against superior enemy
 function InfantryTactic:CheckForDeath(bCheck)
 
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	-- Winning melee fight: allow dying rather than jump-flee / peel
+	if (self:ShouldStayInFight()) then
+		return false
+	end
+
 	local fHealth = self.squad_ai:GetHealthPercentage()
 	local vSquadPos = self.m_vCurrentPosition
-        local iMaxRange = cpu_manager:GetMaxRange(self.squad_ai:GetSquadName())
-        local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, iMaxRange + 35 , true)
+    local iMaxRange = cpu_manager:GetMaxRange(self.squad_ai:GetSquadName())
+    local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vSquadPos, iMaxRange + 35 , true)
 
-	-- Commanders or ranged squads and not at home base
-	local bValidSquad = (self:IsCommander() or self.squad_ai:IsRanged() or self.squad_ai:CanJump())
+	-- Commanders / ranged only — jump melee used to Always AvoidDeath then jump out after leaping in
+	local bValidSquad = (self:IsCommander() or self.squad_ai:IsRanged())
 	local bCheckAvoidDeath = (bValidSquad and self.squad_ai:IsUnderAttack() and not self.squad_ai:IsCapturing() and
 				not self.squad_ai:IsBroken() and distance_sqr(vSquadPos, cpu_manager.start_pos) > sqr(50))
 	
@@ -1037,9 +1452,9 @@ function InfantryTactic:CheckForDeath(bCheck)
 	if (bIsBuilding) then
 		fHealthThresh = 0.2
 	elseif (self:IsCommander() or self.squad_ai:GetMaxTroopers() == 1) then
-               if iAlliedStrength==0 then
-                  iAlliedStrength=1
-               end
+        if iAlliedStrength==0 then
+           iAlliedStrength=1
+        end
 		if (bCheck) then
 			fHealthThresh = 0.4*(vPosThreat/iAlliedStrength)
 		else
@@ -1048,7 +1463,7 @@ function InfantryTactic:CheckForDeath(bCheck)
 	else 
 		local iSquadSize = self.squad_ai:GetNumTroopers()
 		local iSquadMax = self.squad_ai:GetMaxTroopers()
-		fHealthThresh = 0.4*(vPosThreat/iAlliedStrength)*(iSquadSize/ iSquadMax + 0.1)
+		fHealthThresh = math.max(0.4*(vPosThreat/iAlliedStrength)*(iSquadSize/ iSquadMax + 0.1),(1.0 - (iSquadSize / iSquadMax))*(vPosThreat/iAlliedStrength))
 		--(1.0 - (iSquadSize/ iSquadMax))*(vPosThreat/iAlliedStrength)
 		
 	end
@@ -1090,13 +1505,13 @@ function InfantryTactic:CheckForBroken()
 	local state_func, state_name = self:GetSubState()
 	if (state_func ~= self.BrokenMorale and self:IsAffectedByMorale()) then
 		 
+		 self.safe_point = self:GetHomeRetreatPos()
 		 if not self:MoveToDisengage() then
 			self.tolerance = self.tolerance_default
-			self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )	
+			cpu_manager:DoMove(self.squad_ai, self.safe_point, false, "Broken retreat")
 		 end
 		 
 		 Tactic.SetSubState( self, self.BrokenMorale, "Broken Morale" )
-		 self.squad_ai:DoSetStance( SquadAI.STANCE_StandGround )
 		 
 		 self.stateID = Tactic.StateID.IsBroken
 		 self.m_eSubStateID = self.stateID
@@ -1136,6 +1551,41 @@ end
 
 function InfantryTactic:Update()
 
+	if (cpu_manager.m_bOverwhelmActive and not self.squad_ai:IsEngineer()) then
+		if (self.stateID == Tactic.StateID.IsBroken or self.stateID == Tactic.StateID.AvoidDeath) then
+			self.stateID = Tactic.StateID.NoState
+			self.m_eSubStateID = Tactic.StateID.NoState
+		end
+		local state_func = self:GetSubState()
+		if (state_func == self.BrokenMorale or state_func == self.AvoidDeath) then
+			Tactic.SetState(self, self:GetState())
+			self.stateID = Tactic.StateID.NoState
+			self.m_eSubStateID = Tactic.StateID.NoState
+		end
+	end
+
+	if (self:IsAffectedByMorale() and self.squad_ai:IsBroken() and not self:UrgentCapturing()) then
+		if (self.squad_ai:CanJump()) then
+			self.tolerance_default = self.squad_ai:GetJumpDistance()
+		else
+			self.tolerance_default = 100
+		end
+
+		local state_func = self:GetSubState()
+		if (state_func ~= self.BrokenMorale) then
+			self.safe_point = self:GetHomeRetreatPos()
+			Tactic.SetSubState(self, self.BrokenMorale, "Broken Morale")
+			self.stateID = Tactic.StateID.IsBroken
+			self.m_eSubStateID = self.stateID
+		end
+
+		if (not Tactic.Update(self)) then
+			return false
+		end
+		self:Reinforce()
+		return true
+	end
+
 	-- State machine
 	if not Tactic.Update( self ) then
 		return false
@@ -1151,13 +1601,29 @@ function InfantryTactic:Update()
         self.time_life = self.time_life + 1
 
 
-	-- Set wait for threat flag
+	-- Wait-for-threat: refresh ~1s (harass flag; not every infantry every tick)
 	if (g_iGMT < DefendChokePointPlan.HarassingTime * 60) then
-
-		-- Check for close enemy units and buildings
-		local vSquadPos = self.m_vCurrentPosition
-		self.bWaitForThreat = (cpu_manager.cpu_player:FindFirstEnemy(vSquadPos, 70, 1) == nil and
-							   cpu_manager.cpu_player:FindFirstBaseEnemy(vSquadPos, 70, 1) == nil)
+		if (g_iGMT >= self.m_iLastWaitThreatCheck + 1.0) then
+			self.m_iLastWaitThreatCheck = g_iGMT
+			local vSquadPos = self.m_vCurrentPosition
+			local iRangeSqr = sqr(70)
+			local bThreatNear = false
+			for iLoop1 in cpu_manager.m_aEnemyUnits do
+				if (distance_sqr(vSquadPos, cpu_manager.m_aEnemyUnits[iLoop1][1]) < iRangeSqr) then
+					bThreatNear = true
+					break
+				end
+			end
+			if (not bThreatNear) then
+				for iLoop1 in cpu_manager.m_aEnemyTurrets do
+					if (distance_sqr(vSquadPos, cpu_manager.m_aEnemyTurrets[iLoop1][1]) < iRangeSqr) then
+						bThreatNear = true
+						break
+					end
+				end
+			end
+			self.bWaitForThreat = (not bThreatNear)
+		end
 	else
 		self.bWaitForThreat = false
 	end
@@ -1178,8 +1644,9 @@ function InfantryTactic:Update()
 	-- If not already in substate
 	if (self.stateID == Tactic.StateID.NoState) then
 	   
+		local bAllowEmergencyChecks = (not cpu_manager.m_bOverwhelmActive or self.squad_ai:IsEngineer())
 		-- Check dance mode
-		if (CpuManager.AISettings.iDancing == 2) then
+		if (bAllowEmergencyChecks and CpuManager.AISettings.iDancing == 2) then
 		 	self:CheckForDeath(false)
 			if (self.stateID == Tactic.StateID.NoState) then
 				self:CheckForDance()
@@ -1187,7 +1654,7 @@ function InfantryTactic:Update()
 					self:CheckForStealthTroops()
 				end
 			end
-		elseif (CpuManager.AISettings.iDancing == 1 and g_iGMT > self.m_iDancing + 10) then
+		elseif (bAllowEmergencyChecks and CpuManager.AISettings.iDancing == 1 and g_iGMT > self.m_iDancing + 10) then
 			self:CheckForDeath(false)
 			if (self.stateID == Tactic.StateID.NoState) then
 				self:CheckForDance()
@@ -1198,7 +1665,7 @@ function InfantryTactic:Update()
 		end
 	end
 	
-	if (cpu_manager.assassinate and self.stateID == Tactic.StateID.NoState) then
+	if (cpu_manager.assassinate and self.stateID == Tactic.StateID.NoState and not cpu_manager.m_bOverwhelmActive) then
 	
 		for i in self.commander do
 		
@@ -1216,7 +1683,14 @@ function InfantryTactic:Update()
 	if (self.squad_ai:IsAttached()) then
 		self:CheckForDetach()
 	end
-        self:FocusEnemy()
+
+	if (self:IsCapturePlanMove() and not self.squad_ai:IsLocked() and not self.squad_ai:IsCapturing()) then
+		self:SetCapturePlanMove(false)
+	end
+
+	if (not self:IsCapturePlanMove() and not self:IsCaptureGuardMove()) then
+		self:FocusEnemy()
+	end
 
 --        if not self:FocusEnemy() then
 --	-- Special moves
@@ -1263,7 +1737,27 @@ end
 
 --runs away when morale is broken  by default
 function InfantryTactic:IsAffectedByMorale()
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	if (self:ShouldStayInFight()) then
+		return false
+	end
 	return true
+end
+
+function InfantryTactic:ShouldRetreatToBase()
+	if (self:ShouldStayInFight()) then
+		return false
+	end
+	return Tactic.ShouldRetreatToBase(self)
+end
+
+function InfantryTactic:ShouldRetreatAllTheWayHome()
+	if (self:ShouldStayInFight()) then
+		return false
+	end
+	return Tactic.ShouldRetreatAllTheWayHome(self)
 end
 
 function InfantryTactic:IsCommander()

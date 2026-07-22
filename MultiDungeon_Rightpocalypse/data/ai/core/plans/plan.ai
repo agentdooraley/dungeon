@@ -2,7 +2,6 @@
 -- File: 'plan.ai'
 -- Edited by Thudmeizer @ 06.03.2005
 -- Edited by LarkinVB   @ 15.08.2005
--- Edited by Aliaska_RuS
 
 --? @module AI
 --? @group Plan
@@ -142,11 +141,9 @@ end
 --? @args Resource resource
 --? @result void
 function Plan:LockResource( resource, designer )
-        if resource ~= nil and resource:IsLocked() then
-           return
-        end
---	dbAssert(resource ~= nil)
---	dbAssert( not resource:IsLocked() )
+
+	dbAssert(resource ~= nil)
+	dbAssert( not resource:IsLocked() )
 	
 	if designer ~= nil then
 		resource:DesignerLock()
@@ -252,9 +249,6 @@ end
 --? @args Resource resource
 --? @result void
 function Plan:UnlockResource( resource )
-        if resource ~= nil and not resource:IsLocked() then
-               return
-        end
 	dbAssert( resource ~= nil )
 	local num_items = table.getn( self.locked_resources )
 	for i = num_items, 1, -1 do

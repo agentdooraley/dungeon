@@ -3,7 +3,7 @@
 -- Edited by LarkinVB   @ 10.09.2005
 -- Edited by Arkhan		@ 31.01.2006
 -- Edited by Aliaska_RuS
-
+-- Edited by [DAG05]Simon
 ----
 
 
@@ -36,11 +36,16 @@ function VehicleTactic:__init( squad_ai ) super( squad_ai )
 	self.m_iLoadedTroopStrength = 0
 	self.m_iUnloadTries = 0
 	self.m_fDisengage = false
-        self.m_fDisengageDance = false
+    self.m_fDisengageDance = false
 
-        self.m_vTargetTransport = Vector3f(0, 0, 0)
+    self.m_vTargetTransport = Vector3f(0, 0, 0)
 
 	self.m_bNeedRepair = false
+	self.m_iArtilleryMinRange = nil
+	self.m_iArtilleryMaxRange = nil
+	self.m_bArtilleryHoldAttackMove = true
+	self.m_iLastArtilleryMove = 0
+	self.m_iLastArtilleryHold = 0
 end
 
 function VehicleTactic:GetUnitStrength()
@@ -61,8 +66,39 @@ function VehicleTactic:IsTransportVehicle()
 end
 
 function VehicleTactic:ReadyToTransport()
+	self:SyncTransportCargo()
 	return (self.m_iUsedTransportSlots < self.m_iTransportSlots and
 			self.squad_ai:GetHealthPercentage() > 0.3 and not self.m_bNeedRepair)
+end
+
+function VehicleTactic:SyncTransportCargo()
+	if (self.m_iTransportVehicle <= 0) then
+		return
+	end
+	if (self.squad_ai:CanUnload()) then
+		if (self.m_iUsedTransportSlots < 1) then
+			self.m_iUsedTransportSlots = 1
+		end
+	elseif (self.m_iUsedTransportSlots > 0) then
+		self.m_iUsedTransportSlots = 0
+		self.m_iLoadedTroopStrength = 0
+		self.m_fDisengage = false
+		self.m_fDisengageDance = false
+		self.m_vTargetTransport = Vector3f(0, 0, 0)
+	end
+end
+
+function VehicleTactic:HasTransportCargo()
+	self:SyncTransportCargo()
+	return (self.m_iUsedTransportSlots > 0 or self.squad_ai:CanUnload())
+end
+
+function VehicleTactic:PrepareTransportMove()
+	self:SyncTransportCargo()
+	if ((self.m_vTargetTransport.x ~= 0 or self.m_vTargetTransport.z ~= 0) and self.m_iUsedTransportSlots > 0) then
+		self:SetTarget(self.m_vTargetTransport, Tactic.Variant.Vector)
+		self.m_vTargetTransport = Vector3f(0, 0, 0)
+	end
 end
 
 function VehicleTactic:LoadSquad(oSquad, iSquadStrength, vTargetemp)
@@ -88,11 +124,11 @@ function VehicleTactic:LoadSquadDisengage(oSquad, iSquadStrength, bDanceFlag)
 	self.m_iLoadedTroopStrength = self.m_iLoadedTroopStrength + iSquadStrength
 	self.m_iUsedTransportSlots = self.m_iUsedTransportSlots + 1
 	self.m_iUnloadTries = 3
-        self.m_fDisengage = true
-        if bDanceFlag == false then
-	self.m_fDisengage = false
-        end
-        self.m_fDisengageDance = bDanceFlag
+    self.m_fDisengage = true
+    if bDanceFlag == false then
+		self.m_fDisengage = false
+    end
+    self.m_fDisengageDance = bDanceFlag
 
 	-- Load squad
 	cpu_manager:DoMove(self.squad_ai, oSquad:GetPosition(), false, "Load troops and RUN!!!")
@@ -112,7 +148,8 @@ function VehicleTactic:UnloadTroops(iDistance)
 	
 	-- Check if we should unload the troops
 	if (self.squad_ai:WasRecentlyHurt() or self.squad_ai:GetHealthPercentage() < 0.3 or self.m_bNeedRepair or
-		self.squad_ai:IsInCombat() or (self.squad_ai:IsLocked() and iDistance < sqr(35)) or iDistance < sqr(15)) or (not self:IsMoving() and (not self.m_fDisengage or self.m_fDisengageDance)) then
+		self.squad_ai:IsInCombat() or (self.squad_ai:IsLocked() and iDistance < sqr(35)) or iDistance < sqr(15)) or
+		(not self:IsMoving() and (not self.m_fDisengage or self.m_fDisengageDance) and iDistance < sqr(35)) then
 	
 		-- Unload all troops
 		self.squad_ai:DoStop()
@@ -120,94 +157,90 @@ function VehicleTactic:UnloadTroops(iDistance)
 		self.m_iUsedTransportSlots = 0
 		self.m_iLoadedTroopStrength = 0
 		self.m_iUnloadTries = self.m_iUnloadTries - 1
-                self.m_iMoveDelay = g_iGMT
+        self.m_iMoveDelay = g_iGMT
 		return true
 	end
 	return false
 end
 
 function VehicleTactic:HarrasingAttack()
-      if CpuManager.AISettings.bHarassing then
-	local aCapturers = cpu_manager:GetAvailableCapturers()
-       if ((g_iGMT < DefendChokePointPlan.HarassingTime*60 and g_iGMT > 30 and self.time_life > 1) or (self.time_life > 1 and self.time_life < 60 and g_iGMT < 300 and g_iGMT > 30)) and not self.squad_ai:IsEngineer() and self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai)>180 then
-	-- Find closest enemy
-	self.vHarassingTargetAttack = nil
-	local oEnemy = cpu_manager:FindClosestEnemyPlayer()
-	if (oEnemy == nil) then
-		self.vHarassingTargetAttack = nil
+    if (self:IsCaptureGuardMove() or not self:CanCaptureGuard()) then
 		return
 	end
-
-	-- Check if old target is still valid
-	if (self.vHarassingTargetAttack ~= nil) then
-	            
-		-- Check for buildings
-		if (cpu_manager.cpu_player:FindFirstBaseEnemy(self.vHarassingTargetAttack, 35, 1) == nil) then
-			return
-		end
-
-		-- Check for strats to disown
-		local oStrategicPoint = resource_manager:FindFirstStrategicPoint(self.vHarassingTargetAttack, 40)
-		if (oStrategicPoint ~= nil) then
-		
-			-- Check owner
-			local iOwnerID = oStrategicPoint:Owner()
-			if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
+    if CpuManager.AISettings.bHarassing then
+	local aCapturers = cpu_manager:GetAvailableCapturers()
+		if ((g_iGMT < DefendChokePointPlan.HarassingTime*60 and g_iGMT > 30 and self.time_life > 1) or (self.time_life > 1 and self.time_life < 60 and g_iGMT < 300 and g_iGMT > 30)) and not self.squad_ai:IsEngineer() and self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai)>180 and not self:IsDefender() then
+	-- Find closest enemy
+			local oEnemy = cpu_manager:FindClosestEnemyPlayer()
+			if (oEnemy == nil) then
 				return
 			end
-		end
-	end
 
-	-- Check for closest enemy building and closest enemy engineer on building
-	local iMaxAttackDistance = 250
-	local oEnemyBuilding = cpu_manager.cpu_player:FindFirstBaseEnemy(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance, 1)
-	if (oEnemyBuilding ~= nil) then
-        local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oEnemyBuilding:GetPosition(), 35, 1)
-              if (oUnit ~= nil and oUnit:IsEngineer()) then
-                self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-              elseif (oUnit ~= nil) then
-                self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-              else
-		self.vHarassingTarget = Vector3f(oEnemyBuilding:GetPosition())
-		iMaxAttackDistance = cpu_manager:GetShortestPathingDistance(cpu_manager.cpu_player:GetStartingPosition(), self.vHarassingTarget, true)
-              end
-	end
+			local vHarassingTarget = nil
+
+			-- Check for closest enemy building and closest enemy engineer on building
+			local iMaxAttackDistance = 250
+			local oEnemyBuilding = cpu_manager.cpu_player:FindFirstBaseEnemy(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance, 1)
+			if (oEnemyBuilding ~= nil) then
+				local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oEnemyBuilding:GetPosition(), 35, 1)
+				if (oUnit ~= nil and oUnit:IsEngineer()) then
+				  vHarassingTarget = Vector3f(oUnit:GetPosition())
+				elseif (oUnit ~= nil) then
+				  vHarassingTarget = Vector3f(oUnit:GetPosition())
+				else
+				vHarassingTarget = Vector3f(oEnemyBuilding:GetPosition())
+				iMaxAttackDistance = cpu_manager:GetShortestPathingDistance(cpu_manager.cpu_player:GetStartingPosition(), vHarassingTarget, true)
+				end
+			end
         
-	-- Check for strats to disown
-	local oStrategicPoint = resource_manager:FindFirstStrategicPoint(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance)
-	if (oStrategicPoint ~= nil) then
-	
-		-- Check owner
-		local iOwnerID = oStrategicPoint:Owner()
-		if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
-                  local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oStrategicPoint:GetPosition(), 35, 1)
-                  if (oUnit ~= nil and oUnit:IsEngineer()) then
-                        self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-                  elseif (oUnit ~= nil) then
-                        self.vHarassingTarget = Vector3f(oUnit:GetPosition())
-                  else
-			self.vHarassingTarget = Vector3f(oStrategicPoint:GetPosition())
-                  end
+			-- Check for strats to disown
+			local oStrategicPoint = resource_manager:FindFirstStrategicPoint(cpu_manager.cpu_player:GetStartingPosition(), iMaxAttackDistance)
+			if (oStrategicPoint ~= nil) then
+			
+				-- Check owner
+				local iOwnerID = oStrategicPoint:Owner()
+				if (iOwnerID ~= 0 and not cpu_manager:IsFriendly(iOwnerID)) then
+					local oUnit = cpu_manager.cpu_player:FindFirstInfantryEnemy(oStrategicPoint:GetPosition(), 35, 1)
+					if (oUnit ~= nil and oUnit:IsEngineer()) then
+					  vHarassingTarget = Vector3f(oUnit:GetPosition())
+					elseif (oUnit ~= nil) then
+					  vHarassingTarget = Vector3f(oUnit:GetPosition())
+					else
+					vHarassingTarget = Vector3f(oStrategicPoint:GetPosition())
+					end
+				end
+			end
+
+			if (vHarassingTarget ~= nil and self:CanSafelyAdvanceTo(vHarassingTarget, 50)) then
+				Tactic.SetState(self, Tactic.States.Attack)
+				cpu_manager:DoMove(self.squad_ai, vHarassingTarget, true, "AttackState")
+			end
+
 		end
 	end
-
-        if self.vHarassingTargetAttack ~= nil then
-        self.vHarassingTargetAttack = self.vHarassingTargetAttack
-				cpu_manager:DoMove(self.squad_ai, self.vHarassingTargetAttack, true, "AttackState")
-        else 
-        self.vHarassingTargetAttack = oEnemy:GetStartingPosition()
-	Tactic.SetState(self, Tactic.States.Attack)
-				cpu_manager:DoMove(self.squad_ai, self.vHarassingTargetAttack, true, "AttackState")
-        end
-
-       end
-      end
 end
 
 function VehicleTactic:BeginHoldState()
 
 	-- Check if we're desperatly capturing
 	if (self:UrgentCapturing()) then
+		return
+	end
+
+	if (self:IsCaptureGuardMove() and not self:IsCaptureGuardAttack()) then
+		if (self.squad_ai:IsCapturing()) then
+			return
+		end
+		local vSquadPos = self.squad_ai:GetPosition()
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		if (iDistance > sqr(30) and g_iGMT >= self.m_iMoveDelay + 6) then
+			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), false, "CaptureGuardEscort")
+			self.m_iMoveDelay = g_iGMT
+		elseif (iDistance <= sqr(30)) then
+			self.squad_ai:DoStop()
+			self.m_iMoveDelay = g_iGMT
+		end
+		Tactic.SetSubState(self, self.HoldState, "Holding")
 		return
 	end
 	
@@ -223,6 +256,14 @@ function VehicleTactic:BeginHoldState()
 	-- Check if we're busy
 	if (self:IsInSubState()) then
 		return
+	end
+
+	if (self.m_iArtilleryMinRange ~= nil and self.m_iArtilleryMinRange > 0) then
+		if (self:MaintainArtilleryRange(self.m_iArtilleryMinRange)) then
+			self.m_iMoveDelay = g_iGMT
+			Tactic.SetSubState(self, self.HoldState, "Holding")
+			return
+		end
 	end
 	
 	-- Check if we're doing a gather move at the moment
@@ -254,7 +295,7 @@ function VehicleTactic:BeginHoldState()
            return
         end
 	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)	
-	if (g_iGMT < self.m_iMoveDelay + 5 and self:IsMoving() and (iDistance > sqr(60) or self.squad_ai:IsInStateAttackMove())) then
+	if (g_iGMT < self.m_iMoveDelay + 5 and self:IsMoving() and (iDistance > sqr(30) or self.squad_ai:IsInStateAttackMove())) then
 		Tactic.SetSubState( self, self.HoldState, "Holding" )
 		return
 	end
@@ -342,6 +383,10 @@ end
 
 function VehicleTactic:HoldState()
 
+	if (self:IsCaptureGuardMove()) then
+		return
+	end
+
 	-- Try to jump
 	if (not self.squad_ai:IsCapturing() and self:JumpAttack()) then
 		self.m_iMoveDelay = 0
@@ -355,13 +400,20 @@ function VehicleTactic:HoldState()
 		return
 	end
 	
-	-- If I'm idle, restart
+	-- If idle, restart — not while shooting/in combat (re-Begin → DoMove stutter)
+	if (self.squad_ai:IsAttacking() or self.squad_ai:IsInCombat()) then
+		return
+	end
 	if (self.squad_ai:IsIdle() or not self:IsMoving() or self.squad_ai:WasRecentlyHurt()) then
 		Tactic.SetState(self, self:GetState())
 	end
 end
 
 function VehicleTactic:BeginRetreatState()
+
+	if (self:IsOverwhelmSpamMode() and not self.squad_ai:IsLocked()) then
+		return
+	end
 
 	-- Check if we're desperatly capturing
 	if (self:UrgentCapturing()) then
@@ -412,8 +464,8 @@ function VehicleTactic:BeginRetreatState()
            return
         end
 	-- Try to unload troops
-	local vSquadPos = self.squad_ai:GetPosition()
-	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		local vSquadPos = self.squad_ai:GetPosition()
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
 	-- Try to unload troops
         if self.m_fDisengage and self.m_iUsedTransportSlots>0 and self.squad_ai:CanUnload() then
            if not self:MoveToDisengage() then
@@ -425,7 +477,7 @@ function VehicleTactic:BeginRetreatState()
         else
            self.squad_ai:DoMove(self:GetTarget())
         end
-           return
+        return
 	elseif (self:UnloadTroops(iDistance)) then
 		self.m_iMoveDelay = g_iGMT - 1
 		Tactic.SetSubState(self, self.HoldState, "Holding")
@@ -476,6 +528,20 @@ function VehicleTactic:BeginAttackState()
 	if (self:UrgentCapturing()) then
 		return
 	end
+
+	if (self:IsCaptureGuardMove()) then
+		if (self.squad_ai:IsCapturing()) then
+			return
+		end
+		local vSquadPos = self.squad_ai:GetPosition()
+		local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+		if (iDistance > sqr(25) and g_iGMT >= self.m_iMoveDelay + 6) then
+			cpu_manager:DoMove(self.squad_ai, self:GetTarget(), self:IsCaptureGuardAttack(), "CaptureGuardAttack")
+			self.m_iMoveDelay = g_iGMT
+		end
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
 	
 	-- Check if our capturing was interrupted
 	if (self.squad_ai:IsCapturing()) then
@@ -490,6 +556,14 @@ function VehicleTactic:BeginAttackState()
 	-- Check if we're busy
 	if (self:IsInSubState()) then
 		return
+	end
+
+	if (self.m_iArtilleryMinRange ~= nil and self.m_iArtilleryMinRange > 0) then
+		if (self:MaintainArtilleryRange(self.m_iArtilleryMinRange)) then
+			self.m_iMoveDelay = g_iGMT
+			Tactic.SetSubState(self, self.AttackingState, "Attacking")
+			return
+		end
 	end
 
 	
@@ -535,17 +609,17 @@ function VehicleTactic:BeginAttackState()
 	local vSquadPos = self.squad_ai:GetPosition()
 	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
 	-- Try to unload troops
-        if self.m_fDisengage and self.m_iUsedTransportSlots>0 and self.squad_ai:CanUnload() then
-           if not self:MoveToDisengage() then
-              self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )
-              self:SetTarget(self.safe_point,Tactic.Variant.Vector)
-           end
-        if distance_sqr(self:GetTarget(), vSquadPos) < sqr(35) then
-           self.m_fDisengage=false
-        else
-           self.squad_ai:DoMove(self:GetTarget())
-        end
-           return
+    if self.m_fDisengage and self.m_iUsedTransportSlots>0 and self.squad_ai:CanUnload() then
+       if not self:MoveToDisengage() then
+          self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )
+          self:SetTarget(self.safe_point,Tactic.Variant.Vector)
+       end
+    if distance_sqr(self:GetTarget(), vSquadPos) < sqr(35) then
+       self.m_fDisengage=false
+    else
+       self.squad_ai:DoMove(self:GetTarget())
+    end
+    return
 	elseif (self:UnloadTroops(iDistance)) then
 		self.m_iMoveDelay = g_iGMT - 1
 		Tactic.SetSubState(self, self.AttackingState, "Attacking")
@@ -627,7 +701,10 @@ function VehicleTactic:AttackingState()
 		return
 	end
 
-	-- If I'm idle, restart
+	-- If idle, restart — not while already engaged
+	if (self.squad_ai:IsAttacking() or self.squad_ai:IsInCombat()) then
+		return
+	end
 	if (self.squad_ai:IsIdle() or not self:IsMoving() or self.squad_ai:WasRecentlyHurt()) then
 		Tactic.SetState( self, self:GetState() )
 	end
@@ -640,22 +717,264 @@ end
 --jump capable vehicles will retreat once if hurt badly
 function VehicleTactic:Retreat()
 
+	if (self:IsOverwhelmSpamMode()) then
+		return
+	end
+
    --retreat from battle if badly hurt and while not already moving 
-   if self.squad_ai:IsRanged() and self.squad_ai:CanJump() and 
-	  self.squad_ai:GetHealthPercentage() < self.hurt_level and
-	  self.squad_ai:WasRecentlyHurt() and not self.squad_ai:IsInStateMove() then 
-	local engi = function( esquad_ai )
-                     return esquad_ai:IsEngineer() and distance(self.squad_ai:GetPosition(),esquad_ai:GetPosition())<20
-        end
-	 if not cpu_manager:FindFirstFriendly(engi) then
-	  if not self:MoveToDisengage() then
-	  	
-		 self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )
-	  end
-	 end
-	  -- retreat twice
-	  self.hurt_level = 0.3	
-   end
+    if self.squad_ai:IsRanged() and self.squad_ai:CanJump() and 
+		self.squad_ai:GetHealthPercentage() < self.hurt_level and
+		self.squad_ai:WasRecentlyHurt() and not self.squad_ai:IsInStateMove() then 
+		local engi = function( esquad_ai )
+			return esquad_ai:IsEngineer() and distance(self.squad_ai:GetPosition(),esquad_ai:GetPosition())<20
+		end
+		if not cpu_manager:FindFirstFriendly(engi) then
+			if not self:MoveToDisengage() then
+				self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )
+			end
+		end
+		  -- retreat twice
+		self.hurt_level = 0.3	
+    end
+end
+
+function VehicleTactic:FindArtilleryRetreatPoint( vSquadPos )
+
+	local vBestTurret = nil
+	local iBestTurretDist = 999999999
+	local vHQ = nil
+	local iHQDist = 999999999
+
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:IsConstructionDone()) then
+			local vBuildPos = oBuilding:GetPosition()
+			local iDistSqr = distance_sqr(vSquadPos, vBuildPos)
+			if (cpu_manager:IsHQ(oBuilding:GetBlueprintID())) then
+				if (iDistSqr < iHQDist) then
+					iHQDist = iDistSqr
+					vHQ = vBuildPos
+				end
+			elseif (oBuilding:HasGuns()) then
+				if (iDistSqr < iBestTurretDist) then
+					iBestTurretDist = iDistSqr
+					vBestTurret = vBuildPos
+				end
+			end
+		end
+	end
+
+	if (vBestTurret ~= nil) then
+		return Vector3f(vBestTurret)
+	end
+	if (vHQ ~= nil) then
+		return Vector3f(vHQ)
+	end
+	return Vector3f(cpu_manager.start_pos)
+end
+
+function VehicleTactic:IsNearArtilleryAnchor( vSquadPos, iRadius )
+
+	if (iRadius == nil) then
+		iRadius = 20
+	end
+	local iRadiusSqr = iRadius * iRadius
+
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:IsConstructionDone()) then
+			if (cpu_manager:IsHQ(oBuilding:GetBlueprintID()) or oBuilding:HasGuns()) then
+				if (distance_sqr(vSquadPos, oBuilding:GetPosition()) <= iRadiusSqr) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+function VehicleTactic:HasArtilleryThreat( vPos, iRange )
+
+	if (cpu_manager.terrain_analyzer:HasThreat(vPos, iRange)) then
+		return true
+	end
+	if (Ability.Filters.CloseEnemy(vPos, iRange, 1) ~= nil) then
+		return true
+	end
+	if (Ability.Filters.CloseCommanderEnemy(vPos, iRange, 1) ~= nil) then
+		return true
+	end
+	if (Ability.Filters.CloseVehicleEnemy(vPos, iRange, 1) ~= nil) then
+		return true
+	end
+	if (Ability.Filters.CloseInfantryEnemy(vPos, iRange, 1) ~= nil) then
+		return true
+	end
+	if (Ability.Filters.CloseInfiltratedEnemy(vPos, iRange, 1) ~= nil) then
+		return true
+	end
+	return false
+end
+
+function VehicleTactic:GetClosestArtilleryThreat( vPos, iScanRange )
+
+	local oClosest = nil
+	local fClosestDist = 999999999
+
+	local function ConsiderUnit( oUnit )
+
+		if (oUnit ~= nil and oUnit:IsValid()) then
+			local fDist = distance(vPos, oUnit:GetPosition())
+			if (fDist <= iScanRange and fDist < fClosestDist) then
+				fClosestDist = fDist
+				oClosest = oUnit
+			end
+		end
+	end
+
+	ConsiderUnit(cpu_manager.cpu_player:FindFirstEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(cpu_manager.cpu_player:FindFirstBaseEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(Ability.Filters.CloseEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(Ability.Filters.CloseCommanderEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(Ability.Filters.CloseVehicleEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(Ability.Filters.CloseInfantryEnemy(vPos, iScanRange, 1))
+	ConsiderUnit(Ability.Filters.CloseInfiltratedEnemy(vPos, iScanRange, 1))
+
+	if (oClosest ~= nil) then
+		return oClosest, fClosestDist
+	end
+
+	if (self:HasArtilleryThreat(vPos, iScanRange)) then
+		local oFallback = cpu_manager.cpu_player:FindFirstEnemy(vPos, iScanRange + 40, 1)
+		if (oFallback ~= nil) then
+			return oFallback, distance(vPos, oFallback:GetPosition())
+		end
+		return nil, 0
+	end
+
+	return nil, nil
+end
+
+function VehicleTactic:ArtilleryHoldFire( vPos )
+
+	if (g_iGMT < self.m_iLastArtilleryHold + 4) then
+		return true
+	end
+	if (self.m_bArtilleryHoldAttackMove ~= false) then
+		cpu_manager:DoMove(self.squad_ai, Vector3f(vPos), true, "ArtilleryHold")
+	else
+		if (self.squad_ai:IsInStateAttackMove() or self.squad_ai:IsInStateMove()) then
+			cpu_manager:DoMove(self.squad_ai, Vector3f(vPos), false, "ArtilleryHold")
+		end
+		self.squad_ai:DoSetStance(SquadAI.STANCE_StandGround)
+	end
+	self.m_iLastArtilleryHold = g_iGMT
+	return true
+end
+
+function VehicleTactic:MaintainArtilleryRange( iMinRange )
+
+	if (self:IsOverwhelmSpamMode()) then
+		return false
+	end
+
+	if (iMinRange == nil) then
+		iMinRange = self.m_iArtilleryMinRange
+	end
+	if (iMinRange == nil) then
+		iMinRange = 60
+	end
+
+	local iMaxRange = self.m_iArtilleryMaxRange
+	if (iMaxRange == nil or iMaxRange <= iMinRange) then
+		iMaxRange = iMinRange + 30
+	end
+
+	local vPos = self.squad_ai:GetPosition()
+	local iScanRange = iMaxRange + 30
+	if (iScanRange < iMinRange + 50) then
+		iScanRange = iMinRange + 50
+	end
+	local bThreatNear = self:HasArtilleryThreat(vPos, iMinRange)
+	local oEnemy, fEnemyDist = self:GetClosestArtilleryThreat(vPos, iScanRange)
+	local bNearAnchor = self:IsNearArtilleryAnchor(vPos, 20)
+
+	if (oEnemy == nil and not bThreatNear) then
+		return false
+	end
+
+	if (oEnemy == nil and bThreatNear) then
+		fEnemyDist = 0
+	end
+
+	if (fEnemyDist > iMaxRange) then
+		return false
+	end
+
+	if (bNearAnchor or (fEnemyDist >= iMinRange and fEnemyDist <= iMaxRange)) then
+		self:ArtilleryHoldFire(vPos)
+		return true
+	end
+
+	if (g_iGMT < self.m_iLastArtilleryMove + 5) then
+		if (self.squad_ai:IsInStateMove()) then
+			return true
+		end
+	end
+
+	local vRetreatAnchor = self:FindArtilleryRetreatPoint(vPos)
+	self.safe_point = Vector3f(vRetreatAnchor)
+
+	local vMove = Vector3f(vRetreatAnchor)
+	if (oEnemy ~= nil) then
+		local vEnemyPos = oEnemy:GetPosition()
+		local fBackDist = iMinRange - fEnemyDist + 20
+		if (fBackDist < 30) then
+			fBackDist = 30
+		end
+		if (fBackDist > 55) then
+			fBackDist = 55
+		end
+
+		local fAwayX = vPos.x - vEnemyPos.x
+		local fAwayZ = vPos.z - vEnemyPos.z
+		local fAwayLen = math.sqrt(fAwayX * fAwayX + fAwayZ * fAwayZ)
+		if (fAwayLen > 1) then
+			vMove = Vector3f(vPos)
+			vMove.x = vPos.x + (fAwayX / fAwayLen) * fBackDist
+			vMove.z = vPos.z + (fAwayZ / fAwayLen) * fBackDist
+		end
+	end
+
+	if (self:IsDisengageRouteClear(vPos, vMove, 24)) then
+		cpu_manager:DoMove(self.squad_ai, vMove, false, "ArtilleryRange")
+		self.m_iLastArtilleryMove = g_iGMT
+		return true
+	end
+
+	if (self:IsDisengageRouteClear(vPos, vRetreatAnchor, 24)) then
+		cpu_manager:DoMove(self.squad_ai, vRetreatAnchor, false, "ArtilleryRetreat")
+		self.m_iLastArtilleryMove = g_iGMT
+		return true
+	end
+
+	if (self:MoveToDisengage()) then
+		self.m_iLastArtilleryMove = g_iGMT
+		return true
+	end
+
+	return false
+end
+
+function VehicleTactic:MoveToDisengage()
+	if (self:IsOverwhelmSpamMode()) then
+		return false
+	end
+	if (self.m_iArtilleryMinRange ~= nil and self.m_iArtilleryMinRange > 0) then
+		if (self:IsNearArtilleryAnchor(self.squad_ai:GetPosition(), 20)) then
+			return false
+		end
+		self.safe_point = self:FindArtilleryRetreatPoint(self.squad_ai:GetPosition())
+	end
+	return Tactic.MoveToDisengage(self)
 end
 
 
@@ -674,6 +993,10 @@ function VehicleTactic:DoDance()
 end
 
 function VehicleTactic:CheckForDance()
+
+	if (self:IsOverwhelmSpamMode()) then
+		return false
+	end
 
    if (self.can_dance and self.squad_ai:IsUnderAttack() and not self.squad_ai:IsBroken()) then
 
@@ -804,11 +1127,30 @@ function VehicleTactic:Reinforce()
 	end
 end
 
+function VehicleTactic:CanCaptureGuard()
+
+	if (not Tactic.CanCaptureGuard(self)) then
+		return false
+	end
+	if (CpuManager.AISettings.bHarassing and g_iGMT < DefendChokePointPlan.HarassingTime * 60 and g_iGMT > 30 and
+		self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai) > 180 and not self:IsDefender()) then
+		return false
+	end
+	return true
+end
+
 function VehicleTactic:Update()
 
 	-- State machine
 	if (not Tactic.Update(self)) then
 		return false
+	end
+
+	self:SyncTransportCargo()
+
+	-- Loaded transport stuck in Idle never reaches BeginAttackState (m_vTargetTransport unused there)
+	if (self.m_iTransportVehicle > 0 and self.squad_ai:CanUnload() and self:GetState() == Tactic.States.Idle) then
+		Tactic.SetState(self, Tactic.States.Attack)
 	end
 
 	-- Try to unload troops
@@ -826,7 +1168,7 @@ function VehicleTactic:Update()
 		return
 	end
       end
-
+--[[
 	-- Check if vehicle can be repaired
 	if (self.squad_ai:CanBeRepaired() and self.squad_ai:GetHealthPercentage() < 0.4 and
 		self.squad_ai:GetNumTroopers() == 1 and	not self.squad_ai:IsReinforcing()) then
@@ -849,7 +1191,7 @@ function VehicleTactic:Update()
 	end
 	
         self.time_life = self.time_life + 1
-
+]]
 	if (self.squad_ai:CanJump()) then
 		self.tolerance_default = self.squad_ai:GetJumpDistance()
 	else
@@ -862,25 +1204,36 @@ function VehicleTactic:Update()
 	
 	self:SyncSubState()
 	
+	if (self.m_iArtilleryMinRange ~= nil and self.m_iArtilleryMinRange > 0) then
+		if (self:MaintainArtilleryRange(self.m_iArtilleryMinRange)) then
+			self:InitAbilities()
+			self:DoAbilities()
+			return true
+		end
+	end
+	
 	-- Check if ranged vehicle under attack wants to retreat a short distance
 	self:Retreat()
 	
 	if (self.stateID == Tactic.StateID.NoState) then
 	
+		local bAllowEmergencyChecks = not self:IsOverwhelmSpamMode()
 		-- Check dance mode
-		if (CpuManager.AISettings.iDancing == 2) then
+		if (bAllowEmergencyChecks and CpuManager.AISettings.iDancing == 2) then
 			self:CheckForDance()
 			if (self.stateID == Tactic.StateID.NoState) then
 				self:CheckForStealthTroops()
 			end
-		elseif (CpuManager.AISettings.iDancing == 1 and g_iGMT > self.m_iDancing + 10) then
+		elseif (bAllowEmergencyChecks and CpuManager.AISettings.iDancing == 1 and g_iGMT > self.m_iDancing + 10) then
 			self:CheckForDance()
 			if (self.stateID == Tactic.StateID.NoState) then
 				self:CheckForStealthTroops()
 			end
 		end
 	end
-	self:FocusEnemy()
+	if (not self:IsCaptureGuardMove()) then
+		self:FocusEnemy()
+	end
 
 	-- Special moves
 --        if not self:FocusEnemy() then
@@ -896,7 +1249,8 @@ function VehicleTactic:Update()
 		self:UpdateStance()
 	end
 
-        self:HarrasingAttack()
+    self:HarrasingAttack()
+
 
 	return true
 end

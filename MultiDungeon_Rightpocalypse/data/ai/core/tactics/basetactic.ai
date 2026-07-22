@@ -1,10 +1,8 @@
 ----------------------------------------
 -- File: 'basetactic.ai'
--- Edited by Arkhan		@ 07.01.2007
--- Edited by Aliaska_RuS
 
 ----
-
+-- Edited by [DAG05]Simon
 
 
 class 'BaseTactic'
@@ -72,12 +70,19 @@ function BaseTactic:__init( base_ai )
 	
 	self.m_bBunker = false
 	self.m_iNextSquadReleaseTime = 0
-
-        self.m_aSquad = nil
-        self.m_iIdleTimeDestroy = 0
-        self.m_bCheckDelete = false
-	self.m_iLifeTime = g_iGMT
+	self.m_iLastVehicleCheck = 0
+    self.m_aSquad = nil
+    self.m_iIdleTimeDestroy = 0
+	self.m_bCheckDelete = false
+	self.update_bunker_time = nil
+	self.m_iNextBunkerCheckTime = 0
+	self.m_iLastFocusEnemy = 0
 	
+	if cpu_manager:IsHQ(self.base_ai:GetBlueprintID()) then
+		self.m_iLifeTime = g_iGMT + 600
+	else
+		self.m_iLifeTime = g_iGMT
+	end
 	self.m_bCanDeepStrikeTroops = false
 	
 	self:SetState( Tactic.States.Idle )
@@ -123,162 +128,546 @@ function BaseTactic:IsBunker()
         return self.m_bBunker
 end
 
-function BaseTactic:Update()
-        if self.m_bCheckDelete == true then
-           return false
-        end
- 	local continue = true 
-	if self:GetState() == Tactic.States.Disabled then
-		continue = false
-	end
-	if continue and self:IsComplete() then
-		continue = false
-	end
-	if continue then
-		self.state_function( self )
-	end
-	if (not continue) then
+BaseTactic.DaemonsAndRelics = {
+	"guard_squad_baneblade",
+	"chaos_squad_daemon_prince",
+	"chaos_squad_bloodthirster",
+	"dark_eldar_squad_dais_of_destruction",
+	"ork_squad_squiggoth",
+	"sisters_squad_living_saint",
+	"space_marine_squad_land_raider",
+	"tau_greater_knarloc_squad",
+	"tau_krootox_squad",
+}
+
+function BaseTactic:IsDaemonRelicSquadName( sSquadName )
+
+	if (sSquadName == nil) then
 		return false
 	end
-        if self.m_aSquad~=nil then
-         if not self.m_aSquad:IsValid() or self.m_aSquad:GetHealthPercentage()<0.2 then
-               self.m_aSquad = nil
-         end
-        end
-        if self.m_aSquad == nil then
-	local bVehicle = (UnitStatsAI.UC_VehicleLow or UnitStatsAI.UC_VehicleMed or UnitStatsAI.UC_VehicleHigh or UnitStatsAI.UC_MonsterMed or UnitStatsAI.UC_MonsterHigh)
-	local functordestroy = function( squad_ai )		 
-	  local oUnitStats = cpu_manager.stats:GetUnitStatsFromBPID(squad_ai:GetSquad():GetID())
-           if oUnitStats == nil then
-              return (squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle and not squad_ai:IsInCombat() and squad_ai:GetHealthPercentage()>0.8 and distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<10 and squad_ai:IsLocked())
-           end
-	  return (((oUnitStats:GetClass()==bVehicle) or (squad_ai:GetTactic():GetType()==Tactic.Types.Vehicle)) and not squad_ai:IsInCombat() and squad_ai:GetHealthPercentage()>0.8 and distance(self.base_ai:GetPosition(),squad_ai:GetPosition())<10)
+
+	for iLoop1 in BaseTactic.DaemonsAndRelics do
+		if (sSquadName == BaseTactic.DaemonsAndRelics[iLoop1]) then
+			return true
+		end
 	end
-        self.m_aSquad = cpu_manager:FindFirstFriendly(functordestroy)
-        else
-          if distance(self.base_ai:GetPosition(),self.m_aSquad:GetPosition())<10 then
-             self.m_iIdleTimeDestroy = self.m_iIdleTimeDestroy + 1
-          else
-             self.m_iIdleTimeDestroy = 0
-             self.m_aSquad = nil
-          end
-        end
---vehicle
-          if self.m_iIdleTimeDestroy > 240 and not cpu_manager:IsListeningPost(self.base_ai:GetBlueprintID()) and self.m_bCheckDelete==false and (not cpu_manager:IsHQ(self.base_ai:GetBlueprintID()) and cpu_manager.player_stats:GetNumBasesByBPID(self.base_ai:GetBlueprintID(), true) >1) then
-           build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
-           self.m_iIdleTimeDestroy = 0
-           self.m_aSquad = nil
-           self.m_bCheckDelete = true
-          end
---noconstruct
-          if ((g_iGMT>self.m_iLifeTime+120 and self.base_ai:GetHealthPercentage()==0.2) or (g_iGMT>self.m_iLifeTime+150 and self.base_ai:GetHealthPercentage()<=0.2) or (g_iGMT>self.m_iLifeTime+250 and self.base_ai:GetHealthPercentage()<=0.6) or (g_iGMT>self.m_iLifeTime+300 and self.base_ai:GetHealthPercentage()<=0.8)) and self.m_bCheckDelete==false and not self.base_ai:IsConstructionDone()  then
-           build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
-           self.m_iLifeTime = g_iGMT + 5
-           self.m_bCheckDelete = true
-          end
---low hp
-          if self.base_ai:GetHealthPercentage()<0.05 and not self.base_ai:IsConstructionDone() and self.m_bCheckDelete==false then
-           build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
-           self.m_bCheckDelete = true
-          end
---        self.base_ai:Set(AI_Squad)
-        if self.m_bCheckDelete==false then
-	self:InitAbilities()
-	self:DoAbilities()
---       if self.base_ai:HasGuns() then
---	self:FocusEnemy()
---        end
---      self:BunkerGoToHQ()
-	self:BunkerCheck()
-        end
+
+	if (string.find( sSquadName, "squiggoth" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "baneblade" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "bloodthirster" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "daemon_prince" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "living_saint" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "knarloc" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "dais_of_destruction" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "krootox" ) ~= nil) then
+		return true
+	end
+
+	return false
+end
+
+-- Squiggoth/daemons use InfantryTactic and often report IsAttacking near buildings
+function BaseTactic:IsBuildingBlockerSquad( squad_ai, bVehicleResources, bRelicResources )
+
+	if (squad_ai == nil or not squad_ai:IsValid() or squad_ai:IsBroken()) then
+		return false
+	end
+
+	if (self:IsDaemonRelicSquadName( squad_ai:GetSquadName() )) then
+		if (not bRelicResources) then
+			return false
+		end
+		return true
+	end
+
+	local oTactic = squad_ai:GetTactic()
+	if (oTactic ~= nil and oTactic:GetType() == Tactic.Types.Vehicle) then
+		if (not bVehicleResources) then
+			return false
+		end
+		return (not squad_ai:IsInCombat() and not squad_ai:IsAttacking())
+	end
+
+	return false
+end
+
+function BaseTactic:CancelBuildingForClearance()
+
+	if (self.base_ai ~= nil and type(self.base_ai.GetEntity) == "function") then
+		local ent = self.base_ai:GetEntity()
+		if (ent ~= nil and type(ent.GetID) == "function" and type(build_manager.CancelBuilding) == "function") then
+			build_manager:CancelBuilding(ent:GetID())
+		end
+	end
+
+	self.m_iLifeTime = g_iGMT + 5
+	self.m_aSquad = nil
+	self.m_bCheckDelete = true
+end
+
+function BaseTactic:GetCompletedGeneratorCount()
+
+	local iCount = 0
+	if (cpu_manager.build_base_strategy == nil) then
+		return iCount
+	end
+
+	local sGenerator = cpu_manager.build_base_strategy:GetBuildingName( "Generator" )
+	if (sGenerator ~= nil) then
+		local iGenID = cpu_manager.stats:GetBuildingID( sGenerator )
+		iCount = iCount + (cpu_manager.player_stats:GetNumBasesByBPID( iGenID, true ) or 0)
+	end
+
+	local sBiggerGenerator = cpu_manager.build_base_strategy:GetBuildingName( "BiggerGenerator" )
+	if (sBiggerGenerator ~= nil) then
+		local iBigID = cpu_manager.stats:GetBuildingID( sBiggerGenerator )
+		iCount = iCount + (cpu_manager.player_stats:GetNumBasesByBPID( iBigID, true ) or 0)
+	end
+
+	return iCount
+end
+
+function BaseTactic:ShouldCancelNoconstructTemplate()
+
+	if (self.m_bCheckDelete) then
+		return false
+	end
+
+	local iHP = self.base_ai:GetHealthPercentage()
+	local iTimeExtra = 0
+	if (cpu_manager:IsHQ( self.base_ai:GetBlueprintID() ) and iHP > 0.2) then
+		iTimeExtra = 60
+	end
+
+	local t = self.m_iLifeTime
+	if ((g_iGMT > t + 60 + iTimeExtra and iHP == 0.2) or
+		(g_iGMT > t + 60 + iTimeExtra and iHP <= 0.2) or
+		(g_iGMT > t + 100 + iTimeExtra and iHP <= 0.6) or
+		(g_iGMT > t + 200 + iTimeExtra and iHP <= 0.8)) then
+		return true
+	end
+
+	return false
+end
+
+-- Cancel at most one startup duplicate per bp_id per interval; keep the oldest foundation
+function BaseTactic:ShouldCancelStartupDuplicate( bp_id )
+
+	if (g_iGMT >= 180) then
+		return false
+	end
+
+	if (bp_id == nil) then
+		return false
+	end
+
+	local is_gen = false
+	if (type(cpu_manager.IsGenerator) == "function") then
+		is_gen = cpu_manager:IsGenerator(bp_id)
+	end
+
+	local is_lp = false
+	if (type(cpu_manager.IsListeningPost) == "function") then
+		is_lp = cpu_manager:IsListeningPost(bp_id) or self.base_ai:IsListeningPost()
+	end
+
+	local is_turret = false
+	if (type(cpu_manager.IsTurret) == "function") then
+		is_turret = cpu_manager:IsTurret(bp_id)
+	end
+
+	if (is_gen or is_lp or is_turret) then
+		return false
+	end
+
+	local num_same = cpu_manager.player_stats:GetNumBasesByBPID(bp_id, false) or 0
+	if (num_same <= 1) then
+		return false
+	end
+
+	if (g_iGMT >= (self.m_iLifeTime + 8)) then
+		return false
+	end
+
+	if (CpuManager.StartupDupCancelLast == nil) then
+		CpuManager.StartupDupCancelLast = {}
+	end
+
+	local iLastCancel = CpuManager.StartupDupCancelLast[bp_id] or 0
+	if (g_iGMT < iLastCancel + 3) then
+		return false
+	end
+
+	local myEnt = self.base_ai:GetEntity()
+	if (myEnt == nil or type(myEnt.GetID) ~= "function") then
+		return false
+	end
+
+	local iMyId = myEnt:GetID()
+	local iNewestId = iMyId
+
+	for oBuilding in military_manager:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and oBuilding:GetBlueprintID() == bp_id) then
+			local iId = oBuilding:GetID()
+			if (iId > iNewestId) then
+				iNewestId = iId
+			end
+		end
+	end
+
+	if (iMyId ~= iNewestId) then
+		return false
+	end
+
+	CpuManager.StartupDupCancelLast[bp_id] = g_iGMT
 	return true
 end
 
-function BaseTactic:FocusEnemy()
-    local oEnemyUnit = cpu_manager.cpu_player:FindFirstEnemy(self.base_ai:GetPosition(), 50, 1)
-    if self.target~=nil then
-    local oEnemyUnitFar = cpu_manager.cpu_player:FindFirstInfantryEnemy(self.base_ai:GetPosition(), distance(self.base_ai:GetPosition(),self.target:GetPosition()), 1)
-    end
---[[    if (oEnemyUnit ~= nil) and (oEnemyUnit:IsEngineer() or oEnemyUnit:GetHealthPercentage()<0.3 or oEnemyUnit:IsBroken()) or (oEnemyUnitFar~=nil and (oEnemyUnitFar:IsEngineer() or oEnemyUnitFar:GetHealthPercentage()<0.3 or oEnemyUnitFar:IsBroken())) then
-    	self:SetTarget(oEnemyUnit:GetPosition(),Tactic.Variant.BaseAI)
-    end]]
+-- Remove excess mines when cap unlock (30 gen / 5 HQ / 30 turret) is not met
+function BaseTactic:ShouldCancelExcessMine( bp_id )
 
-   if (oEnemyUnit ~= nil) then
-    local oEnemyUnitEnt = oEnemyUnit:GetEntities()
---    local oEnemyChange = oEnemyUnit:GetStats():GetClass()==(iEffectiveness[1][1] or iEffectiveness[2][1] or iEffectiveness[3][1])
-    local unitbuf=nil
-    for unit in oEnemyUnitEnt do
-       unitbuf=unit
-       break
-    end
---    if (oEnemyUnit:IsEngineer() or oEnemyChange or oEnemyUnit:GetHealthPercentage()<0.3 or oEnemyUnit:IsBroken()) then
-     if (oEnemyUnit:IsEngineer() or oEnemyUnit:IsBroken() or oEnemyUnit:GetMeleeStance() == SquadAI.MSTANCE_Ranged) then
-           self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
-           self:SetState(Tactic.States.Attack)
-           self.base_ai:DoSpecialAbilitySquad(0,unitbuf:GetSquad())
-   --        print(military_manager:GetSquadFromID(self.base_ai:GetEntity():GetID()))
---[[    elseif not self.squad_ai:IsRanged() and oEnemyChange then
-           self:SetTarget(unitbuf:GetSquad(), Tactic.Variant.SquadAI)
-           self.base_ai:DoDefault(unitbuf)]]
-    end
-   end
+	if (bp_id == nil or not cpu_manager:IsMine( bp_id )) then
+		return false
+	end
+
+	local oBuildStrategy = cpu_manager.build_base_strategy
+	if (oBuildStrategy == nil or oBuildStrategy:CanBuildBeyondMineCap()) then
+		return false
+	end
+
+	local num_same = cpu_manager.player_stats:GetNumBasesByBPID( bp_id, false ) or 0
+	if (num_same <= 5) then
+		return false
+	end
+
+	if (CpuManager.MineExcessCancelLast == nil) then
+		CpuManager.MineExcessCancelLast = {}
+	end
+
+	local iLastCancel = CpuManager.MineExcessCancelLast[bp_id] or 0
+	if (g_iGMT < iLastCancel + 3) then
+		return false
+	end
+
+	local myEnt = self.base_ai:GetEntity()
+	if (myEnt == nil or type(myEnt.GetID) ~= "function") then
+		return false
+	end
+
+	local iMyId = myEnt:GetID()
+	local iExcess = num_same - 5
+	local iNewerCount = 0
+
+	for oBuilding in military_manager:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:GetBlueprintID() == bp_id) then
+			if (oBuilding:GetID() > iMyId) then
+				iNewerCount = iNewerCount + 1
+			end
+		end
+	end
+
+	if (iNewerCount >= iExcess) then
+		return false
+	end
+
+	CpuManager.MineExcessCancelLast[bp_id] = g_iGMT
+	return true
 end
 
-function BaseTactic:BunkerGoToHQ()
-         local basetemp = nil
-        if not self.base_ai:CanUnload() then
-           return
+function BaseTactic:Update()
+    if self.m_bCheckDelete == true then
+        return false
+    end
+
+    local continue = true
+    if self:GetState() == Tactic.States.Disabled then
+        continue = false
+    end
+
+    if continue and self:IsComplete() then
+        continue = false
+    end
+
+    if continue then
+        self.state_function(self)
+    end
+
+    if (not continue) then
+        return false
+    end
+
+	local bp_id = self.base_ai:GetBlueprintID()
+	if (self:ShouldCancelExcessMine( bp_id )) then
+		if self.base_ai ~= nil and type(self.base_ai.GetEntity) == "function" then
+			local ent = self.base_ai:GetEntity()
+			if ent ~= nil and type(ent.GetID) == "function" and type(build_manager.CancelBuilding) == "function" then
+				build_manager:CancelBuilding(ent:GetID())
+			end
+		end
+		self.m_iLifeTime = g_iGMT + 3
+		self.m_bCheckDelete = true
+		return true
+	end
+
+    local interval_sec = 5
+    local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power ) 
+	local necronrace = (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race")	
+	local req_limit
+	local power_limit
+	local critical_same
+	
+	if necronrace then
+		req_limit = -9999
+		power_limit = 2000
+		critical_same = 5
+	else
+		req_limit = 3000
+		power_limit = 5000
+		critical_same = 12
+	end
+	
+    if self.base_ai:IsConstructionDone() then
+
+		--[[ generator excess delete by energy timer — disabled
+        local time_ok = (g_iGMT > (self.m_iLifeTime + 20 * 60))
+        if (iPower > power_limit) and (iRequisition > req_limit) and time_ok then
+            local bp_id = self.base_ai:GetBlueprintID()
+			local num_same = cpu_manager.player_stats:GetNumBasesByBPID(bp_id, false) or 0
+            if (bp_id ~= nil and cpu_manager:IsGenerator(bp_id) and num_same > critical_same) then
+                if self.base_ai ~= nil and type(self.base_ai.GetEntity) == "function" then
+                    local ent = self.base_ai:GetEntity()
+                    if ent ~= nil and type(ent.GetID) == "function" and type(build_manager.CancelBuilding) == "function" then
+                        build_manager:CancelBuilding(ent:GetID())
+                    end
+                end
+                self.m_iLifeTime = g_iGMT + 5
+                self.m_aSquad = nil
+                self.m_bCheckDelete = true
+                return true
+            end
         end
-	    for base in military_manager:GetBases() do
-		-- Check for valid building
-		 if (base:IsValid()) then
---                   if cpu_manager:IsHQ(base:GetBlueprintID()) then
-                        if base:GetTactic():IsBunker() then
-                           basetemp = base
-                        end
---                   end
-                 end
+		--]]
+
+		local bp_clear = self.base_ai:GetBlueprintID()
+		local sBuildingName = self.base_ai:GetBaseName()
+		local bIsGenerator = cpu_manager:IsGenerator( bp_clear )
+		local bIsBiggerGenerator = false
+		if (type(cpu_manager.IsBiggerGenerator) == "function") then
+			bIsBiggerGenerator = cpu_manager:IsBiggerGenerator( bp_clear )
+		end
+
+		-- Vehicles: original thresholds; relics/daemons: lower thresholds (non-HQ only)
+		local iVehicleReqThreshold = req_limit / 2
+		if (not cpu_manager:IsHQ( bp_clear )) then
+			iVehicleReqThreshold = req_limit / 4
+		end
+		local bVehicleResources = (iPower > 1500) and (iRequisition > iVehicleReqThreshold)
+		local bRelicResources = false
+		if (not cpu_manager:IsHQ( bp_clear )) then
+			bRelicResources = (iPower > 300) and (iRequisition > 500)
+		end
+
+		if (bVehicleResources or bRelicResources) then
+            local bp_id = bp_clear
+
+            if (bp_id ~= nil) then
+
+                local is_lp = false
+                if (type(cpu_manager.IsListeningPost) == "function") then
+                    is_lp = cpu_manager:IsListeningPost(bp_id) or self.base_ai:IsListeningPost() 
+                end
+
+				local is_mines = false
+				if (type(cpu_manager.IsMine) == "function") then
+                    is_mines = cpu_manager:IsMine(bp_id)
+                end
+
+                if (not is_lp) and (not is_mines) then
+				    local num_same = 0
+                    if (cpu_manager and cpu_manager.player_stats and type(cpu_manager.player_stats.GetNumBasesByBPID) == "function") then
+                        num_same = cpu_manager.player_stats:GetNumBasesByBPID(bp_id, true) or 0
+                    end
+
+					local critical_timer_idle
+					local bEnoughDuplicates = false
+
+					if (cpu_manager:IsHQ( bp_id )) then
+						critical_timer_idle = 20
+						bEnoughDuplicates = (num_same >= 5 and iRequisition > 3000)
+					elseif (bIsGenerator or bIsBiggerGenerator) then
+						critical_timer_idle = 10
+						bEnoughDuplicates = (bVehicleResources and self:GetCompletedGeneratorCount() > 6)
+					elseif (sBuildingName == "guard_mars_pattern") then
+						critical_timer_idle = 10
+						bEnoughDuplicates = (num_same >= 1)
+					else
+						critical_timer_idle = 10
+						bEnoughDuplicates = (num_same > 1)
+					end
+
+					if (bEnoughDuplicates) then
+
+						local squad_filter
+						if (bIsGenerator or bIsBiggerGenerator) then
+							-- Generators: only when vehicle is stuck nearby (>6 gens total)
+							squad_filter = function(squad_ai)
+								if (not bVehicleResources) then
+									return false
+								end
+								if (squad_ai == nil or not squad_ai:IsValid() or squad_ai:IsBroken()) then
+									return false
+								end
+								local oTactic = squad_ai:GetTactic()
+								if (oTactic ~= nil and oTactic:GetType() == Tactic.Types.Vehicle) then
+									return (not squad_ai:IsInCombat() and not squad_ai:IsAttacking())
+								end
+								return false
+							end
+						else
+							squad_filter = function(squad_ai)
+								return self:IsBuildingBlockerSquad( squad_ai, bVehicleResources, bRelicResources )
+							end
+						end
+
+						local search_range = 15
+						local target = cpu_manager:GetClosestSquad(self.base_ai:GetPosition(), search_range, squad_filter)
+
+						if (self.m_iIdleTimeDestroy < critical_timer_idle) then
+							if (target ~= nil) then
+								self.m_iIdleTimeDestroy = self.m_iIdleTimeDestroy + 1
+							else
+								self.m_iIdleTimeDestroy = 0
+							end
+						else
+							self.m_iIdleTimeDestroy = 0
+							self:CancelBuildingForClearance()
+							return true
+						end
+
+					else
+						self.m_iIdleTimeDestroy = 0
+					end
+				end
+			else
+				self.m_iIdleTimeDestroy = 0
+			end
+		else
+			self.m_iIdleTimeDestroy = 0
+		end
+    else
+        -- === Early-duplicate cancellation (startup safety) ===
+        if g_iGMT < 180 and iRequisition < 1500 then
+            local bp_id = self.base_ai:GetBlueprintID()
+
+            if (self:ShouldCancelStartupDuplicate(bp_id)) then
+                if self.base_ai ~= nil and type(self.base_ai.GetEntity) == "function" then
+                    local ent = self.base_ai:GetEntity()
+                    if ent ~= nil and type(ent.GetID) == "function" and type(build_manager.CancelBuilding) == "function" then
+                        build_manager:CancelBuilding(ent:GetID())
+                    end
+                end
+                self.m_iLifeTime = g_iGMT + 3
+                self.m_bCheckDelete = true
+                return true
             end
+        end
+
+        -- noconstruct templates (unfinished foundations); HQ included, +60s timers if HP > 0.2
+        if (self:ShouldCancelNoconstructTemplate()) then
+            build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
+            self.m_iLifeTime = g_iGMT + 5
+            self.m_bCheckDelete = true
+        end
+
+        --low hp
+        if self.base_ai:GetHealthPercentage() < 0.05 and 
+           self.m_bCheckDelete == false then            
+            build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
+            self.m_bCheckDelete = true
+        end
+    end
+
+    if self.m_bCheckDelete == false and self.base_ai:IsConstructionDone() then
+        self:InitAbilities()
+        self:DoAbilities()
 		
-            if self.base_ai:CanTunnel( basetemp:GetEntity(), true)then
-               self.base_ai:DoTunnel( basetemp:GetEntity(), true )
---            elseif self.base_ai:CanTunnel( basetemp:GetEntity() )then
- --              self.base_ai:DoTunnel( basetemp:GetEntity() )
-            end
-	self.m_iNextSquadReleaseTime = 0
+		if self.m_bBunker and self.m_bCheckDelete == false and self.base_ai:IsConstructionDone() then
+			self:BunkerCheck()
+		end
+	end
+
+    return true
 end
-   
+
+-- Disabled: DoSpecialAbilitySquad(0) / SetState(Attack) hard-crashed when hooked into Update.
+-- Listening posts keep engine auto-target for now.
+function BaseTactic:FocusEnemy()
+	return false
+end
+
+
+
 function BaseTactic:BunkerCheck()
 
-	-- Check if building is a bunker
 	if (not self.m_bBunker or not self.base_ai:CanUnload()) then
 		return
 	end
-	
-	-- Check if bunker is occupied
+
+	if (g_iGMT < self.m_iNextBunkerCheckTime) then
+		return
+	end
+	self.m_iNextBunkerCheckTime = g_iGMT + 2
+
+	-- Once per minute: forced unload (no budget, ignores IsAttacking; will re-enter if needed)
+	local iStagger = math.mod( self.base_ai:GetEntity():GetID(), 20 )
+	if (self.update_bunker_time == nil) then
+		self.update_bunker_time = g_iGMT + 60 + iStagger
+	elseif (g_iGMT >= self.update_bunker_time) then
+		self.base_ai:DoUnload()
+		self.m_iNextSquadReleaseTime = 0
+		self.update_bunker_time = g_iGMT + 60 + iStagger
+		return
+	end
+
+	-- Skip one cycle after AI OccupyBunker
 	local iID = self.base_ai:GetEntity():GetID()
 	if (cpu_manager:CheckOccupiedBunkers(iID)) then
-	
-		-- Set next squad release time
-		self.m_iNextSquadReleaseTime = g_iGMT + 10
+		self.m_iNextSquadReleaseTime = g_iGMT + 2
 		return
 	end
-	
-	-- Check squad release time
-	if (self.m_iNextSquadReleaseTime <= 0 or g_iGMT < self.m_iNextSquadReleaseTime) then
-		return
-	end
-	
-	-- Check if bunkered troops are shooting or bunker health is critical
-	if (self.base_ai:IsAttacking() and self.base_ai:GetHealthPercentage() > 0.2) then
 
-		-- Set next squad release time
-		self.m_iNextSquadReleaseTime = g_iGMT + 10
+	if (self.m_iNextSquadReleaseTime == 0) then
+		self.m_iNextSquadReleaseTime = g_iGMT
+	end
+	if (g_iGMT < self.m_iNextSquadReleaseTime) then
 		return
 	end
-	
-	-- Try to release bunkered units
-	self.base_ai:DoUnload()
+
+	if (self.base_ai:IsAttacking() and self.base_ai:GetHealthPercentage() > 0.2) then
+		self.m_iNextSquadReleaseTime = g_iGMT + 2
+		return
+	end
+
+	if (not cpu_manager:TryBunkerUnload( self.base_ai )) then
+		self.m_iNextSquadReleaseTime = g_iGMT + 2
+		return
+	end
+
 	self.m_iNextSquadReleaseTime = 0
 end
 
