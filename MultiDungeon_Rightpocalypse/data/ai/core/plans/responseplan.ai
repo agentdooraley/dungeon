@@ -1,0 +1,313 @@
+----------------------------------------
+-- File: 'responseplan.ai'
+-- Proportional response to small local threats (response groups)
+
+class 'ResponsePlan' (Plan)
+
+ResponsePlan.MinThreatStrength = 80
+ResponsePlan.MaxResponseThreat = 1200
+ResponsePlan.StrengthMargin = 1.35
+ResponsePlan.MaxSquads = 4
+ResponsePlan.ThreatClearDelay = 10
+
+function ResponsePlan:__init(vThreatPos, iThreatRange) super( CpuPlayer.CT_Defending )
+
+	dbAssert( vThreatPos ~= nil )
+
+	self.threat_pos = Vector3f(vThreatPos)
+	self.m_iRange = iThreatRange
+	self.m_iResponseBudget = 0
+	self.m_iDefenseDelay = 0
+	self.m_vLastTargetPos = Vector3f(vThreatPos)
+	self.m_bNeedFullDefend = false
+
+	self.response_units = {}
+
+	Plan.SetName( self, "Response Plan" )
+	Plan.SetNeeds( self, "Obtain Response Force", ResponsePlan.ObtainForce )
+	Plan.SetState( self, "Respond: "..vec2str(self.threat_pos), ResponsePlan.Responding )
+end
+
+function ResponsePlan:IsEqual( plan_name, plan_id )
+	return (self:GetName() == plan_name and distance_sqr( plan_id, self.threat_pos ) < sqr(10))
+end
+
+function ResponsePlan:GetMinSquadStrength()
+
+	local iMinStrength = 60
+	if (cpu_manager:GetTierLevel() >= 2) then
+		iMinStrength = 120
+	end
+	return iMinStrength
+end
+
+function ResponsePlan:GetDominantEnemyClass(vPos, iRange)
+
+	-- Cache ~1s — ObtainForce can re-query; full enemy walk is heavy
+	if (self.m_eDomClassCache ~= nil and self.m_iDomClassCacheGMT ~= nil and
+		g_iGMT < self.m_iDomClassCacheGMT + 1) then
+		return self.m_eDomClassCache
+	end
+
+	local iLocalRange = sqr(iRange)
+	local eBestClass = UnitStatsAI.UC_LightInfantryMed
+	local iBestPower = 0
+
+	for oPlayer in cpu_manager.stats:GetPlayerStats() do
+
+		if (cpu_manager.player_stats:IsEnemy(oPlayer)) then
+
+			for oSquad in oPlayer:GetSquads() do
+
+				if (oSquad:IsValid() and not oSquad:IsEngineer()) then
+
+					if (distance_sqr(vPos, oSquad:GetPosition()) < iLocalRange) then
+
+						local oStats = oSquad:GetStats()
+						if (oStats ~= nil) then
+
+							local eClass = oStats:GetClass()
+							local iStr = cpu_manager:GetUnitStrength(oSquad)
+							local iClassPower = iStr
+
+							if (iClassPower > iBestPower) then
+								iBestPower = iClassPower
+								eBestClass = eClass
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	self.m_eDomClassCache = eBestClass
+	self.m_iDomClassCacheGMT = g_iGMT
+	return eBestClass
+end
+
+function ResponsePlan:GetSquadResponseScore(oSquad, eEnemyClass)
+
+	local iStrength = oSquad:GetTactic():GetUnitStrength()
+	local oStats = oSquad:GetStats()
+
+	if (oStats == nil) then
+		return iStrength
+	end
+
+	local fRating = oStats:GetEffectivenessRating(eEnemyClass)
+	if (fRating < 1.0) then
+		fRating = 1.0
+	end
+
+	return iStrength * fRating
+end
+
+function ResponsePlan:GetResponseStrength()
+
+	local iStrength = 0
+	local iCount = table.getn(self.response_units)
+
+	for iLoop1 = 1, iCount do
+
+		local oSquad = self.response_units[iLoop1]
+		if (oSquad:IsValid()) then
+			iStrength = iStrength + oSquad:GetTactic():GetUnitStrength()
+		end
+	end
+
+	return iStrength
+end
+
+function ResponsePlan:GetBestThreatPosition()
+
+	local oEnemySquad = cpu_manager.cpu_player:FindFirstEnemy(self.m_vLastTargetPos, self.m_iRange + 20, 1)
+	if (oEnemySquad ~= nil and distance_sqr(oEnemySquad:GetPosition(), self.threat_pos) <= sqr(self.m_iRange + 35)) then
+		return Vector3f(oEnemySquad:GetPosition())
+	end
+
+	oEnemySquad = cpu_manager.cpu_player:FindFirstEnemy(self.threat_pos, self.m_iRange + 20, 1)
+	if (oEnemySquad ~= nil) then
+		return Vector3f(oEnemySquad:GetPosition())
+	end
+
+	return Vector3f(self.threat_pos)
+end
+
+function ResponsePlan:ObtainForce()
+
+	aitrace("ResponsePlan: Obtain Force...")
+
+	local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(self.threat_pos, self.m_iRange, true)
+	local iNetThreat = iEnemyStrength
+
+	if (iNetThreat < iAlliedStrength) then
+		iNetThreat = iEnemyStrength - iAlliedStrength
+	end
+	if (iNetThreat < ResponsePlan.MinThreatStrength) then
+		iNetThreat = iEnemyStrength
+	end
+
+	self.m_iResponseBudget = math.ceil(iNetThreat * ResponsePlan.StrengthMargin)
+	if (self.m_iResponseBudget < 120) then
+		self.m_iResponseBudget = 120
+	end
+
+	local iMinStrength = self:GetMinSquadStrength()
+	local eEnemyClass = nil
+	local bUseEffectiveness = (cpu_manager:GetTierLevel() >= 2)
+
+	if (bUseEffectiveness) then
+		eEnemyClass = self:GetDominantEnemyClass(self.threat_pos, self.m_iRange)
+	end
+
+	local aCandidates = {}
+
+	for oSquad in military_manager:GetUnlockedSquads() do
+
+		if (oSquad:IsValid() and not oSquad:IsEngineer()) then
+
+			local oTactic = oSquad:GetTactic()
+
+			if (oTactic:IsDefender() and not oTactic:AlwaysAttack()) then
+
+				local iUnitStrength = oTactic:GetUnitStrength()
+				if (iUnitStrength >= iMinStrength or oSquad:IsInCombat()) then
+
+					local bSquadOk = true
+					if (oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
+						bSquadOk = false
+					end
+
+					if (bSquadOk) then
+
+						local iScore = iUnitStrength
+						if (bUseEffectiveness) then
+							iScore = self:GetSquadResponseScore(oSquad, eEnemyClass)
+						end
+
+						local iDist = distance_sqr(oSquad:GetPosition(), self.threat_pos)
+						table.insert(aCandidates, { oSquad, iScore, iDist })
+					end
+				end
+			end
+		end
+	end
+
+	local sortfunction = function(item1, item2)
+		if (item1[2] ~= item2[2]) then
+			return item1[2] > item2[2]
+		end
+		return item1[3] < item2[3]
+	end
+	table.sort(aCandidates, sortfunction)
+
+	local iCommitted = 0
+	local iSquadCount = 0
+	local iCandidateCount = table.getn(aCandidates)
+
+	for iLoop1 = 1, iCandidateCount do
+
+		if (iCommitted >= self.m_iResponseBudget or iSquadCount >= ResponsePlan.MaxSquads) then
+			break
+		end
+
+		local oSquad = aCandidates[iLoop1][1]
+		local oTactic = oSquad:GetTactic()
+
+		Plan.LockResource( self, oSquad )
+		table.insert( self.response_units, oSquad )
+		oTactic:SetState( Tactic.States.Attack )
+		oTactic:SetTarget( self.threat_pos, Tactic.Variant.Vector )
+
+		iCommitted = iCommitted + oTactic:GetUnitStrength()
+		iSquadCount = iSquadCount + 1
+	end
+
+	if (iSquadCount == 0) then
+		self:SetComplete( true )
+	end
+end
+
+function ResponsePlan:RemoveLosses()
+
+	local iMinStrength = self:GetMinSquadStrength()
+	local iSquadCount = table.getn( self.response_units )
+
+	for iLoop1 = iSquadCount, 1, -1 do
+
+		local oSquad = self.response_units[iLoop1]
+
+		if (not oSquad:IsValid()) then
+
+			table.remove( self.response_units, iLoop1 )
+
+		elseif (oSquad:GetTactic():GetUnitStrength() < iMinStrength / 2 and not oSquad:IsInCombat()) then
+
+			if (not cpu_manager:IsLateGameOverwhelmMode()) then
+				Plan.UnlockResource( self, oSquad )
+				oSquad:GetTactic():SetState( Tactic.States.Retreat )
+			end
+			table.remove( self.response_units, iLoop1 )
+		end
+	end
+end
+
+function ResponsePlan:Responding()
+
+	aitrace("ResponsePlan: Responding...")
+
+	local iEnemyStrength = cpu_manager:GetArmyStrengthAtPos(self.threat_pos, self.m_iRange, true)
+
+	if (iEnemyStrength <= ResponsePlan.MinThreatStrength) then
+
+		if (self.m_iDefenseDelay == 0) then
+			self.m_iDefenseDelay = g_iGMT
+		elseif (g_iGMT > self.m_iDefenseDelay + ResponsePlan.ThreatClearDelay) then
+			self:SetComplete( true )
+			return
+		end
+	else
+		self.m_iDefenseDelay = 0
+	end
+
+	local iResponseStrength = self:GetResponseStrength()
+	if (table.getn(self.response_units) == 0) then
+		self:SetComplete( true )
+		return
+	end
+
+	if (iEnemyStrength > ResponsePlan.MaxResponseThreat or
+		(iEnemyStrength > iResponseStrength * 2 and iEnemyStrength > 400)) then
+		self.m_bNeedFullDefend = true
+		self:SetComplete( true )
+		return
+	end
+
+	local vTargetPos = self:GetBestThreatPosition()
+	self.m_vLastTargetPos = Vector3f(vTargetPos)
+
+	local iSquadCount = table.getn(self.response_units)
+	for iLoop1 = 1, iSquadCount do
+
+		local oSquad = self.response_units[iLoop1]
+		if (oSquad:IsValid()) then
+
+			local oTactic = oSquad:GetTactic()
+			if (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vTargetPos) > 1) then
+				oTactic:SetState( Tactic.States.Attack )
+				oTactic:SetTarget( vTargetPos, Tactic.Variant.Vector )
+			end
+		end
+	end
+end
+
+function ResponsePlan:Update()
+
+	if (self:IsComplete()) then
+		return
+	end
+
+	self:RemoveLosses()
+	Plan.Update( self )
+end
