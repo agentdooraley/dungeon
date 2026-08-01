@@ -4,6 +4,9 @@ class 'EngineerTactic' (InfantryTactic)
 
 EngineerTactic.Bufer = {}
 EngineerTactic.HqRepair = {}
+-- Pad entity↔base id alias cache (must be declared static — Relic class)
+EngineerTactic.m_iPadIdAliasGMT = -1
+EngineerTactic.m_mPadIdAlias = {}
 
 EngineerTactic.epoch_builds = {
 	["eldar_soul_shrine"] = true,
@@ -45,7 +48,21 @@ function EngineerTactic:__init( squad_ai ) super( squad_ai )
 	self.m_iValidRange = sqr(35)
 	self.m_bBusy = false
 	self.m_iEpochBuildTargetId = nil
+	self.m_iWorkerDanceBuildingId = nil
+	self.m_iWorkerDanceResumeUntil = 0
+
+	-- All workers may use bunkers; never use infantry Attack/Hold chase paths
+	self.m_bBunkerSquad = true
+	Tactic.AssignStateFunction( self, Tactic.States.Hold, EngineerTactic.BeginHoldState )
+	Tactic.AssignStateFunction( self, Tactic.States.Attack, EngineerTactic.BeginAttackState )
+	Tactic.AssignStateFunction( self, Tactic.States.Retreat, EngineerTactic.BeginRetreatState )
 end
+
+-- After resume: brief grace so sticky WasRecentlyHurt does not re-dance same tick
+EngineerTactic.WorkerDanceResumeGrace = 2.5
+-- Repair: enemy threat radius (no allied strength math). Search near engie so idle is rare.
+EngineerTactic.RepairThreatRange = 25
+EngineerTactic.RepairSearchRange = 150
 
 function EngineerTactic.GetMaxWorkers( sJobType )
 	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
@@ -61,6 +78,209 @@ end
 function EngineerTactic.ShouldDisableGeneralAssist()
 	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
 	return sRace == "necron_race" or sRace == "ork_race"
+end
+
+-- Prefer entity ID (DoFinish / Register); BaseAI GetID may differ → double workers
+-- NEVER call methods on a stale pad ref without pcall (IsValid/GetID → pure virtual).
+-- NEVER userdata == userdata (Relic: no operator == for BaseAI/Entity mixes or Entity/Entity).
+function EngineerTactic.TrySafeGetId( oObj )
+
+	if (oObj == nil) then
+		return nil
+	end
+	if (type(oObj) == "number") then
+		return oObj
+	end
+	if (type(oObj.GetID) ~= "function") then
+		return nil
+	end
+	local bOk, iId = pcall(function()
+		return oObj:GetID()
+	end)
+	if (bOk and iId ~= nil) then
+		return iId
+	end
+	return nil
+end
+
+function EngineerTactic.GetPadTargetId( oBuilding )
+
+	if (oBuilding == nil) then
+		return nil
+	end
+	if (type(oBuilding) == "number") then
+		return oBuilding
+	end
+	local oLive, oEnt = EngineerTactic.ResolveLiveFinishTarget(oBuilding)
+	if (oLive == nil) then
+		return nil
+	end
+	local iEntId = EngineerTactic.TrySafeGetId(oEnt)
+	if (iEntId ~= nil) then
+		return iEntId
+	end
+	return EngineerTactic.TrySafeGetId(oLive)
+end
+
+-- Live BaseAI + entity for DoFinishBuilding.
+-- Match only by numeric ID against GetBases — no userdata ==.
+function EngineerTactic.ResolveLiveFinishTarget( oPad )
+
+	if (oPad == nil) then
+		return nil, nil
+	end
+	if (cpu_manager == nil or cpu_manager.player_stats == nil) then
+		return nil, nil
+	end
+
+	local iWantId = nil
+	if (type(oPad) == "number") then
+		iWantId = oPad
+	else
+		-- Prefer entity id when BaseAI (DoFinish / Register key)
+		local bOk, iId = pcall(function()
+			if (type(oPad.GetEntity) == "function") then
+				local oE = oPad:GetEntity()
+				if (oE ~= nil) then
+					local iEnt = oE:GetID()
+					if (iEnt ~= nil) then
+						return iEnt
+					end
+				end
+			end
+			if (type(oPad.GetID) == "function") then
+				return oPad:GetID()
+			end
+			return nil
+		end)
+		if (bOk) then
+			iWantId = iId
+		end
+	end
+	if (iWantId == nil) then
+		return nil, nil
+	end
+
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid()) then
+			local iBaseId = oBuilding:GetID()
+			local iEntId = nil
+			local oEnt = oBuilding
+			if (type(oBuilding.GetEntity) == "function") then
+				local oE = oBuilding:GetEntity()
+				if (oE ~= nil) then
+					oEnt = oE
+					iEntId = oE:GetID()
+				end
+			end
+			if (iBaseId == iWantId or (iEntId ~= nil and iEntId == iWantId)) then
+				return oBuilding, oEnt
+			end
+		end
+	end
+	return nil, nil
+end
+
+-- DoFinish only if pad still alive (pad resolve never touches stale refs via ==)
+function EngineerTactic.SafeDoFinishBuilding( oSquad, oPad )
+
+	if (oSquad == nil) then
+		return false
+	end
+	local oBase, oEnt = EngineerTactic.ResolveLiveFinishTarget(oPad)
+	if (oEnt == nil) then
+		return false
+	end
+	oSquad:DoFinishBuilding(oEnt)
+	return true
+end
+
+-- Cache entity↔base id aliases for unfinished pads (per think)
+function EngineerTactic.EnsurePadIdAliasCache()
+
+	if (EngineerTactic.m_iPadIdAliasGMT == g_iGMT and EngineerTactic.m_mPadIdAlias ~= nil) then
+		return
+	end
+	EngineerTactic.m_iPadIdAliasGMT = g_iGMT
+	EngineerTactic.m_mPadIdAlias = {}
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local iBaseId = oBuilding:GetID()
+			local iEntId = nil
+			if (type(oBuilding.GetEntity) == "function") then
+				local oEnt = oBuilding:GetEntity()
+				if (oEnt ~= nil) then
+					iEntId = oEnt:GetID()
+				end
+			end
+			if (iBaseId ~= nil) then
+				EngineerTactic.m_mPadIdAlias[iBaseId] = iBaseId
+				if (iEntId ~= nil) then
+					EngineerTactic.m_mPadIdAlias[iEntId] = iBaseId
+					EngineerTactic.m_mPadIdAlias[iBaseId] = iBaseId
+				end
+			end
+			if (iEntId ~= nil) then
+				EngineerTactic.m_mPadIdAlias[iEntId] = iBaseId or iEntId
+			end
+		end
+	end
+end
+
+function EngineerTactic.CanonicalPadId( iId )
+
+	if (iId == nil) then
+		return nil
+	end
+	EngineerTactic.EnsurePadIdAliasCache()
+	local iCanon = EngineerTactic.m_mPadIdAlias[iId]
+	if (iCanon ~= nil) then
+		return iCanon
+	end
+	return iId
+end
+
+-- True if two pad ids refer to the same unfinished building (entity vs base id)
+function EngineerTactic.PadIdsMatch( iIdA, iIdB )
+
+	if (iIdA == nil or iIdB == nil) then
+		return false
+	end
+	if (iIdA == iIdB) then
+		return true
+	end
+	return (EngineerTactic.CanonicalPadId(iIdA) == EngineerTactic.CanonicalPadId(iIdB))
+end
+
+-- Squad id claimed on this pad in Bufer only. Dest/proximity falsely owned HQ plasma
+-- when turret/cap destinations sat nearby → skip foreign / Adopt steal.
+function EngineerTactic.FindPadWorkerSquadId( iTargetId, vTargetPos )
+
+	if (iTargetId == nil) then
+		return nil
+	end
+	EngineerTactic.CleanupBufer()
+	local iCanon = EngineerTactic.CanonicalPadId(iTargetId)
+	for iLoop1 in EngineerTactic.Bufer do
+		local aEnt = EngineerTactic.Bufer[iLoop1]
+		if (aEnt ~= nil) then
+			local iBufTarget = aEnt[1]
+			local iSquadId = aEnt[2]
+			if (type(iSquadId) == "number") then
+				local bSame = (iBufTarget == iTargetId)
+				if (not bSame and iCanon ~= nil) then
+					bSame = (EngineerTactic.CanonicalPadId(iBufTarget) == iCanon)
+				end
+				if (bSame) then
+					local oSq = military_manager:GetSquadFromID(iSquadId)
+					if (oSq ~= nil and oSq:IsValid()) then
+						return iSquadId
+					end
+				end
+			end
+		end
+	end
+	return nil
 end
 
 function EngineerTactic.GetOwnDamagedHQ()
@@ -168,15 +388,63 @@ function EngineerTactic:MaintainHqRepairCommitment()
 	return true
 end
 
+-- Capturing / POST LOCK — must not own a pad Bufer slot.
+-- NEVER probe oTac.IsNecron* / IsOnCaptureDuty: Relic crashes on EngineerTactic (Ork etc).
+function EngineerTactic.IsSquadOffPadDuty( oSquadAI )
+
+	if (oSquadAI == nil or not oSquadAI:IsValid()) then
+		return true
+	end
+	if (oSquadAI:IsCapturing()) then
+		return true
+	end
+	if (cpu_manager == nil) then
+		return false
+	end
+	-- CpuManager guards blueprint first — safe for all races
+	if (cpu_manager:IsNecronBuilderScarab(oSquadAI)) then
+		if (cpu_manager:IsNecronScarabOnCaptureDuty(oSquadAI)) then
+			return true
+		end
+		if (cpu_manager:IsNecronScarabPendingPost(oSquadAI)) then
+			return true
+		end
+	end
+	return false
+end
+
 function EngineerTactic.CleanupBufer()
 	local iLoop1 = 1
+	local bSolo = EngineerTactic.ShouldDisableGeneralAssist()
 	while iLoop1 <= table.getn(EngineerTactic.Bufer) do
 		local iSquadId = EngineerTactic.Bufer[iLoop1][2]
 		local oSquadAI = nil
 		if (type(iSquadId) == "number") then
 			oSquadAI = military_manager:GetSquadFromID(iSquadId)
 		end
-		if (oSquadAI == nil or not oSquadAI:IsValid() or (oSquadAI:IsIdle() and not oSquadAI:IsBuildProgressing())) then
+		local bDrop = false
+		if (oSquadAI == nil or not oSquadAI:IsValid()) then
+			bDrop = true
+		elseif (EngineerTactic.IsSquadOffPadDuty(oSquadAI)) then
+			-- Locked capturer used to keep claim forever → Pad already has worker deadlock
+			bDrop = true
+		elseif (oSquadAI:IsBuilding() ~= 0 or oSquadAI:IsBuildProgressing()) then
+			bDrop = false
+		elseif (oSquadAI:IsIdle() and oSquadAI:IsBuilding() == 0 and not oSquadAI:IsBuildProgressing()) then
+			if (bSolo) then
+				-- Keep only en-route build claim (busy+dest), NOT bare IsLocked (CapturePlan)
+				local oTactic = oSquadAI:GetTactic()
+				local bKeep = false
+				if (oTactic ~= nil and (oTactic.m_bBusy == true or oTactic.m_Bufer == true) and
+					oTactic.m_vDestination ~= nil) then
+					bKeep = true
+				end
+				bDrop = not bKeep
+			else
+				bDrop = true
+			end
+		end
+		if (bDrop) then
 			table.remove(EngineerTactic.Bufer, iLoop1)
 		else
 			iLoop1 = iLoop1 + 1
@@ -188,21 +456,42 @@ function EngineerTactic.CountWorkersOnTarget( iTargetId, vTargetPos )
 	EngineerTactic.CleanupBufer()
 	local iCount = 0
 	local aCounted = {}
+	local bSoloRace = EngineerTactic.ShouldDisableGeneralAssist()
+	local iCanon = nil
+	if (iTargetId ~= nil and bSoloRace) then
+		iCanon = EngineerTactic.CanonicalPadId(iTargetId)
+	end
 	for iLoop1 in EngineerTactic.Bufer do
-		if (EngineerTactic.Bufer[iLoop1][1] == iTargetId) then
-			local iSquadId = EngineerTactic.Bufer[iLoop1][2]
-			if (type(iSquadId) == "number") then
-				iCount = iCount + 1
-				aCounted[iSquadId] = true
+		local aEnt = EngineerTactic.Bufer[iLoop1]
+		if (aEnt ~= nil) then
+			local iBufTarget = aEnt[1]
+			local bSamePad = (iBufTarget == iTargetId)
+			if (not bSamePad and bSoloRace and iCanon ~= nil) then
+				bSamePad = (EngineerTactic.CanonicalPadId(iBufTarget) == iCanon)
+			end
+			if (bSamePad) then
+				local iSquadId = aEnt[2]
+				if (type(iSquadId) == "number" and aCounted[iSquadId] ~= true) then
+					iCount = iCount + 1
+					aCounted[iSquadId] = true
+				end
 			end
 		end
 	end
+	-- Solo (Necron/Ork): Bufer-only — HQ cluster proximity counted turret as plasma worker
+	if (bSoloRace) then
+		return iCount
+	end
 	if (vTargetPos ~= nil) then
+		local iNearSqr = sqr(15)
 		for oSquad in military_manager:GetSquads() do
 			if (oSquad:IsValid() and oSquad:IsEngineer() and aCounted[oSquad:GetID()] ~= true) then
-				if (distance_sqr(oSquad:GetPosition(), vTargetPos) < sqr(15)) then
-					if (oSquad:IsBuildProgressing() or (not oSquad:IsIdle() and oSquad:CanRepair())) then
+				local iDist = distance_sqr(oSquad:GetPosition(), vTargetPos)
+				if (iDist < iNearSqr) then
+					if (oSquad:IsBuilding() ~= 0 or oSquad:IsBuildProgressing() or
+						(not oSquad:IsIdle() and oSquad:CanRepair())) then
 						iCount = iCount + 1
+						aCounted[oSquad:GetID()] = true
 					end
 				end
 			end
@@ -219,7 +508,79 @@ function EngineerTactic.CanAssignWorker( iTargetId, sJobType, vTargetPos, iMaxWo
 end
 
 function EngineerTactic.RegisterWorker( iTargetId, oSquadAI )
-	table.insert(EngineerTactic.Bufer, {iTargetId, oSquadAI:GetID()})
+	if (iTargetId == nil or oSquadAI == nil or not oSquadAI:IsValid()) then
+		return
+	end
+	local iSquadId = oSquadAI:GetID()
+	-- Solo: one squad → one pad claim (drop stale ids before re-register)
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		EngineerTactic.UnregisterWorkerSquad(oSquadAI)
+	end
+	-- Avoid duplicate entries for same squad+target
+	for iLoop1 in EngineerTactic.Bufer do
+		if (EngineerTactic.Bufer[iLoop1][1] == iTargetId and EngineerTactic.Bufer[iLoop1][2] == iSquadId) then
+			return
+		end
+	end
+	table.insert(EngineerTactic.Bufer, {iTargetId, iSquadId})
+end
+
+-- Drop this squad from all pad claims (e.g. Necron surplus → capturer)
+function EngineerTactic.UnregisterWorkerSquad( oSquadAI )
+	if (oSquadAI == nil or not oSquadAI:IsValid()) then
+		return
+	end
+	local iSquadId = oSquadAI:GetID()
+	local iLoop1 = 1
+	while iLoop1 <= table.getn(EngineerTactic.Bufer) do
+		if (EngineerTactic.Bufer[iLoop1][2] == iSquadId) then
+			table.remove(EngineerTactic.Bufer, iLoop1)
+		else
+			iLoop1 = iLoop1 + 1
+		end
+	end
+end
+
+-- Join pad if under GetMaxWorkers (Necron/Ork=1, DE build=unlimited, others=2)
+-- or already claimed on this pad myself.
+-- Solo: NO GetSquads() scans here (nested iterators → Relic crash); NO self-near
+-- shortcut (clustered HQ gens looked like "same pad" → 2 workers).
+function EngineerTactic:CanJoinBuildTarget( iTargetId, vPos, sJobType )
+
+	if (iTargetId == nil) then
+		return false
+	end
+	local iMyId = self.squad_ai:GetID()
+	for iLoop1 in EngineerTactic.Bufer do
+		local aEnt = EngineerTactic.Bufer[iLoop1]
+		if (aEnt ~= nil) then
+			local iBufTarget = aEnt[1]
+			local bSame = (iBufTarget == iTargetId)
+			if (not bSame and EngineerTactic.PadIdsMatch ~= nil) then
+				bSame = EngineerTactic.PadIdsMatch(iBufTarget, iTargetId)
+			end
+			if (bSame and aEnt[2] == iMyId) then
+				return true
+			end
+		end
+	end
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		local iOwner = EngineerTactic.FindPadWorkerSquadId(iTargetId, vPos)
+		if (iOwner ~= nil and iOwner ~= iMyId) then
+			return false
+		end
+		if (iOwner == iMyId) then
+			return true
+		end
+		return EngineerTactic.CanAssignWorker(iTargetId, sJobType or "build", vPos)
+	end
+	-- Non-solo: self constructing nearby OK
+	if (vPos ~= nil and (self.squad_ai:IsBuilding() ~= 0 or self.squad_ai:IsBuildProgressing())) then
+		if (distance_sqr(self.squad_ai:GetPosition(), vPos) < sqr(40)) then
+			return true
+		end
+	end
+	return EngineerTactic.CanAssignWorker(iTargetId, sJobType or "build", vPos)
 end
 
 function EngineerTactic:IsBufer()
@@ -259,6 +620,445 @@ function EngineerTactic:TryDisownFlags()
 	return false
 end
 
+function EngineerTactic:UpdateStance()
+	if (self.squad_ai:GetStance() ~= SquadAI.STANCE_StandGround) then
+		self.squad_ai:DoSetStance(SquadAI.STANCE_StandGround)
+	end
+end
+
+function EngineerTactic:IsUnderWorkerThreat()
+	-- IsInCombat alone is sticky near fights → bunker AFK, templates never finish
+	return (self.squad_ai:IsUnderAttack() or self.squad_ai:WasRecentlyHurt())
+end
+
+function EngineerTactic:ClearWorkFlags()
+	self.m_bBusy = false
+	self.m_Bufer = false
+	self.m_iEpochBuildTargetId = nil
+	self.m_vDestination = nil
+end
+
+-- Unfinished building HP ≈ construction progress in DoW
+function EngineerTactic:GetNearbyWorkBuildingProgress()
+	local oBuilding = self:GetNearbyUnfinishedBuilding()
+	if (oBuilding == nil) then
+		return nil
+	end
+	return oBuilding:GetHealthPercentage()
+end
+
+function EngineerTactic:GetNearbyUnfinishedBuilding()
+	local vPos = self.squad_ai:GetPosition()
+	local oBest = nil
+	local fBest = nil
+	-- Wider than 22: Guard drops many templates around HQ
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			if (distance_sqr(vPos, oBuilding:GetPosition()) < sqr(45)) then
+				local fHP = oBuilding:GetHealthPercentage()
+				if (fBest == nil or fHP > fBest) then
+					fBest = fHP
+					oBest = oBuilding
+				end
+			end
+		end
+	end
+	return oBest
+end
+
+function EngineerTactic:FindNearbyMeleeThreat( iRange )
+	if (iRange == nil) then
+		iRange = 18
+	end
+	local oEnemy = cpu_manager.cpu_player:FindFirstEnemy(self.squad_ai:GetPosition(), iRange, 1)
+	if (oEnemy == nil or oEnemy:IsRanged()) then
+		return nil
+	end
+	return oEnemy
+end
+
+function EngineerTactic:RememberWorkBuildingForDance()
+	local oBuilding = self:GetNearbyUnfinishedBuilding()
+	if (oBuilding == nil and self.m_iEpochBuildTargetId ~= nil) then
+		oBuilding = self:GetCommittedEpochBuilding()
+	end
+	if (oBuilding ~= nil) then
+		local oEnt = oBuilding:GetEntity()
+		if (oEnt ~= nil) then
+			self.m_iWorkerDanceBuildingId = oEnt:GetID()
+		else
+			self.m_iWorkerDanceBuildingId = oBuilding:GetID()
+		end
+		self.m_vDestination = oBuilding:GetPosition()
+	end
+end
+
+function EngineerTactic:GetWorkerDanceBuilding()
+	if (self.m_iWorkerDanceBuildingId == nil) then
+		return self:GetNearbyUnfinishedBuilding()
+	end
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local oEnt = oBuilding:GetEntity()
+			local iId = nil
+			if (oEnt ~= nil) then
+				iId = oEnt:GetID()
+			else
+				iId = oBuilding:GetID()
+			end
+			if (iId == self.m_iWorkerDanceBuildingId) then
+				return oBuilding
+			end
+		end
+	end
+	self.m_iWorkerDanceBuildingId = nil
+	return self:GetNearbyUnfinishedBuilding()
+end
+
+function EngineerTactic:ResumeWorkerBuildAfterDance()
+	if (self.stateID == Tactic.StateID.DoDance) then
+		self.m_eSubStateID = Tactic.StateID.NoState
+		self.stateID = Tactic.StateID.NoState
+	end
+	local iGrace = EngineerTactic.WorkerDanceResumeGrace
+	if (iGrace == nil) then
+		iGrace = 2.5
+	end
+	self.m_iWorkerDanceResumeUntil = g_iGMT + iGrace
+	local oBuilding = self:GetWorkerDanceBuilding()
+	if (oBuilding == nil) then
+		self.m_iWorkerDanceBuildingId = nil
+		return false
+	end
+	local iPadId = EngineerTactic.GetPadTargetId(oBuilding)
+	local vPos = oBuilding:GetPosition()
+	if (iPadId ~= nil and not self:CanJoinBuildTarget(iPadId, vPos, "build")) then
+		self.m_iWorkerDanceBuildingId = nil
+		return false
+	end
+	self.m_bBusy = true
+	self.m_vDestination = vPos
+	if (not self.squad_ai:IsLocked() and not self.squad_ai:IsBuildProgressing()) then
+		local oEnt = oBuilding:GetEntity()
+		if (oEnt ~= nil) then
+			self.squad_ai:DoFinishBuilding(oEnt)
+		else
+			self.squad_ai:DoFinishBuilding(oBuilding)
+		end
+		if (iPadId ~= nil) then
+			EngineerTactic.RegisterWorker(iPadId, self.squad_ai)
+		end
+	end
+	return true
+end
+
+-- Friendly combat troops nearby (not self / not other workers)
+function EngineerTactic:HasNearbyAlliedTroops( iRange )
+
+	local vPos = self.squad_ai:GetPosition()
+	local iMyId = self.squad_ai:GetID()
+	local iScan = iRange
+	if (iScan == nil) then
+		iScan = 40
+	end
+	local oAlly = cpu_manager:GetClosestSquad(vPos, iScan, function( squad_ai )
+		if (squad_ai == nil or not squad_ai:IsValid()) then
+			return false
+		end
+		if (squad_ai:GetID() == iMyId) then
+			return false
+		end
+		if (squad_ai:IsEngineer() or squad_ai:IsBroken()) then
+			return false
+		end
+		return true
+	end)
+	return (oAlly ~= nil)
+end
+
+-- Dance from melee while building if progress < 0.85; only when actually attacked (not proactive).
+-- Exception HP < 0.45: also peel on live ranged fire (IsUnderAttack) — not sticky WasRecentlyHurt.
+function EngineerTactic:CheckForDance()
+
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+
+	local bInDance = (self.stateID == Tactic.StateID.DoDance)
+	local bLiveAttack = self.squad_ai:IsUnderAttack()
+	local bUnderFire = (bLiveAttack or self.squad_ai:WasRecentlyHurt())
+	local fHP = self.squad_ai:GetHealthPercentage()
+	local bLowHP = (fHP ~= nil and fHP < 0.45)
+	local oMelee = nil
+	if (bUnderFire or bInDance) then
+		oMelee = self:FindNearbyMeleeThreat(20)
+		if (oMelee == nil and bUnderFire) then
+			oMelee = self:FindNearbyMeleeThreat(28)
+		end
+	end
+
+	-- Already dancing: keep peeling while melee / live fire; stop when clear
+	if (bInDance) then
+		if (oMelee == nil and not bLiveAttack) then
+			self.m_iDancing = 0
+			return false
+		end
+		if (oMelee == nil and not bLowHP) then
+			self.m_iDancing = 0
+			return false
+		end
+		if (not self:MoveToDisengage(true)) then
+			self.squad_ai:DoMoveToClosestSafePoint(self.safe_point, self.tolerance_default)
+		end
+		self.m_eSubStateID = self.stateID
+		return true
+	end
+
+	-- Grace after resume — prevents build 1 tick / DoStop jitter
+	if (self.m_iWorkerDanceResumeUntil ~= nil and g_iGMT < self.m_iWorkerDanceResumeUntil) then
+		return false
+	end
+
+	-- Start dance only while working on unfinished building under 85% AND under attack
+	if (not self:IsCommittedToWork() and self.squad_ai:IsBuilding() == 0) then
+		return false
+	end
+	-- Already mid-build and not live-attacked: never interrupt for sticky hurt
+	if (self.squad_ai:IsBuildProgressing() and not bLiveAttack and oMelee == nil) then
+		return false
+	end
+	local fProgress = self:GetNearbyWorkBuildingProgress()
+	if (fProgress == nil or fProgress >= 0.85) then
+		return false
+	end
+	-- Healthy: melee + under fire. Low HP: melee OR live ranged attack (not sticky hurt alone).
+	if (oMelee ~= nil and bUnderFire) then
+	elseif (bLowHP and bLiveAttack) then
+	else
+		return false
+	end
+
+	self:RememberWorkBuildingForDance()
+	if (not self:MoveToDisengage(true)) then
+		self.squad_ai:DoMoveToClosestSafePoint(self.safe_point, self.tolerance_default)
+	end
+	local state_func = self:GetSubState()
+	if (state_func ~= self.DoDance) then
+		Tactic.SetSubState(self, self.DoDance, "DoDance")
+		self.squad_ai:DoSetStance(SquadAI.STANCE_StandGround)
+		self.stateID = Tactic.StateID.DoDance
+	end
+	self.m_eSubStateID = self.stateID
+	return true
+end
+
+function EngineerTactic:DoDance()
+	if (self.stateID == Tactic.StateID.DoDance and not self:CheckForDance()) then
+		-- Overrun / abandon: flee home — do not ResumeWorkerBuild (yo-yo with SM)
+		if (self:IsWorkSiteOverrun() or self:ShouldAbandonWork()) then
+			self.m_iWorkerDanceBuildingId = nil
+			self:ClearWorkFlags()
+			self:UpdateStance()
+			self.squad_ai:DoStop()
+			self:TryWorkerRefuge()
+			return
+		end
+		self:ResumeWorkerBuildAfterDance()
+	end
+end
+
+-- True army blob + melee (or huge mass). Ranged chip / base fight nearby ≠ abandon.
+function EngineerTactic:IsWorkSiteOverrun()
+
+	local vPos = self.squad_ai:GetPosition()
+	local oBuilding = self:GetNearbyUnfinishedBuilding()
+	if (oBuilding ~= nil) then
+		vPos = oBuilding:GetPosition()
+	elseif (self.m_vDestination ~= nil) then
+		vPos = self.m_vDestination
+	end
+	local iEnemy, iAllied = cpu_manager:GetArmyStrengthAtPos(vPos, 40, true)
+	if (iEnemy == nil or iEnemy < 200) then
+		return false
+	end
+	if (iAllied == nil) then
+		iAllied = 0
+	end
+	local bMelee = (self:FindNearbyMeleeThreat(28) ~= nil)
+	-- Crushing mass regardless of melee
+	if (iEnemy >= 350 and iEnemy > iAllied * 1.2) then
+		return true
+	end
+	-- Contested pad only matters if melee is on the worker
+	if (bMelee and iEnemy > iAllied and self:IsUnderWorkerThreat()) then
+		return true
+	end
+	return false
+end
+
+-- Stay on job under fire / low HP; abandon only overrun (+melee or very low HP).
+-- HP alone never abandons (48/280 was DoStop every tick via fHP < 0.2).
+-- Melee / live fire → CheckForDance; epoch T2 still flees at <0.2.
+function EngineerTactic:ShouldAbandonWork()
+	-- Overwhelm: keep building, no flee/abandon
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	if (not self:IsCommittedToWork()) then
+		return false
+	end
+	local fHP = self.squad_ai:GetHealthPercentage()
+
+	-- Epoch T2: only critical HP
+	local oEpoch = self:GetCommittedEpochBuilding()
+	if (oEpoch == nil) then
+		local iBusyID = self.squad_ai:IsBuilding()
+		if (iBusyID ~= nil and iBusyID ~= 0) then
+			local sBusyName = cpu_manager.stats:GetBuildingName(iBusyID)
+			if (sBusyName ~= nil and EngineerTactic.IsEpochTransitionBuilding(sBusyName)) then
+				oEpoch = true
+			end
+		end
+	end
+	if (oEpoch) then
+		return (fHP < 0.2)
+	end
+
+	if (self:IsWorkSiteOverrun() and self:FindNearbyMeleeThreat(28) ~= nil) then
+		return true
+	end
+	if (self:IsWorkSiteOverrun() and fHP < 0.35) then
+		return true
+	end
+	return false
+end
+
+function EngineerTactic:TryWorkerRefuge()
+	-- Overwhelm: no bunker / disengage / HQ flee
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	-- On a job: never bunker/run (abandon path still flees when ShouldAbandonWork)
+	if (self:IsCommittedToWork() and not self:ShouldAbandonWork()) then
+		return false
+	end
+
+	-- Unfinished template nearby: finish it instead of bunker/disengage (Guard gen spam)
+	-- Dark Eldar: unfinished assist is handled by plans (cpu_manager skips AutoConstruct pads)
+	local oPad = self:GetNearbyUnfinishedBuilding()
+	if (oPad ~= nil and not self:IsWorkSiteOverrun() and not cpu_manager:AutoConstructBuildings()) then
+		local fHP = self.squad_ai:GetHealthPercentage()
+		if (fHP == nil or fHP > 0.45) then
+			local oEnt = oPad:GetEntity()
+			if (oEnt ~= nil and self.squad_ai:IsBuilding() == 0 and
+				not self.squad_ai:IsBuildProgressing()) then
+				self.squad_ai:DoFinishBuilding(oEnt)
+				self.m_bBusy = true
+				self.m_vDestination = oPad:GetPosition()
+			end
+			return true
+		end
+	end
+
+	-- Melee + allies: skip bunker; peel only if actually hurt (no proactive pad flee)
+	local bUnderFire = (self.squad_ai:IsUnderAttack() or self.squad_ai:WasRecentlyHurt())
+	local bSkipBunker = (self:HasNearbyAlliedTroops(40) and self:FindNearbyMeleeThreat(28) ~= nil)
+	if (not bSkipBunker and g_iGMT > self.m_iCoverDelay) then
+		if (cpu_manager:OccupyBunker(self.squad_ai, 25)) then
+			self.m_iCoverDelay = g_iGMT + 2
+			self.m_iMoveDelay = g_iGMT
+			return true
+		end
+	end
+	if (bSkipBunker and not bUnderFire) then
+		return false
+	end
+	if (self:MoveToDisengage()) then
+		return true
+	end
+	local vPos = self.squad_ai:GetPosition()
+	local vSafe = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vPos, cpu_manager.start_pos, true, true)
+	if (vSafe ~= nil) then
+		self:ValidMove(vSafe)
+		self.m_iMoveDelay = g_iGMT
+		return true
+	end
+	return false
+end
+
+function EngineerTactic:BeginHoldState()
+	if (self:IsCommittedToWork() and not self:ShouldAbandonWork()) then
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+	if (self:IsUnderWorkerThreat()) then
+		self:UpdateStance()
+		self:TryWorkerRefuge()
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+	-- Relocate only — never attack-move / chase
+	local vSquadPos = self.m_vCurrentPosition
+	local iDistance = distance_sqr(self:GetTarget(), vSquadPos)
+	if (iDistance > sqr(40) and g_iGMT >= self.m_iMoveDelay + 5) then
+		cpu_manager:DoMove(self.squad_ai, self:GetTarget(), false, "EngineerHold")
+		self.m_iMoveDelay = g_iGMT
+	end
+	Tactic.SetSubState(self, self.HoldState, "Holding")
+end
+
+function EngineerTactic:BeginAttackState()
+	-- Same as hold — workers never chase
+	self:BeginHoldState()
+end
+
+function EngineerTactic:BeginRetreatState()
+	-- Overwhelm: stay on pad / idle — no HQ flee from plan Retreat
+	if (cpu_manager.m_bOverwhelmActive) then
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+	if (self:IsCommittedToWork() and not self:ShouldAbandonWork()) then
+		Tactic.SetSubState(self, self.HoldState, "Holding")
+		return
+	end
+	self:UpdateStance()
+	if (not self:TryWorkerRefuge()) then
+		local vPos = self.squad_ai:GetPosition()
+		local vSafe = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vPos, cpu_manager.start_pos, true, false)
+		if (vSafe ~= nil) then
+			self:ValidMove(vSafe)
+		end
+	end
+	Tactic.SetSubState(self, self.HoldState, "Holding")
+end
+
+function EngineerTactic:HoldState()
+	if (self:ShouldAbandonWork()) then
+		self:ClearWorkFlags()
+		self:UpdateStance()
+		self.squad_ai:DoStop()
+		self:TryWorkerRefuge()
+		return
+	end
+	if (self:IsCommittedToWork()) then
+		return
+	end
+	if (self:IsUnderWorkerThreat()) then
+		self:UpdateStance()
+		self:TryWorkerRefuge()
+		return
+	end
+	local iDistance = distance_sqr(self:GetTarget(), self.m_vCurrentPosition)
+	if (self.squad_ai:IsIdle() and iDistance > sqr(50)) then
+		Tactic.SetState(self, Tactic.States.Hold)
+	end
+end
+
+function EngineerTactic:AttackingState()
+	self:HoldState()
+end
+
 function EngineerTactic:ResolveBuildBaseName( iTargetId )
 	for oBuilding in cpu_manager.player_stats:GetBases() do
 		if (oBuilding:IsValid() and oBuilding:GetEntity():GetID() == iTargetId) then
@@ -279,7 +1079,20 @@ function EngineerTactic:TryAssistBuild( oEntity, vPos, sBaseName )
 	if (oEntity == nil or self:IsHqRepairWorker()) then
 		return false
 	end
-	local iTargetId = oEntity:GetID()
+	local iTargetId = EngineerTactic.GetPadTargetId(oEntity)
+	if (iTargetId == nil) then
+		iTargetId = oEntity:GetID()
+	end
+	-- Necron/Ork: assist only empty pads (Bufer/FindPadWorker). No GetSquads scans.
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		-- Already constructing something — never add a 2nd pad job
+		if (self.squad_ai:IsBuilding() ~= 0 or self.squad_ai:IsBuildProgressing()) then
+			return false
+		end
+		if (not self:CanJoinBuildTarget(iTargetId, vPos, "build")) then
+			return false
+		end
+	end
 	local iOwnerId = cpu_manager.player_id
 	if (sBaseName == nil) then
 		sBaseName, iOwnerId = self:ResolveBuildBaseName(iTargetId)
@@ -291,6 +1104,9 @@ function EngineerTactic:TryAssistBuild( oEntity, vPos, sBaseName )
 	local iEpochMax = EngineerTactic.GetEpochBuildMaxWorkers(sBaseName)
 	if (iEpochMax ~= nil) then
 		iMaxWorkers = iEpochMax
+	end
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		iMaxWorkers = 1
 	end
 	if (not EngineerTactic.CanAssignWorker(iTargetId, "build", vPos, iMaxWorkers)) then
 		return false
@@ -371,6 +1187,160 @@ function EngineerTactic:TryRepairBuilding( oBuilding )
 	return true
 end
 
+-- Safe to repair: no threat @25 OR allied > enemy @25
+function EngineerTactic:IsRepairSiteSafe( vPos )
+
+	if (vPos == nil) then
+		return false
+	end
+	local iRange = EngineerTactic.RepairThreatRange
+	if (iRange == nil) then
+		iRange = 25
+	end
+	if (not cpu_manager.terrain_analyzer:HasThreat(vPos, iRange)) then
+		return true
+	end
+	local iEnemy, iAllied = cpu_manager:GetArmyStrengthAtPos(vPos, iRange, true)
+	if (iEnemy == nil) then
+		iEnemy = 0
+	end
+	if (iAllied == nil) then
+		iAllied = 0
+	end
+	return (iAllied > iEnemy)
+end
+
+-- Nearest damaged own vehicle near this engie (HP < 100%), threat-safe
+function EngineerTactic:FindDamagedVehicleNear()
+
+	local iSearch = EngineerTactic.RepairSearchRange
+	if (iSearch == nil) then
+		iSearch = 80
+	end
+	local vPos = self.squad_ai:GetPosition()
+	local oBest = nil
+	local iBest = nil
+	local iSearchSqr = sqr(iSearch)
+	for oSquad in military_manager:GetSquads() do
+		if (oSquad:IsValid() and oSquad:CanBeRepaired() and oSquad:GetHealthPercentage() < 1.0) then
+			local vT = oSquad:GetPosition()
+			local iDist = distance_sqr(vPos, vT)
+			if (iDist < iSearchSqr and (iBest == nil or iDist < iBest) and self:IsRepairSiteSafe(vT)) then
+				oBest = oSquad
+				iBest = iDist
+			end
+		end
+	end
+	return oBest
+end
+
+-- Nearest damaged own building near this engie (HP < 100%), threat-safe
+function EngineerTactic:FindDamagedBuildingNear()
+
+	local iSearch = EngineerTactic.RepairSearchRange
+	if (iSearch == nil) then
+		iSearch = 80
+	end
+	local vPos = self.squad_ai:GetPosition()
+	local oBest = nil
+	local iBest = nil
+	local iSearchSqr = sqr(iSearch)
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and oBuilding:IsConstructionDone() and
+			oBuilding:CanBeRepaired() and oBuilding:GetHealthPercentage() < 1.0) then
+			local vT = oBuilding:GetPosition()
+			local iDist = distance_sqr(vPos, vT)
+			if (iDist < iSearchSqr and (iBest == nil or iDist < iBest) and self:IsRepairSiteSafe(vT)) then
+				oBest = oBuilding
+				iBest = iDist
+			end
+		end
+	end
+	return oBest
+end
+
+-- Repair: vehicles then buildings. Build assist must run first (caller).
+function EngineerTactic:TryIdleRepairs()
+
+	if (self:IsHqRepairWorker()) then
+		return false
+	end
+	self:ClearStaleWorkFlagsIfIdle()
+	if (self:IsCommittedToWork()) then
+		return false
+	end
+	if (not self.squad_ai:CanRepair()) then
+		return false
+	end
+	if (self.squad_ai:IsBuilding() ~= 0 or self.squad_ai:IsBuildProgressing()) then
+		return false
+	end
+
+	-- Prefer near engie; fall back to global cache (closest to HQ)
+	local oVehicleToRepair = self:FindDamagedVehicleNear()
+	if (oVehicleToRepair == nil) then
+		oVehicleToRepair = cpu_manager:GetDamagedVehicleInRange()
+		if (oVehicleToRepair ~= nil and not self:IsRepairSiteSafe(oVehicleToRepair:GetPosition())) then
+			oVehicleToRepair = nil
+		end
+	end
+	if (oVehicleToRepair ~= nil and self:TryRepairVehicle(oVehicleToRepair)) then
+		aitrace("EngineerTactic: Repairing vehicle...")
+		return true
+	end
+
+	local oBuildingToRepair = self:FindDamagedBuildingNear()
+	if (oBuildingToRepair == nil) then
+		oBuildingToRepair = cpu_manager:GetDamagedBuildingInRange()
+		if (oBuildingToRepair ~= nil and not self:IsRepairSiteSafe(oBuildingToRepair:GetPosition())) then
+			oBuildingToRepair = nil
+		end
+	end
+	if (oBuildingToRepair ~= nil and self:TryRepairBuilding(oBuildingToRepair)) then
+		aitrace("EngineerTactic: Repairing building...")
+		return true
+	end
+	return false
+end
+
+-- Finish unfinished pads before repair (build always > repair)
+function EngineerTactic:TryAssistAnyUnfinishedBuild()
+
+	if (self:IsHqRepairWorker() or cpu_manager:AutoConstructBuildings()) then
+		return false
+	end
+	local oCached = cpu_manager:GetUnfinishedBuildingInRange()
+	if (oCached ~= nil) then
+		local vPos = oCached:GetPosition()
+		if (vPos ~= nil and self:TryAssistBuild(oCached, vPos)) then
+			aitrace("EngineerTactic: Help finishing a building...")
+			return true
+		end
+	end
+	local oNear = self:GetNearbyUnfinishedBuilding()
+	if (oNear ~= nil) then
+		local oEnt = oNear:GetEntity()
+		local vPos = oNear:GetPosition()
+		if (oEnt ~= nil and self:TryAssistBuild(oEnt, vPos)) then
+			aitrace("EngineerTactic: Help finishing nearby building...")
+			return true
+		end
+	end
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local oEnt = oBuilding:GetEntity()
+			local vPos = oBuilding:GetPosition()
+			local iPadId = EngineerTactic.GetPadTargetId(oBuilding)
+			if (oEnt ~= nil and iPadId ~= nil and self:CanJoinBuildTarget(iPadId, vPos, "build") and
+				self:TryAssistBuild(oEnt, vPos)) then
+				aitrace("EngineerTactic: Help finishing unfinished building...")
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function EngineerTactic:IsCommittedToWork()
 	if (self.squad_ai:IsLocked()) then
 		return true
@@ -378,13 +1348,34 @@ function EngineerTactic:IsCommittedToWork()
 	if (self.squad_ai:IsBuildProgressing() or self.squad_ai:IsBuilding() ~= 0) then
 		return true
 	end
-	if (self.m_bBusy or self.m_Bufer) then
-		return true
-	end
 	if (self.m_iEpochBuildTargetId ~= nil) then
 		return true
 	end
+	-- m_bBusy / m_Bufer alone: only while actually working (else AFK forever)
+	if ((self.m_bBusy or self.m_Bufer) and not self.squad_ai:IsIdle()) then
+		return true
+	end
 	return false
+end
+
+-- Idle + not locked/building: drop stale busy claims so repair can run
+function EngineerTactic:ClearStaleWorkFlagsIfIdle()
+
+	if (self.squad_ai:IsLocked()) then
+		return
+	end
+	if (self.squad_ai:IsBuilding() ~= 0 or self.squad_ai:IsBuildProgressing()) then
+		return
+	end
+	if (not self.squad_ai:IsIdle()) then
+		return
+	end
+	if (self.m_bBusy or self.m_Bufer) then
+		self.m_bBusy = false
+		self.m_Bufer = false
+		self.m_vDestination = nil
+		EngineerTactic.UnregisterWorkerSquad(self.squad_ai)
+	end
 end
 
 function EngineerTactic:ShouldRetreatToBase()
@@ -400,7 +1391,7 @@ function EngineerTactic:IsInEmergencySubState()
 end
 
 function EngineerTactic:CheckForDeath(bCheck)
-	if (self:IsCommittedToWork()) then
+	if (self:IsCommittedToWork() and not self:ShouldAbandonWork()) then
 		return false
 	end
 	return InfantryTactic.CheckForDeath(self, bCheck)
@@ -411,6 +1402,129 @@ function EngineerTactic:Update()
 	if (self.stateID == Tactic.StateID.IsBroken or self.stateID == Tactic.StateID.AvoidDeath) then
 		self.stateID = Tactic.StateID.NoState
 		self.m_eSubStateID = Tactic.StateID.NoState
+	end
+
+	-- Top-up before work early-outs (grot/scarab free reinforce must run while building/locked)
+	self:Reinforce()
+
+	-- Drop job first — overrun must beat dance/resume (else build↔Disengage yo-yo)
+	if (self:ShouldAbandonWork()) then
+		self.m_iWorkerDanceBuildingId = nil
+		self:ClearWorkFlags()
+		self:UpdateStance()
+		self.squad_ai:DoStop()
+		self:TryWorkerRefuge()
+		return true
+	end
+
+	-- Melee dance while building (progress < 0.85): if attacked, then resume build
+	-- Low HP (<0.45): also on ranged damage (same CheckForDance exception)
+	if (self.stateID == Tactic.StateID.DoDance) then
+		self:UpdateStance()
+		if (self:CheckForDance()) then
+			return true
+		end
+		if (self:IsWorkSiteOverrun()) then
+			self.m_iWorkerDanceBuildingId = nil
+			self:ClearWorkFlags()
+			self:TryWorkerRefuge()
+			return true
+		end
+		self:ResumeWorkerBuildAfterDance()
+		return true
+	elseif (self:IsCommittedToWork() or self.squad_ai:IsBuilding() ~= 0) then
+		local fProgress = self:GetNearbyWorkBuildingProgress()
+		local fHP = self.squad_ai:GetHealthPercentage()
+		local bLowHP = (fHP ~= nil and fHP < 0.45)
+		local bMelee = (self:FindNearbyMeleeThreat(20) ~= nil)
+		local bLiveAttack = self.squad_ai:IsUnderAttack()
+		local bUnderFire = (bLiveAttack or self.squad_ai:WasRecentlyHurt())
+		-- Healthy: melee. Low HP: melee or live ranged (not sticky hurt alone).
+		local bWantDance = false
+		if (fProgress ~= nil and fProgress < 0.85) then
+			if (bMelee and bUnderFire) then
+				bWantDance = true
+			elseif (bLowHP and bLiveAttack) then
+				bWantDance = true
+			end
+		end
+		if (bWantDance) then
+			self:UpdateStance()
+			if (self:CheckForDance()) then
+				return true
+			end
+		end
+	end
+
+	-- Keep building/repairing: skip infantry chase paths entirely
+	self:ClearStaleWorkFlagsIfIdle()
+	if (self:IsCommittedToWork()) then
+		-- Necron scarab (or any engie-capturer): CapturePlan lock ≠ build job — do not DoFinishBuilding
+		if (self.squad_ai:IsCapturing() or self:IsCapturePlanMove() or self:IsSoftSelfCap()) then
+			self:UpdateStance()
+			return true
+		end
+		self:UpdateStance()
+		if (self:MaintainHqRepairCommitment()) then
+			return true
+		end
+		local oEpochBuilding = self:GetCommittedEpochBuilding()
+		if (oEpochBuilding ~= nil) then
+			self.m_bBusy = true
+			self.m_vDestination = oEpochBuilding:GetPosition()
+			if (not self.squad_ai:IsBuildProgressing()) then
+				self.squad_ai:DoFinishBuilding(oEpochBuilding:GetEntity())
+			end
+			return true
+		end
+		-- Locked for normal template (gen/infra): keep finishing nearby pad
+		-- Dark Eldar AutoConstruct: do not babysit pads — plan unlocks after kickoff
+		if (self.squad_ai:IsBuilding() == 0 and not self.squad_ai:IsBuildProgressing() and
+			not self:IsWorkSiteOverrun() and not cpu_manager:AutoConstructBuildings()) then
+			local oPad = self:GetNearbyUnfinishedBuilding()
+			if (oPad ~= nil) then
+				local oEnt = oPad:GetEntity()
+				local iPadId = EngineerTactic.GetPadTargetId(oPad)
+				if (oEnt ~= nil and iPadId ~= nil and
+					self:CanJoinBuildTarget(iPadId, oPad:GetPosition(), "build")) then
+					self.squad_ai:DoFinishBuilding(oEnt)
+					self.m_vDestination = oPad:GetPosition()
+					EngineerTactic.RegisterWorker(iPadId, self.squad_ai)
+				end
+			elseif (self.m_iWorkerDanceBuildingId ~= nil) then
+				self:ResumeWorkerBuildAfterDance()
+			end
+		end
+		return true
+	end
+
+	-- Idle under fire: finish nearby pad; flee only melee / critical (no HQ yo-yo on chip)
+	if (self:IsUnderWorkerThreat()) then
+		-- Capturing engie: never divert to pads under fire
+		if (self.squad_ai:IsCapturing() or self:IsCapturePlanMove() or self:IsSoftSelfCap()) then
+			self:UpdateStance()
+			return true
+		end
+		self:UpdateStance()
+		local oPad = self:GetNearbyUnfinishedBuilding()
+		if (oPad ~= nil and not self:IsWorkSiteOverrun() and not cpu_manager:AutoConstructBuildings()) then
+			local oEnt = oPad:GetEntity()
+			local iPadId = EngineerTactic.GetPadTargetId(oPad)
+			if (oEnt ~= nil and iPadId ~= nil and self.squad_ai:IsBuilding() == 0 and
+				not self.squad_ai:IsBuildProgressing() and
+				self:CanJoinBuildTarget(iPadId, oPad:GetPosition(), "build")) then
+				self.squad_ai:DoFinishBuilding(oEnt)
+				self.m_bBusy = true
+				self.m_vDestination = oPad:GetPosition()
+				EngineerTactic.RegisterWorker(iPadId, self.squad_ai)
+			end
+			return true
+		end
+		local fHP = self.squad_ai:GetHealthPercentage()
+		if (self:FindNearbyMeleeThreat(28) ~= nil or (fHP ~= nil and fHP < 0.35)) then
+			self:TryWorkerRefuge()
+		end
+		return true
 	end
 
 	if (not InfantryTactic.Update(self)) then
@@ -430,6 +1544,8 @@ function EngineerTactic:Update()
 		end
 		return true
 	end
+
+	self:ClearStaleWorkFlagsIfIdle()
 
 	if (self:IsCommittedToWork()) then
 		self.m_vDestination = nil
@@ -456,9 +1572,7 @@ function EngineerTactic:Update()
 			if (self.squad_ai:IsInStateMove()) then
 				if (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange) then
 					if (cpu_manager.terrain_analyzer:HasThreat(self.m_vDestination, 35)) then
-						if (not EngineerTactic.ShouldDisableGeneralAssist()) then
-							self:GoToNextPost()
-						end
+						self:GoToNextPost()
 					else
 						self.squad_ai:DoMove(self.m_vDestination)
 					end
@@ -466,16 +1580,17 @@ function EngineerTactic:Update()
 				end
 			end
 		elseif (distance_sqr(cpu_manager.start_pos, vSquadPos) > self.m_iValidRange and not self.m_bBusy) then
-			if (not EngineerTactic.ShouldDisableGeneralAssist()) then
-				self:GoToNextPost()
-			end
+			self:GoToNextPost()
 			return true
 		end
 
 		if (self.tagged_flag == nil and not self.squad_ai:IsInStateMove()) then
-			if (not EngineerTactic.ShouldDisableGeneralAssist()) then
-				self:GoToNextPost()
-			end
+			self:GoToNextPost()
+		end
+
+		-- Still idle after build assist: repair damaged vehicles / buildings
+		if (self.squad_ai:IsIdle() and not self:IsCommittedToWork()) then
+			self:TryIdleRepairs()
 		end
 	end
 
@@ -503,7 +1618,12 @@ function EngineerTactic:GoToNextPost()
 		end
 	end
 
+	-- Solo (Necron/Ork): no multi-assist; finish own unfinished then repair
 	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		if (self:TryAssistAnyUnfinishedBuild()) then
+			return
+		end
+		self:TryIdleRepairs()
 		return
 	end
 
@@ -512,34 +1632,11 @@ function EngineerTactic:GoToNextPost()
 		return
 	end
 
-	local oBuildingToFinish = cpu_manager:GetUnfinishedBuildingInRange()
-	if (oBuildingToFinish ~= nil) then
-		local vBuildPos = oBuildingToFinish:GetPosition()
-		if (self:TryAssistBuild(oBuildingToFinish, vBuildPos)) then
-			aitrace("EngineerTactic: Help finishing a building...")
-			return
-        end
+	-- Build / unfinished always before repair
+	if (self:TryAssistAnyUnfinishedBuild()) then
+		return
 	end
- 
-	if (self.squad_ai:CanRepair() and self.squad_ai:IsBuilding() == 0) then
-		local oVehicleToRepair = cpu_manager:GetDamagedVehicleInRange()
-		if (oVehicleToRepair ~= nil) then
-			local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oVehicleToRepair:GetPosition(), 35, true)
-			if (vPosThreat < 1.1 * iAlliedStrength and self:TryRepairVehicle(oVehicleToRepair)) then
-				aitrace("EngineerTactic: Repairing vehicle...")
-				return
-			end
-		end
-	end
-	
-	if (self.squad_ai:CanRepair()) then
-		local oBuildingToRepair = cpu_manager:GetDamagedBuildingInRange()
-		if (oBuildingToRepair ~= nil) then
-			local vPosThreat, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(oBuildingToRepair:GetPosition(), 35, true)
-			if (vPosThreat < 1.1 * iAlliedStrength and self:TryRepairBuilding(oBuildingToRepair)) then
-				aitrace("EngineerTactic: Repairing building...")
-				return
-			end
-		end
-	end
+
+	-- No build job taken this tick: repair if damaged + safe
+	self:TryIdleRepairs()
 end

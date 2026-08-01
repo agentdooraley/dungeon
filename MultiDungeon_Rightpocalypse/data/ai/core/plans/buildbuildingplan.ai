@@ -2,6 +2,7 @@
 -- File: 'buildbuildingplan.ai'
 -- Edited by LarkinVB @	 17.08.2005
 -- Edited by Arkhan   @  04.12.2005
+-- Edited by [DAG05]Simon @ 23.07.2026
 
 import ("Plans/BuildPlan.ai")
 
@@ -10,15 +11,28 @@ class 'BuildBuildingPlan' (BuildPlan)
 BuildBuildingPlan.UNREACHABLE_RETRY_SEC = 12
 BuildBuildingPlan.IDLE_LOCKED_ABORT_SEC = 25
 BuildBuildingPlan.CANBUILD_CHECK_RANGE = 28
+-- AFK-on-height: track map position, not IsIdle
+BuildBuildingPlan.STATIONARY_STUCK_SEC = 10
+BuildBuildingPlan.STATIONARY_MOVE_SQR = 4
+BuildBuildingPlan.STATIONARY_APPROACH_DIST = 10
+BuildBuildingPlan.STATIONARY_WORK_GRACE_SEC = 30
 
 function BuildBuildingPlan:__init( building_id, build_pos, wait_on_builder, bKeepBuildPos, bPlacementResolved, oAssignedEngineer) super( CpuPlayer.CT_BuildBuildings )
 
 	self.bestPosition = nil
 	self.m_bKeepBuildPos = (bKeepBuildPos == true)
-	self.m_oAssignedEngineer = oAssignedEngineer
+	self.m_oAssignedEngineer = nil
+	self.m_iAssignedEngineerID = nil
+	self:SetAssignedEngineer(oAssignedEngineer)
 	self.m_iPlacementFailCount = 0
 	self.m_iStuckSince = nil
 	self.m_iUnreachableSince = nil
+	self.m_iStationarySince = nil
+	self.m_vStationaryPos = nil
+	self.m_iStationaryPhase = 0
+	self.m_bStationaryHadWork = false
+	-- Necron/Ork: bind plan to one pad (FindUnfinishedBuilding is global → pile-on)
+	self.m_iClaimedBuildingId = nil
 
 	-- Nil if you want to automatically quit out on failure
 	self.wait_on_builder = wait_on_builder
@@ -45,7 +59,7 @@ function BuildBuildingPlan:__init( building_id, build_pos, wait_on_builder, bKee
 			build_pos = cpu_manager:FindEngineerSafeBuildPosition(building_id, build_pos)
 		end
 		if (self.m_oAssignedEngineer == nil) then
-			self.m_oAssignedEngineer = cpu_manager:GetClosestEngineerForBuild(building_id, build_pos, true, false)
+			self:SetAssignedEngineer(cpu_manager:GetClosestEngineerForBuild(building_id, build_pos, true, false))
 		end
 		self.build_pos = Vector2f()
 		self.build_pos.x = build_pos.x
@@ -71,7 +85,7 @@ function BuildBuildingPlan:__init( building_id, build_pos, wait_on_builder, bKee
 		-- If building has no builder then finish it
 		if (not has_builder) then		
 			aitrace("BuildBuildingPlan: Finish building...")
-			self.started_building = true
+			self:MarkConstructionStarted()
 			self.copy_build_pos = Vector3f(oBuilding:GetPosition())
 			self.bestPosition = Vector3f(oBuilding:GetPosition())
 			self.build_pos = Vector2f()
@@ -91,11 +105,169 @@ function BuildBuildingPlan:__init( building_id, build_pos, wait_on_builder, bKee
 	self.assistant_builder = nil
 end
 
+function BuildBuildingPlan:IsEpochPlan()
+	return (self.item_name ~= nil and EngineerTactic.IsEpochTransitionBuilding(self.item_name))
+end
+
+-- BuildOrder waits on OnPlanStart — must fire when construction is marked started early
+-- (Retry/unfinished/abort), otherwise BO never completes and BuildBase (addons) never runs.
+function BuildBuildingPlan:MarkConstructionStarted()
+	if (self.started_building) then
+		return
+	end
+	self.started_building = true
+	self:OnEvent( Plan.Events.OnPlanStart )
+end
+
+-- Used by BuildPlan.BuildingState — unfinished footprint means plan is NOT done.
+function BuildBuildingPlan:IsConstructionStillPending()
+	return (build_manager:FindUnfinishedBuilding(self.item_id) ~= nil)
+end
+
+function BuildBuildingPlan:MarkBuilderEpochCommitment()
+	if (not self:IsEpochPlan() or self.builder == nil or not self.builder:IsValid()) then
+		return
+	end
+	local oBuilding = self.building
+	if (oBuilding == nil) then
+		oBuilding = build_manager:FindUnfinishedBuilding(self.item_id)
+	end
+	if (oBuilding == nil) then
+		return
+	end
+	-- FindUnfinishedBuilding returns an entity (GetID); BaseAI has GetEntity():GetID()
+	local iTargetId = nil
+	if (type(oBuilding.GetEntity) == "function") then
+		local oEnt = oBuilding:GetEntity()
+		if (oEnt ~= nil) then
+			iTargetId = oEnt:GetID()
+		end
+	end
+	if (iTargetId == nil and type(oBuilding.GetID) == "function") then
+		iTargetId = oBuilding:GetID()
+	end
+	if (iTargetId == nil) then
+		return
+	end
+	local oTactic = self.builder:GetTactic()
+	if (oTactic ~= nil) then
+		oTactic.m_iEpochBuildTargetId = iTargetId
+		oTactic.m_bBusy = true
+	end
+end
+
 function BuildBuildingPlan:NeedsAssistantBuilder()
-	if (self.item_name == nil or not EngineerTactic.IsEpochTransitionBuilding(self.item_name)) then
+	-- Necron/Ork: never 2nd worker on a pad (incl. epoch)
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		return false
+	end
+	if (not self:IsEpochPlan()) then
 		return false
 	end
 	return cpu_manager.player_stats:GetNumBasesByBPID(self.item_id, true) < 1
+end
+
+-- This plan's unfinished pad only (Necron/Ork parallel gens must not share FindUnfinishedBuilding)
+function BuildBuildingPlan:FindOwnUnfinishedBuilding()
+
+	local function ToEnt( oBuilding )
+		local oLive, oEnt = EngineerTactic.ResolveLiveFinishTarget(oBuilding)
+		if (oLive == nil) then
+			return nil
+		end
+		if (oEnt ~= nil) then
+			return oEnt
+		end
+		return oLive
+	end
+
+	local iNearSqr = sqr(30)
+	if (self.m_iClaimedBuildingId ~= nil) then
+		for oBuilding in cpu_manager.player_stats:GetBases() do
+			if (oBuilding:IsValid() and oBuilding:GetID() == self.m_iClaimedBuildingId) then
+				if (not oBuilding:IsConstructionDone() and
+					oBuilding:GetBlueprintID() == self.item_id) then
+					return ToEnt(oBuilding)
+				end
+				self.m_iClaimedBuildingId = nil
+				break
+			end
+		end
+	end
+
+	if (self.bestPosition ~= nil) then
+		local oBest = nil
+		local iBestDist = iNearSqr
+		for oBuilding in cpu_manager.player_stats:GetBases() do
+			if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and
+				oBuilding:GetBlueprintID() == self.item_id) then
+				local iDist = distance_sqr(oBuilding:GetPosition(), self.bestPosition)
+				if (iDist < iBestDist) then
+					iBestDist = iDist
+					oBest = oBuilding
+				end
+			end
+		end
+		if (oBest ~= nil) then
+			return ToEnt(oBest)
+		end
+		local oAny = build_manager:FindUnfinishedBuilding(self.item_id)
+		local oLiveAny = EngineerTactic.ResolveLiveFinishTarget(oAny)
+		if (oLiveAny ~= nil and distance_sqr(oLiveAny:GetPosition(), self.bestPosition) < iNearSqr) then
+			return ToEnt(oLiveAny)
+		end
+		-- Necron/Ork: never steal a distant unfinished pad for another plan
+		if (EngineerTactic.ShouldDisableGeneralAssist()) then
+			return nil
+		end
+	end
+
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		return nil
+	end
+	return ToEnt(build_manager:FindUnfinishedBuilding(self.item_id))
+end
+
+-- DoFinish only on live pads (destroyed thermo/plasma/LP → no pure-virtual crash)
+function BuildBuildingPlan:SafeDoFinish( oSquad, oPad )
+
+	if (not EngineerTactic.SafeDoFinishBuilding(oSquad, oPad)) then
+		local oLive = EngineerTactic.ResolveLiveFinishTarget(self.building)
+		if (oLive == nil) then
+			self.building = nil
+			self.m_iClaimedBuildingId = nil
+		end
+		return false
+	end
+	return true
+end
+
+function BuildBuildingPlan:ClaimOwnBuilding( oBuilding )
+
+	if (oBuilding == nil) then
+		return
+	end
+	-- Always store BaseAI id so FindOwnUnfinishedBuilding lookup works
+	-- (ToEnt returns entity whose GetID ≠ Base:GetID)
+	local iWantId = EngineerTactic.GetPadTargetId(oBuilding)
+	if (iWantId ~= nil) then
+		for oBase in cpu_manager.player_stats:GetBases() do
+			if (oBase:IsValid()) then
+				if (oBase:GetID() == iWantId) then
+					self.m_iClaimedBuildingId = oBase:GetID()
+					return
+				end
+				if (type(oBase.GetEntity) == "function") then
+					local oEnt = oBase:GetEntity()
+					if (oEnt ~= nil and type(oEnt.GetID) == "function" and oEnt:GetID() == iWantId) then
+						self.m_iClaimedBuildingId = oBase:GetID()
+						return
+					end
+				end
+			end
+		end
+		self.m_iClaimedBuildingId = iWantId
+	end
 end
 
 function BuildBuildingPlan:ObtainAssistantBuilder( oBuilding )
@@ -104,7 +276,7 @@ function BuildBuildingPlan:ObtainAssistantBuilder( oBuilding )
 	end
 	if (self.assistant_builder ~= nil and self.assistant_builder:IsValid()) then
 		if (oBuilding ~= nil) then
-			self.assistant_builder:DoFinishBuilding(oBuilding)
+			self:SafeDoFinish(self.assistant_builder, oBuilding)
 		end
 		return true
 	end
@@ -131,7 +303,7 @@ function BuildBuildingPlan:ObtainAssistantBuilder( oBuilding )
 		self.assistant_builder = oAssist
 		Plan.LockResource(self, oAssist)
 		if (oBuilding ~= nil) then
-			oAssist:DoFinishBuilding(oBuilding)
+			self:SafeDoFinish(oAssist, oBuilding)
 		end
 		return true
 	end
@@ -148,9 +320,13 @@ function BuildBuildingPlan:MaintainAssistantBuilder()
 		oBuilding = build_manager:FindUnfinishedBuilding(self.item_id)
 		self.building = oBuilding
 	end
+	oBuilding = EngineerTactic.ResolveLiveFinishTarget(oBuilding)
 	if (oBuilding == nil) then
+		self.building = nil
+		self.m_iClaimedBuildingId = nil
 		return
 	end
+	self.building = oBuilding
 	
 	if (self.assistant_builder == nil or not self.assistant_builder:IsValid()) then
 		if (self.assistant_builder ~= nil) then
@@ -159,7 +335,7 @@ function BuildBuildingPlan:MaintainAssistantBuilder()
 		end
 		self:ObtainAssistantBuilder(oBuilding)
 	elseif (self.assistant_builder:IsIdle() and not self.assistant_builder:IsBuildProgressing()) then
-		self.assistant_builder:DoFinishBuilding(oBuilding)
+		self:SafeDoFinish(self.assistant_builder, oBuilding)
 	end
 end
 
@@ -172,7 +348,8 @@ function BuildBuildingPlan:FindEngineerCloseToSP()
 	for oSquad in military_manager:GetUnlockedSquads() do
 	
 		-- Get a valid engineer
-		if (oSquad:IsValid() and oSquad:IsEngineer() and oSquad:CanBuild(self.item_id) == SquadAI.CANBUILD_Ok) then
+		if (oSquad:IsValid() and oSquad:IsEngineer() and oSquad:CanBuild(self.item_id) == SquadAI.CANBUILD_Ok and
+			not cpu_manager:IsEngineerReservedForEpoch(oSquad, self.item_id)) then
 		
 			-- Get distance to start point
 			local vSquadPos = oSquad:GetPosition()
@@ -250,6 +427,143 @@ function BuildBuildingPlan:IsSiteUnreachableForBuilder(oEngineer)
 	return not self:CanBuilderUseSite(oEngineer, self.bestPosition)
 end
 
+function BuildBuildingPlan:ResetStationaryWatch()
+
+	self.m_iStationarySince = nil
+	self.m_vStationaryPos = nil
+	self.m_iStationaryPhase = 0
+	self.m_bStationaryHadWork = false
+end
+
+function BuildBuildingPlan:IsBuilderConstructingOrRepairing( oBuilder )
+
+	if (oBuilder == nil or not oBuilder:IsValid()) then
+		return false
+	end
+	if (oBuilder:IsBuilding() ~= 0 or oBuilder:IsBuildProgressing()) then
+		return true
+	end
+	if (type(oBuilder.IsRepairing) == "function" and oBuilder:IsRepairing()) then
+		return true
+	end
+	local oTac = oBuilder:GetTactic()
+	if (oTac ~= nil and type(oTac.IsHqRepairWorker) == "function" and oTac:IsHqRepairWorker()) then
+		return true
+	end
+	return false
+end
+
+function BuildBuildingPlan:GetStationaryApproachPos()
+
+	local vSite = self.bestPosition
+	if (vSite == nil) then
+		vSite = self.copy_build_pos
+	end
+	if (vSite == nil or self.builder == nil or not self.builder:IsValid()) then
+		return nil
+	end
+	local vBuilder = self.builder:GetPosition()
+	local fDx = vBuilder.x - vSite.x
+	local fDz = vBuilder.z - vSite.z
+	local fLen = math.sqrt(fDx * fDx + fDz * fDz)
+	local fDist = BuildBuildingPlan.STATIONARY_APPROACH_DIST
+	local vNear = Vector3f(vSite)
+	if (fLen > 1) then
+		vNear.x = vSite.x + (fDx / fLen) * fDist
+		vNear.z = vSite.z + (fDz / fLen) * fDist
+	else
+		vNear.x = vSite.x + fDist
+		vNear.z = vSite.z
+	end
+	return vNear
+end
+
+-- Task but not building: if map position unchanged ~10s → DoMove near site; again → release; after move → DoBuild
+function BuildBuildingPlan:MaintainStationaryBuilderUnstick()
+
+	if (self.builder == nil or not self.builder:IsValid()) then
+		self:ResetStationaryWatch()
+		return
+	end
+	if (not self.builder:IsLocked()) then
+		self:ResetStationaryWatch()
+		return
+	end
+
+	local vPos = self.builder:GetPosition()
+
+	-- Actively building/repairing: pause watch; later stuck wait gets +30s grace
+	if (self:IsBuilderConstructingOrRepairing(self.builder)) then
+		self.m_bStationaryHadWork = true
+		self.m_vStationaryPos = Vector3f(vPos)
+		self.m_iStationarySince = g_iGMT
+		return
+	end
+
+	local iMoveSqr = BuildBuildingPlan.STATIONARY_MOVE_SQR
+	local iStuckSec = BuildBuildingPlan.STATIONARY_STUCK_SEC
+	if (self.m_bStationaryHadWork) then
+		iStuckSec = iStuckSec + BuildBuildingPlan.STATIONARY_WORK_GRACE_SEC
+	end
+
+	-- After approach: if close to site, reissue build (player: walk near → click template)
+	if (self.m_iStationaryPhase == 1 and self.bestPosition ~= nil and
+		self:IsBuilderCloseToSite(self.builder, self.bestPosition) and
+		self:CanBuilderUseSite(self.builder, self.bestPosition)) then
+		self.builder:DoBuildBuilding(self.item_id, self.bestPosition)
+		Plan.SetState(self, "Building a "..self.item_name, BuildBuildingPlan.BuildingState)
+		self:ResetStationaryWatch()
+		return
+	end
+
+	if (self.m_vStationaryPos == nil) then
+		self.m_vStationaryPos = Vector3f(vPos)
+		self.m_iStationarySince = g_iGMT
+		if (self.m_iStationaryPhase == nil) then
+			self.m_iStationaryPhase = 0
+		end
+		return
+	end
+
+	if (distance_sqr(vPos, self.m_vStationaryPos) > iMoveSqr) then
+		self.m_vStationaryPos = Vector3f(vPos)
+		self.m_iStationarySince = g_iGMT
+		return
+	end
+
+	if (self.m_iStationarySince == nil) then
+		self.m_iStationarySince = g_iGMT
+		return
+	end
+	if (g_iGMT < self.m_iStationarySince + iStuckSec) then
+		return
+	end
+
+	if (self.m_iStationaryPhase == nil or self.m_iStationaryPhase == 0) then
+		local vNear = self:GetStationaryApproachPos()
+		if (vNear ~= nil) then
+			cpu_manager:DoMove(self.builder, vNear, false, "Stationary approach "..tostring(self.item_name))
+			aitrace("BuildBuildingPlan: Stationary → move near site "..tostring(self.item_name))
+		end
+		self.m_iStationaryPhase = 1
+		self.m_vStationaryPos = Vector3f(vPos)
+		self.m_iStationarySince = g_iGMT
+		return
+	end
+
+	-- Second stuck wait after approach → free builder
+	aitrace("BuildBuildingPlan: Stationary twice → release "..tostring(self.item_name))
+	self:ResetStationaryWatch()
+	if (self.started_building or self:IsConstructionStillPending()) then
+		self:AbortAndReleaseBuilder("stationary stuck")
+	else
+		Plan.UnlockResource(self, self.builder)
+		self.builder = nil
+		Plan.SetNeeds(self, "Asking for builder", BuildBuildingPlan.ObtainBuilder)
+		Plan.SetState(self, "Wanting to build: "..self.item_name, BuildBuildingPlan.BuildBuilding)
+	end
+end
+
 -- Шаблонная точка недоступна рабочему → сместить позицию (или отпустить план)
 function BuildBuildingPlan:EnsureReachableBuildSite(oEngineer)
 	if (self.bestPosition == nil) then
@@ -277,7 +591,7 @@ function BuildBuildingPlan:EnsureReachableBuildSite(oEngineer)
 
 	aitrace("BuildBuildingPlan: Unreachable site for "..self.item_name..", fallback...", true)
 	if (self:ApplyFallbackBuildPosition(oEngineer:GetPosition())) then
-		if (self.m_oAssignedEngineer ~= nil and self:CanBuilderUseSite(self.m_oAssignedEngineer, self.bestPosition)) then
+		if (self:IsValidAssignedEngineer() and self:CanBuilderUseSite(self.m_oAssignedEngineer, self.bestPosition)) then
 			return true
 		end
 		if (self:CanBuilderUseSite(oEngineer, self.bestPosition)) then
@@ -287,15 +601,56 @@ function BuildBuildingPlan:EnsureReachableBuildSite(oEngineer)
 	return false
 end
 
+-- Keep ID: dead engineer userdata can lose IsValid (nil method crash)
+function BuildBuildingPlan:SetAssignedEngineer(oEng)
+
+	self.m_oAssignedEngineer = nil
+	self.m_iAssignedEngineerID = nil
+	if (oEng == nil) then
+		return
+	end
+	if (type(oEng.GetID) ~= "function") then
+		return
+	end
+	local iID = oEng:GetID()
+	if (iID == nil) then
+		return
+	end
+	local oFresh = military_manager:GetSquadFromID(iID)
+	if (oFresh == nil or type(oFresh.IsValid) ~= "function" or not oFresh:IsValid()) then
+		return
+	end
+	self.m_oAssignedEngineer = oFresh
+	self.m_iAssignedEngineerID = iID
+end
+
 function BuildBuildingPlan:IsValidAssignedEngineer()
 
-	if (self.m_oAssignedEngineer == nil or not self.m_oAssignedEngineer:IsValid()) then
+	local oEng = nil
+	if (self.m_iAssignedEngineerID ~= nil) then
+		oEng = military_manager:GetSquadFromID(self.m_iAssignedEngineerID)
+	elseif (self.m_oAssignedEngineer ~= nil and type(self.m_oAssignedEngineer.GetID) == "function") then
+		local iID = self.m_oAssignedEngineer:GetID()
+		if (iID ~= nil) then
+			self.m_iAssignedEngineerID = iID
+			oEng = military_manager:GetSquadFromID(iID)
+		end
+	end
+
+	if (oEng == nil or type(oEng.IsValid) ~= "function" or not oEng:IsValid()) then
+		self.m_oAssignedEngineer = nil
+		self.m_iAssignedEngineerID = nil
 		return false
 	end
-	if (self.m_oAssignedEngineer:IsLocked()) then
+	self.m_oAssignedEngineer = oEng
+
+	if (type(oEng.IsLocked) == "function" and oEng:IsLocked()) then
 		return false
 	end
-	return self.m_oAssignedEngineer:CanBuild(self.item_id) == SquadAI.CANBUILD_Ok
+	if (self.item_id == nil or type(oEng.CanBuild) ~= "function") then
+		return false
+	end
+	return oEng:CanBuild(self.item_id) == SquadAI.CANBUILD_Ok
 end
 
 function BuildBuildingPlan:ObtainBuilder()
@@ -349,7 +704,7 @@ function BuildBuildingPlan:ObtainBuilder()
 				self.build_pos.x = vRetryPos.x
 				self.build_pos.y = vRetryPos.z
 				self.bestPosition = nil
-				self.m_oAssignedEngineer = cpu_manager:GetClosestEngineerForBuild(self.item_id, vRetryPos, true, false)
+				self:SetAssignedEngineer(cpu_manager:GetClosestEngineerForBuild(self.item_id, vRetryPos, true, false))
 				if (not self:InitBestBuildingPosition()) then
 					aitrace("BuildBuildingPlan: No builders for: "..self.item_name)
 					return
@@ -370,7 +725,7 @@ function BuildBuildingPlan:ObtainBuilder()
 		aitrace("BuildBuildingPlan: No reachable site for: "..self.item_name)
 		return
 	end
-	if (self.m_oAssignedEngineer ~= nil and self.m_oAssignedEngineer:IsValid() and not self.m_oAssignedEngineer:IsLocked()) then
+	if (self:IsValidAssignedEngineer()) then
 		engineer = self.m_oAssignedEngineer
 	end
 
@@ -621,6 +976,31 @@ function BuildBuildingPlan:SetSaveBuildPosition(oEngineer)
 end
 
 function BuildBuildingPlan:ApplyFallbackBuildPosition(vRefPos)
+	-- Never abandon an unfinished pad for a brand-new template site (Eldar warp gen steal)
+	local oUnfinished = self:FindOwnUnfinishedBuilding()
+	if (oUnfinished == nil and (self.started_building or self.m_iClaimedBuildingId ~= nil)) then
+		oUnfinished = build_manager:FindUnfinishedBuilding(self.item_id)
+	end
+	if (oUnfinished ~= nil) then
+		local vPad = oUnfinished:GetPosition()
+		self:ClaimOwnBuilding(oUnfinished)
+		self.copy_build_pos = Vector3f(vPad)
+		if (self.build_pos == nil) then
+			self.build_pos = Vector2f()
+		end
+		self.build_pos.x = vPad.x
+		self.build_pos.y = vPad.z
+		self.bestPosition = Vector3f(vPad)
+		self.m_bKeepBuildPos = true
+		self.m_iPlacementFailCount = 0
+		self:MarkConstructionStarted()
+		if (self.builder ~= nil and self.builder:IsValid()) then
+			self:SafeDoFinish(self.builder, oUnfinished)
+			self:MarkBuilderEpochCommitment()
+		end
+		return true
+	end
+
 	if (vRefPos == nil and self.builder ~= nil) then
 		vRefPos = self.builder:GetPosition()
 	end
@@ -641,7 +1021,7 @@ function BuildBuildingPlan:ApplyFallbackBuildPosition(vRefPos)
 	self.bestPosition = nil
 	self.m_bKeepBuildPos = false
 	if (oEng ~= nil) then
-		self.m_oAssignedEngineer = oEng
+		self:SetAssignedEngineer(oEng)
 	end
 	if (not self:InitBestBuildingPosition()) then
 		self.m_iPlacementFailCount = self.m_iPlacementFailCount + 1
@@ -654,7 +1034,93 @@ function BuildBuildingPlan:ApplyFallbackBuildPosition(vRefPos)
 	return true
 end
 
+-- Enemy blob at unfinished pad — release only on real overrun (not ranged chip / base fight)
+function BuildBuildingPlan:IsBuildSiteOverrun(vPos)
+
+	if (vPos == nil) then
+		return false
+	end
+	local iEnemy, iAllied = cpu_manager:GetArmyStrengthAtPos(vPos, 40, true)
+	if (iEnemy == nil or iEnemy < 200) then
+		return false
+	end
+	if (iAllied == nil) then
+		iAllied = 0
+	end
+	if (iEnemy >= 350 and iEnemy > iAllied * 1.2) then
+		return true
+	end
+	-- Contested: need melee on the builder (if any)
+	if (self.builder ~= nil and self.builder:IsValid()) then
+		local oMelee = cpu_manager.cpu_player:FindFirstEnemy(self.builder:GetPosition(), 28, 1)
+		if (oMelee ~= nil and not oMelee:IsRanged() and iEnemy > iAllied) then
+			return true
+		end
+	end
+	return false
+end
+
+function BuildBuildingPlan:ReleaseBuilderFromOverrun(sReason)
+
+	aitrace("BuildBuildingPlan: Site overrun — release builder ("..tostring(sReason)..")")
+	if (self.assistant_builder ~= nil) then
+		Plan.UnlockResource(self, self.assistant_builder)
+		self.assistant_builder = nil
+	end
+	if (self.builder ~= nil) then
+		if (self.builder:IsValid()) then
+			local oTactic = self.builder:GetTactic()
+			if (oTactic ~= nil) then
+				if (oTactic.ClearWorkFlags ~= nil) then
+					oTactic:ClearWorkFlags()
+				end
+				if (oTactic.TryWorkerRefuge ~= nil) then
+					oTactic:UpdateStance()
+					oTactic:TryWorkerRefuge()
+				else
+					self.builder:DoMove(cpu_manager.start_pos)
+				end
+			end
+		end
+		Plan.UnlockResource(self, self.builder)
+		self.builder = nil
+	end
+	-- Leave unfinished; leave BuildingState so next tick does not assert on nil builder
+	self:MarkConstructionStarted()
+	Plan.SetNeeds(self, "Fixing building...", BuildBuildingPlan.ObtainNewBuilder)
+	Plan.SetState(self, "Try to fix building: "..tostring(self.item_name), BuildBuildingPlan.FixState)
+end
+
+function BuildBuildingPlan:ShouldKeepUnfinishedOnAbort()
+	if (self:IsEpochPlan()) then
+		return true
+	end
+	-- Generators: abort must not drop the pad so thermo/DynamicBuild can steal the only engie
+	if (cpu_manager:IsGenerator(self.item_id) or cpu_manager:IsBiggerGenerator(self.item_id)) then
+		return true
+	end
+	return false
+end
+
 function BuildBuildingPlan:AbortAndReleaseBuilder(sReason)
+	-- Epoch / generators must stay until finished — release engie only to re-seek, not drop the job.
+	if (self:ShouldKeepUnfinishedOnAbort() and self:IsConstructionStillPending()) then
+		if (sReason ~= nil) then
+			aitrace("BuildBuildingPlan: Keep unfinished "..self.item_name.." ("..sReason..")", true)
+		end
+		if (self.assistant_builder ~= nil) then
+			Plan.UnlockResource(self, self.assistant_builder)
+			self.assistant_builder = nil
+		end
+		if (self.builder ~= nil) then
+			Plan.UnlockResource(self, self.builder)
+			self.builder = nil
+		end
+		self:MarkConstructionStarted()
+		Plan.SetNeeds(self, "Fixing building...", BuildBuildingPlan.ObtainNewBuilder)
+		Plan.SetState(self, "Try to fix building: "..self.item_name, BuildBuildingPlan.FixState)
+		return
+	end
 	if (sReason ~= nil) then
 		aitrace("BuildBuildingPlan: Abort "..self.item_name.." ("..sReason..")", true)
 	end
@@ -684,8 +1150,9 @@ function BuildBuildingPlan:BuildBuilding()
 		return
 	end
 	
-	-- Don't build under threat
-	if (cpu_manager.terrain_analyzer:HasThreat(self.bestPosition, 35)) then
+	-- Relocate only for buildings that use safe placement (not LP/turret/mine)
+	if (cpu_manager:UsesEngineerSafePlacement(self.item_id) and
+		cpu_manager.terrain_analyzer:HasThreat(self.bestPosition, 35)) then
 	
 		-- Try to find a save build position
 		if (not self:SetSaveBuildPosition(self.builder)) then
@@ -745,56 +1212,155 @@ end
 function BuildBuildingPlan:BuildingState()
 
 	aitrace("BuildBuildingPlan: Building State...")
+
+	-- Released / died mid-tick — never call BuildPlan.BuildingState without builder
+	if (self.builder == nil or not self.builder:IsValid()) then
+		if (self.started_building) then
+			-- DE auto-construct: pad finishes alone — do NOT ObtainNewBuilder (that re-stuck the slave)
+			if (cpu_manager:AutoConstructBuildings() and not self:IsEpochPlan()) then
+				Plan.SetComplete(self, true)
+				return
+			end
+			-- Unfinished pad still exists → re-obtain (skip foreign left builder nil; not overrun)
+			local oPad = self:FindOwnUnfinishedBuilding()
+			if (oPad ~= nil) then
+				self.building = oPad
+				Plan.SetNeeds(self, "Fixing building...", BuildBuildingPlan.ObtainNewBuilder)
+				return
+			end
+			Plan.SetComplete(self, true)
+		end
+		return
+	end
+
+	-- Overrun + worker wants to abandon (melee/critical) — not chip fire
+	local oThreatBuilding = build_manager:FindUnfinishedBuilding(self.item_id)
+	if (oThreatBuilding ~= nil and self:IsBuildSiteOverrun(oThreatBuilding:GetPosition())) then
+		local oTactic = self.builder:GetTactic()
+		if (oTactic ~= nil and oTactic.ShouldAbandonWork ~= nil and oTactic:ShouldAbandonWork()) then
+			self:ReleaseBuilderFromOverrun("BuildingState")
+			return
+		end
+	end
 		
 	-- Compute basic building state method
 	BuildPlan.BuildingState(self)
-	
-	if (self.started_building) then
-		local oBuilding = build_manager:FindUnfinishedBuilding(self.item_id)
-		if (oBuilding ~= nil) then
-			self.building = oBuilding
-			self:ObtainAssistantBuilder(oBuilding)
-		end
-	end
 
 	-- Check if building was started
 	if (not self.started_building) then
 		return
 	end
-	
-	-- Search unfinished building
-	local oBuilding = build_manager:FindUnfinishedBuilding(self.item_id)
-	if (oBuilding ~= nil and distance_sqr(oBuilding:GetPosition(), self.bestPosition) < 100) then
-	
-		-- Try to jump if possible
-		if (distance_sqr(self.builder:GetPosition(), self.bestPosition) > sqr(40) and cpu_manager:JumpBuilder(self.builder, self.bestPosition)) then
-			return
+
+	-- Epoch only: don't treat brief leave as done while footprint unfinished
+	if (self:IsComplete() and self:IsConstructionStillPending()) then
+		if (self:IsEpochPlan() and not cpu_manager:AutoConstructBuildings()) then
+			self:SetComplete(false)
+		end
+	end
+
+	if (self.started_building) then
+		local oB = self:FindOwnUnfinishedBuilding()
+		if (oB ~= nil) then
+			self.building = oB
+			self:ClaimOwnBuilding(oB)
+			-- Necron/Ork: claim only if claim free / already ours
+			if (EngineerTactic.ShouldDisableGeneralAssist() and self.builder ~= nil and
+				self.builder:IsValid()) then
+				local oTactic = self.builder:GetTactic()
+				local iPadId = EngineerTactic.GetPadTargetId(oB)
+				local vPad = oB:GetPosition()
+				if (oTactic ~= nil and iPadId ~= nil and
+					not oTactic:CanJoinBuildTarget(iPadId, vPad, "build")) then
+					-- Own builder already placing/finishing this BP — re-register, never skip
+					if (self.builder:IsBuilding() == self.item_id or self.builder:IsBuildProgressing()) then
+						EngineerTactic.RegisterWorker(iPadId, self.builder)
+						oTactic.m_vDestination = Vector3f(vPad)
+						oTactic.m_bBusy = true
+					else
+						-- True foreign claim: unlock THIS plan's extra worker — do NOT SetComplete
+						aitrace("BuildBuildingPlan: skip foreign pad claim — "..self.item_name)
+						Plan.UnlockResource(self, self.builder)
+						self.builder = nil
+						return
+					end
+				else
+					if (iPadId ~= nil) then
+						EngineerTactic.RegisterWorker(iPadId, self.builder)
+					end
+					if (oTactic ~= nil) then
+						oTactic.m_vDestination = Vector3f(vPad)
+						oTactic.m_bBusy = true
+					end
+				end
+			end
+			self:ObtainAssistantBuilder(oB)
+			self:MarkBuilderEpochCommitment()
 		end
 	end
 	
-	-- Check if builder is building
+	-- Search THIS plan's unfinished building only
+	local oBuilding = self:FindOwnUnfinishedBuilding()
+	if (oBuilding ~= nil and self.bestPosition ~= nil and distance_sqr(oBuilding:GetPosition(), self.bestPosition) < 100) then
+	
+		-- Try to jump if possible
+		if (self.builder ~= nil and distance_sqr(self.builder:GetPosition(), self.bestPosition) > sqr(40) and
+			cpu_manager:JumpBuilder(self.builder, self.bestPosition)) then
+			return
+		end
+	end
+
+	if (self.builder == nil) then
+		return
+	end
+	
+	-- Check if builder is building (OLD Relic AutoConstruct path — do not short-circuit before this)
 	if (self.builder:IsBuilding() ~= self.item_id) then
 		
 		-- Check for building
 		if (oBuilding ~= nil) then
 		
-			-- Get building AI
-			local oBuildingAI = military_manager:GetBaseFromID(oBuilding:GetID())
+			-- Live BaseAI only (destroyed pad mid-Critical → no GetID/DoFinish crash)
+			local oBuildingAI = EngineerTactic.ResolveLiveFinishTarget(oBuilding)
 			if (oBuildingAI ~= nil) then
 
-				-- Check for auto-construct buildings
+				-- AutoConstruct: tap while HP<=0.2; above that pad builds alone → unlock
 				if (not cpu_manager:AutoConstructBuildings() or oBuildingAI:GetHealthPercentage() <= 0.2) then
-					self.builder:DoFinishBuilding(oBuilding)
+					-- Necron/Ork: do not pile onto a pad another worker already owns
+					if (EngineerTactic.ShouldDisableGeneralAssist()) then
+						local oTactic = self.builder:GetTactic()
+						local iPadId = EngineerTactic.GetPadTargetId(oBuildingAI)
+						if (oTactic ~= nil and iPadId ~= nil and
+							not oTactic:CanJoinBuildTarget(iPadId, oBuildingAI:GetPosition(), "build")) then
+							aitrace("BuildBuildingPlan: Release extra worker (Necron/Ork max 1) — "..self.item_name)
+							Plan.UnlockResource(self, self.builder)
+							self.builder = nil
+							-- Keep plan alive (PlanExists) — pad finishes via owner worker
+							return
+						end
+						if (iPadId ~= nil) then
+							EngineerTactic.RegisterWorker(iPadId, self.builder)
+						end
+						self:ClaimOwnBuilding(oBuildingAI)
+					end
+					self:SafeDoFinish(self.builder, oBuildingAI)
+					self:MarkBuilderEpochCommitment()
 					return
 				else
-				
-					-- Job finished
+					if (self:IsEpochPlan()) then
+						self:SafeDoFinish(self.builder, oBuildingAI)
+						self:MarkBuilderEpochCommitment()
+						return
+					end
+					-- Job finished (Dark Eldar tap-and-go)
 					aitrace("BuildBuildingPlan: Job finished...")
 					Plan.UnlockResource(self, self.builder)
 					self.builder = nil
 					Plan.SetComplete(self, true)
 					return
 				end
+			else
+				self.building = nil
+				self.m_iClaimedBuildingId = nil
 			end
 		end
 		
@@ -807,8 +1373,10 @@ function BuildBuildingPlan:BuildingState()
 		
 			-- Get a valid engineer
 			if (oSquad:IsValid() and oSquad:IsEngineer() and oSquad:CanBuild(self.item_id) == SquadAI.CANBUILD_Ok and oSquad:GetID() ~= iBuilderID) then
-				oNewBuilder = oSquad
-				break
+				if (not cpu_manager:IsEngineerReservedForEpoch(oSquad, self.item_id)) then
+					oNewBuilder = oSquad
+					break
+				end
 			end
 		end
 		
@@ -825,18 +1393,57 @@ end
 function BuildBuildingPlan:Retry()
 
 	-- Work around for invalid build position with heavy network lag or time out
-	-- Bigger gen: longer timeout (approach slag + build); aborting frees engie for other builds = interrupt feel
+	-- Bigger gen / epoch: longer timeout (aborting frees engie for other builds = interrupt feel)
 	local iTimeout = 120
 	if (cpu_manager:IsBiggerGenerator(self.item_id)) then
 		iTimeout = 200
+	elseif (self:IsEpochPlan()) then
+		iTimeout = 300
 	end
 	if (g_iGMT > self.m_iPlanStart + iTimeout) then
 
-		-- Stop building, and let an available builder take over when available
+		if (self:IsConstructionStillPending()) then
+			aitrace("BuildBuildingPlan: Time out but unfinished — keep "..self.item_name)
+			self.m_iPlanStart = g_iGMT
+			local oUnfinished = self:FindOwnUnfinishedBuilding()
+			if (oUnfinished == nil) then
+				oUnfinished = build_manager:FindUnfinishedBuilding(self.item_id)
+			end
+			if (oUnfinished ~= nil and self.builder ~= nil) then
+				self:ClaimOwnBuilding(oUnfinished)
+				self:SafeDoFinish(self.builder, oUnfinished)
+				self:MarkBuilderEpochCommitment()
+			end
+			return
+		end
 		aitrace("BuildBuildingPlan: Time out! Abort building "..self.item_name)
 		Plan.UnlockResource( self, self.builder )
 		self.builder = nil
 		Plan.SetComplete( self, true )
+		return
+	end
+
+	-- Pad already exists (first DoBuild placed it, IsBuilding lag) — finish, do NOT place a 2nd
+	local oPending = self:FindOwnUnfinishedBuilding()
+	if (oPending == nil) then
+		oPending = build_manager:FindUnfinishedBuilding(self.item_id)
+	end
+	if (oPending ~= nil and self.builder ~= nil and self.builder:IsValid()) then
+		aitrace("BuildBuildingPlan: Retry → finish existing "..self.item_name)
+		self:MarkConstructionStarted()
+		self.building = oPending
+		self:ClaimOwnBuilding(oPending)
+		local vPad = oPending:GetPosition()
+		self.copy_build_pos = Vector3f(vPad)
+		self.bestPosition = Vector3f(vPad)
+		if (self.build_pos == nil) then
+			self.build_pos = Vector2f()
+		end
+		self.build_pos.x = vPad.x
+		self.build_pos.y = vPad.z
+		self:SafeDoFinish(self.builder, oPending)
+		self:MarkBuilderEpochCommitment()
+		Plan.SetState(self, "Building a "..self.item_name, BuildBuildingPlan.BuildingState)
 		return
 	end
 
@@ -925,8 +1532,12 @@ function BuildBuildingPlan:ObtainNewBuilder()
     aitrace("BuildBuildingPlan: Obtain new builder for "..self.item_name)
     self.building = nil
     
-    -- Find the half-built building
-    self.building = build_manager:FindUnfinishedBuilding( self.item_id )
+    -- Necron/Ork: this plan's pad only (global FindUnfinished → 2 on 1 gen)
+    if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		self.building = self:FindOwnUnfinishedBuilding()
+	else
+		self.building = build_manager:FindUnfinishedBuilding( self.item_id )
+	end
     
     -- Both the builder and the building died -- just quit
     if (self.building == nil) then
@@ -934,11 +1545,73 @@ function BuildBuildingPlan:ObtainNewBuilder()
         self:SetComplete( true )
         return
     end
+	self:ClaimOwnBuilding(self.building)
     
-    -- Don't build under threat
+    -- Reassign under fire OK; only skip true overrun (workers build under ranged)
     local build_pos = self.building:GetPosition()    
-	if (cpu_manager.terrain_analyzer:HasThreat( build_pos, 35 )) then
+	if (self:IsBuildSiteOverrun(build_pos)) then
 		return
+	end
+
+	-- Necron/Ork: never pile a 2nd worker on the same unfinished pad
+	if (EngineerTactic.ShouldDisableGeneralAssist()) then
+		local iPadId = EngineerTactic.GetPadTargetId(self.building)
+		if (iPadId ~= nil and not EngineerTactic.CanAssignWorker(iPadId, "build", build_pos)) then
+			local iOwnerId = EngineerTactic.FindPadWorkerSquadId(iPadId, build_pos)
+			local oOwner = nil
+			if (iOwnerId ~= nil) then
+				oOwner = military_manager:GetSquadFromID(iOwnerId)
+			end
+			-- Ghost claim (capturer / POST LOCK / dead): purge and allow new builder
+			if (oOwner == nil or not oOwner:IsValid() or
+				EngineerTactic.IsSquadOffPadDuty(oOwner)) then
+				if (oOwner ~= nil and oOwner:IsValid()) then
+					EngineerTactic.UnregisterWorkerSquad(oOwner)
+				else
+					EngineerTactic.CleanupBufer()
+				end
+				aitrace("BuildBuildingPlan: Purge ghost pad claim — "..self.item_name)
+				-- fall through to GetClosestEngineerForBuild
+			elseif (oOwner:IsBuilding() ~= 0 or oOwner:IsBuildProgressing()) then
+				-- Real pad worker finishing — wait
+				aitrace("BuildBuildingPlan: Pad already has worker (Necron/Ork max 1) — "..self.item_name)
+				return
+			elseif (oOwner:IsLocked()) then
+				-- Already locked — NEVER SetBuilder/LockResource (Plan.ai:146 assert)
+				if (self.builder == nil or
+					(type(self.builder.GetID) == "function" and
+					 self.builder:GetID() == oOwner:GetID())) then
+					self.builder = oOwner
+					EngineerTactic.RegisterWorker(iPadId, oOwner)
+					local oOwnTac = oOwner:GetTactic()
+					if (oOwnTac ~= nil) then
+						oOwnTac.m_vDestination = Vector3f(build_pos)
+						oOwnTac.m_bBusy = true
+						oOwnTac.m_Bufer = true
+					end
+					self:SafeDoFinish(oOwner, self.building)
+					Plan.SetNeeds(self, "No needs", Plan.NeedsFulfilled)
+					aitrace("BuildBuildingPlan: Keep locked pad worker (no re-Lock) — "..self.item_name)
+				else
+					aitrace("BuildBuildingPlan: Pad worker locked by other — wait "..self.item_name)
+				end
+				return
+			else
+				-- Unlocked idle claim: adopt same worker
+				local oOwnTac = oOwner:GetTactic()
+				BuildPlan.SetBuilder(self, oOwner)
+				self:MarkBuilderEpochCommitment()
+				EngineerTactic.RegisterWorker(iPadId, oOwner)
+				if (oOwnTac ~= nil) then
+					oOwnTac.m_vDestination = Vector3f(build_pos)
+					oOwnTac.m_bBusy = true
+				end
+				self:SafeDoFinish(oOwner, self.building)
+				Plan.SetNeeds(self, "No needs", Plan.NeedsFulfilled)
+				aitrace("BuildBuildingPlan: Adopt pad worker (Necron/Ork max 1) — "..self.item_name)
+				return
+			end
+		end
 	end
     
     local engineer = cpu_manager:GetClosestEngineerForBuild(self.item_id, build_pos, true, false, build_pos)
@@ -947,6 +1620,16 @@ function BuildBuildingPlan:ObtainNewBuilder()
     end
     if (engineer ~= nil and not engineer:IsLocked()) then
         BuildPlan.SetBuilder( self, engineer )
+        self:MarkBuilderEpochCommitment()
+		local iRegId = EngineerTactic.GetPadTargetId(self.building)
+		if (iRegId ~= nil) then
+			EngineerTactic.RegisterWorker(iRegId, engineer)
+		end
+		local oTactic = engineer:GetTactic()
+		if (oTactic ~= nil) then
+			oTactic.m_vDestination = Vector3f(build_pos)
+			oTactic.m_bBusy = true
+		end
         
         if (self:NeedsAssistantBuilder()) then
         	self:ObtainAssistantBuilder(self.building)
@@ -964,7 +1647,7 @@ function BuildBuildingPlan:FixState()
 	end
 	
 	self.started_building = false
-	self.builder:DoFinishBuilding( self.building )
+	self:SafeDoFinish(self.builder, self.building)
 	Plan.SetState( self, "Fixing a "..self.item_name, BuildBuildingPlan.BuildingState )
 end
 
@@ -1000,7 +1683,7 @@ end
 
 function BuildBuildingPlan:Update()
 
-	aitrace("BuildBuildingPlan: Update building plan for "..self.item_name, true)
+	AITrace.Log("Plan.Noise", "BuildBuildingPlan: Update building plan for "..self.item_name)
 	
 	-- Take into account if my builder dies
 	if (self.builder ~= nil and not self.builder:IsValid()) then
@@ -1025,6 +1708,7 @@ function BuildBuildingPlan:Update()
 	end
 	
 	self:MaintainAssistantBuilder()
+	self:MaintainStationaryBuilderUnstick()
 
 	-- Locked builder stuck at template site (не сбрасываем Front/Around HQ пока идёт марш)
 	if (self.builder ~= nil and self.builder:IsValid() and self.builder:IsLocked() and not self.started_building) then
@@ -1072,32 +1756,76 @@ function BuildBuildingPlan:Update()
 	-- retry or quit building if big generator is not progressing
 	if (self.builder ~= nil and cpu_manager:IsBiggerGenerator(self.item_id) and 
 		self.started_building and g_iGMT > self.m_iPlanStart + 10 and self.builder:IsBuilding() == self.item_id and 
-		not self.builder:IsBuildProgressing() and not self.builder:GetTactic():IsMoving()) then
-	
-		-- time to build a big gen (dcpro)
-		local build_time = 160
-		
-		if (g_iGMT <= self.m_iPlanStart + build_time + 10) then
-			aitrace("BuildBuildingPlan: Builder stuck, shift position")
-			if (g_iGMT >= self.shift_move + 8) then 
-				aitrace("BuildBuildingPlan: Builder stuck, set shift state")
-				Plan.SetState(self, "Shifting builder for: "..self.item_name, BuildBuildingPlan.ShiftState)
+		not self.builder:IsBuildProgressing()) then
+		local oStuckTac = self.builder:GetTactic()
+		local bMoving = (oStuckTac ~= nil and oStuckTac:IsMoving())
+		if (not bMoving) then
+			-- time to build a big gen (dcpro)
+			local build_time = 160
+			if (g_iGMT <= self.m_iPlanStart + build_time + 10) then
+				aitrace("BuildBuildingPlan: Builder stuck, shift position")
+				if (g_iGMT >= self.shift_move + 8) then 
+					aitrace("BuildBuildingPlan: Builder stuck, set shift state")
+					Plan.SetState(self, "Shifting builder for: "..self.item_name, BuildBuildingPlan.ShiftState)
+				end
+			elseif (self.building ~= nil) then
+				self:SafeDoFinish(self.builder, self.building)
+			else
+				aitrace("BuildBuildingPlan: Builder stuck. Abort "..self.item_name, true)
+				Plan.UnlockResource( self, self.builder )
+				self.builder = nil
+				self:SetComplete(true)		
 			end
-		elseif (self.building ~= nil) then
-			self.builder:DoFinishBuilding(self.building)
-		else
-			aitrace("BuildBuildingPlan: Builder stuck. Abort "..self.item_name, true)
-			Plan.UnlockResource( self, self.builder )
-			self.builder = nil
-			self:SetComplete(true)		
 		end
-	-- Check if builder is lazy (bigger: brief idle is normal; don't abort and hand engie to other builds)
+	-- Check if builder is lazy (bigger/epoch: brief idle is normal; don't abort and hand engie away)
 	elseif (self.builder ~= nil and self.builder:IsIdle() and self.started_building) then
 		
-		-- Reactivate builder
-		aitrace("BuildBuildingPlan: Builder lazy, send him to work again")
-		if (self.building ~= nil) then
-			self.builder:DoFinishBuilding(self.building)
+		if (self.building == nil) then
+			self.building = build_manager:FindUnfinishedBuilding(self.item_id)
+		end
+		self.building = EngineerTactic.ResolveLiveFinishTarget(self.building)
+		if (self.building == nil) then
+			self.m_iClaimedBuildingId = nil
+		end
+		-- Dark Eldar: idle + pad already kicked off (HP>0.2) → unlock, do NOT re-DoFinish
+		if (cpu_manager:AutoConstructBuildings() and not self:IsEpochPlan() and self.building ~= nil) then
+			if (self.building:GetHealthPercentage() > 0.2) then
+				aitrace("BuildBuildingPlan: Job finished (auto-construct idle)...")
+				Plan.UnlockResource(self, self.builder)
+				self.builder = nil
+				Plan.SetComplete(self, true)
+				Plan.Update(self)
+				return
+			end
+		end
+		-- Idle dance/melee: yank back unless worker should abandon
+		if (self.building ~= nil and self:IsBuildSiteOverrun(self.building:GetPosition())) then
+			local oTactic = self.builder:GetTactic()
+			if (oTactic ~= nil and oTactic.ShouldAbandonWork ~= nil and oTactic:ShouldAbandonWork()) then
+				self:ReleaseBuilderFromOverrun("lazy under overrun")
+			else
+				aitrace("BuildBuildingPlan: Builder lazy, send him to work again")
+				self:SafeDoFinish(self.builder, self.building)
+				self:MarkBuilderEpochCommitment()
+			end
+		elseif (self.building ~= nil) then
+			if (EngineerTactic.ShouldDisableGeneralAssist()) then
+				local oTactic = self.builder:GetTactic()
+				local iPadId = EngineerTactic.GetPadTargetId(self.building)
+				if (oTactic ~= nil and iPadId ~= nil and
+					not oTactic:CanJoinBuildTarget(iPadId, self.building:GetPosition(), "build")) then
+					aitrace("BuildBuildingPlan: lazy skip foreign pad — "..self.item_name)
+					Plan.UnlockResource(self, self.builder)
+					self.builder = nil
+					return
+				end
+				if (iPadId ~= nil) then
+					EngineerTactic.RegisterWorker(iPadId, self.builder)
+				end
+			end
+			aitrace("BuildBuildingPlan: Builder lazy, send him to work again")
+			self:SafeDoFinish(self.builder, self.building)
+			self:MarkBuilderEpochCommitment()
 		elseif (cpu_manager:IsBiggerGenerator(self.item_id)) then
 			-- Keep plan alive; re-issue build at slag instead of aborting
 			if (self.bestPosition ~= nil and self.builder:CanBuildAt(self.item_id, self.bestPosition)) then
@@ -1105,6 +1833,8 @@ function BuildBuildingPlan:Update()
 			elseif (self.copy_build_pos ~= nil) then
 				cpu_manager:DoMove(self.builder, self.copy_build_pos, false, "Resume bigger generator")
 			end
+		elseif (self:IsEpochPlan()) then
+			aitrace("BuildBuildingPlan: Epoch idle — waiting for footprint "..self.item_name, true)
 		else
 			aitrace("BuildBuildingPlan: No building available. Abort "..self.item_name, true)
 			Plan.UnlockResource( self, self.builder )
@@ -1113,8 +1843,8 @@ function BuildBuildingPlan:Update()
 		end
 	elseif (self.builder ~= nil and self.started_building and self.builder:IsBroken() and
 		not self.builder:IsBuildProgressing()) then
-		if (self.building ~= nil) then
-			self.builder:DoFinishBuilding(self.building)
+		if (self.building ~= nil and not self:IsBuildSiteOverrun(self.building:GetPosition())) then
+			self:SafeDoFinish(self.builder, self.building)
 		end
 	end
 
@@ -1140,8 +1870,9 @@ function BuildBuildingPlan:BuildBuildingFast()
                 return
         end
 
-	-- Don't build under threat
-	if (cpu_manager.terrain_analyzer:HasThreat(self.bestPosition, 35)) then
+	-- Relocate only for buildings that use safe placement (not LP/turret/mine)
+	if (cpu_manager:UsesEngineerSafePlacement(self.item_id) and
+		cpu_manager.terrain_analyzer:HasThreat(self.bestPosition, 35)) then
 	
 		-- Try to find a save build position
 		if (not self:SetSaveBuildPosition(self.builder)) then

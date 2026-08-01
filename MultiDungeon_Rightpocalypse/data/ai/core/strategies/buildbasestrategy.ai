@@ -38,12 +38,17 @@ function BuildBaseStrategy:__init( baseinfo ) super( baseinfo )
 	
 	-- Arkhan 10.2005: Decide, which build program to use
 	self.m_bSpendMoney = true
+	self.m_iForceTechLockStart = nil
+	self.m_iForceTechCooldownUntil = 0
 	self.m_iPrepareRush = 0
 	self.m_iFinishedRush = 0
 	self.m_iCurrentBuildProgram = 1
+	self.m_sLivingEnemyBuildKey = nil
+	self.m_sClosestEnemyBuildKey = nil
 	if (CpuManager.AISettings.bAlternativeStrategies) then
 		self.m_iCurrentBuildProgram = self:ChooseBuildProgram()
 	end
+	self:RememberClosestEnemyBuildKey()
 	print( "player "..cpu_manager.player_id.." has chosen strategy: "..tostring(self.m_iCurrentBuildProgram))
 	
 	self.debug_effectiveness = false
@@ -179,6 +184,76 @@ end
 -- Arkhan 10.2005: Chooses a random build program for a race at the start
 function BuildBaseStrategy:ChooseBuildProgram()
 	return math.random(1, table.getn(self.info.BuildPrograms))
+end
+
+-- Same living-enemy fingerprint as CapturePlan homeside rebuild
+function BuildBaseStrategy:GetLivingEnemyBuildKey()
+
+	if (CapturePlan ~= nil and CapturePlan.GetLivingEnemyKey ~= nil) then
+		return CapturePlan:GetLivingEnemyKey()
+	end
+	return ""
+end
+
+function BuildBaseStrategy:RememberClosestEnemyBuildKey()
+
+	self.m_sLivingEnemyBuildKey = self:GetLivingEnemyBuildKey()
+	local oEnemy = cpu_manager:FindClosestEnemyPlayer(false)
+	if (oEnemy ~= nil and not oEnemy:IsPlayerDead()) then
+		self.m_sClosestEnemyBuildKey = tostring(oEnemy:GetPlayerID())
+	else
+		self.m_sClosestEnemyBuildKey = ""
+	end
+end
+
+-- After deaths: re-pick closest living enemy + ChooseBuildProgram (like homeside strat list)
+function BuildBaseStrategy:RefreshBuildProgramIfEnemiesChanged()
+
+	local sLiving = self:GetLivingEnemyBuildKey()
+	if (sLiving ~= self.m_sLivingEnemyBuildKey) then
+		-- Drop cached closest so FindClosestEnemyPlayer scans survivors only
+		cpu_manager.closest_enemy_player = nil
+		cpu_manager.closest_enemy_distance = nil
+		if (cpu_manager.first_enemy_player ~= nil and cpu_manager.first_enemy_player:IsPlayerDead()) then
+			cpu_manager.first_enemy_player = nil
+		end
+		self.m_sLivingEnemyBuildKey = sLiving
+	end
+
+	local oEnemy = cpu_manager:FindClosestEnemyPlayer(false)
+	local sClosest = ""
+	local sRace = "?"
+	if (oEnemy ~= nil and not oEnemy:IsPlayerDead()) then
+		sClosest = tostring(oEnemy:GetPlayerID())
+		sRace = oEnemy:GetPlayerRaceName()
+	end
+	if (sClosest == self.m_sClosestEnemyBuildKey) then
+		return false
+	end
+
+	local sOldClosest = self.m_sClosestEnemyBuildKey
+	self.m_sClosestEnemyBuildKey = sClosest
+
+	-- Mid-rush: keep rush program; opponent key already updated for sEnemy callers
+	if (self.m_iPrepareRush ~= nil and self.m_iPrepareRush > 0) then
+		aitrace("BuildBaseStrategy: Closest enemy changed ("..tostring(sOldClosest).." -> "..sClosest..
+			" / "..sRace..") — rush active, program kept")
+		return true
+	end
+
+	if (not CpuManager.AISettings.bAlternativeStrategies) then
+		aitrace("BuildBaseStrategy: Closest enemy changed ("..tostring(sOldClosest).." -> "..sClosest..
+			" / "..sRace..") — alt strategies off")
+		return true
+	end
+
+	local iOldProg = self.m_iCurrentBuildProgram
+	self.m_iCurrentBuildProgram = self:ChooseBuildProgram()
+	aitrace("BuildBaseStrategy: Re-chose build program "..tostring(iOldProg).." -> "..
+		tostring(self.m_iCurrentBuildProgram).." vs "..sRace.." (id "..sClosest..")")
+	print("player "..cpu_manager.player_id.." re-chose strategy: "..tostring(self.m_iCurrentBuildProgram)..
+		" vs "..sRace)
+	return true
 end
 
 function BuildBaseStrategy:GetName()
@@ -485,43 +560,120 @@ function BuildBaseStrategy:CountSquads(sUnitName, oFunctor)
 	return iUnitCount
 end
 
+-- Owned flags that still need a listening post (unlocked, safe enough to consider).
+function BuildBaseStrategy:CountFlagsNeedingPosts()
+	local iCount = 0
+	if (CapturePlan.OrderedStratPoints == nil) then
+		return 0
+	end
+	for iLoop1 in CapturePlan.OrderedStratPoints do
+		local oStrategicPoint = CapturePlan.OrderedStratPoints[iLoop1][1]
+		if (oStrategicPoint ~= nil and oStrategicPoint:Owner() == cpu_manager.player_id and
+			not oStrategicPoint:HasListeningPost() and not oStrategicPoint:IsStrategicObjective() and
+			not oStrategicPoint:IsLocked()) then
+			iCount = iCount + 1
+		end
+	end
+	return iCount
+end
+
+-- Unfinished HQ / epoch T2 still needs an engie — leave spare capacity for those plans.
+function BuildBaseStrategy:HasCriticalUnfinishedNeedingBuilder()
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local sName = oBuilding:GetBaseName()
+			if (cpu_manager:IsHQ(oBuilding:GetBlueprintID()) or
+				EngineerTactic.IsEpochTransitionBuilding(sName)) then
+				local bHasBuilder = false
+				local iBPID = oBuilding:GetBlueprintID()
+				for oSquad in military_manager:GetSquads() do
+					if (oSquad:IsValid() and oSquad:IsEngineer() and oSquad:IsBuilding() == iBPID) then
+						bHasBuilder = true
+						break
+					end
+				end
+				if (not bHasBuilder) then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
+-- Parallel LP ResourcePlans from free builders + open flags (all races).
+-- Idle engie + flags without posts → 2nd plan (e.g. 1 AFK while 1 builds LP / 1 builds BO).
+-- Critical unfinished HQ/epoch keeps a spare engie.
+function BuildBaseStrategy:GetDesiredPostWorkers()
+	local iFlags = self:CountFlagsNeedingPosts()
+	if (iFlags <= 0) then
+		return 0
+	end
+
+	local iFree = table.getn(cpu_manager:GetAvailableBuilders())
+	local iCurrent = self:PlanCount("Resource Plan")
+	local iPool = iFree + iCurrent
+
+	-- Default one post crew; any spare free engie with another open flag → second post
+	local iDesired = 1
+	if (iFlags >= 2 and iFree >= 1) then
+		iDesired = 2
+	end
+	if (iFlags >= 3 and iFree >= 2 and iPool >= 4) then
+		iDesired = 3
+	end
+
+	-- Late game: allow more if many engies (race max_engineers)
+	if (self.tierLevel >= 3 and iPool >= 4) then
+		local iLate = (self.info.max_engineers or 3) - 1
+		if (iLate < 2) then
+			iLate = 2
+		end
+		if (iLate > 3) then
+			iLate = 3
+		end
+		iDesired = math.max(iDesired, math.min(iLate, iFlags))
+	end
+
+	iDesired = math.min(iDesired, iFlags)
+	iDesired = math.min(iDesired, 3)
+
+	-- Prefer info.post_builder as soft floor when workers exist (SM/Eldar=2)
+	local iInfoPost = self.info.post_builder
+	if (iInfoPost ~= nil and iInfoPost > iDesired and iPool >= iInfoPost and iFlags >= iInfoPost) then
+		iDesired = math.min(iInfoPost, 3)
+	end
+
+	-- HQ/epoch unfinished without a builder: leave one free engie for that job
+	if (self:HasCriticalUnfinishedNeedingBuilder()) then
+		local iMaxPosts = iFree + iCurrent - 1
+		if (iMaxPosts < 1) then
+			iMaxPosts = 1
+		end
+		iDesired = math.min(iDesired, iMaxPosts)
+	end
+
+	return iDesired
+end
+
 -- Arkhan 10.2005: Changed to fit the new build program concept
 function BuildBaseStrategy:Update()
 
-	aitrace("BuildBaseStrategy: Update...", true)
+	AITrace.Log("Build.Noise", "BuildBaseStrategy: Update...")
 
 	-- Superclass
 	Strategy.Update(self)
 	
-	-- Always want more strategic points
-	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
-	local sMapSize, iClosestEnemyDistance = self:GetMapSize()
-	local required_post_workers = 0
-	
-	if self.tierLevel < 3 then
-		if iRequisition < 135 then
-			required_post_workers = 1
-		elseif iRequisition < 600 then 
-			required_post_workers = 1
-		else
-			required_post_workers = 0
-		end
-	else
-		required_post_workers = self.info.max_engineers -1
-		if 	required_post_workers == 0 then
-			required_post_workers = 1
-		end
-	end
-	--print(self.info.post_builder)
-	if (self:PlanCount( "Resource Plan" ) < required_post_workers) then --self:PlanCount( "Resource Plan" ) < self.info.post_builder
+	-- Parallel listening-post ResourcePlans (scale with free builders / open flags)
+	local required_post_workers = self:GetDesiredPostWorkers()
+	if (self:PlanCount( "Resource Plan" ) < required_post_workers) then
 		self:AddPlan( ResourcePlan() )	
 	end
-	--print("tierlvl")
-	--print(self.tierLevel)
-	--print("plans count")
-	--print(self:PlanCount( "Resource Plan" ))
-	-- Set capture plans
+	-- Soft pack + parallel empty caps: at least 3 CapturePlans
 	local iCapturePlans = self.info.flag_capture
+	if (iCapturePlans == nil or iCapturePlans < 3) then
+		iCapturePlans = 3
+	end
 	if (cpu_manager:GetArmyStrength() > 2500) then
 		iCapturePlans = iCapturePlans + 1
 	end
@@ -538,6 +690,9 @@ function BuildBaseStrategy:Update()
 	-- Build buildings, research and addons
 	self:ComputeBuildProgram()
 
+	-- Enemy vehicles spotted → push anti-tech turret upgrades (Guard/SM/Chaos/Sisters/Eldar)
+	self:DoUpgradeTurretsToAntiVehicle()
+
 	-- Tier-1 power sink: every tick, even during ForceTech
 	self:DoSpendPowerOnListeningPostAddons()
 
@@ -548,6 +703,11 @@ function BuildBaseStrategy:Update()
 
 	-- Free / priority unit production (every tick; races override)
 	self:BuildPriorityUnits()
+
+	-- Dump excess power into vehicles (all races except Necrons)
+	if (self:UsesEnergyOverflowSpend()) then
+		self:SpendEnergyOverflow()
+	end
 	
 	-- Check if we need more cap !
 	if (not cpu_manager:HQThreat() and self.m_bSpendMoney) then 
@@ -558,8 +718,13 @@ function BuildBaseStrategy:Update()
 	if (g_iGMT > self.m_iNextUpdate) then
 	
 		-- Build LP's if possible (Necessary because of DC 1.2 bug)
+		-- Dark Eldar AutoConstruct: только ResourcePlan (DynamicBuild LP ворует рабов → AFK)
+		-- Necron: LPs only via capturer scarab after non-crit cap (no DynamicBuild steal)
 		local sPostName = self:GetBuildingName("ListeningPost")
-		if (sPostName ~= nil and resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition) > 80) then
+		local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+		if (sPostName ~= nil and not cpu_manager:AutoConstructBuildings() and
+			sRace ~= "necron_race" and
+			resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition) > 80) then
 		
 			-- Check if post plan exist
 			local iID = cpu_manager.stats:GetBuildingID(sPostName)
@@ -671,6 +836,23 @@ function BuildBaseStrategy:GetGeneratorStructureCount()
 	return iCount
 end
 
+-- Finished generators only (ConstructionDone): regular + bigger/slag. No plans / pads.
+function BuildBaseStrategy:GetCompletedGeneratorStructureCount()
+
+	local iCount = 0
+	local sGenerator = self:GetBuildingName( "Generator" )
+	if (sGenerator ~= nil) then
+		local iID = cpu_manager.stats:GetBuildingID( sGenerator )
+		iCount = iCount + self:GetBuildingCountByBPID( iID, true )
+	end
+	local sBiggerGenerator = self:GetBuildingName( "BiggerGenerator" )
+	if (sBiggerGenerator ~= nil) then
+		local iBiggerID = cpu_manager.stats:GetBuildingID( sBiggerGenerator )
+		iCount = iCount + self:GetBuildingCountByBPID( iBiggerID, true )
+	end
+	return iCount
+end
+
 function BuildBaseStrategy:GetTurretStructureCount()
 
 	return self:CountBuildingType( "Turret" )
@@ -685,6 +867,150 @@ end
 function BuildBaseStrategy:GetMaxAllowedTurretCount()
 
 	return nil
+end
+
+-- Spotted enemy vehicle / air squads. Cache per tick.
+BuildBaseStrategy.EnemyVehicleCacheGMT = -1
+BuildBaseStrategy.EnemyVehicleCacheCount = 0
+BuildBaseStrategy.EnemyAirCacheCount = 0
+
+function BuildBaseStrategy:RefreshEnemyVehicleAirCache()
+
+	if (BuildBaseStrategy.EnemyVehicleCacheGMT == g_iGMT) then
+		return
+	end
+	BuildBaseStrategy.EnemyVehicleCacheGMT = g_iGMT
+	local iVehicles = 0
+	local iAir = 0
+	if (cpu_manager.m_aEnemyUnits ~= nil) then
+		for iLoop in cpu_manager.m_aEnemyUnits do
+			local oSquad = cpu_manager.m_aEnemyUnits[iLoop][3]
+			if (oSquad ~= nil and oSquad:IsValid()) then
+				local oStats = oSquad:GetStats()
+				if (oStats ~= nil) then
+					local eClass = oStats:GetClass()
+					if (eClass == UnitStatsAI.UC_VehicleLow or eClass == UnitStatsAI.UC_VehicleMed or
+						eClass == UnitStatsAI.UC_VehicleHigh) then
+						iVehicles = iVehicles + 1
+					elseif (eClass == UnitStatsAI.UC_AirLow or eClass == UnitStatsAI.UC_AirMed or
+						eClass == UnitStatsAI.UC_AirHigh) then
+						iAir = iAir + 1
+					end
+				end
+			end
+		end
+	end
+	BuildBaseStrategy.EnemyVehicleCacheCount = iVehicles
+	BuildBaseStrategy.EnemyAirCacheCount = iAir
+end
+
+function BuildBaseStrategy:CountEnemyVehicleSquads()
+
+	self:RefreshEnemyVehicleAirCache()
+	return BuildBaseStrategy.EnemyVehicleCacheCount
+end
+
+function BuildBaseStrategy:CountEnemyAirSquads()
+
+	self:RefreshEnemyVehicleAirCache()
+	return BuildBaseStrategy.EnemyAirCacheCount
+end
+
+function BuildBaseStrategy:HasEnemyVehicles()
+
+	return (self:CountEnemyVehicleSquads() >= 1)
+end
+
+function BuildBaseStrategy:HasEnemyVehiclesOrAir()
+
+	self:RefreshEnemyVehicleAirCache()
+	return (BuildBaseStrategy.EnemyVehicleCacheCount >= 1 or BuildBaseStrategy.EnemyAirCacheCount >= 1)
+end
+
+-- Anti-vehicle / anti-air turret weapon upgrades (Guard / SM / Chaos / Sisters / Eldar)
+function BuildBaseStrategy:IsAntiVehicleTurretAddon( sAddonName )
+
+	if (sAddonName == nil) then
+		return false
+	end
+	return (sAddonName == "addon_guard_turret" or
+		sAddonName == "space_marine_turret_addon" or
+		sAddonName == "chaos_turret_addon" or
+		sAddonName == "addon_sisters_turret" or
+		sAddonName == "eldar_support_platform_addon")
+end
+
+-- Upgrade turret to anti-tech only if enemy has vehicles or aircraft
+function BuildBaseStrategy:CanBuildAntiVehicleTurretAddon( sAddonName )
+
+	if (not self:IsAntiVehicleTurretAddon( sAddonName )) then
+		return true
+	end
+	return self:HasEnemyVehiclesOrAir()
+end
+
+function BuildBaseStrategy:GetAntiVehicleTurretAddonName()
+
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	if (sRace == "guard_race") then
+		return "addon_guard_turret"
+	elseif (sRace == "space_marine_race") then
+		return "space_marine_turret_addon"
+	elseif (sRace == "chaos_marine_race") then
+		return "chaos_turret_addon"
+	elseif (sRace == "sisters_race") then
+		return "addon_sisters_turret"
+	elseif (sRace == "eldar_race") then
+		return "eldar_support_platform_addon"
+	end
+	return nil
+end
+
+function BuildBaseStrategy:CountTurretsNeedingAntiVehicleUpgrade( sAddonName )
+
+	if (sAddonName == nil or self.m_aBuildChannels == nil) then
+		return 0
+	end
+	local sBuilding = self:GetAddonBuilding( sAddonName )
+	if (sBuilding == nil) then
+		return 0
+	end
+	local iTurretID = cpu_manager.stats:GetBuildingID( sBuilding )
+	local iAddonID = cpu_manager.stats:GetAddOnID( sAddonName )
+	local iNeed = 0
+	for iLoop in self.m_aBuildChannels do
+		if (self.m_aBuildChannels[iLoop][2] == iTurretID) then
+			local oChannel = self.m_aBuildChannels[iLoop][1]
+			if (oChannel ~= nil and
+				oChannel:CanAddToQueue( BuildChannelAI.PQ_AddOn, iAddonID ) == BuildChannelAI.CANBUILD_Ok) then
+				iNeed = iNeed + 1
+			end
+		end
+	end
+	return iNeed
+end
+
+-- When enemy vehicles/air appear: queue anti-tech on every turret that still needs it
+function BuildBaseStrategy:DoUpgradeTurretsToAntiVehicle()
+
+	if (not self:HasEnemyVehiclesOrAir()) then
+		return
+	end
+	local sAddon = self:GetAntiVehicleTurretAddonName()
+	if (sAddon == nil) then
+		return
+	end
+	local iAddonID = cpu_manager.stats:GetAddOnID( sAddon )
+	if (self:PlanExists( "Build NotifiedAddOn Plan", iAddonID ) or
+		self:PlanExists( "Build AddOn Plan", iAddonID )) then
+		return
+	end
+	if (self:CountTurretsNeedingAntiVehicleUpgrade( sAddon ) < 1) then
+		return
+	end
+	local aTurretPositions = {}
+	self:AddPlan( BuildNotifiedAddOnPlan( iAddonID, 0, aTurretPositions ) )
+	aitrace("BuildController: Anti-vehicle turret upgrade — enemy vehicles/air spotted")
 end
 
 -- More than 5 mines only with 30 generators, 5 HQs and 30 turrets
@@ -737,6 +1063,32 @@ function BuildBaseStrategy:NeedsEmergencyGeneratorsForTurrets()
 	return (iTurrets > self:GetGeneratorStructureCount())
 end
 
+-- Owned safe homeside income SPs without LP (not relic / not T&H): do not grow generator count
+-- (all races except Necrons). Uncaptured points ignored; threatened unbuilt flags ignored.
+-- Example: 3/5 captured and fortified → gens OK; 5 captured but 2 still need LP → freeze gens.
+function BuildBaseStrategy:ShouldPrioritizeHomeSidePostsOverGenerators()
+
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race") then
+		return false
+	end
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	if (iRequisition >= 400) then
+		return false
+	end
+
+	for oStrategicPoint in resource_manager:GetStrategicPointAIs() do
+		if (CapturePlan:IsRegularHomeSidePoint(oStrategicPoint) and
+			oStrategicPoint:Owner() == cpu_manager.player_id and
+			not oStrategicPoint:HasListeningPost()) then
+			local iEnemy = cpu_manager:GetArmyStrengthAtPos(oStrategicPoint:GetPosition(), 45, true)
+			if (iEnemy <= 80) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function BuildBaseStrategy:ShouldBuildMoreGenerators()
 
 	if (self:NeedsEmergencyGeneratorsForTurrets()) then
@@ -747,15 +1099,71 @@ function BuildBaseStrategy:ShouldBuildMoreGenerators()
 		return true
 	end
 
-	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
-	if (self.tierLevel == 1 and iPower > 300) then
-		return false
-	end
-	if (self.tierLevel == 2 and iPower > 1500) then
+	-- Freeze at current gen count while safe captured homeside still need LPs
+	if (self:ShouldPrioritizeHomeSidePostsOverGenerators()) then
 		return false
 	end
 
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	-- T1: stop gens when energy high
+	if (self.tierLevel == 1 and iPower > 300) then
+		return false
+	end
+	-- T2: energy > 500 → no more generators (power research gated separately)
+	if (self.tierLevel == 2 and iPower > 500) then
+		return false
+	end
+	-- T3: >5 gens and energy > 600 → no more generators
+	if (self.tierLevel == 3 and self:GetGeneratorStructureCount() > 5 and iPower > 600) then
+		return false
+	end
+	-- T4+: no energy/gen-count cap (emergency turrets still override above)
+
 	return true
+end
+
+-- Power-income research (not weapon "power" upgrades). Necrons exempt.
+function BuildBaseStrategy:IsPowerIncomeResearch( sResearchName )
+
+	if (sResearchName == nil) then
+		return false
+	end
+	-- Dark Eldar scythe weapon research — not energy income
+	if (string.find( sResearchName, "scythe" ) ~= nil) then
+		return false
+	end
+	if (string.find( sResearchName, "power_research" ) ~= nil) then
+		return true
+	end
+	if (string.find( sResearchName, "upgrade_power" ) ~= nil) then
+		return true
+	end
+	if (string.find( sResearchName, "improved_power_source" ) ~= nil) then
+		return true
+	end
+	return false
+end
+
+-- Defer energy upgrades (non-Necron): need ≥4 finished gens; also tier energy caps
+function BuildBaseStrategy:ShouldDeferPowerIncomeResearch()
+
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race") then
+		return false
+	end
+
+	-- Regular + bigger/slag, ConstructionDone only
+	if (self:GetCompletedGeneratorStructureCount() < 4) then
+		return true
+	end
+
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	if (self.tierLevel == 2 and iPower > 500) then
+		return true
+	end
+	if (self.tierLevel == 3 and self:GetGeneratorStructureCount() > 5 and iPower > 600) then
+		return true
+	end
+	return false
 end
 
 -- Central gate for HQ / generator limits (DynamicBuild, strategyinfo, DoBuild*)
@@ -784,7 +1192,84 @@ function BuildBaseStrategy:IsBuildingBuildBlocked( iBuildingID )
 		return true
 	end
 
+	-- Pre-T4 vehicle bay cap (unless 3000/3000 overflow)
+	local sVeh = self:GetBuildingName("VehicleBuilding")
+	if (sVeh ~= nil and iBuildingID == cpu_manager.stats:GetBuildingID(sVeh) and
+		self:UsesEnergyOverflowSpend() and not self:CanBuildMoreVehicleBuildings()) then
+		return true
+	end
+
 	return false
+end
+
+-- 3000 req + 3000 power: ignore vehicle-building / tech gates
+function BuildBaseStrategy:IsResourceOverflow()
+	local iReq = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	local iPow = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	return (iReq >= 3000 and iPow >= 3000)
+end
+
+function BuildBaseStrategy:GetEnergyAmount()
+	return resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+end
+
+-- Necrons override false
+function BuildBaseStrategy:UsesEnergyOverflowSpend()
+	return true
+end
+
+-- Max vehicle production buildings before T4 (2 default; Tau T2=1; Eldar T4 formula)
+function BuildBaseStrategy:GetMaxVehicleBuildings()
+	if (self:IsResourceOverflow()) then
+		return 99
+	end
+	if (self:GetTierLevel() >= 4) then
+		return 99
+	end
+	return 2
+end
+
+function BuildBaseStrategy:CanBuildMoreVehicleBuildings()
+	if (self:IsResourceOverflow()) then
+		return true
+	end
+	local sVeh = self:GetBuildingName("VehicleBuilding")
+	if (sVeh == nil) then
+		return true
+	end
+	local iHave = self:GetBuildingCountByName(sVeh, false)
+	return (iHave < self:GetMaxVehicleBuildings())
+end
+
+function BuildBaseStrategy:PushVehicleBuildingUpTo( iDesired )
+	local sName = self:GetBuildingName("VehicleBuilding")
+	if (sName == nil or iDesired == nil or iDesired < 1) then
+		return
+	end
+	local iMax = self:GetMaxVehicleBuildings()
+	if (iDesired > iMax) then
+		iDesired = iMax
+	end
+	local iHave = self:GetBuildingCountByName(sName, false)
+	if (iHave >= iDesired) then
+		return
+	end
+	self:DynamicBuild(sName, iDesired, 1, 0, 0, 0, 0)
+end
+
+-- Spam energy-heavy unit across free production channels
+function BuildBaseStrategy:DumpEnergyIntoUnit( sUnitName, iDesiredMax )
+	if (sUnitName == nil) then
+		return false
+	end
+	if (iDesiredMax == nil) then
+		iDesiredMax = 99
+	end
+	return (self:TryBuildParallelSquads(sUnitName, iDesiredMax, nil) > 0)
+end
+
+-- Race override: spend float power on vehicles
+function BuildBaseStrategy:SpendEnergyOverflow()
 end
 
 function BuildBaseStrategy:IsBuildingNameBuildBlocked( sBuildingName )
@@ -903,6 +1388,16 @@ function BuildBaseStrategy:TryBuild( build_type )
 			else
 				aitrace("BuildController: Generator blocked - enough power for tier "..tostring(self.tierLevel))
 			end
+			return false
+		end
+	elseif (build_type.btype == CpuPrerequisites.BT_Research) then
+		if (self:IsPowerIncomeResearch( build_type.name ) and self:ShouldDeferPowerIncomeResearch()) then
+			aitrace("BuildController: Power research deferred - gens/energy gate (tier "..tostring(self.tierLevel)..")")
+			return false
+		end
+	elseif (build_type.btype == CpuPrerequisites.BT_AddOn) then
+		if (not self:CanBuildAntiVehicleTurretAddon( build_type.name )) then
+			aitrace("BuildController: Anti-vehicle turret deferred - no enemy vehicles")
 			return false
 		end
 	end
@@ -1115,14 +1610,31 @@ function BuildBaseStrategy:FinishBuildings()
 
 	aitrace("BuildController: Finish buildings...")
 
+	-- Epoch T2 (soul shrine / tau research / etc.) before gens/turrets
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local sName = oBuilding:GetBaseName()
+			if (EngineerTactic.IsEpochTransitionBuilding(sName)) then
+				local iEpochID = oBuilding:GetBlueprintID()
+				if (not self:PlanExists("Build Building Plan", iEpochID)) then
+					local vPos = oBuilding:GetPosition()
+					aitrace("BuildController: Resume unfinished epoch building "..sName)
+					self:AddPlan(BuildBuildingPlan(iEpochID, vPos, nil, true, true, nil))
+					return
+				end
+			end
+		end
+	end
+
 	-- Prioritize unfinished bigger generators (high value; easy to abandon for other builds)
 	local sBiggerName = self:GetBuildingName("BiggerGenerator")
 	if (sBiggerName ~= nil) then
 		local iBiggerID = cpu_manager.stats:GetBuildingID(sBiggerName)
 		if (iBiggerID ~= nil and iBiggerID ~= 0 and not self:PlanExists("Build Building Plan", iBiggerID)) then
 			local oBigger = build_manager:FindUnfinishedBuilding(iBiggerID)
-			if (oBigger ~= nil) then
-				local vPos = oBigger:GetPosition()
+			local oLiveBigger = EngineerTactic.ResolveLiveFinishTarget(oBigger)
+			if (oLiveBigger ~= nil) then
+				local vPos = oLiveBigger:GetPosition()
 				aitrace("BuildController: Resume unfinished bigger generator")
 				self:AddPlan(BuildBuildingPlan(iBiggerID, vPos, nil, true, true, nil))
 				return
@@ -1138,18 +1650,18 @@ function BuildBaseStrategy:FinishBuildings()
 		if (self:PlanExists("Build Building Plan", iBuildingID)) then
 			return
 		end
+
+		-- Dark Eldar: LP дожимает ResourcePlan (не второй BuildBuildingPlan)
+		if (cpu_manager:AutoConstructBuildings() and cpu_manager:IsListeningPost(iBuildingID)) then
+			return
+		end
 	
 		-- Check for auto-construct buildings
 		if (cpu_manager:AutoConstructBuildings()) then
 	
 			-- Get building
 			local oBuilding = build_manager:FindUnfinishedBuilding(iBuildingID)
-			if (not oBuilding) then
-				return
-			end
-			
-			-- Get building AI
-			local oBuildingAI = military_manager:GetBaseFromID(oBuilding:GetID())
+			local oBuildingAI = EngineerTactic.ResolveLiveFinishTarget(oBuilding)
 			if (oBuildingAI == nil) then
 				return
 			end
@@ -1182,6 +1694,23 @@ function BuildBaseStrategy:TryBuildBiggerGenerator()
 		return true
 	end
 
+	if (build_manager:FindUnfinishedBuilding(iBiggerGeneratorID) ~= nil) then
+		return true
+	end
+
+	-- Solo-builder races (Eldar etc.): never start thermo while a regular gen pad is unfinished —
+	-- GetUnlockedSquads can grab the bonesinger the tick after Abort/Retry unlocks him.
+	if (self:GetMaxParallelGeneratorPlans() <= 1) then
+		local sGenName = self:GetBuildingName("Generator")
+		if (sGenName ~= nil) then
+			local iGenID = cpu_manager.stats:GetBuildingID(sGenName)
+			if (iGenID ~= nil and iGenID ~= 0 and
+				build_manager:FindUnfinishedBuilding(iGenID) ~= nil) then
+				return false
+			end
+		end
+	end
+
 	-- Soft req gate: don't spam plans when broke (thermo ~1.5 gen cost)
 	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
 	if (iRequisition < 200 and g_iGMT < 90) then
@@ -1200,6 +1729,7 @@ function BuildBaseStrategy:TryBuildBiggerGenerator()
 			local functor = function(squad_ai)
 				local squad_pos = squad_ai:GetPosition()
 				return (squad_ai:IsEngineer() and squad_ai:CanBuild(iBiggerGeneratorID) == SquadAI.CANBUILD_Ok and
+					not cpu_manager:IsEngineerActivelyBuilding(squad_ai) and
 					not cpu_manager:HasThreatOnPath(squad_pos, slag_pos, 20))
 			end
 			local engineer = cpu_manager:GetClosestUnlockedSquad(slag_pos, 500, functor)
@@ -1240,6 +1770,20 @@ function BuildBaseStrategy:TryBuildBiggerGenerator()
 	return true
 end
 
+-- Necron: max 2 plasma plans (3 caused duplicate templates + worker fights). Others: 1.
+function BuildBaseStrategy:GetMaxParallelGeneratorPlans()
+
+	if (cpu_manager.player_stats ~= nil and
+		cpu_manager.player_stats:GetPlayerRaceName() == "necron_race") then
+		-- Soft capturers / unfinished LP: one gen at a time (direct call — no .Method ~= nil)
+		if (cpu_manager:HasUnfinishedNecronListeningPost()) then
+			return 1
+		end
+		return 2
+	end
+	return 1
+end
+
 -- Regular plasma/warp generators: parallel with bigger gen (separate plans / engineers)
 function BuildBaseStrategy:TryBuildRegularGenerators(bEmergencyGen, numGenerators, max_gen)
 
@@ -1248,13 +1792,37 @@ function BuildBaseStrategy:TryBuildRegularGenerators(bEmergencyGen, numGenerator
 		return false
 	end
 
-	if (self:PlanExists("Build Building Plan", iGeneratorID)) then
+	local iMaxParallel = self:GetMaxParallelGeneratorPlans()
+	local iPlans = self:PlanCount("Build Building Plan", iGeneratorID)
+	if (iPlans >= iMaxParallel) then
 		return true
 	end
 
-	for oBuildChannel in build_manager:GetBuildChannelAIs() do
-		if (oBuildChannel:GetBlueprintID() == iGeneratorID and not oBuildChannel:ConstructionDone()) then
+	-- Count unfinished pads (Necron parallel used to ignore this → duplicate templates)
+	local iUnfinished = 0
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and
+			oBuilding:GetBlueprintID() == iGeneratorID) then
+			iUnfinished = iUnfinished + 1
+		end
+	end
+	if (iUnfinished >= iMaxParallel) then
+		return true
+	end
+	-- Enough plans already covering unfinished pads — don't add another template
+	if (iUnfinished > 0 and iPlans >= iUnfinished and iMaxParallel > 1) then
+		return true
+	end
+
+	-- Non-Necron: one at a time (unfinished / channel blocks new)
+	if (iMaxParallel <= 1) then
+		if (build_manager:FindUnfinishedBuilding(iGeneratorID) ~= nil) then
 			return true
+		end
+		for oBuildChannel in build_manager:GetBuildChannelAIs() do
+			if (oBuildChannel:GetBlueprintID() == iGeneratorID and not oBuildChannel:ConstructionDone()) then
+				return true
+			end
 		end
 	end
 
@@ -1266,7 +1834,7 @@ function BuildBaseStrategy:TryBuildRegularGenerators(bEmergencyGen, numGenerator
 	build_type.btype = CpuPrerequisites.BT_Building
 	build_type.name = self:GetBuildingName("Generator")
 	if (self:TryBuild(build_type)) then
-		aitrace("BuildController: Dynamic build of a generator")
+		aitrace("BuildController: Dynamic build of a generator (plans "..tostring(iPlans + 1).."/"..tostring(iMaxParallel)..")")
 		return true
 	end
 	return false
@@ -1283,6 +1851,7 @@ function BuildBaseStrategy:DoBuildGenerators()
 	
 	-- Check requisition (regular gens; bigger has its own soft gate in TryBuildBiggerGenerator)
 	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
 	local bAllowRegular = true
 	if (not bEmergencyGen) then
 		if g_iGMT < 120 and iRequisition < 1000 then
@@ -1294,6 +1863,10 @@ function BuildBaseStrategy:DoBuildGenerators()
 		if (iRequisition < 300 and self.info.req_reserve > 0) then
 			bAllowRegular = false
 		end
+	end
+	-- Necron gens cost power not req — don't strand AFK scarabs with piles of energy
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race" and iPower >= 250) then
+		bAllowRegular = true
 	end
 	
 	-- Get maximum amount of generators
@@ -1466,7 +2039,8 @@ end
 function BuildBaseStrategy:BuildUnits()
 		
 	-- Try to build units for now (for defense while teching up)
-	local id, demand = self:GetHighestDemandedSquad(cpu_manager:GetCriticalSituation() > 0)
+	-- HQ critical / 1v1 army <0.8 enemy → Spawn NOW even if factory busy
+	local id, demand = self:GetHighestDemandedSquad(cpu_manager:NeedsUrgentMilitaryProduction())
 	dbAssert( demand ~= nil )
 
 	if (id ~= nil and demand > 0) then
@@ -1536,6 +2110,9 @@ function BuildBaseStrategy:ComputeBuildProgram()
 
 	aitrace("BuildController: Compute build program...")
 
+	-- Dead neighbors: re-pick closest living enemy + build program (like homeside)
+	self:RefreshBuildProgramIfEnemiesChanged()
+
 	-- Check ressources
 	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition ) / self.m_iTechBreak
 	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power ) / self.m_iTechBreak
@@ -1584,12 +2161,15 @@ function BuildBaseStrategy:ComputeBuildProgram()
 		Tactic.Options.can_reinforce = self:CheckReinforce()
 	end
 	
-	-- Check for force teching
+	-- T2 + army>1250 + T3 money: press T3 immediately (addon/research/building), above everything
+	self:TryImmediateT2ToT3Transition()
+
+	-- Check for force teching (economy gate + 30s attempt window / cooldown)
 	local bForceTech = false
-	if (self:ForceTech()) then
+	if (self:ShouldApplyForceTechLock()) then
 	
-		-- Check HQ threat
-		if (cpu_manager:GetCriticalSituation() <= 0) then
+		-- HQ critical / homeside army top-up: keep spending on units
+		if (not cpu_manager:NeedsUrgentMilitaryProduction()) then
 		
 			-- Force teching
 			aitrace("BuildController: Force teching!!!")
@@ -1600,7 +2180,7 @@ function BuildBaseStrategy:ComputeBuildProgram()
 	end
 	
 	-- Check if we have to abort a rush program
-	if (self.m_iPrepareRush > 0 and cpu_manager:GetCriticalSituation() > 0) then
+	if (self.m_iPrepareRush > 0 and cpu_manager:NeedsUrgentMilitaryProduction()) then
 
     	-- Abort rush
     	aitrace("ABORT RUSH")
@@ -1772,8 +2352,13 @@ function BuildBaseStrategy:ComputeBuildProgram()
 						return
 					end
 					
-					-- Don't build more than two buildings of the same type at the same time
-					if (self:PlanCount("Build Building Plan", iID) >= 2) then --or (iTier == 1 and cpu_manager.player_stats:GetNumBasesByBPID(iID, true) >1 and iRequisition < 1000 and g_iGMT< 180 and not :IsListeningPost()) then
+					-- Parallel same-type plans: Necron plasma up to 3; others max 2
+					local iMaxSame = 2
+					if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race" and
+						cpu_manager:IsGenerator(iID)) then
+						iMaxSame = self:GetMaxParallelGeneratorPlans()
+					end
+					if (self:PlanCount("Build Building Plan", iID) >= iMaxSame) then
 						iCurrentInstances = iCount
 					end
 				end
@@ -1846,6 +2431,11 @@ function BuildBaseStrategy:ComputeBuildProgram()
 			end
 
 		elseif (sType == "TurretAddon") then
+
+			-- Anti-tech turret upgrade only when enemy has vehicles
+			if (not self:CanBuildAntiVehicleTurretAddon( sName )) then
+				iCount = 0
+			end
 		
 			-- Get addon ID
 			iID = cpu_manager.stats:GetAddOnID(sName)
@@ -1873,7 +2463,9 @@ function BuildBaseStrategy:ComputeBuildProgram()
 			end
 			
 	  		-- Calculate demand (one minimum)
-			iCount = math.max(math.floor(iCount * iTurretCount / 100), 1)
+			if (iCount > 0) then
+				iCount = math.max(math.floor(iCount * iTurretCount / 100), 1)
+			end
 			
 			-- Check if addon plan exists
 			local oBuildPlan = self:GetPlan("Build NotifiedAddOn Plan", iID)
@@ -1902,15 +2494,12 @@ function BuildBaseStrategy:ComputeBuildProgram()
 				-- Check unit count
 				if (iCurrentInstances < iCount) then
 				
-					-- Don't build dynamic units in harassing time
-					if (g_iGMT < DefendChokePointPlan.HarassingTime * 60) then
-						self.m_bSpendMoney = false
-					end
+					-- Was: m_bSpendMoney=false for HarassingTime (5 min) → fake "No ressources"
+					-- with 800+ req, and blocked slaves/DoBuildUnits. Flexible Force-build
+					-- already handles the priority unit; do not starve the rest of the economy.
 					
-					-- Keep building order in first 2 minutes
-					if (g_iGMT < 2 * 60) then
-						bBuildUnits = false
-					end
+					-- Was: bBuildUnits=false for 2 min → only FIRST under-count Flexible unit
+					-- (e.g. mandrakes) could build; Archon/later lines never ran. Removed.
 				end
 				
 				-- Check if a plan exists for the current unit
@@ -2183,6 +2772,504 @@ function BuildBaseStrategy:CheckReinforce()
 	return true
 end
 
+-- MultiBuilding open gate (all map sizes, all races):
+-- hard setting + (GMT > 120 OR rich bank)
+-- Necron bank: power only; others: req and power
+function BuildBaseStrategy:CanOpenMultiBuildings()
+	if (not CpuManager.AISettings.bMultiBuildings) then
+		return false
+	end
+	if (g_iGMT > 120) then
+		return true
+	end
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race") then
+		return (iPower > 3000)
+	end
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	return (iRequisition > 3000 and iPower > 3000)
+end
+
+-- Extra ForceTech gate on top of race ForceTech(): bank OR army floors OR T3+
+-- T2: army > 1250 AND (pow > 700 OR req > 700 OR can afford T3 transition)
+function BuildBaseStrategy:PassesForceTechEconomyGate()
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	local iTierLevel = self:GetTierLevel()
+	local iArmyStrength = cpu_manager:GetArmyStrength()
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race") then
+		if (iPower >= 3000) then
+			return true
+		end
+	else
+		if (iRequisition >= 3000 and iPower >= 3000) then
+			return true
+		end
+	end
+
+	if (iTierLevel == 1 and iArmyStrength >= 750) then
+		return true
+	end
+	if (iTierLevel == 2 and iArmyStrength > 1250) then
+		if (iPower > 700 or iRequisition > 700) then
+			return true
+		end
+		if (self:CanAffordStandardT3Transition()) then
+			return true
+		end
+	end
+	if (iTierLevel >= 3) then
+		return true
+	end
+	return false
+end
+
+-- Universal T2 ForceTech: army > 1250 and (energy/req overflow OR money for T3)
+function BuildBaseStrategy:HasUniversalT2ForceTech()
+	if (self:GetTierLevel() ~= 2) then
+		return false
+	end
+	local iArmyStrength = cpu_manager:GetArmyStrength()
+	if (iArmyStrength <= 1250) then
+		return false
+	end
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	if (iPower > 700 or iRequisition > 700) then
+		return true
+	end
+	return self:CanAffordStandardT3Transition()
+end
+
+-- Race T3 transition costs: most 340/340; Necron pow 400; Tau 450/340
+function BuildBaseStrategy:CanAffordStandardT3Transition()
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+	local iPower = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	if (sRace == "necron_race") then
+		return (iPower >= 400)
+	end
+	if (sRace == "tau_race") then
+		return (iRequisition >= 450 and iPower >= 340)
+	end
+	return (iRequisition >= 340 and iPower >= 340)
+end
+
+-- T2 + army > 1250 + T3 money + prereqs: press T3 immediately (above spend lock / BO)
+function BuildBaseStrategy:ShouldPressImmediateT2ToT3()
+	if (self:GetTierLevel() ~= 2) then
+		return false
+	end
+	if (cpu_manager:GetArmyStrength() <= 1250) then
+		return false
+	end
+	if (not self:CanAffordStandardT3Transition()) then
+		return false
+	end
+	if (not self:HasForceTechBuildingPrereqs()) then
+		return false
+	end
+	if (self:IsForceTechTransitionInProgress()) then
+		return false
+	end
+	return true
+end
+
+function BuildBaseStrategy:QueueImmediateTransitionAddon( sAddonName )
+	if (sAddonName == nil) then
+		return false
+	end
+	local iID = cpu_manager.stats:GetAddOnID(sAddonName)
+	if (iID == nil or iID == 0) then
+		return false
+	end
+	if (self:PlanExists("Build AddOn Plan", iID) or self:PlanExists("Build NotifiedAddOn Plan", iID)) then
+		return false
+	end
+	for oBase in cpu_manager.player_stats:GetBases() do
+		if (oBase:IsValid() and cpu_manager:IsHQ(oBase:GetBlueprintID()) and oBase:HasAddOn(iID)) then
+			return false
+		end
+	end
+	local tBuildType = CpuBuildType()
+	tBuildType.name = sAddonName
+	tBuildType.btype = CpuPrerequisites.BT_AddOn
+	if (self:TryBuild(tBuildType)) then
+		if (self:IsTierAddon(sAddonName, 2)) then
+			self.m_bHQAddon1 = true
+		elseif (self:IsTierAddon(sAddonName, 3)) then
+			self.m_bHQAddon2 = true
+		end
+		aitrace("BuildController: Immediate T3 transition addon "..sAddonName)
+		return true
+	end
+	return false
+end
+
+function BuildBaseStrategy:QueueImmediateTransitionResearch( sResearchName )
+	if (sResearchName == nil) then
+		return false
+	end
+	if (cpu_manager.cpu_player:IsResearchComplete(sResearchName)) then
+		return false
+	end
+	local iID = cpu_manager.stats:GetResearchID(sResearchName)
+	if (iID == nil or iID == 0) then
+		return false
+	end
+	if (self:PlanExists("Build Research Plan", iID)) then
+		return false
+	end
+	local tBuildType = CpuBuildType()
+	tBuildType.name = sResearchName
+	tBuildType.btype = CpuPrerequisites.BT_Research
+	if (self:TryBuild(tBuildType)) then
+		aitrace("BuildController: Immediate T3 transition research "..sResearchName)
+		return true
+	end
+	return false
+end
+
+function BuildBaseStrategy:QueueImmediateTransitionBuilding( sBuildingName )
+	if (sBuildingName == nil) then
+		return false
+	end
+	if (self:GetBuildingCountByName(sBuildingName, false) >= 1) then
+		return false
+	end
+	local iID = cpu_manager.stats:GetBuildingID(sBuildingName)
+	if (iID == nil or iID == 0) then
+		return false
+	end
+	if (self:PlanExists("Build Building Plan", iID)) then
+		return false
+	end
+	local tBuildType = CpuBuildType()
+	tBuildType.name = sBuildingName
+	tBuildType.btype = CpuPrerequisites.BT_Building
+	if (self:TryBuild(tBuildType)) then
+		aitrace("BuildController: Immediate T3 transition building "..sBuildingName)
+		return true
+	end
+	return false
+end
+
+function BuildBaseStrategy:TryImmediateT2ToT3Transition()
+	if (not self:ShouldPressImmediateT2ToT3()) then
+		return false
+	end
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	local tRace = BuildBaseStrategy.ForceTechAbort[sRace]
+	if (tRace == nil or tRace[2] == nil) then
+		return false
+	end
+	local tAbort = tRace[2]
+	if (tAbort.addons ~= nil) then
+		for iLoop1 = 1, table.getn(tAbort.addons) do
+			if (self:QueueImmediateTransitionAddon(tAbort.addons[iLoop1])) then
+				return true
+			end
+		end
+	end
+	if (tAbort.researches ~= nil) then
+		for iLoop1 = 1, table.getn(tAbort.researches) do
+			if (self:QueueImmediateTransitionResearch(tAbort.researches[iLoop1])) then
+				return true
+			end
+		end
+	end
+	if (tAbort.buildings ~= nil) then
+		for iLoop1 = 1, table.getn(tAbort.buildings) do
+			if (self:QueueImmediateTransitionBuilding(tAbort.buildings[iLoop1])) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Buildings that unlock the next-tier button (completed only)
+-- any = one of; all = every; min = { name = count }; always = true
+BuildBaseStrategy.ForceTechBuildingPrereqs = {
+	["chaos_marine_race"] = {
+		[1] = { any = { "chaos_temple", "chaos_armoury" } },
+		[2] = { any = { "chaos_machine_pit", "chaos_sacrificial_circle" } },
+		[3] = { all = { "chaos_greater_sacrificial_circle", "chaos_machine_pit" } },
+	},
+	["dark_eldar_race"] = {
+		[1] = { any = { "dark_eldar_hall_of_blood", "dark_eldar_skimmer_shop" } },
+		[2] = { all_groups = { { "dark_eldar_hall_of_blood", "dark_eldar_skimmer_shop" }, { "dark_eldar_wych_cult_arena" } } },
+		[3] = { any = { "dark_eldar_hall_of_blood", "dark_eldar_skimmer_shop" } },
+	},
+	["eldar_race"] = {
+		[1] = { any = { "eldar_aspect_portal" } },
+		[2] = { all = { "eldar_aspect_portal", "eldar_support_portal", "eldar_soul_shrine" } },
+		[3] = { all = { "eldar_aspect_portal", "eldar_support_portal", "eldar_soul_shrine" } },
+	},
+	["guard_race"] = {
+		[1] = { any = { "guard_infantry", "guard_tactica" } },
+		[2] = { all_groups = { { "guard_infantry", "guard_tactica" }, { "guard_mechanized" } } },
+		[3] = { all_groups = { { "guard_infantry", "guard_tactica" }, { "guard_mechanized" } } },
+	},
+	["necron_race"] = {
+		[1] = { any = { "necron_summoning_core" } },
+		[2] = { any = { "necron_greater_summoning_core" } },
+		[3] = { always = true },
+	},
+	["ork_race"] = {
+		[1] = { any = { "ork_boy_hut" } },
+		[2] = { min = { { "ork_waagh_banner", 6 } } },
+		[3] = { min = { { "ork_waagh_banner", 4 } }, all = { "ork_mek_shop" } },
+	},
+	["sisters_race"] = {
+		[1] = { any = { "sisters_infantry", "sisters_sanctuary" } },
+		[2] = { any = { "sisters_holy_reliquary", "sisters_vehicle_building" } },
+		[3] = { any = { "sisters_vehicle_building" } },
+	},
+	["space_marine_race"] = {
+		[1] = { any = { "space_marine_armoury", "space_marine_barracks" } },
+		[2] = { any = { "space_marine_vehicle_building", "space_marine_ability_building" } },
+		[3] = { any = { "space_marine_orbital_relay" } },
+	},
+	["tau_race"] = {
+		[1] = { any = { "tau_barracks" } },
+		[2] = { any = { "tau_research_building" } },
+		[3] = { all_groups = { { "tau_shrine_of_montka", "tau_shrine_of_kauyon" }, { "tau_shrine_of_purpose" } } },
+	},
+}
+
+-- Instant abort when the tier-transition action is already queued
+-- buildings / researches / addons = any plan for these names
+BuildBaseStrategy.ForceTechAbort = {
+	["chaos_marine_race"] = {
+		[1] = { addons = { "chaos_hq_addon_1" } },
+		[2] = { addons = { "chaos_hq_addon_2" } },
+		[3] = { researches = { "chaos_projectiles" } },
+	},
+	["dark_eldar_race"] = {
+		[1] = { addons = { "addon_dark_eldar_hq_1" } },
+		[2] = { addons = { "addon_dark_eldar_hq_2" } },
+		[3] = { buildings = { "dark_eldar_soul_cage" } },
+	},
+	["eldar_race"] = {
+		[1] = { buildings = { "eldar_soul_shrine" } },
+		[2] = { researches = { "eldar_tier2_research" } },
+		[3] = { researches = { "eldar_annihilate_the_enemy" } },
+	},
+	["guard_race"] = {
+		[1] = { addons = { "addon_guard_hq_1" } },
+		[2] = { addons = { "addon_guard_hq_2" } },
+		[3] = { researches = { "guard_full_scale_war" } },
+	},
+	["necron_race"] = {
+		[1] = { addons = { "addon_necron_hq_1" } },
+		[2] = { addons = { "addon_necron_hq_2" } },
+		[3] = { buildings = { "necron_energy_core" } },
+	},
+	["ork_race"] = {
+		[2] = { addons = { "ork_hq_addon" } },
+		[3] = { researches = { "ork_research_extra_armour" } },
+	},
+	["sisters_race"] = {
+		[1] = { addons = { "addon_sisters_hq_1" } },
+		[2] = { addons = { "addon_sisters_hq_2" } },
+		[3] = { buildings = { "sisters_shrine" } },
+	},
+	["space_marine_race"] = {
+		[1] = { addons = { "space_marine_hq_addon_1" } },
+		[2] = { addons = { "space_marine_hq_addon_2" } },
+		[3] = { researches = { "marine_heavy_armor_deployment" } },
+	},
+	["tau_race"] = {
+		[1] = { buildings = { "tau_research_building" } },
+		[2] = { buildings = { "tau_shrine_of_montka", "tau_shrine_of_kauyon" } },
+		[3] = { researches = { "tau_teachings_of_montka_research", "tau_teachings_of_kauyon_research" } },
+	},
+}
+
+function BuildBaseStrategy:HasAnyCompletedBuilding( aNames )
+	if (aNames == nil) then
+		return false
+	end
+	for iLoop1 = 1, table.getn(aNames) do
+		if (self:GetBuildingCountByName(aNames[iLoop1], true) >= 1) then
+			return true
+		end
+	end
+	return false
+end
+
+function BuildBaseStrategy:HasAllCompletedBuildings( aNames )
+	if (aNames == nil) then
+		return true
+	end
+	for iLoop1 = 1, table.getn(aNames) do
+		if (self:GetBuildingCountByName(aNames[iLoop1], true) < 1) then
+			return false
+		end
+	end
+	return true
+end
+
+-- (A or B) and C  via all_groups = { {A,B}, {C} }  — each group is OR, groups are AND
+function BuildBaseStrategy:MatchesForceTechPrereqSpec( tSpec )
+	if (tSpec == nil) then
+		return false
+	end
+	if (tSpec.always) then
+		return true
+	end
+	if (tSpec.any ~= nil and not self:HasAnyCompletedBuilding(tSpec.any)) then
+		return false
+	end
+	if (tSpec.all ~= nil and not self:HasAllCompletedBuildings(tSpec.all)) then
+		return false
+	end
+	if (tSpec.min ~= nil) then
+		for iLoop1 = 1, table.getn(tSpec.min) do
+			local sName = tSpec.min[iLoop1][1]
+			local iNeed = tSpec.min[iLoop1][2]
+			if (self:GetBuildingCountByName(sName, true) < iNeed) then
+				return false
+			end
+		end
+	end
+	if (tSpec.all_groups ~= nil) then
+		for iLoop1 = 1, table.getn(tSpec.all_groups) do
+			local aGroup = tSpec.all_groups[iLoop1]
+			if (not self:HasAnyCompletedBuilding(aGroup)) then
+				return false
+			end
+		end
+	end
+	-- Spec had only fields we already validated (or empty after always)
+	if (tSpec.any == nil and tSpec.all == nil and tSpec.min == nil and tSpec.all_groups == nil and not tSpec.always) then
+		return false
+	end
+	return true
+end
+
+function BuildBaseStrategy:HasForceTechBuildingPrereqs()
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	local iTier = self:GetTierLevel()
+	local tRace = BuildBaseStrategy.ForceTechBuildingPrereqs[sRace]
+	if (tRace == nil) then
+		return false
+	end
+	return self:MatchesForceTechPrereqSpec(tRace[iTier])
+end
+
+function BuildBaseStrategy:HasForceTechBuildingPlan( aNames )
+	if (aNames == nil) then
+		return false
+	end
+	for iLoop1 = 1, table.getn(aNames) do
+		local iID = cpu_manager.stats:GetBuildingID(aNames[iLoop1])
+		if (iID ~= nil and iID ~= 0 and self:PlanExists("Build Building Plan", iID)) then
+			return true
+		end
+		-- Incomplete pad already placed counts as started
+		if (self:GetBuildingCountByName(aNames[iLoop1], false) > self:GetBuildingCountByName(aNames[iLoop1], true)) then
+			return true
+		end
+	end
+	return false
+end
+
+function BuildBaseStrategy:HasForceTechResearchPlan( aNames )
+	if (aNames == nil) then
+		return false
+	end
+	for iLoop1 = 1, table.getn(aNames) do
+		local iID = cpu_manager.stats:GetResearchID(aNames[iLoop1])
+		if (iID ~= nil and iID ~= 0 and self:PlanExists("Build Research Plan", iID)) then
+			return true
+		end
+	end
+	return false
+end
+
+function BuildBaseStrategy:HasForceTechAddonPlan( aNames )
+	if (aNames == nil) then
+		return false
+	end
+	for iLoop1 = 1, table.getn(aNames) do
+		local sName = aNames[iLoop1]
+		local iID = cpu_manager.stats:GetAddOnID(sName)
+		if (iID ~= nil and iID ~= 0) then
+			if (self:PlanExists("Build AddOn Plan", iID) or self:PlanExists("Build NotifiedAddOn Plan", iID)) then
+				return true
+			end
+		end
+		if (self:IsTierAddon(sName, 2) and self.m_bHQAddon1) then
+			return true
+		end
+		if (self:IsTierAddon(sName, 3) and self.m_bHQAddon2) then
+			return true
+		end
+	end
+	return false
+end
+
+function BuildBaseStrategy:IsForceTechTransitionInProgress()
+	local sRace = cpu_manager.player_stats:GetPlayerRaceName()
+	local iTier = self:GetTierLevel()
+	local tRace = BuildBaseStrategy.ForceTechAbort[sRace]
+	if (tRace == nil) then
+		return false
+	end
+	local tAbort = tRace[iTier]
+	if (tAbort == nil) then
+		return false
+	end
+	if (self:HasForceTechBuildingPlan(tAbort.buildings)) then
+		return true
+	end
+	if (self:HasForceTechResearchPlan(tAbort.researches)) then
+		return true
+	end
+	if (self:HasForceTechAddonPlan(tAbort.addons)) then
+		return true
+	end
+	return false
+end
+
+-- Race ForceTech OR universal T2 + building prereqs + economy + 30s/30s; abort if transition started
+function BuildBaseStrategy:ShouldApplyForceTechLock()
+	if (g_iGMT < (self.m_iForceTechCooldownUntil or 0)) then
+		self.m_iForceTechLockStart = nil
+		return false
+	end
+	-- Tier button already pressed / research/building/addon queued → normal spend
+	if (self:IsForceTechTransitionInProgress()) then
+		self.m_iForceTechLockStart = nil
+		return false
+	end
+	if (not self:HasForceTechBuildingPrereqs()) then
+		self.m_iForceTechLockStart = nil
+		return false
+	end
+	if (not self:ForceTech() and not self:HasUniversalT2ForceTech()) then
+		self.m_iForceTechLockStart = nil
+		return false
+	end
+	if (not self:PassesForceTechEconomyGate()) then
+		self.m_iForceTechLockStart = nil
+		return false
+	end
+	if (self.m_iForceTechLockStart == nil) then
+		self.m_iForceTechLockStart = g_iGMT
+	end
+	if ((g_iGMT - self.m_iForceTechLockStart) >= 30) then
+		self.m_iForceTechCooldownUntil = g_iGMT + 30
+		self.m_iForceTechLockStart = nil
+		aitrace("BuildController: ForceTech window expired, cooldown 30s")
+		return false
+	end
+	return true
+end
+
 -- Arkhan 01.2006: Virtual method to check if force tech should be computed
 function BuildBaseStrategy:ForceTech()
 	return false
@@ -2208,7 +3295,15 @@ end
 function BuildBaseStrategy:DynamicAddon(sAddonName, iAddonCount, iMinTier, iRequisitionCost, iPowerCost, iMinSquadCap, iMinSupportCap, sSquadName, iSquadMinCount, bSingleTier)
 
 	-- Don't upgrade anything if we are not allowed to spend money
-	if (not self.m_bSpendMoney and not self:CanBypassSpendLockForPowerSink(sAddonName, true)) then
+	-- Exception: anti-tech turrets when enemy vehicles/air are up (must finish upgrades)
+	local bAvTurretPush = (self:IsAntiVehicleTurretAddon( sAddonName ) and self:HasEnemyVehiclesOrAir())
+	if (not self.m_bSpendMoney and not self:CanBypassSpendLockForPowerSink(sAddonName, true) and
+		not bAvTurretPush) then
+		return
+	end
+
+	-- Anti-tech turret: only if enemy vehicles spotted
+	if (not self:CanBuildAntiVehicleTurretAddon( sAddonName )) then
 		return
 	end
 	
@@ -2292,9 +3387,17 @@ function BuildBaseStrategy:DynamicResearch(sResearchName, iMinTier, iRequisition
 	if (cpu_manager.cpu_player:IsResearchComplete(sResearchName)) then
 		return
 	end
-	
+
+	-- Energy income upgrades: same tier caps as generators (non-Necron)
+	if (self:IsPowerIncomeResearch( sResearchName ) and self:ShouldDeferPowerIncomeResearch()) then
+		return
+	end
+
 	-- Check if research plan exists
 	local iID = cpu_manager.stats:GetResearchID(sResearchName)
+	if (iID == nil or iID == 0) then
+		return
+	end
 	if (self:PlanExists("Build Research Plan", iID)) then
 		return
 	end
@@ -2353,8 +3456,13 @@ function BuildBaseStrategy:DynamicBuild(sBuildingName, iBuildingCount, iMinTier,
 	-- Get building ID
 	local iID = cpu_manager.stats:GetBuildingID(sBuildingName)
 
-	-- Return if a build plan for the current building already exists
-	if (self:PlanExists("Build Building Plan", iID)) then
+	-- Parallel plans: Necron generators up to 3; everything else 1
+	local iMaxPlans = 1
+	if (cpu_manager.player_stats:GetPlayerRaceName() == "necron_race" and
+		cpu_manager:IsGenerator(iID)) then
+		iMaxPlans = self:GetMaxParallelGeneratorPlans()
+	end
+	if (self:PlanCount("Build Building Plan", iID) >= iMaxPlans) then
 		return
 	end
 

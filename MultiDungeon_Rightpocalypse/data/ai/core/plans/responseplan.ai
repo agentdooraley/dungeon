@@ -1,5 +1,6 @@
 ----------------------------------------
 -- File: 'responseplan.ai'
+-- Edited by [DAG05]Simon @ 22.07.2026
 -- Proportional response to small local threats (response groups)
 
 class 'ResponsePlan' (Plan)
@@ -8,6 +9,14 @@ ResponsePlan.MinThreatStrength = 80
 ResponsePlan.MaxResponseThreat = 1200
 ResponsePlan.StrengthMargin = 1.35
 ResponsePlan.MaxSquads = 4
+ResponsePlan.HomeSideMaxSquads = 6
+ResponsePlan.HomeSideFightRatio = 0.8
+-- Below this vs enemy: kite homeside without waiting for UnderFire (no suicide walk-in)
+ResponsePlan.HomeSideHardOutgunnedRatio = 0.5
+ResponsePlan.FragileTrooperRatio = 0.45
+ResponsePlan.FragileHealth = 0.45
+ResponsePlan.FragileMorale = 0.35
+ResponsePlan.TopUpThrottle = 3
 ResponsePlan.ThreatClearDelay = 10
 
 function ResponsePlan:__init(vThreatPos, iThreatRange) super( CpuPlayer.CT_Defending )
@@ -20,12 +29,25 @@ function ResponsePlan:__init(vThreatPos, iThreatRange) super( CpuPlayer.CT_Defen
 	self.m_iDefenseDelay = 0
 	self.m_vLastTargetPos = Vector3f(vThreatPos)
 	self.m_bNeedFullDefend = false
+	self.m_iLastTopUp = 0
 
 	self.response_units = {}
 
 	Plan.SetName( self, "Response Plan" )
 	Plan.SetNeeds( self, "Obtain Response Force", ResponsePlan.ObtainForce )
 	Plan.SetState( self, "Respond: "..vec2str(self.threat_pos), ResponsePlan.Responding )
+end
+
+-- Homeside: fight from 0.8 enemy power; elsewhere full parity
+function ResponsePlan:GetFightNeed(iEnemyStrength, bHomeSide)
+
+	if (iEnemyStrength == nil or iEnemyStrength <= 0) then
+		return 0
+	end
+	if (bHomeSide) then
+		return iEnemyStrength * ResponsePlan.HomeSideFightRatio
+	end
+	return iEnemyStrength
 end
 
 function ResponsePlan:IsEqual( plan_name, plan_id )
@@ -53,27 +75,24 @@ function ResponsePlan:GetDominantEnemyClass(vPos, iRange)
 	local eBestClass = UnitStatsAI.UC_LightInfantryMed
 	local iBestPower = 0
 
-	for oPlayer in cpu_manager.stats:GetPlayerStats() do
-
-		if (cpu_manager.player_stats:IsEnemy(oPlayer)) then
-
-			for oSquad in oPlayer:GetSquads() do
-
-				if (oSquad:IsValid() and not oSquad:IsEngineer()) then
-
-					if (distance_sqr(vPos, oSquad:GetPosition()) < iLocalRange) then
-
-						local oStats = oSquad:GetStats()
-						if (oStats ~= nil) then
-
-							local eClass = oStats:GetClass()
-							local iStr = cpu_manager:GetUnitStrength(oSquad)
-							local iClassPower = iStr
-
-							if (iClassPower > iBestPower) then
-								iBestPower = iClassPower
-								eBestClass = eClass
-							end
+	-- Prefer enemy cache — nested GetSquads mid Response = Relic crash
+	local aEnemy = cpu_manager.m_aEnemyUnits
+	if (aEnemy ~= nil) then
+		local iCount = table.getn(aEnemy)
+		for iLoop1 = 1, iCount do
+			local oSquad = aEnemy[iLoop1][3]
+			if (oSquad ~= nil and oSquad:IsValid() and not oSquad:IsEngineer()) then
+				if (distance_sqr(vPos, oSquad:GetPosition()) < iLocalRange) then
+					local oStats = oSquad:GetStats()
+					if (oStats ~= nil) then
+						local eClass = oStats:GetClass()
+						local iStr = aEnemy[iLoop1][2]
+						if (iStr == nil or iStr == 0) then
+							iStr = cpu_manager:GetUnitStrength(oSquad)
+						end
+						if (iStr > iBestPower) then
+							iBestPower = iStr
+							eBestClass = eClass
 						end
 					end
 				end
@@ -88,7 +107,11 @@ end
 
 function ResponsePlan:GetSquadResponseScore(oSquad, eEnemyClass)
 
-	local iStrength = oSquad:GetTactic():GetUnitStrength()
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil) then
+		return 0
+	end
+	local iStrength = oTactic:GetUnitStrength()
 	local oStats = oSquad:GetStats()
 
 	if (oStats == nil) then
@@ -112,11 +135,55 @@ function ResponsePlan:GetResponseStrength()
 
 		local oSquad = self.response_units[iLoop1]
 		if (oSquad:IsValid()) then
-			iStrength = iStrength + oSquad:GetTactic():GetUnitStrength()
+			local oTactic = oSquad:GetTactic()
+			if (oTactic ~= nil) then
+				iStrength = iStrength + oTactic:GetUnitStrength()
+			end
 		end
 	end
 
 	return iStrength
+end
+
+-- True if any locked response squad is taking fire / in a fight
+function ResponsePlan:ResponseForceUnderFire()
+
+	local iCount = table.getn(self.response_units)
+	for iLoop1 = 1, iCount do
+		local oSquad = self.response_units[iLoop1]
+		if (oSquad ~= nil and oSquad:IsValid()) then
+			if (oSquad:IsUnderAttack() or oSquad:IsInCombat() or oSquad:WasRecentlyHurt()) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Shredded / low morale — must not Attack into SM blobs; peel home
+function ResponsePlan:IsSquadFragile(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return true
+	end
+	if (oSquad:IsBroken()) then
+		return true
+	end
+	local iMax = oSquad:GetMaxTroopers()
+	local iNum = oSquad:GetNumTroopers()
+	if (iMax ~= nil and iMax > 1 and iNum ~= nil and iNum < iMax * ResponsePlan.FragileTrooperRatio) then
+		return true
+	end
+	if (oSquad:GetHealthPercentage() < ResponsePlan.FragileHealth) then
+		return true
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic ~= nil and oTactic.IsAffectedByMorale ~= nil and oTactic:IsAffectedByMorale()) then
+		if (oSquad:GetMoralePercentage() < ResponsePlan.FragileMorale) then
+			return true
+		end
+	end
+	return false
 end
 
 function ResponsePlan:GetBestThreatPosition()
@@ -134,11 +201,98 @@ function ResponsePlan:GetBestThreatPosition()
 	return Vector3f(self.threat_pos)
 end
 
-function ResponsePlan:ObtainForce()
+-- Always unlock (incl. dead) so UnlockAll never calls GetTactic on a corpse
+function ResponsePlan:ReleaseResponseSquad(oSquad, vRetreatPos)
+
+	if (oSquad == nil) then
+		return
+	end
+	Plan.UnlockResource(self, oSquad)
+	if (oSquad:IsValid() and vRetreatPos ~= nil) then
+		local oTactic = oSquad:GetTactic()
+		if (oTactic ~= nil) then
+			oTactic:SetState(Tactic.States.Retreat)
+			oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+		end
+	end
+end
+
+function ResponsePlan:GetSafeRetreatPos()
+
+	local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(self.threat_pos, cpu_manager.start_pos, true, false)
+	if (vBasePos == nil) then
+		return cpu_manager.start_pos
+	end
+	return vBasePos
+end
+
+-- Keep units locked; peel back (no bail cooldown). bRangedOnly: melee stays fighting
+function ResponsePlan:OrderResponseRetreat(vRetreatPos, bRangedOnly)
+
+	if (vRetreatPos == nil) then
+		vRetreatPos = self:GetSafeRetreatPos()
+	end
+	local iCount = table.getn(self.response_units)
+	for iLoop1 = 1, iCount do
+		local oSquad = self.response_units[iLoop1]
+		if (oSquad ~= nil and oSquad:IsValid()) then
+			local oTactic = oSquad:GetTactic()
+			-- Soft kite: infantry ranged only — vehicles / Squiggoth hold the line
+			if (bRangedOnly and (oTactic == nil or not oSquad:IsRanged() or oTactic:IsDefenseTankUnit())) then
+			elseif (oTactic ~= nil and not oTactic:IsInEmergencySubState()) then
+				if (oTactic:GetState() ~= Tactic.States.Retreat or distance_sqr(oTactic:GetTarget(), vRetreatPos) > 1) then
+					oTactic:SetState(Tactic.States.Retreat)
+					oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+				end
+			end
+		end
+	end
+end
+
+-- Release + retreat + escalate to full Defend (homeside too-large / solo vs blob)
+function ResponsePlan:EscalateWithRetreat(sReason)
+
+	aitrace("ResponsePlan: Escalate with retreat — "..tostring(sReason))
+	local vBasePos = self:GetSafeRetreatPos()
+	local iCount = table.getn(self.response_units)
+	for iLoop1 = iCount, 1, -1 do
+		self:ReleaseResponseSquad(self.response_units[iLoop1], vBasePos)
+		table.remove(self.response_units, iLoop1)
+	end
+	self.m_bNeedFullDefend = true
+	self:SetComplete(true)
+end
+
+-- Non-homeside: unlock + retreat + bail cooldown (do not escalate to full Defend)
+function ResponsePlan:BailKillZone(sReason)
+
+	aitrace("ResponsePlan: Bail kill zone — "..tostring(sReason))
+	cpu_manager:MarkKillZoneBail(self.threat_pos)
+	self.m_bNeedFullDefend = false
+
+	local vBasePos = self:GetSafeRetreatPos()
+	local iCount = table.getn(self.response_units)
+	for iLoop1 = iCount, 1, -1 do
+		self:ReleaseResponseSquad(self.response_units[iLoop1], vBasePos)
+		table.remove(self.response_units, iLoop1)
+	end
+	self:SetComplete(true)
+end
+
+
+-- bTopUp: add unlocked squads toward budget (homeside parity); returns how many added
+function ResponsePlan:ObtainForce(bTopUp)
 
 	aitrace("ResponsePlan: Obtain Force...")
 
 	local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(self.threat_pos, self.m_iRange, true)
+	if (iEnemyStrength == nil) then
+		iEnemyStrength = 0
+	end
+	if (iAlliedStrength == nil) then
+		iAlliedStrength = 0
+	end
+	local bHomeSide = cpu_manager:IsHomeSidePosition(self.threat_pos)
 	local iNetThreat = iEnemyStrength
 
 	if (iNetThreat < iAlliedStrength) then
@@ -148,9 +302,19 @@ function ResponsePlan:ObtainForce()
 		iNetThreat = iEnemyStrength
 	end
 
-	self.m_iResponseBudget = math.ceil(iNetThreat * ResponsePlan.StrengthMargin)
+	-- Homeside: budget for ~0.8 parity (+ margin); else classic margin on net threat
+	if (bHomeSide) then
+		self.m_iResponseBudget = math.ceil(iEnemyStrength * ResponsePlan.HomeSideFightRatio * ResponsePlan.StrengthMargin)
+	else
+		self.m_iResponseBudget = math.ceil(iNetThreat * ResponsePlan.StrengthMargin)
+	end
 	if (self.m_iResponseBudget < 120) then
 		self.m_iResponseBudget = 120
+	end
+
+	local iMaxSquads = ResponsePlan.MaxSquads
+	if (bHomeSide) then
+		iMaxSquads = ResponsePlan.HomeSideMaxSquads
 	end
 
 	local iMinStrength = self:GetMinSquadStrength()
@@ -169,7 +333,15 @@ function ResponsePlan:ObtainForce()
 
 			local oTactic = oSquad:GetTactic()
 
-			if (oTactic:IsDefender() and not oTactic:AlwaysAttack()) then
+			-- Do not yank active capturers / units already peeling or retreating home
+			-- Capture escorts ARE allowed — base raids (e.g. into workers) must still get interceptors
+			if (oSquad:IsCapturing() or oTactic:IsCapturePlanMove()) then
+			elseif (oTactic:IsSoftCapturerOnCaptureDuty()) then
+			elseif (oTactic:IsInEmergencySubState() or oTactic:ShouldRetreatToBase()) then
+			elseif (self:IsSquadFragile(oSquad)) then
+			-- Solo attach-heroes only (commissar/priest…); FC etc. may join response
+			elseif (oTactic:IsSoloAttachCommander() and not oSquad:IsAttached()) then
+			elseif (oTactic:IsDefender() and not oTactic:AlwaysAttack()) then
 
 				local iUnitStrength = oTactic:GetUnitStrength()
 				if (iUnitStrength >= iMinStrength or oSquad:IsInCombat()) then
@@ -202,37 +374,70 @@ function ResponsePlan:ObtainForce()
 	end
 	table.sort(aCandidates, sortfunction)
 
-	local iCommitted = 0
-	local iSquadCount = 0
+	local iCommitted = self:GetResponseStrength()
+	local iSquadCount = table.getn(self.response_units)
+	local iAdded = 0
 	local iCandidateCount = table.getn(aCandidates)
 
 	for iLoop1 = 1, iCandidateCount do
 
-		if (iCommitted >= self.m_iResponseBudget or iSquadCount >= ResponsePlan.MaxSquads) then
+		if (iCommitted >= self.m_iResponseBudget or iSquadCount >= iMaxSquads) then
 			break
 		end
 
 		local oSquad = aCandidates[iLoop1][1]
 		local oTactic = oSquad:GetTactic()
 
+		if (oTactic:IsCaptureGuardMove()) then
+			oTactic:SetCaptureGuardMove(false, false)
+		end
 		Plan.LockResource( self, oSquad )
 		table.insert( self.response_units, oSquad )
+		-- Homeside: go hold the point; kite peel is decided in Responding under fire
 		oTactic:SetState( Tactic.States.Attack )
 		oTactic:SetTarget( self.threat_pos, Tactic.Variant.Vector )
 
 		iCommitted = iCommitted + oTactic:GetUnitStrength()
 		iSquadCount = iSquadCount + 1
+		iAdded = iAdded + 1
 	end
 
-	if (iSquadCount == 0) then
+	-- One strong squad vs big blob = suicide; homeside peel+escalate, else bail
+	-- Skip on top-up (already committed mid-fight); overwhelm: no bail
+	if (not cpu_manager.m_bOverwhelmActive and not bTopUp and iSquadCount == 1 and
+		iEnemyStrength > iCommitted * 1.25 and iEnemyStrength > 250) then
+		if (bHomeSide) then
+			self:EscalateWithRetreat("solo vs blob")
+		else
+			self:BailKillZone("solo vs blob")
+		end
+		return iAdded
+	end
+
+	if (not bTopUp and iSquadCount == 0) then
 		self:SetComplete( true )
 	end
+	return iAdded
 end
+
+function ResponsePlan:TryTopUpHomeside(iFightPower, iFightNeed)
+
+	if (g_iGMT < self.m_iLastTopUp + ResponsePlan.TopUpThrottle) then
+		return 0
+	end
+	self.m_iLastTopUp = g_iGMT
+	if (iFightPower >= iFightNeed) then
+		return 0
+	end
+	return self:ObtainForce(true)
+end
+
 
 function ResponsePlan:RemoveLosses()
 
 	local iMinStrength = self:GetMinSquadStrength()
 	local iSquadCount = table.getn( self.response_units )
+	local vSafe = self:GetSafeRetreatPos()
 
 	for iLoop1 = iSquadCount, 1, -1 do
 
@@ -242,11 +447,22 @@ function ResponsePlan:RemoveLosses()
 
 			table.remove( self.response_units, iLoop1 )
 
-		elseif (oSquad:GetTactic():GetUnitStrength() < iMinStrength / 2 and not oSquad:IsInCombat()) then
+		elseif (self:IsSquadFragile(oSquad) or
+			(oSquad:GetTactic():GetUnitStrength() < iMinStrength / 2 and not oSquad:IsInCombat())) then
 
+			-- Fragile: peel even mid-fight (was only after combat ended → walked into SM first)
 			if (not cpu_manager:IsLateGameOverwhelmMode()) then
-				Plan.UnlockResource( self, oSquad )
-				oSquad:GetTactic():SetState( Tactic.States.Retreat )
+				local vRetreat = vSafe
+				local oTactic = oSquad:GetTactic()
+				if (oTactic ~= nil) then
+					local vHome = oTactic:GetHomeRetreatPos()
+					if (vHome ~= nil) then
+						vRetreat = vHome
+					end
+				end
+				self:ReleaseResponseSquad(oSquad, vRetreat)
+			else
+				Plan.UnlockResource(self, oSquad)
 			end
 			table.remove( self.response_units, iLoop1 )
 		end
@@ -257,7 +473,39 @@ function ResponsePlan:Responding()
 
 	aitrace("ResponsePlan: Responding...")
 
-	local iEnemyStrength = cpu_manager:GetArmyStrengthAtPos(self.threat_pos, self.m_iRange, true)
+	local iEnemyStrength, iAlliedStrength, iMyAtPos = cpu_manager:GetArmyStrengthAtPos(self.threat_pos, self.m_iRange, true)
+	if (iEnemyStrength == nil) then
+		iEnemyStrength = 0
+	end
+	if (iAlliedStrength == nil) then
+		iAlliedStrength = 0
+	end
+	if (iMyAtPos == nil) then
+		iMyAtPos = 0
+	end
+	local bHomeSide = cpu_manager:IsHomeSidePosition(self.threat_pos)
+	local iResponseStrength = self:GetResponseStrength()
+	local iAlliesOnly = iAlliedStrength - iMyAtPos
+	if (iAlliesOnly < 0) then
+		iAlliesOnly = 0
+	end
+	local iFightPower = iAlliesOnly + iResponseStrength
+	local iFightNeed = self:GetFightNeed(iEnemyStrength, bHomeSide)
+	local bUnderParity = (iEnemyStrength > 0 and iFightPower < iFightNeed)
+
+	-- Non-homeside: weaker → bail + cooldown (overwhelm: hold and fight)
+	if (bUnderParity and not bHomeSide and not cpu_manager.m_bOverwhelmActive) then
+		self:BailKillZone("outgunned")
+		return
+	end
+
+	-- Homeside: still pull free squads when under 0.8, but hold the point
+	if (bHomeSide and bUnderParity) then
+		self:TryTopUpHomeside(iFightPower, iFightNeed)
+		iResponseStrength = self:GetResponseStrength()
+		iFightPower = iAlliesOnly + iResponseStrength
+		bUnderParity = (iEnemyStrength > 0 and iFightPower < iFightNeed)
+	end
 
 	if (iEnemyStrength <= ResponsePlan.MinThreatStrength) then
 
@@ -271,32 +519,64 @@ function ResponsePlan:Responding()
 		self.m_iDefenseDelay = 0
 	end
 
-	local iResponseStrength = self:GetResponseStrength()
 	if (table.getn(self.response_units) == 0) then
 		self:SetComplete( true )
 		return
 	end
 
-	if (iEnemyStrength > ResponsePlan.MaxResponseThreat or
-		(iEnemyStrength > iResponseStrength * 2 and iEnemyStrength > 400)) then
-		self.m_bNeedFullDefend = true
-		self:SetComplete( true )
+	if (not cpu_manager.m_bOverwhelmActive and
+		(iEnemyStrength > ResponsePlan.MaxResponseThreat or
+		(iEnemyStrength > iResponseStrength * 2 and iEnemyStrength > 400))) then
+		if (bHomeSide) then
+			self:EscalateWithRetreat("threat too large")
+		else
+			self:BailKillZone("threat too large")
+		end
 		return
+	end
+
+	-- Homeside kite: under 0.8 + (under fire OR hard outgunned <0.5) — no cold walk into blobs
+	-- Overwhelm: no kite peel
+	local bHardOutgunned = (bHomeSide and bUnderParity and iEnemyStrength > 0 and
+		iFightPower < iEnemyStrength * ResponsePlan.HomeSideHardOutgunnedRatio)
+	local bHomesideKite = (not cpu_manager.m_bOverwhelmActive and bHomeSide and bUnderParity and
+		(self:ResponseForceUnderFire() or bHardOutgunned))
+	if (bHomesideKite) then
+		self:OrderResponseRetreat(self:GetSafeRetreatPos(), true)
 	end
 
 	local vTargetPos = self:GetBestThreatPosition()
 	self.m_vLastTargetPos = Vector3f(vTargetPos)
+	-- Homeside: hold point even if under 0.8 (no fire, not hard outgunned); kill-zone: full parity
+	local bCommit = bHomeSide or (iEnemyStrength > 0 and iFightPower >= iFightNeed)
 
 	local iSquadCount = table.getn(self.response_units)
 	for iLoop1 = 1, iSquadCount do
 
 		local oSquad = self.response_units[iLoop1]
-		if (oSquad:IsValid()) then
+		if (oSquad ~= nil and oSquad:IsValid()) then
 
 			local oTactic = oSquad:GetTactic()
-			if (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vTargetPos) > 1) then
-				oTactic:SetState( Tactic.States.Attack )
-				oTactic:SetTarget( vTargetPos, Tactic.Variant.Vector )
+			if (oTactic ~= nil) then
+				-- Homeside kite: soft ranged peel; tanks/Squiggoth + melee keep Attack
+				if (bHomesideKite and oSquad:IsRanged() and not oTactic:IsDefenseTankUnit()) then
+				elseif (bCommit) then
+					if (oTactic:IsInEmergencySubState()) then
+					elseif (oTactic:ShouldRetreatAllTheWayHome()) then
+						local vRetreatPos = oTactic:GetHomeRetreatPos()
+						if (vRetreatPos == nil) then
+							vRetreatPos = cpu_manager.start_pos
+						end
+						oTactic:SetState(Tactic.States.Retreat)
+						oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+					elseif (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vTargetPos) > 1) then
+						oTactic:SetState( Tactic.States.Attack )
+						oTactic:SetTarget( vTargetPos, Tactic.Variant.Vector )
+					end
+				elseif (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vTargetPos) > 1) then
+					oTactic:SetState( Tactic.States.Attack )
+					oTactic:SetTarget( vTargetPos, Tactic.Variant.Vector )
+				end
 			end
 		end
 	end

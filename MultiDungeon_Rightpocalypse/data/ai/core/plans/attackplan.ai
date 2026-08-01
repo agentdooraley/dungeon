@@ -35,6 +35,9 @@ function AttackPlan:__init( enemy, attack_pos, start_pos, min_strength, max_perc
 	self.m_iAttackPower = 0
 
 	self.attack_units = {}
+	-- Second wing (Sun Tzu doctrine): same plan, second tip
+	self.m_aFlankUnits = {}
+	self.m_vFlankPos = nil
 
 	self.m_iPlanStart = g_iGMT
 	self.m_iTargetChange = 0
@@ -51,6 +54,117 @@ function AttackPlan:__init( enemy, attack_pos, start_pos, min_strength, max_perc
 	self.m_iLastUpdate = 0
 	
 	self.m_oSupportDetector = nil
+end
+
+AttackPlan.iMinFlankStrength = 150
+
+function AttackPlan:GetWingStrength(aUnits)
+
+	local iArmyStrength = 0
+	if (aUnits == nil) then
+		return 0
+	end
+	for iLoop1 in aUnits do
+		local oUnit = aUnits[iLoop1]
+		if (oUnit:IsValid()) then
+			local oTactic = oUnit:GetTactic()
+			if (oTactic ~= nil) then
+				iArmyStrength = iArmyStrength + oTactic:GetUnitStrength()
+			end
+		end
+	end
+	return iArmyStrength
+end
+
+function AttackPlan:ClearFlankWing(bUnlock)
+
+	if (self.m_aFlankUnits == nil) then
+		self.m_aFlankUnits = {}
+		self.m_vFlankPos = nil
+		return
+	end
+	local iCount = table.getn(self.m_aFlankUnits)
+	for iLoop1 = iCount, 1, -1 do
+		local oUnit = self.m_aFlankUnits[iLoop1]
+		if (bUnlock) then
+			Plan.UnlockResource(self, oUnit)
+		else
+			table.insert(self.attack_units, oUnit)
+		end
+		table.remove(self.m_aFlankUnits, iLoop1)
+	end
+	self.m_vFlankPos = nil
+end
+
+-- Peel strength from main fist into flank wing (units stay locked on this plan)
+function AttackPlan:PeelUnitsToFlank(iTargetStrength)
+
+	if (iTargetStrength == nil or iTargetStrength < AttackPlan.iMinFlankStrength) then
+		return 0
+	end
+	if (self.m_aFlankUnits == nil) then
+		self.m_aFlankUnits = {}
+	end
+	local iPeeled = self:GetWingStrength(self.m_aFlankUnits)
+	if (iPeeled >= iTargetStrength) then
+		return iPeeled
+	end
+	local iUnitCount = table.getn(self.attack_units)
+	for iLoop1 = iUnitCount, 1, -1 do
+		if (iPeeled >= iTargetStrength) then
+			break
+		end
+		local oUnit = self.attack_units[iLoop1]
+		if (oUnit:IsValid()) then
+			local bSkip = false
+			if (self.m_iCapturerID >= 0 and oUnit:GetID() == self.m_iCapturerID) then
+				bSkip = true
+			end
+			local oTactic = oUnit:GetTactic()
+			if (not bSkip and oTactic ~= nil) then
+				local iCost = oTactic:GetUnitStrength()
+				if (iCost > 0 and (iPeeled + iCost <= iTargetStrength + 80 or iPeeled < AttackPlan.iMinFlankStrength)) then
+					table.insert(self.m_aFlankUnits, oUnit)
+					table.remove(self.attack_units, iLoop1)
+					iPeeled = iPeeled + iCost
+				end
+			end
+		end
+	end
+	return iPeeled
+end
+
+function AttackPlan:UpdateFlankWing()
+
+	if (self.m_vFlankPos == nil or self.m_aFlankUnits == nil) then
+		return
+	end
+	-- Promote flank to main if fist is empty
+	if (table.getn(self.attack_units) == 0 and table.getn(self.m_aFlankUnits) > 0) then
+		self.attack_pos = Vector3f(self.m_vFlankPos)
+		self:ClearFlankWing(false)
+		return
+	end
+	local iFlankCount = table.getn(self.m_aFlankUnits)
+	for iLoop1 = iFlankCount, 1, -1 do
+		local oUnit = self.m_aFlankUnits[iLoop1]
+		if (not oUnit:IsValid()) then
+			Plan.UnlockResource(self, oUnit)
+			table.remove(self.m_aFlankUnits, iLoop1)
+		else
+			local oTactic = oUnit:GetTactic()
+			if (oTactic ~= nil) then
+				if (oTactic:GetState() ~= Tactic.States.Attack or
+					distance_sqr(oTactic:GetTarget(), self.m_vFlankPos) > 1) then
+					oTactic:SetTarget(self.m_vFlankPos, Tactic.Variant.Vector)
+					oTactic:SetState(Tactic.States.Attack)
+				end
+			end
+		end
+	end
+	if (table.getn(self.m_aFlankUnits) == 0) then
+		self.m_vFlankPos = nil
+	end
 end
 
 -- Enemy/neutral unbuilt strategic point near attack army (CheckSuccess waits for these)
@@ -80,9 +194,9 @@ function AttackPlan:FindNearbyCapturableStrat(vNearPos, iRange)
 end
 
 function AttackPlan:UpdateAttackCapturer(vArmyPos)
-	local oStrat = self:FindNearbyCapturableStrat(self.attack_pos, 55)
+	local oStrat = self:FindNearbyCapturableStrat(self.attack_pos, 70)
 	if (oStrat == nil and vArmyPos ~= nil) then
-		oStrat = self:FindNearbyCapturableStrat(vArmyPos, 55)
+		oStrat = self:FindNearbyCapturableStrat(vArmyPos, 90)
 	end
 	if (oStrat == nil) then
 		self.m_oCaptureStrat = nil
@@ -96,7 +210,10 @@ function AttackPlan:UpdateAttackCapturer(vArmyPos)
 		for iLoop1 in self.attack_units do
 			local oSquad = self.attack_units[iLoop1]
 			if (oSquad:IsValid() and oSquad:GetID() == self.m_iCapturerID and oSquad:CanCapture()) then
-				oCapturer = oSquad
+				local oT = oSquad:GetTactic()
+				if (oT == nil or not oT:CanOnlyDecap()) then
+					oCapturer = oSquad
+				end
 				break
 			end
 		end
@@ -109,7 +226,10 @@ function AttackPlan:UpdateAttackCapturer(vArmyPos)
 			local oSquad = self.attack_units[iLoop1]
 			if (oSquad:IsValid() and oSquad:CanCapture()) then
 				local oTactic = oSquad:GetTactic()
-				if (oTactic == nil or not oTactic:IsInEmergencySubState()) then
+				-- Sentinel / Reaver / Wraith: never assigned as army capturer
+				if (oTactic ~= nil and oTactic:CanOnlyDecap()) then
+					-- skip
+				elseif (oTactic == nil or not oTactic:IsInEmergencySubState()) then
 					local iDist = distance_sqr(oSquad:GetPosition(), vFlagPos)
 					if (oCapturer == nil or iDist < iBestDist) then
 						oCapturer = oSquad
@@ -161,9 +281,15 @@ function AttackPlan:SplitArmy()
 				-- Add unit cost to squad or vehicle cost
 				local eClass = oStats:GetClass()
 				if (eClass == UnitStatsAI.UC_VehicleLow or eClass == UnitStatsAI.UC_VehicleMed or eClass == UnitStatsAI.UC_VehicleHigh) then
-					iVehicleCost = iVehicleCost + oUnit:GetTactic():GetUnitStrength()
+					local oTac = oUnit:GetTactic()
+					if (oTac ~= nil) then
+						iVehicleCost = iVehicleCost + oTac:GetUnitStrength()
+					end
 				else
-					iSquadCost = iSquadCost + oUnit:GetTactic():GetUnitStrength()
+					local oTac = oUnit:GetTactic()
+					if (oTac ~= nil) then
+						iSquadCost = iSquadCost + oTac:GetUnitStrength()
+					end
 				end
 			end
 		end
@@ -278,7 +404,11 @@ function AttackPlan:GetArmyStrength()
 		if (oUnit:IsValid()) then
 		
 			-- Add unit strength to army strength
-			local iUnitStrength = oUnit:GetTactic():GetUnitStrength()
+			local oTactic = oUnit:GetTactic()
+			if (oTactic == nil) then
+				-- dying mid-fight
+			else
+			local iUnitStrength = oTactic:GetUnitStrength()
 			iArmyStrength = iArmyStrength + iUnitStrength
 			
 			-- Add unit position to army position
@@ -296,6 +426,7 @@ function AttackPlan:GetArmyStrength()
 					eClass == UnitStatsAI.UC_VehicleHigh or eClass == UnitStatsAI.UC_Commander) then
 					self.m_bBaseBuster = true
 				end
+			end
 			end
 		end
 	end
@@ -408,6 +539,8 @@ function AttackPlan:ObtainForce()
 	elseif (cpu_manager:GetTierLevel() >= 3) then
 		iMinStrength = 180
 	end
+	local sPlanStateName, ePlanState = self:GetState()
+	local bGathering = (ePlanState ~= AttackPlan.Attacking)
 	local oSupportDetector = nil
 	for oSquad in military_manager:GetUnlockedSquads() do
 	
@@ -425,8 +558,12 @@ function AttackPlan:ObtainForce()
 			if (oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
 				bSquadOk = false
 			end
+			-- Fire support / daemon-relic: never lock into gather (Defend/Attack only)
+			if (bGathering and oTactic:IsNoGatherCombatUnit()) then
+				bSquadOk = false
+			end
 			
-			-- Check if unit is an attack unit
+			-- Soft pack joins attack only when no safe caps left (IsAttacker)
 			if (oTactic:AlwaysAttack() or (bSquadOk and not oSquad:IsEngineer() and oTactic:IsAttacker())) then
 				table.insert( attack_units, oSquad )
 				self.m_iAttackPower = self.m_iAttackPower + oSquad:GetTactic():GetUnitStrength()
@@ -440,10 +577,9 @@ function AttackPlan:ObtainForce()
 	end
 
 	-- Lock the forces (must be done AFTER the loop inside GetUnlockedSquads!)
-	local sPlanStateName, ePlanState = self:GetState()
 	local oUnitState = Tactic.States.Attack
 	local vTargetPos = self.m_vLastAttackPos
-	if (ePlanState ~= AttackPlan.Attacking) then
+	if (bGathering) then
 		oUnitState = Tactic.GlobalDefenseState
 		vTargetPos = self.m_vGatherPos
 	end
@@ -455,8 +591,10 @@ function AttackPlan:ObtainForce()
 
 		-- Assign a tactic
 		local oTactic = attack_units[iLoop1]:GetTactic()
-		oTactic:SetState(oUnitState)
-		oTactic:SetTarget(vTargetPos, Tactic.Variant.Vector )
+		if (oTactic ~= nil) then
+			oTactic:SetState(oUnitState)
+			oTactic:SetTarget(vTargetPos, Tactic.Variant.Vector )
+		end
 	end
 	if (oSupportDetector ~= nil) then
 	
@@ -466,8 +604,10 @@ function AttackPlan:ObtainForce()
 		
 		-- Assign a tactic
 		local oTactic = oSupportDetector:GetTactic()
-		oTactic:SetState(Tactic.States.Retreat)
-		oTactic:SetTarget(vTargetPos, Tactic.Variant.Vector)
+		if (oTactic ~= nil) then
+			oTactic:SetState(Tactic.States.Retreat)
+			oTactic:SetTarget(vTargetPos, Tactic.Variant.Vector)
+		end
 	end
 	
 	-- Check if obtain forces time is out
@@ -477,10 +617,94 @@ function AttackPlan:ObtainForce()
 	end
 end
 
+-- Unlock gather ball immediately so Capture/Defend/Response can act (don't wait AttackStrategy 10s)
+function AttackPlan:AbortGather(sReason)
+
+	aitrace("AttackPlan: Abort gather — "..tostring(sReason))
+	local iCount = table.getn(self.attack_units)
+	for iLoop1 = iCount, 1, -1 do
+		Plan.UnlockResource(self, self.attack_units[iLoop1])
+		table.remove(self.attack_units, iLoop1)
+	end
+	self:ClearFlankWing(true)
+	if (self.m_oSupportDetector ~= nil) then
+		Plan.UnlockResource(self, self.m_oSupportDetector)
+		self.m_oSupportDetector = nil
+	end
+	self:SetComplete(true)
+end
+
+-- Map/base pressure: sitting in gather while enemy takes points / raids homeside
+function AttackPlan:ShouldAbortGatherForPressure()
+
+	if (cpu_manager.m_bOverwhelmActive or cpu_manager.m_bForceAttackMode) then
+		return nil
+	end
+	-- HQ / base: always defend the old way (homeside redirect must NOT skip this)
+	if (cpu_manager:GetCriticalThreat() > 0 or cpu_manager:HQThreat()) then
+		return "base threat"
+	end
+	if (DefendStrategy.bDefending and DefendStrategy.bHeavyThreat) then
+		return "heavy home threat"
+	end
+	-- Redirect: skip homeside-secure/raid abort only (don't park army AFK for SP fight)
+	if (CapturePlan ~= nil and CapturePlan.ShouldRedirectFromOverwhelmedHomeSide ~= nil and
+		CapturePlan:ShouldRedirectFromOverwhelmedHomeSide()) then
+		return nil
+	end
+	if (CapturePlan ~= nil and CapturePlan.NeedsHomeSideSecurePhase ~= nil and
+		CapturePlan:NeedsHomeSideSecurePhase()) then
+		return "homeside secure"
+	end
+	if (CapturePlan ~= nil and CapturePlan.FindHomeDefenseThreatPos ~= nil and
+		CapturePlan:FindHomeDefenseThreatPos() ~= nil) then
+		return "homeside raid"
+	end
+	return nil
+end
+
 -- Arkhan 11.2005: Attack condition is now only based on gathered army power
 function AttackPlan:GatherForces()
 
 	aitrace("AttackPlan: Gather troops...")
+
+	-- HQ / HeavyThreat first (even during homeside redirect)
+	local sAbort = self:ShouldAbortGatherForPressure()
+	if (sAbort ~= nil) then
+		self:AbortGather(sAbort)
+		return
+	end
+
+	-- Hopeless homeside SP: skip gather — march to redirect target (HQ already handled above)
+	if (CapturePlan ~= nil and CapturePlan.ShouldRedirectFromOverwhelmedHomeSide ~= nil and
+		CapturePlan:ShouldRedirectFromOverwhelmedHomeSide()) then
+		aitrace("AttackPlan: Redirect push — skip gather")
+		Plan.SetState( self, "Attack!", AttackPlan.Attack )
+		for iLoop1 in self.attack_units do
+			local oSquad = self.attack_units[iLoop1]
+			if (oSquad ~= nil and oSquad:IsValid()) then
+				local oTactic = oSquad:GetTactic()
+				if (oTactic ~= nil) then
+					oTactic:SetState(Tactic.States.Attack)
+					oTactic:SetTarget(self.attack_pos, Tactic.Variant.Vector)
+				end
+			end
+		end
+		return
+	end
+
+	-- Fire support / daemon-relic must never sit in gather — release for Defend/Attack
+	local iFS = table.getn(self.attack_units)
+	for iLoop1 = iFS, 1, -1 do
+		local oSquad = self.attack_units[iLoop1]
+		if (oSquad ~= nil and oSquad:IsValid()) then
+			local oTactic = oSquad:GetTactic()
+			if (oTactic ~= nil and oTactic:IsNoGatherCombatUnit()) then
+				Plan.UnlockResource(self, oSquad)
+				table.remove(self.attack_units, iLoop1)
+			end
+		end
+	end
 	
 	-- Make sure that we have obtained enough forces
 	local bReadyForAttack = true
@@ -489,6 +713,9 @@ function AttackPlan:GatherForces()
 	if (self.m_iAttackPower < self.m_iRequiredArmyPower) then
 		bReadyForAttack = false
 	end
+
+	-- Cap empty/enemy strats near army while waiting (don't AFK-gather only)
+	self:UpdateAttackCapturer(vArmyPos)
 	
 	-- Check if any units are attacked
 	local vGatherPos = self.m_vGatherPos
@@ -522,6 +749,9 @@ function AttackPlan:GatherForces()
 		-- Set unit state
 		local oSquad = self.attack_units[iLoop1]
 		local oTactic = oSquad:GetTactic()
+		-- Leave assigned attack-capturer on Hold at the flag
+		if (self.m_iCapturerID >= 0 and oSquad:GetID() == self.m_iCapturerID) then
+		else
 		local oState = Tactic.GlobalDefenseState
 		if (oSquad:WasRecentlyHurt()) then
 			oState = Tactic.States.Attack
@@ -531,6 +761,7 @@ function AttackPlan:GatherForces()
 		if (oTactic:GetState() ~= oState or distance_sqr(oTactic:GetTarget(), vGatherPos) > 1) then
 			oTactic:SetState(oState)
 			oTactic:SetTarget(vGatherPos, Tactic.Variant.Vector)
+		end
 		end
 	end
 	
@@ -559,8 +790,16 @@ function AttackPlan:GatherForces()
 		bReadyForAttack = false
 	end
    
-	-- Attack if we've gathered enough forces
-	if (bReadyForAttack or g_iGMT > self.m_iPlanStart + 120) then
+	-- Attack if gathered — shorter timeout so we don't watch the map get capped
+	local iUnitCount = table.getn(self.attack_units)
+	local iGatherAge = g_iGMT - self.m_iPlanStart
+	local bTimeoutAttack = (iGatherAge > 70 and iUnitCount >= 3 and
+		iGatherStrength >= self.m_iRequiredArmyPower * 0.4)
+	if (not bTimeoutAttack and iGatherAge > 45 and iUnitCount >= 2 and
+		iGatherStrength >= self.m_iRequiredArmyPower * 0.55) then
+		bTimeoutAttack = true
+	end
+	if (bReadyForAttack or bTimeoutAttack) then
 	
 		-- Start attack
 		aitrace("AttackPlan: Start attack!!!")
@@ -578,22 +817,18 @@ function AttackPlan:GatherForces()
 		return
 	end
 	
-	-- Check for heavy threat at home
-	if (DefendStrategy.bDefending and DefendStrategy.bHeavyThreat) then
-		self:Retreat(cpu_manager.start_pos)
-	end
-   
-	-- If under attack or threat, retreat
-	if (2 * iEnemyStrength > self.m_iAttackPower) then
-	
-		-- Get new safe point
+	-- Local pressure at gather: don't dig deeper into HQ — release for Defend/Capture
+	-- (old path: GenerateSafePoint → Retreat to start_pos AFK while enemy caps)
+	if (not cpu_manager.m_bOverwhelmActive and 2 * iEnemyStrength > self.m_iAttackPower and iEnemyStrength > 80) then
+		local bNearHome = (cpu_manager:IsHomeSidePosition(self.m_vGatherPos) or
+			distance_sqr(self.m_vGatherPos, cpu_manager.start_pos) < sqr(90))
+		if (bNearHome or iGatherAge > 40) then
+			self:AbortGather("gather pressed near home")
+			return
+		end
 		aitrace("AttackPlan: Need to back off a bit")
 		self:GenerateSafePoint()
-		
-		-- Move everyone there
 		for iLoop1 in self.attack_units do
-		
-			-- Set new target
 			local oSquad = self.attack_units[iLoop1]
 			local oTactic = oSquad:GetTactic()
 			oTactic:SetState(Tactic.States.Retreat)
@@ -665,30 +900,39 @@ function AttackPlan:Attacking()
 		-- Set time
 		self.m_iTargetChange = g_iGMT
 	
-		-- In addition, deepstrike if I can
-		for build_channel in build_manager:GetBuildChannelAIs() do
+		-- Melee DS: ≤5m of enemy / building. Ranged: old detector/army pos.
+		local vDeepStrikeLand = vDetectorTarget
+		if (cpu_manager:HasMeleeDeepStrikeQueued()) then
+			vDeepStrikeLand = cpu_manager:GetMeleeDeepStrikePos(attack_now_pos)
+			if (vDeepStrikeLand == nil) then
+				vDeepStrikeLand = cpu_manager:GetMeleeDeepStrikePos(vDetectorTarget)
+			end
+		end
+		if (vDeepStrikeLand ~= nil) then
+			for build_channel in build_manager:GetBuildChannelAIs() do
 
-			if (build_channel:CanDeepStrike() and cpu_manager:MilitaryDeepStrike(build_channel:GetBlueprintID())) then
+				if (build_channel:CanDeepStrike() and cpu_manager:MilitaryDeepStrike(build_channel:GetBlueprintID())) then
 
-				if (build_channel:CanOnlyDeepStrikeToEntity()) then
-					
-					-- Find someone who can summon
-					local can_summon = function( squad_ai )
-						return squad_ai:CanSummon()
-					end
+					if (build_channel:CanOnlyDeepStrikeToEntity()) then
+						
+						-- Find someone who can summon
+						local can_summon = function( squad_ai )
+							return squad_ai:CanSummon()
+						end
 
-					local attacking_unit = cpu_manager:GetClosestSquad(attack_now_pos, 100, can_summon)
-					if (attacking_unit) then
-						build_channel:DoDeepStrikeToSquad( attacking_unit:GetSquad() )
-					end
-				else
-					build_channel:DoDeepStrikeToPos(vDetectorTarget)
-				end			
-			end		
+						local attacking_unit = cpu_manager:GetClosestSquad(vDeepStrikeLand, 100, can_summon)
+						if (attacking_unit) then
+							build_channel:DoDeepStrikeToSquad( attacking_unit:GetSquad() )
+						end
+					else
+						build_channel:DoDeepStrikeToPos(vDeepStrikeLand)
+					end			
+				end		
+			end
 		end
 	else
 
-		-- Check if it is time to stop a critical timer
+		-- Take&Hold emergency: push victory SP; strongest CanCapture (not nearest)
 		if (g_iGMT > cpu_manager.m_iCriticalTimer + 180 and cpu_manager.m_iCriticalTimer > 0 and cpu_manager.m_bTakeAndHoldMode) then
 		
 			-- Attack closest target
@@ -700,19 +944,18 @@ function AttackPlan:Attacking()
 			-- Check if we have a capturer
 			if (self.m_iCapturerID < 0) then
 			
-				-- Choose a capturer
-				iClosestDistance = 0
+				local iBestStr = -1
 				for iLoop1 in self.attack_units do
-	
-					if (self.attack_units[iLoop1]:CanCapture()) then
-	
-						-- Get squad position
-						local vSquadPosition = self.attack_units[iLoop1]:GetPosition()
-						dbAssert(self.attack_pos ~= nil)
-						local iDistance = distance_sqr(vSquadPosition, self.attack_pos)
-						if (iClosestDistance == 0 or iClosestDistance > iDistance) then
-							iClosestDistance = iDistance
-							self.m_iCapturerID = self.attack_units[iLoop1]:GetID()
+					local oSquad = self.attack_units[iLoop1]
+					if (oSquad:CanCapture()) then
+						local oTactic = oSquad:GetTactic()
+						local iStr = 0
+						if (oTactic ~= nil) then
+							iStr = oTactic:GetUnitStrength()
+						end
+						if (iStr > iBestStr) then
+							iBestStr = iStr
+							self.m_iCapturerID = oSquad:GetID()
 						end
 					end
 				end
@@ -761,6 +1004,34 @@ function AttackPlan:Attacking()
 			end
 		end
 	end
+
+	-- Army on the road to a clear building: fight the army, don't walk through it
+	-- Overwhelm: skip mid-path retarget (HasThreatOnPath + GetArmyStrength scans)
+	if (not cpu_manager.m_bOverwhelmActive and attack_now_pos ~= nil and vArmyPos ~= nil) then
+		local bPathThreat = cpu_manager:HasThreatOnPath(vArmyPos, attack_now_pos, 40)
+		if (not bPathThreat) then
+			local vMid = Vector3f(vArmyPos)
+			vMid.x = (vArmyPos.x + attack_now_pos.x) * 0.5
+			vMid.z = (vArmyPos.z + attack_now_pos.z) * 0.5
+			local iPathEnemy = cpu_manager:GetArmyStrengthAtPos(vMid, 50, true)
+			bPathThreat = (iPathEnemy > 200)
+		end
+		if (bPathThreat) then
+			local vFight = self:GetBestAttackPosition(vArmyPos, 90)
+			if (vFight == nil) then
+				local oAttackStrat = cpu_manager:StrategyExists("AttackStrategy")
+				if (oAttackStrat ~= nil and self.enemy ~= nil) then
+					vFight = oAttackStrat:GetEnemyArmyAnchor(self.enemy)
+				end
+			end
+			if (vFight ~= nil) then
+				attack_now_pos = Vector3f(vFight)
+				self.attack_pos = Vector3f(vFight)
+				self.m_iTargetChange = g_iGMT
+			end
+		end
+	end
+
 	self.m_vLastAttackPos = Vector3f(attack_now_pos)
 		
 	-- Move units to target position
@@ -814,7 +1085,9 @@ function AttackPlan:Attacking()
 		oTactic:SetState(Tactic.States.Retreat)
 	end
 	
-	if (table.getn(self.attack_units) == 0) then
+	self:UpdateFlankWing()
+	if (table.getn(self.attack_units) == 0 and
+		(self.m_aFlankUnits == nil or table.getn(self.m_aFlankUnits) == 0)) then
 		self:SetComplete( true )
 	end
 end
@@ -901,6 +1174,15 @@ function AttackPlan:Retreat( retreat_pos )
 			oTactic:SetState(Tactic.States.Retreat)
 			oTactic:SetTarget(retreat_pos, Tactic.Variant.Vector)
 		end
+		if (self.m_aFlankUnits ~= nil) then
+			for i in self.m_aFlankUnits do
+				local oTactic = self.m_aFlankUnits[i]:GetTactic()
+				if (oTactic ~= nil) then
+					oTactic:SetState(Tactic.States.Retreat)
+					oTactic:SetTarget(retreat_pos, Tactic.Variant.Vector)
+				end
+			end
+		end
 		if (self.m_oSupportDetector ~= nil) then
 			local oTactic = self.m_oSupportDetector:GetTactic()
 			oTactic:SetState(Tactic.States.Retreat)
@@ -942,7 +1224,10 @@ function AttackPlan:RemoveLosses()
 			local oTactic = oSquad:GetTactic()
 			local bWeak	= (oSquad:CanReinforce(false, 0) and oTactic:GetUnitStrength() < iMinStrength)
 			local bCanRetreat = (oSquad:IsRanged() or not oSquad:IsInCombat())
-			if (not oTactic:IsOverwhelmSpamMode() and (not oTactic:IsAttacker() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
+			-- Tanks holding homeside/base: don't dump to HQ AFK while fight is still there
+			local bHoldLine = oTactic:ShouldHoldDefenseLine()
+			if (not oTactic:IsOverwhelmSpamMode() and not bHoldLine and
+				(not oTactic:IsAttacker() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
 		
 				-- Send severly hurt squads back to base
 				if (vBasePos ~= nil) then
@@ -952,7 +1237,8 @@ function AttackPlan:RemoveLosses()
 					oTactic:SetTarget(vBasePos, Tactic.Variant.Vector)
 				end
 				
-			elseif (not oTactic:IsOverwhelmSpamMode() and oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
+			elseif (not oTactic:IsOverwhelmSpamMode() and not bHoldLine and
+				oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
 		
 				-- Send severly hurt vehicles back to base for repair
 				Plan.UnlockResource(self, oSquad)
@@ -960,6 +1246,41 @@ function AttackPlan:RemoveLosses()
 				oTactic:SetState(Tactic.States.Retreat)
 				oTactic:SetTarget(cpu_manager.start_pos, Tactic.Variant.Vector)
 			end
+		end
+	end
+
+	-- Same peel rules for flank wing
+	if (self.m_aFlankUnits ~= nil) then
+		local iFlankCount = table.getn(self.m_aFlankUnits)
+		for iLoop1 = iFlankCount, 1, -1 do
+			local oSquad = self.m_aFlankUnits[iLoop1]
+			if (not oSquad:IsValid()) then
+				Plan.UnlockResource(self, oSquad)
+				table.remove(self.m_aFlankUnits, iLoop1)
+			else
+				local oTactic = oSquad:GetTactic()
+				local bWeak = (oSquad:CanReinforce(false, 0) and oTactic:GetUnitStrength() < iMinStrength)
+				local bCanRetreat = (oSquad:IsRanged() or not oSquad:IsInCombat())
+				local bHoldLine = oTactic:ShouldHoldDefenseLine()
+				if (not oTactic:IsOverwhelmSpamMode() and not bHoldLine and
+					(not oTactic:IsAttacker() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
+					if (vBasePos ~= nil) then
+						Plan.UnlockResource(self, oSquad)
+						table.remove(self.m_aFlankUnits, iLoop1)
+						oTactic:SetState(Tactic.States.Retreat)
+						oTactic:SetTarget(vBasePos, Tactic.Variant.Vector)
+					end
+				elseif (not oTactic:IsOverwhelmSpamMode() and not bHoldLine and
+					oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair()) then
+					Plan.UnlockResource(self, oSquad)
+					table.remove(self.m_aFlankUnits, iLoop1)
+					oTactic:SetState(Tactic.States.Retreat)
+					oTactic:SetTarget(cpu_manager.start_pos, Tactic.Variant.Vector)
+				end
+			end
+		end
+		if (table.getn(self.m_aFlankUnits) == 0) then
+			self.m_vFlankPos = nil
 		end
 	end
 	
@@ -993,7 +1314,7 @@ function AttackPlan:Update()
 		return
 	end
 	
-	aitrace("Attackplan: Update...", true)
+	AITrace.Log("Attack.Noise", "Attackplan: Update...")
 	
 	-- Update gather pos
 	self.m_vGatherPos.x = self.m_iSavePosX
@@ -1005,5 +1326,8 @@ function AttackPlan:Update()
 	
 	-- Run superclass update
 	Plan.Update( self )
+
+	-- Second wing keeps tip even while main state machine runs gather/attack
+	self:UpdateFlankWing()
 end
 

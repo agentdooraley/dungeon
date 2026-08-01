@@ -2,6 +2,7 @@
 -- File: 'resourceplan.ai'
 -- Edited by LarkinVB	@ 31.12.2005
 -- Edited by Arkhan		@ 14.01.2006
+-- Edited by [DAG05]Simon @ 23.07.2026
 
 class 'ResourcePlan' (Plan)
 
@@ -42,6 +43,7 @@ end
 function ResourcePlan:FindStrategicPoint()
 
 	-- Find best strategic point to capture
+	local bAutoConstruct = cpu_manager:AutoConstructBuildings()
 	for iLoop1 in CapturePlan.OrderedStratPoints do
 	
 		-- Get strategic point
@@ -55,13 +57,41 @@ function ResourcePlan:FindStrategicPoint()
 			not oStrategicPoint:IsStrategicObjective() and not oStrategicPoint:IsLocked() and
 			not (cpu_manager:CloseEnemyUnits(vPosition, 35) and cpu_manager.terrain_analyzer:HasThreat(vPosition, 35))) then
 			
-			-- Check threat on path
-			if (not cpu_manager:HasThreatOnPath(cpu_manager.start_pos, vPosition, 30)) then
+			-- Dark Eldar AutoConstruct: не резать флаг из‑за threat на пути (рабы AFK у HQ)
+			if (bAutoConstruct or not cpu_manager:HasThreatOnPath(cpu_manager.start_pos, vPosition, 30)) then
 				return oStrategicPoint
 			end		
 		end
 	end
 	return nil
+end
+
+function ResourcePlan:IsNecronCapturerPostBuilder( oSquad )
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return false
+	end
+	-- Non-Necron: unchanged
+	if (not cpu_manager:IsNecronBuilderScarab(oSquad)) then
+		return true
+	end
+	-- Necron: only free idle scarabs — never steal capturer / POST LOCK / plan worker
+	if (oSquad:IsCapturing() or oSquad:IsLocked()) then
+		return false
+	end
+	local oTac = oSquad:GetTactic()
+	if (oTac ~= nil) then
+		if (oTac.IsNecronPostLocked ~= nil and oTac:IsNecronPostLocked()) then
+			return false
+		end
+		if (oTac.m_vPendingNecronPostPos ~= nil) then
+			return false
+		end
+		if (oTac.IsOnCaptureDuty ~= nil and oTac:IsOnCaptureDuty()) then
+			return false
+		end
+	end
+	return true
 end
 
 function ResourcePlan:ObtainFlagAndBuilder()
@@ -73,6 +103,16 @@ function ResourcePlan:ObtainFlagAndBuilder()
 	self.m_iNextUpdate = g_iGMT + 1/2
 
 	aitrace("ResourcePlan: ObtainFlagAndBuilder...")
+
+	-- Necron LP costs ~25 power — skip if broke (capturer-after-cap still handles own flag)
+	local bNecron = (cpu_manager.player_stats ~= nil and
+		cpu_manager.player_stats:GetPlayerRaceName() == "necron_race")
+	if (bNecron) then
+		local iPower = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Power)
+		if (iPower == nil or iPower < 25) then
+			return
+		end
+	end
 	
 	-- Check for available builders
 	local aBuilders = cpu_manager:GetAvailableBuilders()
@@ -93,6 +133,7 @@ function ResourcePlan:ObtainFlagAndBuilder()
 	local can_build_error = false
 	local can_build_prereq = false
 	local can_build_not_buildable = false
+	local bAutoConstruct = cpu_manager:AutoConstructBuildings()
 	
 	--save the location of flag
 	local build_pos = strat_pt:GetEntity():GetPosition()
@@ -102,6 +143,10 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		
 		-- Get builder
 		local oSquad = aBuilders[iLoop1]
+
+		-- Necron: pure builder scarabs never take ResourcePlan LP jobs
+		if (not self:IsNecronCapturerPostBuilder(oSquad)) then
+		else
 		
 		local can_build = oSquad:CanBuild( self.garrison_id )
 		
@@ -116,9 +161,19 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		elseif (can_build == SquadAI.CANBUILD_Ok) then 
 		
 			local squad_pos = oSquad:GetPosition()
+			-- DE AutoConstruct: path-threat блокировал назначение → рабы AFK, LP не ставятся
+			local bPathOk = bAutoConstruct or not cpu_manager:HasThreatOnPath(squad_pos, build_pos, 30)
+
+			-- Capturer with pending post for another flag: leave them alone
+			local oTactic = oSquad:GetTactic()
+			local bPendingOther = false
+			if (oTactic ~= nil and oTactic.m_vPendingNecronPostPos ~= nil) then
+				if (distance_sqr(oTactic.m_vPendingNecronPostPos, build_pos) > sqr(25)) then
+					bPendingOther = true
+				end
+			end
 		
-			if (oSquad:CanBuildAt( self.garrison_id, build_pos ) and 
-				not cpu_manager:HasThreatOnPath(squad_pos, build_pos, 30)) then
+			if (not bPendingOther and oSquad:CanBuildAt( self.garrison_id, build_pos ) and bPathOk) then
 		
 				if (self.builder == nil) then
 				
@@ -138,6 +193,7 @@ function ResourcePlan:ObtainFlagAndBuilder()
 				end
 			end	
 		end
+		end -- necron capturer filter
 	end
 
 	if self.builder ~= nil then
@@ -147,6 +203,11 @@ function ResourcePlan:ObtainFlagAndBuilder()
 		Plan.LockResource( self, strat_pt )
 		self.capturing_flag = strat_pt		
 		Plan.LockResource( self, self.builder )
+		-- Сбросить залипший busy/assist у DE-раба после DynamicBuild LP
+		local oTactic = self.builder:GetTactic()
+		if (oTactic ~= nil and oTactic.ClearWorkFlags ~= nil) then
+			oTactic:ClearWorkFlags()
+		end
 		Plan.SetNeeds( self, "No needs", Plan.NeedsFulfilled )
 		self.capturing_flag:TagFlagForEngineer( true )
 		return
@@ -244,6 +305,60 @@ function ResourcePlan:BuildPost()
 	self:OnEvent( Plan.Events.OnPlanStart )
 end
 
+-- Only the unfinished LP at THIS flag (never another ResourcePlan's post).
+function ResourcePlan:FindUnfinishedPostAtFlag()
+	if (self.capturing_flag == nil or self.garrison_id == nil) then
+		return nil
+	end
+	local vFlagPos = self.capturing_flag:GetPosition()
+	local iNearSqr = sqr(25)
+	local oBest = nil
+	local iBestDist = iNearSqr
+	for oBuilding in cpu_manager.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and
+			oBuilding:GetBlueprintID() == self.garrison_id) then
+			local iDist = distance_sqr(oBuilding:GetPosition(), vFlagPos)
+			if (iDist < iBestDist) then
+				iBestDist = iDist
+				oBest = oBuilding
+			end
+		end
+	end
+	if (oBest ~= nil) then
+		return oBest:GetEntity()
+	end
+	local oBuilding = build_manager:FindUnfinishedBuilding(self.garrison_id)
+	if (oBuilding ~= nil and distance_sqr(oBuilding:GetPosition(), vFlagPos) < iNearSqr) then
+		return oBuilding
+	end
+	return nil
+end
+
+-- Orks/Necrons: max 1 worker — skip if another engie already on this post.
+function ResourcePlan:HasOtherWorkerOnPost( oBuilding )
+	if (oBuilding == nil or self.builder == nil) then
+		return false
+	end
+	if (EngineerTactic.GetMaxWorkers("build") > 1) then
+		return false
+	end
+	local vBuildPos = oBuilding:GetPosition()
+	local iMyId = self.builder:GetID()
+	for oSquad in military_manager:GetSquads() do
+		if (oSquad:IsValid() and oSquad:IsEngineer() and oSquad:GetID() ~= iMyId) then
+			if (oSquad:IsBuilding() == self.garrison_id and
+				distance_sqr(oSquad:GetPosition(), vBuildPos) < sqr(30)) then
+				return true
+			end
+			if (oSquad:IsBuildProgressing() and
+				distance_sqr(oSquad:GetPosition(), vBuildPos) < sqr(20)) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function ResourcePlan:BuildingListeningPost()
 
 	aitrace("ResourcePlan: BuildingListeningPost...")
@@ -264,28 +379,31 @@ function ResourcePlan:BuildingListeningPost()
 		self.is_building = true
 	end
 	
-	-- Search unfinished post
-	local oBuilding = build_manager:FindUnfinishedBuilding(self.garrison_id)
 	local vFlagPos = self.capturing_flag:GetPosition()
-	if (oBuilding ~= nil and distance_sqr(oBuilding:GetPosition(), vFlagPos) < 100) then
-	
-		-- Try to jump if possible
-		if (distance_sqr(self.builder:GetPosition(), vFlagPos) > sqr(40) and cpu_manager:JumpBuilder(self.builder, vFlagPos)) then
-			return
-		end
+	-- Must be THIS flag's post — FindUnfinishedBuilding() alone returns any LP and double-stacks engies
+	local oBuilding = self:FindUnfinishedPostAtFlag()
+	if (oBuilding ~= nil and distance_sqr(self.builder:GetPosition(), vFlagPos) > sqr(40) and
+		cpu_manager:JumpBuilder(self.builder, vFlagPos)) then
+		return
 	end
 	
 	-- Check if builder is building
 	if (self.builder:IsBuilding() == 0) then
 	
-		-- Check for building
+		-- Check for building at our flag only
 		if (oBuilding ~= nil) then
+
+			if (self:HasOtherWorkerOnPost(oBuilding)) then
+				-- Another gretchin/scarab already finishing — do not pile on
+				return
+			end
 		
 			-- Check for auto-construct buildings
 			if (cpu_manager:AutoConstructBuildings()) then
 			
 				-- Get building AI
 				local oBuildingAI = military_manager:GetBaseFromID(oBuilding:GetID())
+				-- Only tap brand-new shells; HP>=0.15 already kicked off / auto-building
 				if (oBuildingAI ~= nil and oBuildingAI:GetHealthPercentage() <= 0.2) then
 					self.builder:DoFinishBuilding(oBuilding)
 					return
@@ -296,7 +414,7 @@ function ResourcePlan:BuildingListeningPost()
 			end
 		end
 		
-		-- Job finished
+		-- Job finished (no unfinished post left at this flag)
 		aitrace("ResourcePlan: Job finished!!!")
 		self.capturing_flag:TagFlagForEngineer( false )
 		self:FreeResources()
@@ -341,7 +459,7 @@ function ResourcePlan:Update()
 		return
 	end
 	
-	aitrace("ResourcePlan: Update...", true)
+	AITrace.Log("Resource.Noise", "ResourcePlan: Update...")
 	
 	-- Check if builder is valid
 	if (self.builder ~= nil and not self.builder:IsValid()) then
@@ -355,40 +473,51 @@ function ResourcePlan:Update()
 		return
 	end
 	
-	-- Abort if builder was hurt or target threat too dangerous
-	if (self.builder ~= nil and self.builder:WasRecentlyHurt()) then
-	
-		-- Unlock and retreat builder
+	-- LP under fire: stay building. Abort only critical HP / melee overrun (dance is EngineerTactic).
+	if (self.builder ~= nil) then
+		local fHP = self.builder:GetHealthPercentage()
 		local oTactic = self.builder:GetTactic()
-		oTactic:ValidMove(cpu_manager.start_pos)
-		self:FreeResources()
-		if (g_iGMT > DefendChokePointPlan.HarassingTime * 10) then
-			self:SetComplete( true )
-		else
-			Plan.SetState( self, "Find Flag", ResourcePlan.FindFlag )
-			Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
+		local bCritical = (fHP ~= nil and fHP < 0.2)
+		local bOverrunMelee = false
+		if (oTactic ~= nil and oTactic.ShouldAbandonWork ~= nil and oTactic:ShouldAbandonWork()) then
+			bOverrunMelee = true
 		end
-		return
+		if (bCritical or bOverrunMelee) then
+			if (oTactic ~= nil) then
+				if (oTactic.ClearWorkFlags ~= nil) then
+					oTactic:ClearWorkFlags()
+				end
+				if (oTactic.TryWorkerRefuge ~= nil) then
+					oTactic:UpdateStance()
+					oTactic:TryWorkerRefuge()
+				end
+			end
+			self:FreeResources()
+			if (g_iGMT > DefendChokePointPlan.HarassingTime * 10) then
+				self:SetComplete( true )
+			else
+				Plan.SetState( self, "Find Flag", ResourcePlan.FindFlag )
+				Plan.SetNeeds( self, "Obtain Flag and Builder", ResourcePlan.ObtainFlagAndBuilder )
+			end
+			return
+		end
 	end
 	
-	-- Check for capturing flag
-	if (self.capturing_flag ~= nil) then
-		
-		-- Check threat
+	-- Contested flag: keep building under ranged fire; drop only if not on job + crushing + melee
+	if (self.capturing_flag ~= nil and self.builder ~= nil) then
 		local vFlagPos = self.capturing_flag:GetPosition()
 		if (cpu_manager:CloseEnemyUnits(vFlagPos, 35) and cpu_manager.terrain_analyzer:HasThreat(vFlagPos, 35)) then
-		
-			-- Abort if target threat too dangerous
 			local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vFlagPos, 35)
-			if (iEnemyStrength > iAlliedStrength*1.2) then
-			
-				-- Unlock and retreat builder
-				if (self.builder ~= nil) and ((self.builder:IsBuilding() == 0) or self.builder:GetHealthPercentage() < 0.7) then
-				
-					local oTactic = self.builder:GetTactic()
-					oTactic:ValidMove(cpu_manager.start_pos)
-					self:FreeResources()
+			local bBuilding = (self.builder:IsBuilding() ~= 0 or self.builder:IsBuildProgressing())
+			local oMelee = cpu_manager.cpu_player:FindFirstEnemy(self.builder:GetPosition(), 22, 1)
+			local bMelee = (oMelee ~= nil and not oMelee:IsRanged())
+			if (not bBuilding and iEnemyStrength > iAlliedStrength * 1.5 and bMelee) then
+				local oTactic = self.builder:GetTactic()
+				if (oTactic ~= nil and oTactic.TryWorkerRefuge ~= nil) then
+					oTactic:UpdateStance()
+					oTactic:TryWorkerRefuge()
 				end
+				self:FreeResources()
 				if (g_iGMT > DefendChokePointPlan.HarassingTime * 10) then
 					self:SetComplete( true )
 				else

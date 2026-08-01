@@ -411,41 +411,14 @@ function OrkBuildBaseStrategy:BuildFlexible()
 
 		-- Dynamically regulate quantity of defensive buildings based on how many strats/crits/relics we have through the tiers so we avoid cluttering/bottlenecking on maps with limited points
 		if (self.tierLevel >= 2 and (iRequisition >= 1500 and iPower >= 1500)) then
-    			if (resource_manager:GetNumOwnedStrategicPoints() < 4) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() < 3 and self:HasRelic()) then
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 2, 2, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 2, 2, 400, 100, 0, 0)
-				self:DynamicBuild("ork_boomy_platform", 1, 3, 900, 500, 0, 0)
-				self:DynamicBuild("ork_burna_bomm", 1, 3, 750, 750, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 4, 3, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 4, 3, 400, 100, 0, 0)
-   			end
 		else
-   			if (resource_manager:GetNumOwnedStrategicPoints() > 3) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 2 and self:HasRelic()) then
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 3, 2, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 3, 2, 400, 100, 0, 0)
-				self:DynamicBuild("ork_boomy_platform", 2, 3, 900, 500, 0, 0)
-				self:DynamicBuild("ork_burna_bomm", 1, 3, 750, 750, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 6, 3, 800, 460, 0, 0)
-				self:DynamicBuild("ork_mine_field", 6, 3, 400, 100, 0, 0)
-			end
 		end
 
 		if (self.tierLevel >= 4 and (iRequisition >= 2500 and iPower >= 2500)) then
-    			if (resource_manager:GetNumOwnedStrategicPoints() > 4) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasCriticalLocation()) or (resource_manager:GetNumOwnedStrategicPoints() > 3 and self:HasRelic()) then
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 8, 4, 800, 460, 0, 0)
 				self:DynamicBuild("ork_mine_field", 8, 4, 400, 100, 0, 0)
-				self:DynamicBuild("ork_boomy_platform", 3, 4, 900, 500, 0, 0)
-				self:DynamicBuild("ork_burna_bomm", 2, 4, 750, 750, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_missile_sp", 2, 5, 1500, 1000, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 10, 5, 800, 460, 0, 0)
-				self:DynamicBuild("ork_mine_field", 10, 5, 400, 100, 0, 0)
-				self:DynamicBuild("ork_boomy_platform", 5, 5, 900, 500, 0, 0)
-				self:DynamicBuild("ork_burna_bomm", 3, 5, 750, 750, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_missile_sp", 4, 6, 1500, 1000, 0, 0)
-				self:DynamicBuild("ork_burna_bomm", 4, 6, 750, 750, 0, 0)
-				self:DynamicBuild("ork_waagh_banner_turret_sp", 12, 6, 800, 460, 0, 0)
-				self:DynamicBuild("ork_mine_field", 12, 6, 400, 100, 0, 0)
-			end
 		end
 
 		-- Build additional support buildings as tiers progress

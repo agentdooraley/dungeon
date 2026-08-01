@@ -58,8 +58,19 @@ function AttackStrategy:Update()
 		return
 	end
 	self.m_iNextUpdate = g_iGMT + 10
+
+	-- Homeside secure first — unless enemy blob at homeside > whole army (push their homeside)
+	if (CapturePlan:NeedsHomeSideSecurePhase() and not cpu_manager.m_bForceAttackMode and
+		not CapturePlan:ShouldRedirectFromOverwhelmedHomeSide()) then
+		if (self.m_oAttackPlan ~= nil) then
+			aitrace("AttackStrategy: Abort — homeside secure priority")
+			self:ResetAttack()
+		end
+		AttackStrategy.bCounterVO = false
+		return
+	end
 	
-	aitrace("AttackStrategy: Update...", true)
+	AITrace.Log("Attack.Noise", "AttackStrategy: Update...")
 	
 	-- Update countdown for critical points
 	self:UpdateStrategicObjective()
@@ -97,13 +108,18 @@ function AttackStrategy:Update()
     
 	-- Make sure that we have an attack plan
 	if (self.m_oAttackPlan ~= nil and not AttackStrategy.bCounterVO) then
+
+		-- Sun Tzu: surplus flank when strong; split tips when weak at tip
+		self:ApplyAttackDoctrine()
 	
-	    -- Check if we should abort the attack and retreat
+	    -- Outgunned at target: split/flank weaker point first; else retreat
 	    if (not self:CheckAttackSituation()) then
-	    		    
-	   		-- Move all my dudes to closest base
-	   		aitrace("AttackStrategy: Retreat!!! Situation is too dangerous.")
-			self:Retreat(nil)
+			if (self:TryWeakSplitAttack() or self:TryFlankWeakerTarget()) then
+				aitrace("AttackStrategy: Flank/split — enemy too strong at current target")
+			else
+	   			aitrace("AttackStrategy: Retreat!!! Situation is too dangerous.")
+				self:Retreat(nil)
+			end
 		end
 	end
 	
@@ -242,6 +258,338 @@ function AttackStrategy:ResetAttack()
     
     -- Release all
     self:ForceReleaseAll()
+end
+
+-- Mid-probe gut: enemy strength on army→tip midpoint (same thresholds as CapturePlan empty-SP #231)
+function AttackStrategy:IsAttackTipPathMidBlocked(vFrom, vTip)
+
+	if (vFrom == nil or vTip == nil) then
+		return false
+	end
+	-- Near tip: no choke probe
+	if (distance_sqr(vFrom, vTip) <= sqr(70)) then
+		return false
+	end
+	local vMid = Vector3f(vFrom)
+	vMid.x = (vFrom.x + vTip.x) * 0.5
+	vMid.z = (vFrom.z + vTip.z) * 0.5
+	local iMidEnemy = cpu_manager:GetArmyStrengthAtPos(vMid, 40, true)
+	if (iMidEnemy == nil) then
+		iMidEnemy = 0
+	end
+	return (iMidEnemy >= 150)
+end
+
+-- Closest non-crit SP / enemy building where iWingStrength > local enemy, away from exclude tip
+function AttackStrategy:FindSplitAttackTarget(vFrom, vExcludePos, iWingStrength, oEnemy)
+
+	if (vFrom == nil or iWingStrength == nil or iWingStrength < AttackPlan.iMinFlankStrength) then
+		return nil, nil
+	end
+	if (oEnemy == nil) then
+		oEnemy = self.m_oEnemy
+	end
+	if (oEnemy == nil) then
+		return nil, nil
+	end
+	local vExclude = vExcludePos
+	if (vExclude == nil) then
+		vExclude = self.m_vAttackPosition
+	end
+
+	local vBest = nil
+	local iBestDist = nil
+	local oBestEnemy = oEnemy
+
+	for oStrategicPoint in resource_manager:GetStrategicPointAIs() do
+		if (oStrategicPoint ~= nil and not cpu_manager:IsFriendly(oStrategicPoint:Owner())) then
+			local bCrit = (oStrategicPoint:IsStrategicObjective() and not oStrategicPoint:IsRelic())
+			if (not bCrit) then
+				local vPos = oStrategicPoint:GetPosition()
+				if (vExclude == nil or distance_sqr(vPos, vExclude) > sqr(45)) then
+					local iEnemy = cpu_manager:GetArmyStrengthAtPos(vPos, 50, true)
+					if (iEnemy == nil) then
+						iEnemy = 0
+					end
+					if (iWingStrength > iEnemy and not self:IsAttackTipPathMidBlocked(vFrom, vPos)) then
+						local iDist = cpu_manager:GetShortestPathingDistance(vFrom, vPos, true)
+						if (iDist ~= nil and iDist > 0 and (iBestDist == nil or iDist < iBestDist)) then
+							vBest = Vector3f(vPos)
+							iBestDist = iDist
+						end
+					end
+				end
+			end
+		end
+	end
+
+	for oBuilding in oEnemy:GetBases() do
+		if (oBuilding:IsValid()) then
+			local vPos = oBuilding:GetPosition()
+			if (vExclude == nil or distance_sqr(vPos, vExclude) > sqr(45)) then
+				local iEnemy = cpu_manager:GetArmyStrengthAtPos(vPos, 50, true)
+				if (iEnemy == nil) then
+					iEnemy = 0
+				end
+				if (iWingStrength > iEnemy and not self:IsAttackTipPathMidBlocked(vFrom, vPos)) then
+					local iDist = cpu_manager:GetShortestPathingDistance(vFrom, vPos, true)
+					if (iDist ~= nil and iDist > 0 and (iBestDist == nil or iDist < iBestDist)) then
+						vBest = Vector3f(vPos)
+						iBestDist = iDist
+						oBestEnemy = oEnemy
+					end
+				end
+			end
+		end
+	end
+
+	return vBest, oBestEnemy
+end
+
+-- Soft tip at ChooseTarget: if fist is not clearly stronger at scored tip, prefer a weaker point
+function AttackStrategy:PreferSofterAttackTip(vFrom, iMyFist, sActionType)
+
+	if (vFrom == nil or iMyFist == nil or sActionType == nil) then
+		return
+	end
+
+	-- Only offensive tips (not support / close army / redirect / HQ)
+	local bOffensive = (string.find(sActionType, "Attack enemy base") ~= nil or
+		string.find(sActionType, "Attack enemy listening post") ~= nil or
+		string.find(sActionType, "FFA continue") ~= nil or
+		string.find(sActionType, "Hunt remaining buildings") ~= nil)
+	if (not bOffensive) then
+		return
+	end
+
+	local iEnemyLocal = cpu_manager:GetArmyStrengthAtPos(self.m_vAttackPosition, 50, true)
+	if (iEnemyLocal == nil) then
+		iEnemyLocal = 0
+	end
+	-- Clearly stronger: same 1.25× as surplus main-tip reserve
+	if (iMyFist >= math.floor(iEnemyLocal * 1.25)) then
+		return
+	end
+
+	local vSoft, oEnemy = self:FindSplitAttackTarget(vFrom, self.m_vAttackPosition, iMyFist, self.m_oEnemy)
+	if (vSoft ~= nil) then
+		self.m_vAttackPosition = vSoft
+		if (oEnemy ~= nil) then
+			self.m_oEnemy = oEnemy
+		end
+		aitrace("AttackStrategy: Prefer softer tip (fist not clearly stronger)")
+	end
+end
+
+-- Strong: keep reserve on main tip, peel surplus to a second tip
+function AttackStrategy:TrySurplusFlank()
+
+	local oPlan = self.m_oAttackPlan
+	if (oPlan == nil or self.m_oEnemy == nil) then
+		return false
+	end
+	-- Already have a flank wing — keep it (reassess only via throttle in ApplyAttackDoctrine)
+	if (oPlan.m_vFlankPos ~= nil and oPlan.m_aFlankUnits ~= nil and table.getn(oPlan.m_aFlankUnits) > 0) then
+		local iFlankStr = oPlan:GetWingStrength(oPlan.m_aFlankUnits)
+		local iEnemyFlank = cpu_manager:GetArmyStrengthAtPos(oPlan.m_vFlankPos, 50, true)
+		if (iEnemyFlank == nil) then
+			iEnemyFlank = 0
+		end
+		if (iFlankStr > iEnemyFlank) then
+			return true
+		end
+		-- Flank tip now too hot — merge back and retry peel below
+		oPlan:ClearFlankWing(false)
+	end
+
+	local iMainStr = oPlan:GetWingStrength(oPlan.attack_units)
+	local iEnemyMain = cpu_manager:GetArmyStrengthAtPos(self.m_vAttackPosition, 50, true)
+	if (iEnemyMain == nil) then
+		iEnemyMain = 0
+	end
+	local iMainReserve = math.max(oPlan.m_iRequiredArmyPower, math.floor(iEnemyMain * 1.25))
+	local iSurplus = iMainStr - iMainReserve
+	if (iSurplus < AttackPlan.iMinFlankStrength) then
+		return false
+	end
+
+	local iMyArmy, vArmyPos = oPlan:GetArmyStrength()
+	local vFrom = vArmyPos
+	if (vFrom == nil) then
+		vFrom = self.m_vAttackPosition
+	end
+	if (vFrom == nil) then
+		vFrom = cpu_manager.start_pos
+	end
+
+	local vFlank, oFlankEnemy = self:FindSplitAttackTarget(vFrom, self.m_vAttackPosition, iSurplus, self.m_oEnemy)
+	if (vFlank == nil) then
+		return false
+	end
+
+	local iPeeled = oPlan:PeelUnitsToFlank(iSurplus)
+	if (iPeeled < AttackPlan.iMinFlankStrength) then
+		oPlan:ClearFlankWing(false)
+		return false
+	end
+	oPlan.m_vFlankPos = Vector3f(vFlank)
+	if (oFlankEnemy ~= nil) then
+		-- keep strategy enemy on main tip; flank tip is positional only
+	end
+	aitrace("AttackStrategy: Surplus flank — peeled "..tostring(iPeeled))
+	return true
+end
+
+-- Weak at tip: up to 2 tips where each wing beats local enemy
+function AttackStrategy:TryWeakSplitAttack()
+
+	if (self.m_oAttackPlan == nil or self.m_oEnemy == nil) then
+		return false
+	end
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	if (self.m_iLastFlankTry ~= nil and g_iGMT < self.m_iLastFlankTry + 15) then
+		return false
+	end
+
+	local oPlan = self.m_oAttackPlan
+	-- Merge existing flank for a clean resplit
+	if (oPlan.m_aFlankUnits ~= nil and table.getn(oPlan.m_aFlankUnits) > 0) then
+		oPlan:ClearFlankWing(false)
+	end
+
+	local iMyArmy, vArmyPos = oPlan:GetArmyStrength()
+	if (iMyArmy == nil or iMyArmy < AttackPlan.iMinFlankStrength * 2) then
+		return false
+	end
+	local iEnemyHere = cpu_manager:GetArmyStrengthAtPos(self.m_vAttackPosition, 50, true)
+	if (iEnemyHere == nil) then
+		iEnemyHere = 0
+	end
+	-- Only split when clearly losing the head-on fight
+	if (iEnemyHere <= 0 or iMyArmy >= iEnemyHere * 0.85) then
+		return false
+	end
+
+	local vFrom = vArmyPos
+	if (vFrom == nil) then
+		vFrom = self.m_vAttackPosition
+	end
+	if (vFrom == nil) then
+		vFrom = cpu_manager.start_pos
+	end
+
+	local iHalf = math.floor(iMyArmy / 2)
+	if (iHalf < AttackPlan.iMinFlankStrength) then
+		return false
+	end
+
+	local vA, oA = self:FindSplitAttackTarget(vFrom, self.m_vAttackPosition, iHalf, self.m_oEnemy)
+	if (vA == nil) then
+		return false
+	end
+	local vB, oB = self:FindSplitAttackTarget(vFrom, vA, iHalf, self.m_oEnemy)
+	self.m_iLastFlankTry = g_iGMT
+
+	if (vB ~= nil) then
+		self:RetargetAttack(oA, vA)
+		local iPeeled = oPlan:PeelUnitsToFlank(iHalf)
+		if (iPeeled < AttackPlan.iMinFlankStrength) then
+			oPlan:ClearFlankWing(false)
+			return true
+		end
+		oPlan.m_vFlankPos = Vector3f(vB)
+		aitrace("AttackStrategy: Weak split — two tips")
+		return true
+	end
+
+	-- Only one weak tip: whole army goes there (legacy flank retarget)
+	return self:RetargetAttack(oA, vA)
+end
+
+function AttackStrategy:ApplyAttackDoctrine()
+
+	if (self.m_oAttackPlan == nil or self.m_oEnemy == nil) then
+		return
+	end
+	if (cpu_manager.m_bOverwhelmActive) then
+		return
+	end
+	-- HQ / HeavyThreat: don't peel into side tips
+	if (cpu_manager:GetCriticalThreat() > 0 or cpu_manager:HQThreat()) then
+		return
+	end
+	if (DefendStrategy.bDefending and DefendStrategy.bHeavyThreat) then
+		return
+	end
+	-- Only after gather → attack
+	if (self.m_oAttackPlan.state ~= AttackPlan.Attacking) then
+		return
+	end
+	if (self.m_iLastDoctrineTry ~= nil and g_iGMT < self.m_iLastDoctrineTry + 15) then
+		return
+	end
+
+	local iGlobalMe = cpu_manager:GetArmyStrength()
+	local iGlobalEnemy = cpu_manager:GetArmyStrength(self.m_oEnemy)
+	if (iGlobalMe == nil) then
+		iGlobalMe = 0
+	end
+	if (iGlobalEnemy == nil) then
+		iGlobalEnemy = 0
+	end
+
+	self.m_iLastDoctrineTry = g_iGMT
+	if (iGlobalMe >= iGlobalEnemy) then
+		self:TrySurplusFlank()
+	else
+		-- Globally weaker: if tip is a meatgrinder, open a second tip
+		self:TryWeakSplitAttack()
+	end
+end
+
+-- If enemy ball at attack_pos >> our attack force: retarget where whole army would win
+function AttackStrategy:TryFlankWeakerTarget()
+
+	if (self.m_oAttackPlan == nil or self.m_oEnemy == nil) then
+		return false
+	end
+	if (cpu_manager.m_bOverwhelmActive) then
+		return false
+	end
+	-- Throttle retarget churn
+	if (self.m_iLastFlankTry ~= nil and g_iGMT < self.m_iLastFlankTry + 15) then
+		return false
+	end
+
+	local iMyArmy, vArmyPos = self.m_oAttackPlan:GetArmyStrength()
+	if (iMyArmy == nil or iMyArmy < 120) then
+		return false
+	end
+	local iEnemyHere = cpu_manager:GetArmyStrengthAtPos(self.m_vAttackPosition, 50, true)
+	if (iEnemyHere == nil) then
+		iEnemyHere = 0
+	end
+	-- Only flank when clearly losing the head-on fight
+	if (iEnemyHere <= 0 or iMyArmy >= iEnemyHere * 0.85) then
+		return false
+	end
+
+	local vFrom = vArmyPos
+	if (vFrom == nil) then
+		vFrom = self.m_vAttackPosition
+	end
+	if (vFrom == nil) then
+		vFrom = cpu_manager.start_pos
+	end
+
+	local vBest, oBestEnemy = self:FindSplitAttackTarget(vFrom, self.m_vAttackPosition, iMyArmy, self.m_oEnemy)
+	self.m_iLastFlankTry = g_iGMT
+	if (vBest == nil) then
+		return false
+	end
+	return self:RetargetAttack(oBestEnemy, vBest)
 end
 
 -- Check if we should abort the attack and retreat
@@ -688,6 +1036,26 @@ function AttackStrategy:ChooseTarget()
 	
 	-- Reset attack
 	self:ResetAttack()
+
+	-- Hopeless homeside vs whole army: push enemy non-crit homeside instead
+	if (CapturePlan ~= nil and CapturePlan.ShouldRedirectFromOverwhelmedHomeSide ~= nil and
+		CapturePlan:ShouldRedirectFromOverwhelmedHomeSide()) then
+		local vEnemyHome = CapturePlan:FindEnemyNonCritHomeSidePoint(cpu_manager.start_pos, 400)
+		if (vEnemyHome ~= nil) then
+			local oEnemy = cpu_manager:FindClosestEnemyPlayer()
+			if (oEnemy ~= nil) then
+				local iMinArmyPower = math.max(self.info.MinArmyStrength,
+					cpu_manager:GetTierLevel() * cpu_manager:MinArmyStrengthPerTier())
+				self.m_oEnemy = oEnemy
+				self.m_vAttackPosition = Vector3f(vEnemyHome)
+				self.m_oAttackPlan = AttackPlan(oEnemy, self.m_vAttackPosition, cpu_manager.start_pos,
+					iMinArmyPower, self.info.max_army_percentage)
+				self:AddPlan(self.m_oAttackPlan)
+				aitrace("AttackStrategy: Redirect — enemy homeside (ours overwhelmed)")
+				return
+			end
+		end
+	end
 	
     -- Don't choose new target if there's a big threat at the HQ
     if (cpu_manager:GetCriticalSituation() > 0) then
@@ -1179,6 +1547,9 @@ function AttackStrategy:ChooseTarget()
 				end
 			end
 		end
+
+		-- Soft tip: if fist not clearly stronger at scored tip, prefer weaker point
+		self:PreferSofterAttackTip(vMyArmyPosition, iMyArmyStrength, sActionType)
 
 		-- Set minimum amount of units
 		iRequiredPower = math.max(0, iRequiredPower)

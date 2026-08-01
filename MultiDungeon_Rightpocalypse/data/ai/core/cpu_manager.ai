@@ -82,6 +82,8 @@ end
 class 'CpuManager'
 
 g_iGMT = 0
+-- Living players only (slots with IsPlayerDead still count as gone)
+g_iNumPlayers = 0
 
 -- enum for events
 CpuManager.Events =
@@ -113,11 +115,11 @@ CpuManager.StrategicTransitions =
 
 CpuManager.ForceTech =
 {
-	StartTier1 = 3,
-	StartTier2 = 7,
-	StartTier3 = 9,
-	StartTier4 = 12,
-	StartTier5 = 15,
+	StartTier1 = 6,
+	StartTier2 = 10,
+	StartTier3 = 15,
+	StartTier4 = 20,
+	StartTier5 = 25	
 }
 
 -- Last g_iGMT a startup duplicate of this bp_id was cancelled (stagger deletes)
@@ -126,7 +128,10 @@ CpuManager.StartupDupCancelLast = {}
 -- Last g_iGMT an excess mine of this bp_id was cancelled
 CpuManager.MineExcessCancelLast = {}
 
-
+-- Non-homeside kill-zone bail: briefly block re-Defend/Response on same area
+CpuManager.KillZoneBailCooldowns = {}
+CpuManager.KillZoneBailTime = 30
+CpuManager.KillZoneBailRangeSqr = 1600
 
 
 
@@ -232,6 +237,7 @@ function CpuManager:__init( cpu_player_id )
     self.m_iCriticalRange = 50
     self.m_iCriticalThreat = 0
     self.m_iCriticalSupport = 0
+    self.m_iLastCriticalRangeUpdate = -1
     
     -- Arkhan 05.2006: Init global defense state
 	Tactic.GlobalDefenseState = Tactic.States.Hold
@@ -267,6 +273,9 @@ function CpuManager:__init( cpu_player_id )
 	self.m_aOccupiedBunkerSet = {}
 	self.m_iActiveBunkerUpdateGMT = -1
 	self.m_iBunkerUnloadBudget = 2
+	self.m_iHomeSideAnchorGMT = -1
+	self.m_aHomeSideFriendlyAnchors = {}
+	self.m_aHomeSideEnemyAnchors = {}
 	
 	-- Init list of active transports
 	self.m_aActiveTransporters = {}
@@ -307,6 +316,10 @@ function CpuManager:__init( cpu_player_id )
 	self.m_aCapturers = {}
 	self.m_aCapturersStart = {}
 	self.m_aCapturersHigh = {}
+	-- Soft capturer pack: cheapest infantry, empty points only (all races)
+	self.m_aDedicatedCapturerIds = {}
+	self.m_iDedicatedCapturerId = nil
+	self.m_iDedicatedCapturerGMT = -1
 	
 	-- Init player list
 	self.m_aPlayers = {}
@@ -329,6 +342,19 @@ function CpuManager:__init( cpu_player_id )
 	self.m_oMapDB = nil
 end
 
+function CpuManager:UpdateNumPlayers()
+	local iCount = 0
+	if (self.stats ~= nil) then
+		for oPlayer in self.stats:GetPlayerStats() do
+			if (oPlayer ~= nil and not oPlayer:IsPlayerDead()) then
+				iCount = iCount + 1
+			end
+		end
+	end
+	g_iNumPlayers = iCount
+	return iCount
+end
+
 function CpuManager:Initialize()
 
 	-- Set time
@@ -337,6 +363,7 @@ function CpuManager:Initialize()
 	-- Save my player stats pointer
 	self.player_stats = self.stats:GetPlayerStatsFromID( cpu_manager.player_id )
 	dbAssert( self.player_stats ~= nil )
+	self:UpdateNumPlayers()
 	
 	-- Globals for easy access: must be loaded first
 	resource_manager 	= self.cpu_player:GetResourceManager()
@@ -759,6 +786,65 @@ function CpuManager:GetCriticalSituation()
 	return self.m_iCriticalThreat - self.m_iCriticalSupport
 end
 
+-- True 1v1 only (not 2v2 / FFA)
+function CpuManager:IsOneVsOne()
+
+	return (self.iPlayerCount ~= nil and self.iPlayerCount == 2)
+end
+
+CpuManager.ArmyParityRatio = 0.8
+
+-- Living teammate / FFA helpers + 1v1|FFA parity vs closest living enemy
+function CpuManager:HasLivingAllies()
+
+	for oPlayer in self.stats:GetPlayerStats() do
+		if (oPlayer:GetPlayerID() ~= self.player_id and not oPlayer:IsPlayerDead() and
+			not self.player_stats:IsEnemy(oPlayer)) then
+			return true
+		end
+	end
+	return false
+end
+
+function CpuManager:IsFreeForAll()
+
+	if (self.iPlayerCount == nil or self.iPlayerCount < 3) then
+		return false
+	end
+	return (not self:HasLivingAllies())
+end
+
+function CpuManager:NeedsArmyParityTopUp()
+
+	-- Teamplay: no army race vs allies
+	if (self:HasLivingAllies()) then
+		return false
+	end
+	-- 1v1 or FFA only
+	if (not self:IsOneVsOne() and not self:IsFreeForAll()) then
+		return false
+	end
+	local oEnemy = self:FindClosestEnemyPlayer(false)
+	if (oEnemy == nil or oEnemy:IsPlayerDead()) then
+		return false
+	end
+	local iMy = self:GetArmyStrength()
+	local iEnemy = self:GetArmyStrength(oEnemy)
+	if (iMy == nil) then
+		iMy = 0
+	end
+	if (iEnemy == nil or iEnemy <= 0) then
+		return false
+	end
+	return (iMy < iEnemy * CpuManager.ArmyParityRatio)
+end
+
+-- HQ critical OR (1v1 army under 0.8 enemy) → queue units even if factory busy
+function CpuManager:NeedsUrgentMilitaryProduction()
+
+	return (self:GetCriticalSituation() > 0 or self:NeedsArmyParityTopUp())
+end
+
 function CpuManager:EnemyHasUnitInfiltrators()
 	return self.m_iRangeClosestEnemyInfiltrator < 1000
 end
@@ -769,6 +855,12 @@ end
 
 -- Arkhan 10.2006: Calculates the critical range around the HQ
 function CpuManager:UpdateCriticalRange()
+
+	-- SP loop + base threat: every ~2s (was every think)
+	if (self.m_iLastCriticalRangeUpdate ~= nil and g_iGMT < self.m_iLastCriticalRangeUpdate + 2) then
+		return
+	end
+	self.m_iLastCriticalRangeUpdate = g_iGMT
 
 	-- Calculate basic critical range
 	self.m_iCriticalRange = 50 + self:GetTierLevel() * self:CriticalRangeIncreasePerTier() + 10 *self:GetTierLevel() 
@@ -856,9 +948,9 @@ function CpuManager:UpdateCriticalRange()
     self.m_iCriticalThreat, self.m_iCriticalSupport = self:GetArmyStrengthAtPos(self.start_pos, self.m_iCriticalRange)
     
     -- Report result
-    aitrace("CpuManager: Critical range   = "..tostring(self.m_iCriticalRange))
-    aitrace("CpuManager: Critical threat  = "..tostring(self.m_iCriticalThreat))
-    aitrace("CpuManager: Critical support = "..tostring(self.m_iCriticalSupport))
+    AITrace.Log("Cpu.Think", "CpuManager: Critical range   = "..tostring(self.m_iCriticalRange))
+    AITrace.Log("Cpu.Think", "CpuManager: Critical threat  = "..tostring(self.m_iCriticalThreat))
+    AITrace.Log("Cpu.Think", "CpuManager: Critical support = "..tostring(self.m_iCriticalSupport))
 end
 
 function CpuManager:UpdateBuildersAndCapturers()
@@ -868,6 +960,9 @@ function CpuManager:UpdateBuildersAndCapturers()
     end
     self.m_iLastBuilderAndCapturerCheck = g_iGMT
     
+    -- Soft pack first (ids used in eligibility below)
+    self:EnsureDedicatedCapturer()
+
     -- Update builder and capturer list
     self.m_aCapturers = {}
     self.m_aCapturersHigh = {}
@@ -882,33 +977,56 @@ function CpuManager:UpdateBuildersAndCapturers()
         if (oSquad:IsValid()) then
             -- Собираем всех потенциальных захватчиков
             if (oSquad:CanCapture()) then
-                local strength = oSquad:GetTactic():GetUnitStrength()
+                local oCapTac = oSquad:GetTactic()
+                if (oCapTac == nil) then
+                    -- dying / no tactic yet — skip
+                else
+                local strength = oCapTac:GetUnitStrength()
                 local position = oSquad:GetPosition()
                 
                 -- Сохраняем в общий список
                 table.insert(allPotentialCapturers, { oSquad, strength, position })
                 
-                -- Применяем стандартные фильтры
-                if (not oSquad:IsAttached() and 
-                    not oSquad:IsInCombat() and 
-                    not oSquad:WasRecentlyHurt()) then
-                    
-                    local oTactic = oSquad:GetTactic()					
-					local canOnlyDecap = oTactic:CanOnlyDecap()
-					
-                    if (not oSquad:IsEngineer() or 
-                         (oTactic:IsEngineerWhoCanCapture() and oSquad:IsIdle())) and not canOnlyDecap
-						 and oTactic:GetType() ~= Tactic.Types.Vehicle then
-                        
-                        -- Добавляем в основной список
-                        table.insert(self.m_aCapturers, { oSquad, strength, position })
-                        
-                        -- Добавляем в high-список, если отряд достаточно сильный
-                        if strength >= 300 then
-                            table.insert(self.m_aCapturersHigh, { oSquad, strength, position })
-                        end
-                    end
+                -- Soft always; army if not mid-fight. WasRecentlyHurt alone blocked idle
+                -- warriors from empty homeside caps (all races) — peel/abort still handle threat.
+                local bSoft = self:IsDedicatedCapturerId(oSquad:GetID())
+                if (not oSquad:IsAttached() and
+                    not oSquad:IsBroken() and
+                    self:IsFullCapturerSquad(oSquad) and
+                    (bSoft or not oSquad:IsInCombat())) then
+
+					local oTactic = oCapTac
+					-- Necron: ONLY soft pack. Never capturer while building / POST LOCK.
+					local bEngOk = false
+					if (self:IsNecronSoftRace()) then
+						if (self:IsNecronBuilderScarab(oSquad)) then
+							if (self:IsNecronScarabPendingPost(oSquad)) then
+								bEngOk = false
+							elseif (self:IsNecronScarabOnBuildDuty(oSquad)) then
+								bEngOk = false
+							elseif (bSoft) then
+								-- Soft pack scarab — list only; AFK release is ScarabBuilder:Update
+								bEngOk = true
+							end
+						end
+					elseif (not oSquad:IsEngineer()) then
+						bEngOk = true
+					elseif (oTactic ~= nil and oTactic:IsEngineerWhoCanCapture()) then
+						if (oSquad:IsCapturing() or oTactic:IsCapturePlanMove() or
+							oSquad:IsIdle()) then
+							bEngOk = true
+						end
+					end
+					if (bEngOk) then
+
+						table.insert(self.m_aCapturers, { oSquad, strength, position })
+
+						if strength >= 300 then
+							table.insert(self.m_aCapturersHigh, { oSquad, strength, position })
+						end
+					end
                 end
+                end -- oCapTac ~= nil
             end
             
             -- Check for engineer
@@ -920,36 +1038,48 @@ function CpuManager:UpdateBuildersAndCapturers()
     --and
 	--(not oTactic:CanOnlyDecap())	and (not oTactic:GetType() == Tactic.Types.Vehicle)
 	-- ???? ????? ?????????? ??? ????????? ???????????, ?? ???? ?????????????...
+	-- Pool empty (army in combat): force ONE idle full capturer — never pull fighters / shredded
+	-- (was: any CanCapture incl. mid-fight → Forced weakest suicide on empty crits)
 	if table.getn(self.m_aCapturers) == 0 and table.getn(allPotentialCapturers) > 0 then
-		-- ??????? ??????????? ?????? ???????? ??????
+		local iMinForcedStr = 200
 		local validCapturers = {}
 		for _, capturer in ipairs(allPotentialCapturers) do
-		
-			oTactic = capturer[1]:GetTactic()
-			local canOnlyDecap = oTactic:CanOnlyDecap()
-			
-			if capturer[1] and capturer[1]:IsValid() and capturer[1]:CanCapture() and not canOnlyDecap
-						 and oTactic:GetType() ~= Tactic.Types.Vehicle  then
+			local oC = capturer[1]
+			local iStr = capturer[2]
+			if (iStr == nil) then
+				iStr = 0
+			end
+			-- Necron: only pull soft / surplus, never every idle worker
+			local bNecronOk = true
+			if (self:IsNecronBuilderScarab(oC)) then
+				-- Never force a builder off pad into capturers
+				bNecronOk = (self:IsDedicatedCapturerId(oC:GetID()) and
+					not self:IsNecronScarabOnBuildDuty(oC) and
+					not self:IsNecronScarabPendingPost(oC))
+			end
+			if (bNecronOk and self:IsFullCapturerSquad(oC) and
+				not self:IsNecronScarabPendingPost(oC) and
+				not self:IsNecronScarabOnBuildDuty(oC) and
+				not oC:IsAttached() and
+				not oC:IsBroken() and
+				not oC:IsInCombat() and
+				not oC:IsUnderAttack() and
+				not oC:WasRecentlyHurt() and
+				iStr >= iMinForcedStr) then
 				table.insert(validCapturers, capturer)
 			end
 		end
 		
 		if table.getn(validCapturers) > 0 then
-			-- ?????? ????? ?????? ?????, ????????? ??????????? ?????
 			table.sort(validCapturers, function(oUnit1, oUnit2) 
-				return oUnit1[2] < oUnit2[2]  -- ?????????? ?? ???? (?? ?????? ? ???????)
+				return oUnit1[2] < oUnit2[2]
 			end)
 			
-			-- ??????? ????? ?????? ?????
 			local weakestCapturer = validCapturers[1]
-			
-			-- ??????? ??? ? ?????? ???????????
 			table.insert(self.m_aCapturers, weakestCapturer)
 			
-			-- ?????????? ???????????
 			if weakestCapturer and weakestCapturer[1] and weakestCapturer[1]:IsValid() then
 				local squad_name = "unknown"
-				-- ??????? ?????? ?????? ????????? ?????
 				if weakestCapturer[1].GetName then
 					squad_name = weakestCapturer[1]:GetName()
 				elseif weakestCapturer[1].GetUnitType then
@@ -970,9 +1100,19 @@ function CpuManager:UpdateBuildersAndCapturers()
     local iCapturerCount = table.getn(self.m_aCapturers)
     local iCapturerCountHigh = table.getn(self.m_aCapturersHigh)
 
-    -- Сортировка по силе (от сильных к слабым)
-    table.sort(self.m_aCapturers, function(oUnit1, oUnit2) return oUnit1[2] > oUnit2[2] end)
-    table.sort(self.m_aCapturersHigh, function(oUnit1, oUnit2) return oUnit1[2] > oUnit2[2] end)
+    -- Dedicated capturers first, then by strength (strong → weak)
+    local SortCapturers = function( oUnit1, oUnit2 )
+		local oT1 = oUnit1[1]:GetTactic()
+		local oT2 = oUnit2[1]:GetTactic()
+		local bD1 = (oT1 ~= nil and oT1:IsDedicatedCapturer())
+		local bD2 = (oT2 ~= nil and oT2:IsDedicatedCapturer())
+		if (bD1 ~= bD2) then
+			return bD1
+		end
+		return oUnit1[2] > oUnit2[2]
+	end
+    table.sort(self.m_aCapturers, SortCapturers)
+    table.sort(self.m_aCapturersHigh, SortCapturers)
 
     -- High capturer for threat strat objective
     for iLoop1 = iCapturerCountHigh, 1, -1 do
@@ -991,14 +1131,75 @@ function CpuManager:UpdateBuildersAndCapturers()
         end
     end
     
-    -- Ограничиваем количество, но гарантируем хотя бы одного
-    local maxRegular = math.max(1, 4)  -- Всегда оставляем минимум 1
+    -- Больше параллельных капов (карта), минимум 1
+    local maxRegular = math.max(1, 6)
+    iCapturerCount = table.getn(self.m_aCapturers)
     for iLoop1 = iCapturerCount, maxRegular + 1, -1 do
         table.remove(self.m_aCapturers, iLoop1)
     end
     
-    for iLoop1 = iCapturerCountHigh, 2, -1 do
+    iCapturerCountHigh = table.getn(self.m_aCapturersHigh)
+    for iLoop1 = iCapturerCountHigh, 3, -1 do
         table.remove(self.m_aCapturersHigh, iLoop1)
+    end
+
+    -- Soft pack must stay in capturer pool after trim (compare by ID — userdata == crashes)
+    if (self.m_aDedicatedCapturerIds ~= nil) then
+        local iSoftN = table.getn(self.m_aDedicatedCapturerIds)
+        for iLoop1 = 1, iSoftN do
+            local iSoftId = self.m_aDedicatedCapturerIds[iLoop1]
+            local oSoft = military_manager:GetSquadFromID(iSoftId)
+            if (oSoft ~= nil and self:IsSoftCapturerCandidate(oSoft) and
+                not oSoft:IsLocked() and not oSoft:IsBroken() and
+                not self:IsNecronScarabPendingPost(oSoft) and
+                not self:IsNecronScarabOnBuildDuty(oSoft)) then
+                local bIn = false
+                local iCapN = table.getn(self.m_aCapturers)
+                for iLoop2 = 1, iCapN do
+                    local tEntry = self.m_aCapturers[iLoop2]
+                    if (tEntry ~= nil and tEntry[1] ~= nil and tEntry[1]:IsValid() and
+                        tEntry[1]:GetID() == iSoftId) then
+                        bIn = true
+                        break
+                    end
+                end
+                if (not bIn) then
+                    local oTac = oSoft:GetTactic()
+                    local iStr = 100
+                    if (oTac ~= nil) then
+                        iStr = oTac:GetUnitStrength()
+                    end
+                    table.insert(self.m_aCapturers, { oSoft, iStr, oSoft:GetPosition() })
+                end
+            end
+        end
+        if (table.getn(self.m_aCapturers) > 1) then
+            table.sort(self.m_aCapturers, SortCapturers)
+        end
+    end
+
+    -- Necron hard cap: capturer pool == active soft pack only
+    if (self:IsNecronSoftRace()) then
+        local iCapTrim = table.getn(self.m_aCapturers)
+        for iLoop1 = iCapTrim, 1, -1 do
+            local oC = self.m_aCapturers[iLoop1][1]
+            if (oC == nil or not oC:IsValid() or
+                not self:IsDedicatedCapturerId(oC:GetID()) or
+                self:IsNecronScarabPendingPost(oC) or
+                self:IsNecronScarabOnBuildDuty(oC)) then
+                table.remove(self.m_aCapturers, iLoop1)
+            end
+        end
+        local iHighTrim = table.getn(self.m_aCapturersHigh)
+        for iLoop1 = iHighTrim, 1, -1 do
+            local oC = self.m_aCapturersHigh[iLoop1][1]
+            if (oC == nil or not oC:IsValid() or
+                not self:IsDedicatedCapturerId(oC:GetID()) or
+                self:IsNecronScarabPendingPost(oC) or
+                self:IsNecronScarabOnBuildDuty(oC)) then
+                table.remove(self.m_aCapturersHigh, iLoop1)
+            end
+        end
     end
     
     -- Логирование для отладки
@@ -1020,10 +1221,564 @@ function CpuManager:GetAvailableBuilders()
 			-- Check unit
 			if (self.m_aBuilders[iLoop1]:IsLocked()) then
 				table.remove(self.m_aBuilders, iLoop1)
+			elseif (self:IsNecronScarabOnCaptureDuty(self.m_aBuilders[iLoop1])) then
+				-- Necron: capturer role — not available for builds
+				table.remove(self.m_aBuilders, iLoop1)
+			elseif (self:IsNecronScarabPendingPost(self.m_aBuilders[iLoop1])) then
+				-- Necron: builder-lock on own just-capped LP
+				table.remove(self.m_aBuilders, iLoop1)
+			elseif (self:IsNecronSoftReservedForCapture(self.m_aBuilders[iLoop1])) then
+				-- Necron soft pack: keep free for empty points
+				table.remove(self.m_aBuilders, iLoop1)
+			end
+		end
+	else
+		local iBuilderCount = table.getn(self.m_aBuilders)
+		for iLoop1 = iBuilderCount, 1, -1 do
+			if (self:IsNecronScarabOnCaptureDuty(self.m_aBuilders[iLoop1])) then
+				table.remove(self.m_aBuilders, iLoop1)
+			elseif (self:IsNecronScarabPendingPost(self.m_aBuilders[iLoop1])) then
+				table.remove(self.m_aBuilders, iLoop1)
+			elseif (self:IsNecronSoftReservedForCapture(self.m_aBuilders[iLoop1])) then
+				table.remove(self.m_aBuilders, iLoop1)
 			end
 		end
 	end
 	return self.m_aBuilders
+end
+
+-- Soft pack size: 2 enough for parallel empty caps; more → Guard never buys guns
+CpuManager.MaxDedicatedCapturers = 2
+-- Necron soft: 2 if ≥4 scarabs, else 1 (leave rest for gens)
+CpuManager.NecronSoftCapturersWhenMany = 2
+CpuManager.NecronSoftCapturersWhenFew = 1
+CpuManager.NecronSoftManyThreshold = 4
+
+-- Sisters Missionary / Tau Stealth: designed as 1-model (or start-at-1) map cappers.
+-- Relax trooper-count finish / AvoidDeath gates for these only (not all MaxTroopers==1).
+function CpuManager:IsSoloMapCapturer(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return false
+	end
+	local sName = oSquad:GetSquadName()
+	if (sName == "sisters_squad_missionary" or
+		sName == "sisters_squad_missionary_hg_dxp3" or
+		sName == "sisters_squad_missionary_sp_dxp3_prisoner") then
+		return true
+	end
+	if (sName == "tau_stealth_team_squad" or
+		sName == "tau_stealth_team_squad_sp") then
+		return true
+	end
+	return false
+end
+
+-- Tau Stealth with 1 model: paper-thin — panic flee only when spotted/shot
+function CpuManager:IsFragileOneModelStealth(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return false
+	end
+	if (oSquad:GetNumTroopers() ~= 1) then
+		return false
+	end
+	local sName = oSquad:GetSquadName()
+	return (sName == "tau_stealth_team_squad" or sName == "tau_stealth_team_squad_sp")
+end
+
+-- Necron builder scarab: only engineer that both builds and captures
+function CpuManager:IsNecronBuilderScarab(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid() or not oSquad:IsEngineer()) then
+		return false
+	end
+	local sName = oSquad:GetSquadName()
+	return (sName == "necron_builder_scarab_squad" or
+		sName == "necron_builder_scarab_squad_advance_sp")
+end
+
+-- Scarab assigned to CapturePlan / actively capping — must not be stolen for builds
+function CpuManager:IsNecronScarabOnCaptureDuty(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	if (oSquad:IsCapturing()) then
+		return true
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil) then
+		return false
+	end
+	if (oTactic:IsCapturePlanMove() or oTactic:IsSoftSelfCap()) then
+		return true
+	end
+	return false
+end
+
+-- Just capped non-crit: locked on own LP until construction done
+function CpuManager:IsNecronScarabPendingPost(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil) then
+		return false
+	end
+	-- Field flags only — Relic can crash on oTactic.IsNecronPostLocked ~= nil probes
+	return (oTactic.m_vPendingNecronPostPos ~= nil or
+		oTactic.m_bPendingNecronPostBuilding == true or
+		oTactic.m_iNecronPostLockBuildingId ~= nil)
+end
+
+-- Scarab mid-build / en-route build plan — never list as capturer, never DoStop-yank
+function CpuManager:IsNecronScarabOnBuildDuty(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	if (self:IsNecronScarabPendingPost(oSquad)) then
+		return true
+	end
+	if (oSquad:IsBuilding() ~= 0 or oSquad:IsBuildProgressing()) then
+		return true
+	end
+	-- Locked on BuildBuildingPlan (not CapturePlan approach)
+	if (oSquad:IsLocked() and not self:IsNecronScarabOnCaptureDuty(oSquad)) then
+		return true
+	end
+	return false
+end
+
+-- Necron only: unlocked scarab standing around (not post-lock, not constructing)
+function CpuManager:IsNecronScarabAfkWorker(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	if (self:IsNecronScarabPendingPost(oSquad)) then
+		return false
+	end
+	if (oSquad:IsBuilding() ~= 0 or oSquad:IsBuildProgressing()) then
+		return false
+	end
+	if (oSquad:IsCapturing()) then
+		return false
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic ~= nil and oTactic:IsCapturePlanMove()) then
+		return false
+	end
+	return true
+end
+
+-- 2+ scarabs on same pad → one may be promoted to capturer
+function CpuManager:IsNecronScarabSurplusOnPad(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	if (self:IsNecronScarabPendingPost(oSquad)) then
+		return false
+	end
+	if (oSquad:IsBuilding() == 0 and not oSquad:IsBuildProgressing()) then
+		return false
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil) then
+		return false
+	end
+	local iMyId = oSquad:GetID()
+	local iTargetId = nil
+	local vPos = oTactic.m_vDestination
+	EngineerTactic.CleanupBufer()
+	for iLoop1 in EngineerTactic.Bufer do
+		if (EngineerTactic.Bufer[iLoop1][2] == iMyId) then
+			iTargetId = EngineerTactic.Bufer[iLoop1][1]
+			break
+		end
+	end
+	if (iTargetId == nil and vPos == nil) then
+		local oPad = oTactic:GetNearbyUnfinishedBuilding()
+		if (oPad ~= nil) then
+			iTargetId = oPad:GetID()
+			vPos = oPad:GetPosition()
+		end
+	end
+	if (iTargetId == nil and vPos == nil) then
+		return false
+	end
+	return (EngineerTactic.CountWorkersOnTarget(iTargetId, vPos) >= 2)
+end
+
+-- Full capture only (not Sentinel/Reaver/Wraith CanOnlyDecap, not vehicles)
+function CpuManager:IsFullCapturerSquad(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid() or not oSquad:CanCapture()) then
+		return false
+	end
+	-- Eldar Harlequin: combat hero, cannot take strategic points
+	local sName = oSquad:GetSquadName()
+	if (sName == "eldar_harlequin_squad") then
+		return false
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil) then
+		return false
+	end
+	if (oTactic:CanOnlyDecap()) then
+		return false
+	end
+	if (oTactic:GetType() == Tactic.Types.Vehicle) then
+		return false
+	end
+	if (oSquad:IsEngineer()) then
+		return oTactic:IsEngineerWhoCanCapture()
+	end
+	return true
+end
+
+function CpuManager:IsDedicatedCapturerId(iId)
+
+	if (iId == nil or self.m_aDedicatedCapturerIds == nil) then
+		return false
+	end
+	local iCount = table.getn(self.m_aDedicatedCapturerIds)
+	for iLoop1 = 1, iCount do
+		if (self.m_aDedicatedCapturerIds[iLoop1] == iId) then
+			return true
+		end
+	end
+	return false
+end
+
+function CpuManager:IsNecronSoftRace()
+
+	if (self.player_stats == nil) then
+		return false
+	end
+	return (self.player_stats:GetPlayerRaceName() == "necron_race")
+end
+
+function CpuManager:CountNecronBuilderScarabs()
+
+	local iCount = 0
+	for oSquad in military_manager:GetSquads() do
+		if (self:IsNecronBuilderScarab(oSquad)) then
+			iCount = iCount + 1
+		end
+	end
+	return iCount
+end
+
+-- Unfinished plasma/thermo pad (cache per think)
+function CpuManager:HasUnfinishedNecronGenerator()
+
+	if (self.m_iUnfinishedNecronGenGMT == g_iGMT) then
+		return (self.m_bUnfinishedNecronGen == true)
+	end
+	self.m_iUnfinishedNecronGenGMT = g_iGMT
+	self.m_bUnfinishedNecronGen = false
+	for oBuilding in self.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local iBP = oBuilding:GetBlueprintID()
+			if (self:IsGenerator(iBP) or self:IsBiggerGenerator(iBP)) then
+				self.m_bUnfinishedNecronGen = true
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Unfinished own LP pads (abandoned POST LOCK) — soft stays 1 until cleared
+function CpuManager:HasUnfinishedNecronListeningPost()
+
+	if (self.m_iUnfinishedNecronLpGMT == g_iGMT) then
+		return (self.m_bUnfinishedNecronLp == true)
+	end
+	self.m_iUnfinishedNecronLpGMT = g_iGMT
+	self.m_bUnfinishedNecronLp = false
+	local iPostId = self.stats:GetBuildingID("necron_listening_post")
+	for oBuilding in self.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			if (oBuilding:IsListeningPost() or
+				(iPostId ~= nil and oBuilding:GetBlueprintID() == iPostId)) then
+				self.m_bUnfinishedNecronLp = true
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Non-soft scarabs free to finish/start gens (not dedicated capturer / not pending LP)
+function CpuManager:CountNecronFreeBuildersForGen()
+
+	local iCount = 0
+	for oSquad in military_manager:GetSquads() do
+		if (self:IsNecronBuilderScarab(oSquad)) then
+			if (not self:IsDedicatedCapturerId(oSquad:GetID()) and
+				not self:IsNecronScarabPendingPost(oSquad) and
+				not self:IsNecronScarabOnCaptureDuty(oSquad)) then
+				iCount = iCount + 1
+			end
+		end
+	end
+	return iCount
+end
+
+-- <4 scarabs → 1 soft; ≥4 → 2 soft — but unfinished LP → soft 1 (finish posts first)
+function CpuManager:GetNecronSoftCapturerTarget()
+
+	local iN = self:CountNecronBuilderScarabs()
+	if (iN < 1) then
+		return 0
+	end
+	-- Unfinished LP / few scarabs: only 1 soft so others finish posts/gens
+	if (iN < CpuManager.NecronSoftManyThreshold or self:HasUnfinishedNecronListeningPost()) then
+		local iT = CpuManager.NecronSoftCapturersWhenFew
+		if (iT == nil or iT < 1) then
+			iT = 1
+		end
+		return iT
+	end
+	local iT = CpuManager.NecronSoftCapturersWhenMany
+	if (iT == nil or iT < 1) then
+		iT = 2
+	end
+	return iT
+end
+
+-- Soft scarab kept free for empty caps (not stolen for gens while points remain)
+function CpuManager:IsNecronSoftReservedForCapture(oSquad)
+
+	if (not self:IsNecronBuilderScarab(oSquad)) then
+		return false
+	end
+	if (not self:IsDedicatedCapturerId(oSquad:GetID())) then
+		return false
+	end
+	if (self:IsNecronScarabPendingPost(oSquad)) then
+		return false
+	end
+	-- Mid-capture / approach — finish the point before gens
+	if (self:IsNecronScarabOnCaptureDuty(oSquad)) then
+		return true
+	end
+	-- Already on a pad — finish it (not a capturer until idle)
+	if (self:IsNecronScarabOnBuildDuty(oSquad)) then
+		return false
+	end
+	-- Unfinished gen + no free non-soft builder → allow stealing soft for pad
+	if (self:HasUnfinishedNecronGenerator() and self:CountNecronFreeBuildersForGen() < 1) then
+		return false
+	end
+	if (CapturePlan == nil or CapturePlan.HasSafeEmptyCaptureTarget == nil) then
+		return false
+	end
+	return CapturePlan:HasSafeEmptyCaptureTarget()
+end
+
+function CpuManager:IsSoftCapturerCandidate(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return false
+	end
+	if (not self:IsFullCapturerSquad(oSquad)) then
+		return false
+	end
+	-- Necron: builder scarabs are the soft pack (no guns — only cap + build)
+	if (self:IsNecronBuilderScarab(oSquad)) then
+		return true
+	end
+	if (oSquad:IsEngineer() or oSquad:IsAttached()) then
+		return false
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic == nil or oTactic:IsCommander()) then
+		return false
+	end
+	return true
+end
+
+function CpuManager:GetSoftCapturerCost(oSquad)
+
+	local oTactic = oSquad:GetTactic()
+	local iCost = oTactic.iReqCost
+	if (iCost == nil) then
+		iCost = 9999
+		local oStats = oSquad:GetStats()
+		if (oStats ~= nil) then
+			iCost = oStats:GetCost(ResourceAmount.RT_Requisition)
+		end
+	end
+	return iCost, oTactic:GetUnitStrength()
+end
+
+-- Necron soft elect: lower = prefer (idle / already capping). Never prefer builders.
+function CpuManager:GetNecronSoftElectPriority(oSquad)
+
+	if (oSquad == nil or not oSquad:IsValid()) then
+		return 100
+	end
+	-- Building / POST LOCK: not soft candidates
+	if (self:IsNecronScarabPendingPost(oSquad)) then
+		return 90
+	end
+	if (self:IsNecronScarabOnBuildDuty(oSquad)) then
+		return 90
+	end
+	-- Already soft: sticky
+	if (self:IsDedicatedCapturerId(oSquad:GetID())) then
+		return 0
+	end
+	if (oSquad:IsCapturing()) then
+		return 1
+	end
+	local oTactic = oSquad:GetTactic()
+	if (oTactic ~= nil and (oTactic:IsCapturePlanMove() or oTactic:IsSoftSelfCap())) then
+		return 1
+	end
+	if (oSquad:IsIdle()) then
+		return 2
+	end
+	return 5
+end
+
+-- Elect up to MaxDedicatedCapturers cheapest infantry: pure empty-point cappers
+function CpuManager:EnsureDedicatedCapturer()
+
+	if (self.m_iDedicatedCapturerGMT == g_iGMT) then
+		return
+	end
+	self.m_iDedicatedCapturerGMT = g_iGMT
+
+	local bNecronSoft = self:IsNecronSoftRace()
+	local aKeep = {}
+	if (self.m_aDedicatedCapturerIds ~= nil) then
+		local iOld = table.getn(self.m_aDedicatedCapturerIds)
+		for iLoop1 = 1, iOld do
+			local iId = self.m_aDedicatedCapturerIds[iLoop1]
+			local oKeep = military_manager:GetSquadFromID(iId)
+			if (self:IsSoftCapturerCandidate(oKeep)) then
+				-- Demote soft who are mid-build (gens) — idle/cap only
+				if (bNecronSoft and self:IsNecronScarabOnBuildDuty(oKeep)) then
+					-- drop from soft
+				else
+					table.insert(aKeep, iId)
+				end
+			end
+		end
+	elseif (self.m_iDedicatedCapturerId ~= nil) then
+		local oKeep = military_manager:GetSquadFromID(self.m_iDedicatedCapturerId)
+		if (self:IsSoftCapturerCandidate(oKeep)) then
+			if (not (bNecronSoft and self:IsNecronScarabOnBuildDuty(oKeep))) then
+				table.insert(aKeep, self.m_iDedicatedCapturerId)
+			end
+		end
+	end
+
+	local iMax = CpuManager.MaxDedicatedCapturers
+	if (bNecronSoft) then
+		iMax = self:GetNecronSoftCapturerTarget()
+	elseif (iMax == nil or iMax < 1) then
+		iMax = 3
+	end
+
+	-- All soft candidates (kept + new), cheapest first
+	local aCand = {}
+	local iKeepN0 = table.getn(aKeep)
+	for iLoop1 = 1, iKeepN0 do
+		local oKeep = military_manager:GetSquadFromID(aKeep[iLoop1])
+		if (oKeep ~= nil) then
+			local iCost, iStr = self:GetSoftCapturerCost(oKeep)
+			local iPri = 0
+			if (bNecronSoft) then
+				iPri = self:GetNecronSoftElectPriority(oKeep)
+			end
+			table.insert(aCand, { aKeep[iLoop1], iCost, iStr, iPri })
+		end
+	end
+	for oSquad in military_manager:GetSquads() do
+		if (self:IsSoftCapturerCandidate(oSquad)) then
+			local iId = oSquad:GetID()
+			local bAlready = false
+			local iCandN0 = table.getn(aCand)
+			for iLoop2 = 1, iCandN0 do
+				if (aCand[iLoop2][1] == iId) then
+					bAlready = true
+					break
+				end
+			end
+			if (not bAlready) then
+				local iCost, iStr = self:GetSoftCapturerCost(oSquad)
+				local iPri = 0
+				if (bNecronSoft) then
+					iPri = self:GetNecronSoftElectPriority(oSquad)
+				end
+				table.insert(aCand, { iId, iCost, iStr, iPri })
+			end
+		end
+	end
+	if (bNecronSoft) then
+		-- Idle / assist first so soft stays ≥2 while one finishes LP
+		table.sort(aCand, function(a, b)
+			if (a[4] ~= b[4]) then
+				return a[4] < b[4]
+			end
+			if (a[2] ~= b[2]) then
+				return a[2] < b[2]
+			end
+			return a[3] < b[3]
+		end)
+	else
+		table.sort(aCand, function(a, b)
+			if (a[2] ~= b[2]) then
+				return a[2] < b[2]
+			end
+			return a[3] < b[3]
+		end)
+	end
+
+	local iTotal = table.getn(aCand)
+	aKeep = {}
+	if (bNecronSoft) then
+		-- Soft = idle / capturing only. Never elect builders (even if pack short).
+		local iActive = 0
+		for iLoop1 = 1, iTotal do
+			if (iActive >= iMax) then
+				break
+			end
+			local iId = aCand[iLoop1][1]
+			local oSq = military_manager:GetSquadFromID(iId)
+			if (oSq ~= nil and not self:IsNecronScarabPendingPost(oSq) and
+				not self:IsNecronScarabOnBuildDuty(oSq)) then
+				table.insert(aKeep, iId)
+				iActive = iActive + 1
+			end
+		end
+	else
+		local iSoftMax = iMax
+		if (iTotal <= 1) then
+			-- Keep ≥1 non-soft infantry for weapons / fighting (Guard grenades etc.)
+			iSoftMax = iTotal
+		else
+			iSoftMax = math.min(iMax, iTotal - 1)
+		end
+		for iLoop1 = 1, math.min(iSoftMax, iTotal) do
+			table.insert(aKeep, aCand[iLoop1][1])
+		end
+	end
+
+	self.m_aDedicatedCapturerIds = aKeep
+	if (table.getn(aKeep) > 0) then
+		self.m_iDedicatedCapturerId = aKeep[1]
+	else
+		self.m_iDedicatedCapturerId = nil
+	end
 end
 
 function CpuManager:GetAvailableCapturers()
@@ -1041,7 +1796,22 @@ function CpuManager:GetAvailableCapturers()
 			end
 		end
 	end
-	
+
+	-- Necron: never hand POST LOCK / builders to CapturePlan
+	local iCapturerCount2 = table.getn(self.m_aCapturers)
+	for iLoop1 = iCapturerCount2, 1, -1 do
+		local oC = self.m_aCapturers[iLoop1][1]
+		if (self:IsNecronScarabPendingPost(oC) or self:IsNecronScarabOnBuildDuty(oC)) then
+			table.remove(self.m_aCapturers, iLoop1)
+		end
+	end
+	local iHigh = table.getn(self.m_aCapturersHigh)
+	for iLoop1 = iHigh, 1, -1 do
+		local oC = self.m_aCapturersHigh[iLoop1][1]
+		if (self:IsNecronScarabPendingPost(oC) or self:IsNecronScarabOnBuildDuty(oC)) then
+			table.remove(self.m_aCapturersHigh, iLoop1)
+		end
+	end
 	
 	    -- Замена string.format на конкатенацию строк
     local msg = "Capturers: "..table.getn(self.m_aCapturers).." regular, "..
@@ -1114,7 +1884,7 @@ function CpuManager:CountBuiltNonVictoryPoints()
 	return iCount
 end
 
--- Late game: экономика переполнена — не отступать, не disengage, давить числом
+-- Late game / overflow: экономика переполнена — не отступать, не disengage, давить числом
 CpuManager.OVERWHELM_RECHECK_INTERVAL = 10
 
 function CpuManager:RefreshOverwhelmCache()
@@ -1128,13 +1898,13 @@ function CpuManager:RefreshOverwhelmCache()
 
 	local iReq = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition)
 	local iPow = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Power)
-	-- Дешёвая отсечка: до late economy не сканируем базы/точки
+	-- Дешёвая отсечка: до overflow не сканируем базы/точки
 	if (iPow < 3000 or iReq < 3000) then
 		return
 	end
 
 	local iGens = self:CountOwnedGenerators()
-	if (iGens <= 20) then
+	if (iGens < 12) then
 		return
 	end
 	if (self:CountOwnedHQs() < 4) then
@@ -1343,11 +2113,16 @@ function CpuManager:UpdateObjectTable()
 	if (self.m_iRangeClosestEnemyUnit < iRangeBuildingAssist or self.m_iRangeClosestEnemyBuilding < iRangeBuildingAssist) then
 		self.m_oUnfinishedBuilding = nil
 	end
-	if (self.m_iRangeClosestEnemyUnit < iRangeVehicleRepair or self.m_iRangeClosestEnemyBuilding < iRangeVehicleRepair) then
-		self.m_oDamagedVehicle = nil
-	end
-	if (self.m_iRangeClosestEnemyUnit < iRangeBuildingRepair or self.m_iRangeClosestEnemyBuilding < iRangeBuildingRepair) then
-		self.m_oDamagedBuilding = nil
+	-- Drop damaged targets that fail repair safety (no threat @25 OR allied > enemy)
+	if (EngineerTactic ~= nil and EngineerTactic.IsRepairSiteSafe ~= nil) then
+		if (self.m_oDamagedVehicle ~= nil and
+			not EngineerTactic.IsRepairSiteSafe(EngineerTactic, self.m_oDamagedVehicle:GetPosition())) then
+			self.m_oDamagedVehicle = nil
+		end
+		if (self.m_oDamagedBuilding ~= nil and
+			not EngineerTactic.IsRepairSiteSafe(EngineerTactic, self.m_oDamagedBuilding:GetPosition())) then
+			self.m_oDamagedBuilding = nil
+		end
 	end
 		
 	-- Calculate exact distances
@@ -1640,6 +2415,7 @@ function CpuManager:Update()
 
 	-- Update time game
 	g_iGMT = cpu_manager.cpu_player:GetGameTime() / 8
+	self:UpdateNumPlayers()
 	self:RefreshOverwhelmCache()
 
 	-- Larkin 04.2009 project mapDB	
@@ -1675,7 +2451,7 @@ function CpuManager:Update()
 	end
 	
 	-- Trace resources
-	aitrace("Req: "..tostring(resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition) )..
+	AITrace.Log("Cpu.Think", "Req: "..tostring(resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition) )..
 			" | Pow: "..tostring(resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power ))..
 			" | Pop: "..tostring(resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Pop )) )
 	
@@ -1725,7 +2501,7 @@ function CpuManager:Update()
 		self:UpdateDeepStrikeArmyStrength()
 		
 		-- Update the strategies
-		aitrace("CpuManager: Update strategies...", true)
+		AITrace.Log("Cpu.Think", "CpuManager: Update strategies...")
 		for iLoop1 in self.strategies do
 			
 			-- Update strategy
@@ -1736,7 +2512,7 @@ function CpuManager:Update()
 		end
 		
 		-- Update the strategy plans
-		aitrace("CpuManager: Update plans...", true)
+		AITrace.Log("Cpu.Think", "CpuManager: Update plans...")
 		foreach_bind( self.strategies, self.DoStrategyDeleteOldPlans, self )
 		for iLoop1 in self.strategies do
 		
@@ -2203,6 +2979,14 @@ function CpuManager:GetFirstEnemyPlayer()
 		return self.first_enemy_player
 	end
 	
+	for enemy in self.stats:GetPlayerStats() do
+		if cpu_manager.player_stats:IsEnemy( enemy ) and not enemy:IsPlayerDead() then
+			self.first_enemy_player = enemy
+			return enemy
+		end
+	end
+
+	-- Fallback for endgame assert (may be dead)
 	for enemy in self.stats:GetPlayerStats() do
 		if cpu_manager.player_stats:IsEnemy( enemy ) then
 			self.first_enemy_player = enemy
@@ -3170,6 +3954,121 @@ function CpuManager:GetDirectionToEnemy(vPos)
 	return vDir
 end
 
+-- Anchors = geographic homeside SPs (vs start), not ownership (cached 1/tick)
+function CpuManager:EnsureHomeSideAnchorCache()
+
+	if (self.m_iHomeSideAnchorGMT == g_iGMT) then
+		return
+	end
+	self.m_iHomeSideAnchorGMT = g_iGMT
+	self.m_aHomeSideFriendlyAnchors = {}
+	self.m_aHomeSideEnemyAnchors = {}
+
+	if (self.start_pos ~= nil) then
+		table.insert(self.m_aHomeSideFriendlyAnchors, self.start_pos)
+	end
+	for oPlayer in self.stats:GetPlayerStats() do
+		if (not oPlayer:IsPlayerDead() and self.player_stats:IsEnemy(oPlayer)) then
+			local vEnemyStart = oPlayer:GetStartingPosition()
+			if (vEnemyStart ~= nil) then
+				table.insert(self.m_aHomeSideEnemyAnchors, vEnemyStart)
+			end
+		end
+	end
+	for oSP in resource_manager:GetStrategicPointAIs() do
+		local vPos = oSP:GetPosition()
+		if (vPos ~= nil) then
+			local vAnchor = Vector3f(vPos)
+			local iDistMy = self:GetShortestPathingDistance(self.start_pos, vPos, false)
+			local iDistEnemy = self:GetDistanceToClosestEnemyStart(vPos)
+			if (iDistEnemy == nil or iDistMy < iDistEnemy) then
+				table.insert(self.m_aHomeSideFriendlyAnchors, vAnchor)
+			else
+				table.insert(self.m_aHomeSideEnemyAnchors, vAnchor)
+			end
+		end
+	end
+end
+
+-- Homeside = closer to our homeside anchors (start + homeside SPs) than to enemy ones
+function CpuManager:IsHomeSidePosition(vPos)
+
+	if (vPos == nil or self.start_pos == nil) then
+		return false
+	end
+	self:EnsureHomeSideAnchorCache()
+
+	local iDistMy = nil
+	for iLoop1 in self.m_aHomeSideFriendlyAnchors do
+		local iDist = self:GetShortestPathingDistance(self.m_aHomeSideFriendlyAnchors[iLoop1], vPos, false)
+		if (iDistMy == nil or iDist < iDistMy) then
+			iDistMy = iDist
+		end
+	end
+
+	local iDistEnemy = nil
+	for iLoop1 in self.m_aHomeSideEnemyAnchors do
+		local iDist = self:GetShortestPathingDistance(self.m_aHomeSideEnemyAnchors[iLoop1], vPos, false)
+		if (iDistEnemy == nil or iDist < iDistEnemy) then
+			iDistEnemy = iDist
+		end
+	end
+
+	if (iDistEnemy == nil) then
+		return true
+	end
+	if (iDistMy == nil) then
+		return false
+	end
+	return iDistMy < iDistEnemy
+end
+
+function CpuManager:PruneKillZoneBailCooldowns()
+
+	if (CpuManager.KillZoneBailCooldowns == nil) then
+		CpuManager.KillZoneBailCooldowns = {}
+		return
+	end
+	local iCount = table.getn(CpuManager.KillZoneBailCooldowns)
+	for iLoop = iCount, 1, -1 do
+		local tEntry = CpuManager.KillZoneBailCooldowns[iLoop]
+		if (tEntry == nil or tEntry[2] == nil or g_iGMT >= tEntry[2]) then
+			table.remove(CpuManager.KillZoneBailCooldowns, iLoop)
+		end
+	end
+end
+
+function CpuManager:MarkKillZoneBail(vPos)
+
+	if (vPos == nil) then
+		return
+	end
+	self:PruneKillZoneBailCooldowns()
+	local iUntil = g_iGMT + CpuManager.KillZoneBailTime
+	table.insert(CpuManager.KillZoneBailCooldowns, { Vector3f(vPos), iUntil })
+end
+
+function CpuManager:IsOnKillZoneBailCooldown(vPos)
+
+	if (vPos == nil) then
+		return false
+	end
+	self:PruneKillZoneBailCooldowns()
+	local iRangeSqr = CpuManager.KillZoneBailRangeSqr
+	if (iRangeSqr == nil) then
+		iRangeSqr = 1600
+	end
+	local iCount = table.getn(CpuManager.KillZoneBailCooldowns)
+	for iLoop = 1, iCount do
+		local tEntry = CpuManager.KillZoneBailCooldowns[iLoop]
+		if (tEntry ~= nil and tEntry[1] ~= nil and distance_sqr(vPos, tEntry[1]) < iRangeSqr) then
+			return true
+		end
+	end
+	return false
+end
+
+
 -- Arkhan 06.2006: Check situation at a specific map pos, returning threat, allied strength and army strength of player
 function CpuManager:GetArmyStrengthAtPos( vPos, iRange, bCheckTurrets )
 
@@ -3666,12 +4565,98 @@ function CpuManager:FindFirstReachableBuildSite(iBuildingID, aSites, aEngineers)
 end
 
 -- Ближайший инженер к точке; опционально только свободные и с чистым путём
+function CpuManager:IsEngineerReservedForEpoch(oEng, iAllowedBuildingID)
+	if (oEng == nil or not oEng:IsValid()) then
+		return false
+	end
+	local iBusyID = oEng:IsBuilding()
+	if (iBusyID ~= nil and iBusyID ~= 0) then
+		local sBusyName = self.stats:GetBuildingName(iBusyID)
+		if (sBusyName ~= nil and EngineerTactic.IsEpochTransitionBuilding(sBusyName)) then
+			if (iAllowedBuildingID ~= nil and iBusyID == iAllowedBuildingID) then
+				return false
+			end
+			return true
+		end
+	end
+	local oTactic = oEng:GetTactic()
+	if (oTactic ~= nil and oTactic.m_iEpochBuildTargetId ~= nil and
+		type(oTactic.GetCommittedEpochBuilding) == "function") then
+		local oEpoch = oTactic:GetCommittedEpochBuilding()
+		if (oEpoch ~= nil) then
+			if (iAllowedBuildingID ~= nil and oEpoch:GetBlueprintID() == iAllowedBuildingID) then
+				return false
+			end
+			return true
+		end
+	end
+	return false
+end
+
+-- True if engie is mid-construct / finishing a pad (do not steal for a new template)
+function CpuManager:IsEngineerActivelyBuilding(oEng)
+	if (oEng == nil or not oEng:IsValid()) then
+		return false
+	end
+	local iBusyID = oEng:IsBuilding()
+	if (iBusyID ~= nil and iBusyID ~= 0) then
+		return true
+	end
+	return oEng:IsBuildProgressing()
+end
+
+-- Allow reassign only when finishing the unfinished pad at vNearPos (same BP)
+function CpuManager:IsEngineerFinishingBuildAt(oEng, iBuildingID, vNearPos)
+	if (oEng == nil or vNearPos == nil or iBuildingID == nil) then
+		return false
+	end
+	if (not self:IsEngineerActivelyBuilding(oEng)) then
+		return false
+	end
+	local iBusyID = oEng:IsBuilding()
+	if (iBusyID ~= nil and iBusyID ~= 0 and iBusyID ~= iBuildingID) then
+		return false
+	end
+	local iNearSqr = sqr(22)
+	for oBuilding in self.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and
+			oBuilding:GetBlueprintID() == iBuildingID and
+			distance_sqr(oBuilding:GetPosition(), vNearPos) < iNearSqr) then
+			if (distance_sqr(oEng:GetPosition(), oBuilding:GetPosition()) < sqr(35)) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function CpuManager:GetClosestEngineerForBuild(iBuildingID, vNearPos, bUnlockedOnly, bRequireClearPath, vPathTarget, iExcludeSquadID)
 	if (vNearPos == nil) then
 		vNearPos = self.start_pos
 	end
 	if (vPathTarget == nil) then
 		vPathTarget = vNearPos
+	end
+
+	-- Necron/Ork: only when finishing THIS pad (vNearPos on pad). Do not block
+	-- new gen sites near base because another unfinished plasma exists.
+	local iPadOwnerId = nil
+	if (EngineerTactic.ShouldDisableGeneralAssist() and vNearPos ~= nil) then
+		local iNearSqr = sqr(18)
+		for oBuilding in self.player_stats:GetBases() do
+			if (oBuilding:IsValid() and not oBuilding:IsConstructionDone() and
+				oBuilding:GetBlueprintID() == iBuildingID and
+				distance_sqr(oBuilding:GetPosition(), vNearPos) < iNearSqr) then
+				local iPadId = EngineerTactic.GetPadTargetId(oBuilding)
+				local vPad = oBuilding:GetPosition()
+				if (iPadId ~= nil and
+					not EngineerTactic.CanAssignWorker(iPadId, "build", vPad)) then
+					-- Never use -1 (that blocked ALL engies → ObtainNewBuilder spam / hang)
+					iPadOwnerId = EngineerTactic.FindPadWorkerSquadId(iPadId, vPad)
+				end
+				break
+			end
+		end
 	end
 	
 	local aEngineers = self:GetAvailableEngineersForBuild(iBuildingID)
@@ -3682,8 +4667,23 @@ function CpuManager:GetClosestEngineerForBuild(iBuildingID, vNearPos, bUnlockedO
 		local oEng = aEngineers[iLoop1]
 		if (iExcludeSquadID ~= nil and oEng:GetID() == iExcludeSquadID) then
 			-- skip
+		elseif (iPadOwnerId ~= nil and oEng:GetID() ~= iPadOwnerId) then
+			-- Necron/Ork: pad already claimed
 		elseif (bUnlockedOnly and oEng:IsLocked()) then
 			-- skip
+		elseif (self:IsEngineerActivelyBuilding(oEng) and
+			not self:IsEngineerFinishingBuildAt(oEng, iBuildingID, vNearPos)) then
+			-- skip — do not yank off unfinished warp/plasma/etc. onto a new site
+		elseif (self:IsNecronScarabOnCaptureDuty(oEng)) then
+			-- Necron capturer role — never steal for turret/gen/LP
+		elseif (self:IsNecronScarabPendingPost(oEng)) then
+			-- Necron: finishing LP after own cap
+		elseif (self:NecronScarabMustFinishLpBeforeOtherBuild(oEng, iBuildingID)) then
+			-- Unfinished LP nearby — do not steal for turret/gen
+		elseif (self:IsNecronSoftReservedForCapture(oEng)) then
+			-- Necron soft pack reserved for empty points
+		elseif (self:IsEngineerReservedForEpoch(oEng, iBuildingID)) then
+			-- skip — do not yank bonesinger off soul shrine for gens/turrets
 		elseif (bRequireClearPath and self:HasThreatOnPath(oEng:GetPosition(), vPathTarget, 20)) then
 			-- skip
 		else
@@ -3695,6 +4695,66 @@ function CpuManager:GetClosestEngineerForBuild(iBuildingID, vNearPos, bUnlockedO
 		end
 	end
 	return oBest
+end
+
+-- Scarab near unfinished LP / own SP foundation — finish LP before turret/gen
+function CpuManager:NecronScarabMustFinishLpBeforeOtherBuild(oEng, iBuildingID)
+
+	if (not self:IsNecronBuilderScarab(oEng)) then
+		return false
+	end
+	if (iBuildingID ~= nil and self:IsListeningPost(iBuildingID)) then
+		return false
+	end
+	if (self:IsNecronScarabPendingPost(oEng)) then
+		return true
+	end
+	local vPos = oEng:GetPosition()
+	if (vPos == nil) then
+		return false
+	end
+	local iPostId = self.stats:GetBuildingID("necron_listening_post")
+	local iNearSqr = sqr(55)
+	for oBuilding in self.player_stats:GetBases() do
+		if (oBuilding:IsValid() and not oBuilding:IsConstructionDone()) then
+			local bLp = oBuilding:IsListeningPost()
+			if (not bLp and iPostId ~= nil) then
+				bLp = (oBuilding:GetBlueprintID() == iPostId)
+			end
+			if (bLp and distance_sqr(oBuilding:GetPosition(), vPos) < iNearSqr) then
+				return true
+			end
+		end
+	end
+	-- Own SP: HasListeningPost true on foundation / lag — block turret until finished LP
+	if (resource_manager ~= nil and resource_manager.FindFirstStrategicPoint ~= nil) then
+		local oSP = resource_manager:FindFirstStrategicPoint(vPos, 35)
+		if (oSP ~= nil and oSP:Owner() == self.player_id and
+			not oSP:IsRelic() and not oSP:IsStrategicObjective() and
+			oSP:HasListeningPost()) then
+			local vFlag = oSP:GetPosition()
+			local bDone = false
+			if (vFlag ~= nil) then
+				for oBuilding in self.player_stats:GetBases() do
+					if (oBuilding:IsValid() and oBuilding:IsConstructionDone() and
+						distance_sqr(oBuilding:GetPosition(), vFlag) < sqr(40)) then
+						local bLp = oBuilding:IsListeningPost()
+						if (not bLp and iPostId ~= nil) then
+							bLp = (oBuilding:GetBlueprintID() == iPostId)
+						end
+						if (bLp) then
+							bDone = true
+							break
+						end
+					end
+				end
+			end
+			if (not bDone) then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 -- Точка шаблона приемлема: нет угрозы на месте (путь — при выборе инженера)
@@ -3727,7 +4787,7 @@ function CpuManager:GetClosestEngineerDistForSite(iBuildingID, vSitePos, aEngine
 	local iBestDist = nil
 	for iLoop1 in aEngineers do
 		local oEng = aEngineers[iLoop1]
-		if (not oEng:IsLocked()) then
+		if (not oEng:IsLocked() and not self:IsNecronScarabOnCaptureDuty(oEng)) then
 			local iDist = distance_sqr(oEng:GetPosition(), vSitePos)
 			if (oBest == nil or iDist < iBestDist) then
 				oBest = oEng
@@ -3883,6 +4943,11 @@ function CpuManager:AdjustBuildingPlacement(iBuildingID, sPlacement)
 		end
 	end
 
+	-- First turret homeside-forward: never demote to Around HQ (that's behind HQ)
+	if (sPlacement == "HomeSideForward") then
+		return sPlacement
+	end
+
 	if (self:IsTurret(iBuildingID)) then
 		if (sPlacement == "Front1" or sPlacement == "Front2" or
 		    sPlacement == "Front1Safe" or sPlacement == "Front2Safe") then
@@ -3893,6 +4958,133 @@ function CpuManager:AdjustBuildingPlacement(iBuildingID, sPlacement)
 	end
 
 	return sPlacement
+end
+
+-- Pathing distance to nearest enemy start
+function CpuManager:GetDistanceToClosestEnemyStart(vPos)
+
+	if (vPos == nil) then
+		return nil
+	end
+	local iBest = nil
+	for oPlayer in self.stats:GetPlayerStats() do
+		if (self.player_stats:IsEnemy(oPlayer) and not oPlayer:IsPlayerDead()) then
+			local iDist = self:GetShortestPathingDistance(vPos, oPlayer:GetStartingPosition(), false)
+			if (iBest == nil or iDist < iBest) then
+				iBest = iDist
+			end
+		end
+	end
+	return iBest
+end
+
+-- Regular income SP on our side (not relic, not T&H victory)
+function CpuManager:IsRegularHomeSideStrategicPoint(oSP)
+
+	if (oSP == nil or oSP:IsRelic() or oSP:IsStrategicObjective()) then
+		return false
+	end
+	local vPos = oSP:GetPosition()
+	local iDistMy = self:GetShortestPathingDistance(self.start_pos, vPos, false)
+	local iDistEnemy = self:GetDistanceToClosestEnemyStart(vPos)
+	if (iDistEnemy == nil) then
+		return true
+	end
+	return (iDistMy < iDistEnemy)
+end
+
+-- Homeside relic (our side by pathing to starts; not T&H victory crit)
+function CpuManager:IsHomeSideRelicStrategicPoint(oSP)
+
+	if (oSP == nil or not oSP:IsRelic()) then
+		return false
+	end
+	local vPos = oSP:GetPosition()
+	local iDistMy = self:GetShortestPathingDistance(self.start_pos, vPos, false)
+	local iDistEnemy = self:GetDistanceToClosestEnemyStart(vPos)
+	if (iDistEnemy == nil) then
+		return true
+	end
+	return (iDistMy < iDistEnemy)
+end
+
+-- HomeSideForward anchors: regular homeside SP + homeside relics
+function CpuManager:IsHomeSideForwardAnchorPoint(oSP)
+
+	if (oSP == nil) then
+		return false
+	end
+	if (self:IsRegularHomeSideStrategicPoint(oSP)) then
+		return true
+	end
+	return self:IsHomeSideRelicStrategicPoint(oSP)
+end
+
+-- bFarthestFromHome: large maps → deepest homeside SP/relic; else → closest to enemy
+function CpuManager:FindHomeSideForwardStrategicPoint(bFarthestFromHome)
+
+	local oBest = nil
+	local iBestScore = nil
+	for oSP in resource_manager:GetStrategicPointAIs() do
+		if (self:IsHomeSideForwardAnchorPoint(oSP)) then
+			local vPos = oSP:GetPosition()
+			local iScore = nil
+			if (bFarthestFromHome) then
+				iScore = self:GetShortestPathingDistance(self.start_pos, vPos, false)
+			else
+				iScore = self:GetDistanceToClosestEnemyStart(vPos)
+			end
+			if (iScore ~= nil) then
+				local bBetter = false
+				if (oBest == nil) then
+					bBetter = true
+				elseif (bFarthestFromHome and iScore > iBestScore) then
+					bBetter = true
+				elseif (not bFarthestFromHome and iScore < iBestScore) then
+					bBetter = true
+				end
+				if (bBetter) then
+					oBest = oSP
+					iBestScore = iScore
+				end
+			end
+		end
+	end
+	return oBest
+end
+
+-- HomeSideForward: near homeside SP/relic closest to enemy (uncaptured OK). Non-large maps.
+function CpuManager:TryHomeSideForwardTurretPosition(iBuildingID)
+
+	local oSP = self:FindHomeSideForwardStrategicPoint(false)
+	if (oSP == nil) then
+		return nil
+	end
+	local vSP = oSP:GetPosition()
+	local oEng = self:GetClosestEngineerForBuild(iBuildingID, vSP, true, false)
+	local vPos = self:FindValidBuildPositionNear(iBuildingID, vSP, oEng, 35)
+	if (vPos ~= nil) then
+		return vPos
+	end
+
+	-- Slight bias toward enemy start (covers the approach)
+	local oEnemy = self:FindClosestEnemyPlayer()
+	if (oEnemy ~= nil) then
+		local vEnemy = oEnemy:GetStartingPosition()
+		local fDx = vEnemy.x - vSP.x
+		local fDz = vEnemy.z - vSP.z
+		local fLen = math.sqrt(fDx * fDx + fDz * fDz)
+		if (fLen > 1) then
+			local vBias = Vector3f(vSP)
+			vBias.x = vSP.x + (fDx / fLen) * 12
+			vBias.z = vSP.z + (fDz / fLen) * 12
+			vPos = self:FindValidBuildPositionNear(iBuildingID, vBias, oEng, 30)
+			if (vPos ~= nil) then
+				return vPos
+			end
+		end
+	end
+	return vSP
 end
 
 -- Around HQ: 8 направлений на кольцо, не полный перебор сетки
@@ -4019,6 +5211,13 @@ function CpuManager:GetPlacementRefPosition(sPlacement)
 		end
 		return vAnchor
 	end
+	if (sPlacement == "HomeSideForward") then
+		local oSP = self:FindHomeSideForwardStrategicPoint(false)
+		if (oSP ~= nil) then
+			return oSP:GetPosition()
+		end
+		return self.start_pos
+	end
 	return self.start_pos
 end
 
@@ -4069,6 +5268,10 @@ function CpuManager:TryTemplatePlacementForType(iBuildingID, sPlacement)
 			vPos = self:ProjectToEnemyFront(nil, self:GetBaseFrontAnchor(), 15)
 		end
 		return vPos
+	end
+
+	if (sPlacement == "HomeSideForward") then
+		return self:TryHomeSideForwardTurretPosition(iBuildingID)
 	end
 
 	return nil
@@ -5334,16 +6537,69 @@ function CpuManager:GetAvailableCapturersStart()
 	    -- Простая конкатенация вместо string.format
     aitrace("Returning "..table.getn(self.m_aCapturersStart).." start capturers")
     
-    return self.m_aCapturers
+    return self.m_aCapturersStart
 	
 end
 
+
+-- Melee deepstrike only: land within ~5m of enemy troops or enemy buildings.
+CpuManager.MeleeDeepStrikeLandRange = 5
+
+-- True if a melee squad is queued for deepstrike (assigned DS building).
+function CpuManager:HasMeleeDeepStrikeQueued()
+
+	if (military_manager == nil) then
+		return false
+	end
+	for oSquad in military_manager:GetSquads() do
+		if (oSquad:IsValid() and not oSquad:IsRanged()) then
+			local oTac = oSquad:GetTactic()
+			if (oTac ~= nil and oTac.CanDeepStrike ~= nil and oTac:CanDeepStrike() and
+				oTac.m_iDeepStrikeBuildingID ~= nil and oTac.m_iDeepStrikeBuildingID >= 0) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Melee DS land: enemy or enemy building within MeleeDeepStrikeLandRange of vHint.
+-- Returns nil → do not drop (wait for real contact). Never own rear / enemy start spam.
+function CpuManager:GetMeleeDeepStrikePos(vHint)
+
+	if (vHint == nil or self.cpu_player == nil) then
+		return nil
+	end
+	local iRange = CpuManager.MeleeDeepStrikeLandRange
+	if (iRange == nil) then
+		iRange = 5
+	end
+
+	local oEnemy = self.cpu_player:FindFirstEnemy(vHint, iRange, 1)
+	if (oEnemy ~= nil) then
+		return Vector3f(oEnemy:GetPosition())
+	end
+	local oBase = self.cpu_player:FindFirstBaseEnemy(vHint, iRange, 1)
+	if (oBase ~= nil) then
+		return Vector3f(oBase:GetPosition())
+	end
+	return nil
+end
 
 function CpuManager:DeepStrikeToPos(vTargetPos, bMilitary)
 
 	-- Check if we have something to deepstrike
 	if (self.m_iDeepStrikeArmyStrength <= 0) then
 		return false
+	end
+
+	-- Melee only: retarget to ≤5m of enemy / building; ranged keep caller's pos
+	local vLandPos = vTargetPos
+	if (bMilitary and self:HasMeleeDeepStrikeQueued()) then
+		vLandPos = self:GetMeleeDeepStrikePos(vTargetPos)
+		if (vLandPos == nil) then
+			return false
+		end
 	end
 
 	-- Deepstrike if I can
@@ -5363,12 +6619,12 @@ function CpuManager:DeepStrikeToPos(vTargetPos, bMilitary)
 				end
 				
 				-- Summon unit
-				local summon_unit = self:GetClosestSquad(vTargetPos, 100, can_summon)
+				local summon_unit = self:GetClosestSquad(vLandPos, 100, can_summon)
 				if (summon_unit) then
 					build_channel:DoDeepStrikeToSquad( summon_unit:GetSquad() )
 				end
 			else
-				build_channel:DoDeepStrikeToPos(vTargetPos)
+				build_channel:DoDeepStrikeToPos(vLandPos)
 				bDeepStrike = true
 			end
 		end

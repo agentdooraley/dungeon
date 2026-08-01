@@ -84,6 +84,31 @@ Filters =
 		end
 		return cpu_manager.cpu_player:FindFirstVehicleEnemy(vPosition, iTolerance, iCount)
 	end,
+
+	-- Ground vehicles only (excludes UC_Air*)
+	CloseGroundVehicleEnemy = function(vPosition, iTolerance, iCount)
+
+		if (iCount == nil) then
+			iCount = 1
+		end
+		local oFunctor = function(oSquad)
+			if (oSquad:GetNumTroopers() < iCount) then
+				return false
+			end
+			local oStats = oSquad:GetStats()
+			if (oStats == nil) then
+				return false
+			end
+			local eClass = oStats:GetClass()
+			if (eClass == UnitStatsAI.UC_AirLow or eClass == UnitStatsAI.UC_AirMed or
+				eClass == UnitStatsAI.UC_AirHigh) then
+				return false
+			end
+			return (eClass == UnitStatsAI.UC_VehicleLow or eClass == UnitStatsAI.UC_VehicleMed or
+				eClass == UnitStatsAI.UC_VehicleHigh)
+		end
+		return cpu_manager:FindClosestEnemy(vPosition, iTolerance, oFunctor)
+	end,
 	
 	
 	CloseInfantryEnemyRanged = function(vPosition, iTolerance, iCount)
@@ -236,19 +261,18 @@ Filters =
 			iCount = 1
 		end
 
-		-- Quick check
-		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
-			return nil
-		end
-
-		local oFunctor = function(oSquad, iCount)
+		-- FindClosestEnemy: GetClosestSquad only walks OUR squads
+		local oFunctor = function(oSquad)
+			if (oSquad:GetNumTroopers() < iCount) then
+				return false
+			end
 			local oStats = oSquad:GetStats()
 			if (oStats == nil) then
 				return false
 			end
-			return ((oStats:GetClass() == UnitStatsAI.UC_MonsterHigh) and oSquad:GetNumTroopers() >= iCount)
+			return (oStats:GetClass() == UnitStatsAI.UC_MonsterHigh)
 		end
-		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
+		return cpu_manager:FindClosestEnemy(vPosition, iTolerance, oFunctor)
 	end,
 
 	CloseMonsterEnemy = function(vPosition, iTolerance, iCount)
@@ -258,19 +282,73 @@ Filters =
 			iCount = 1
 		end
 
-		-- Quick check
-		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
-			return nil
-		end
-
-		local oFunctor = function(oSquad, iCount)
+		-- FindClosestEnemy: GetClosestSquad only walks OUR squads
+		local oFunctor = function(oSquad)
+			if (oSquad:GetNumTroopers() < iCount) then
+				return false
+			end
 			local oStats = oSquad:GetStats()
 			if (oStats == nil) then
 				return false
 			end
-			return ((oStats:GetClass() == UnitStatsAI.UC_MonsterHigh or oStats:GetClass() == UnitStatsAI.UC_MonsterMed) and oSquad:GetNumTroopers() >= iCount)
+			local eClass = oStats:GetClass()
+			return (eClass == UnitStatsAI.UC_MonsterHigh or eClass == UnitStatsAI.UC_MonsterMed)
 		end
-		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
+		return cpu_manager:FindClosestEnemy(vPosition, iTolerance, oFunctor)
+	end,
+
+	-- Single-model MonsterHigh/Med (daemon high/med — commander-sized)
+	CloseSoloMonsterEnemy = function(vPosition, iTolerance, iCount)
+		local oFunctor = function(oSquad)
+			if (oSquad:GetNumTroopers() ~= 1) then
+				return false
+			end
+			local oStats = oSquad:GetStats()
+			if (oStats == nil) then
+				return false
+			end
+			local eClass = oStats:GetClass()
+			return (eClass == UnitStatsAI.UC_MonsterHigh or eClass == UnitStatsAI.UC_MonsterMed)
+		end
+		return cpu_manager:FindClosestEnemy(vPosition, iTolerance, oFunctor)
+	end,
+
+	-- Lightning Arc: blob infantry (>=3), else solo daemon (1 model only)
+	CloseSquadOrMonsterEnemy = function(vPosition, iTolerance, iCount)
+		local oSquad = Ability.Filters.CloseSquadEnemy(vPosition, iTolerance, iCount)
+		if (oSquad ~= nil) then
+			return oSquad
+		end
+		return Ability.Filters.CloseSoloMonsterEnemy(vPosition, iTolerance, iCount)
+	end,
+
+	-- Strip Soul: commanders / solo daemons first (like heroes), then solo infantry
+	CloseTargetForStripSoulOrMonster = function(vPosition, iTolerance, iCount)
+		if (iCount == nil) then
+			iCount = 1
+		end
+		local oCmd = Ability.Filters.CloseCommanderEnemy(vPosition, iTolerance, iCount)
+		local oMon = Ability.Filters.CloseSoloMonsterEnemy(vPosition, iTolerance, iCount)
+		if (oCmd ~= nil and oMon ~= nil) then
+			if (distance_sqr(oCmd:GetPosition(), vPosition) <= distance_sqr(oMon:GetPosition(), vPosition)) then
+				return oCmd
+			end
+			return oMon
+		end
+		if (oCmd ~= nil) then
+			return oCmd
+		end
+		if (oMon ~= nil) then
+			return oMon
+		end
+		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
+			return nil
+		end
+		local oSquad = cpu_manager.cpu_player:FindFirstInfantryEnemy(vPosition, iTolerance, iCount)
+		if (oSquad ~= nil and oSquad:GetNumTroopers() == 1) then
+			return oSquad
+		end
+		return nil
 	end,
 	
 	
@@ -281,22 +359,31 @@ Filters =
 			iCount = 1
 		end
 
-		-- Quick check
-		if (not cpu_manager:CloseEnemyUnits(vPosition, iTolerance)) then
-			return nil
-		end
-
-		local oFunctor = function(oSquad, iCount)
+		-- Must use FindClosestEnemy: GetClosestSquad only walks OUR military_manager squads
+		-- (old filter never saw enemy Nightwing/Hell Talon/Fighta/etc.)
+		local oFunctor = function(oSquad)
+			if (oSquad:GetNumTroopers() < iCount) then
+				return false
+			end
 			local oStats = oSquad:GetStats()
 			if (oStats == nil) then
 				return false
 			end
-			
---			local bAirPlane = (eClass == UnitStatsAI.UC_AirLow or eClass == UnitStatsAI.UC_AirMed or eClass == UnitStatsAI.UC_AirHigh)
-
-			return ((oStats:GetClass() == UnitStatsAI.UC_AirLow or oStats:GetClass() == UnitStatsAI.UC_AirMed or oStats:GetClass() == UnitStatsAI.UC_AirHigh) and oSquad:GetNumTroopers() >= iCount)
+			local eClass = oStats:GetClass()
+			return (eClass == UnitStatsAI.UC_AirLow or eClass == UnitStatsAI.UC_AirMed or
+				eClass == UnitStatsAI.UC_AirHigh)
 		end
-		return cpu_manager:GetClosestSquad(vPosition, iTolerance, oFunctor, iCount)
+		return cpu_manager:FindClosestEnemy(vPosition, iTolerance, oFunctor)
+	end,
+
+	-- Vehicles (engine FindFirstVehicleEnemy) + air (UC_Air*) — e.g. curse of the machine spirits
+	CloseVehicleOrAirEnemy = function(vPosition, iTolerance, iCount)
+
+		local oVehicle = Ability.Filters.CloseVehicleEnemy(vPosition, iTolerance, iCount)
+		if (oVehicle ~= nil) then
+			return oVehicle
+		end
+		return Ability.Filters.CloseAirEnemy(vPosition, iTolerance, iCount)
 	end,
 
 	
@@ -469,6 +556,9 @@ DoAbilityToggleCombat = function( squad_ai, id, msg )
 		local using = squad_ai:IsUsingAbility( id )
 		local combat = squad_ai:IsInCombat()
 		local oTactic = squad_ai:GetTactic()
+		if (oTactic == nil) then
+			return
+		end
 		local move = oTactic:IsMoving() or oTactic:IsInSubState()
 		local healthpercent = squad_ai:GetHealthPercentage() > 0.4
 		
@@ -494,6 +584,9 @@ DoAbilityToggleCombatSolo = function( squad_ai, id, msg )
 		local using = squad_ai:IsUsingAbility( id )
 		local combat = squad_ai:IsInCombat()
 		local oTactic = squad_ai:GetTactic()
+		if (oTactic == nil) then
+			return
+		end
 		local move = oTactic:IsMoving() or oTactic:IsInSubState()
 		local healthpercent = squad_ai:GetHealthPercentage()
 		
@@ -539,6 +632,9 @@ DoAbilityToggleMoraleBoost = function( squad_ai, id, msg )
 		local using = squad_ai:IsUsingAbility( id )
 		local combat = squad_ai:IsInCombat()
 		local oTactic = squad_ai:GetTactic()
+		if (oTactic == nil) then
+			return
+		end
 		local move = oTactic:IsMoving() or oTactic:IsInSubState()
 		local morale = squad_ai:IsBroken()
 		

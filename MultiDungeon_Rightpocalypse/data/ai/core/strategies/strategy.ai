@@ -647,9 +647,18 @@ function Strategy:BuildPrereq( build_type, unfill )
 		if (not cpu_manager.components[CpuPlayer.CT_BuildResearch]) then
 			return
 		end
+
+		-- Already done / bad name → never spam BuildResearchPlan (Relic crash)
+		if (cpu_manager.cpu_player:IsResearchComplete(build_type.name)) then
+			return
+		end
 		
 		-- Add research plan
 		local id = cpu_manager.stats:GetResearchID( build_type.name )
+		if (id == nil or id == 0) then
+			aitrace("build prereq: invalid research id "..tostring(build_type.name))
+			return
+		end
 		if (self:PlanExists("Build Research Plan", id) == false) then 
 			self.AddPlan(self, BuildResearchPlan(id))
 		end
@@ -681,6 +690,27 @@ function Strategy:BuildPrereq( build_type, unfill )
 	end
 end
 
+-- Opt-in: SM / Sisters / Chaos / Guard override → true
+function Strategy:UsesHomeSideForwardFirstTurret()
+	return false
+end
+
+-- Default later turrets: Front2. First turret HomeSideForward only if race opts in + not large map.
+function Strategy:GetTurretPlacementType()
+
+	local iTurrets = 0
+	if (cpu_manager.build_base_strategy ~= nil) then
+		iTurrets = cpu_manager.build_base_strategy:GetTurretStructureCount()
+	end
+	if (iTurrets < 1 and self:UsesHomeSideForwardFirstTurret()) then
+		local sMapSize = self:GetMapSize()
+		if (sMapSize ~= "large") then
+			return "HomeSideForward"
+		end
+	end
+	return "Front2"
+end
+
 -- Arkhan 03.2006: Return placement type for buildings
 function Strategy:GetPlacementType(iBuildingID)
 	
@@ -688,7 +718,7 @@ function Strategy:GetPlacementType(iBuildingID)
 	if (cpu_manager:IsHQ(iBuildingID)) then
 		return "HQ"		
 	elseif (cpu_manager:IsTurret(iBuildingID)) then
-		return "Front2"
+		return self:GetTurretPlacementType()
 	elseif (cpu_manager:IsMine(iBuildingID)) then
 		return "Mine"
 	elseif (cpu_manager:IsGenerator(iBuildingID)) then
@@ -915,9 +945,17 @@ function Strategy:GetMapSize()
     local strat_pts = resource_manager:GetTotalNumStrategicPoints()
     local strat_objs = resource_manager:GetTotalNumStrategicObjectives()
 
-    local players = 0
-    for i in cpu_manager.stats:GetPlayerStats() do
-        players = players + 1
+    -- Living players only (g_iNumPlayers refreshed each Think)
+    local players = g_iNumPlayers
+    if (players == nil or players < 1) then
+        if (cpu_manager ~= nil and cpu_manager.UpdateNumPlayers ~= nil) then
+            players = cpu_manager:UpdateNumPlayers()
+        else
+            players = 1
+        end
+    end
+    if (players < 1) then
+        players = 1
     end
 	--print("Strat pnts") ---Relics+ str_pnts
 	--print(strat_pts)
@@ -929,12 +967,12 @@ function Strategy:GetMapSize()
     local resources_per_player = math.floor(map_resources / players) --math.ceil(map_resources // players)
 	--print("res_per_playa")
 	--print(resources_per_player)
-    --get closest enemy distance
+    --get closest enemy distance (living only)
     local closest_enemy = nil
     local this_enemy_dist = 0
     -- scan enemies
     for enemy in cpu_manager.stats:GetPlayerStats() do
-        if cpu_manager.player_stats:IsEnemy( enemy ) then
+        if cpu_manager.player_stats:IsEnemy( enemy ) and not enemy:IsPlayerDead() then
             -- distance from us
             this_enemy_dist = cpu_manager:GetShortestPathingDistance( cpu_manager.player_stats:GetStartingPosition(), enemy:GetStartingPosition() )
             if (closest_enemy == nil) or (this_enemy_dist < closest_enemy) then

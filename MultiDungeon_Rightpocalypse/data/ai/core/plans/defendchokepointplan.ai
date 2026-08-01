@@ -23,6 +23,7 @@ function DefendChokePointPlan:__init( choke_pt_pos ) super( CpuPlayer.CT_Defendi
 	self.m_iHarassingLeaderDistanceToTarget = 0
 	self.m_vHarassingTarget = nil
 	self.m_vSupportPosition = nil
+	self.m_bHarassAttackLatched = false
 end
 
 function DefendChokePointPlan:IsEqual( plan_name, plan_id )
@@ -43,18 +44,71 @@ function DefendChokePointPlan:CanAttackAtPos(vPos)
 	if (vPos == nil) then
 		return false
 	end
+	-- Cheap choke trap: army/turrets on start→target mid (same as empty-SP probe)
+	if (CapturePlan ~= nil and CapturePlan.IsEmptyFlagPathBlocked ~= nil and
+		CapturePlan:IsEmptyFlagPathBlocked(vPos)) then
+		return false
+	end
 	local iEnemyPower = cpu_manager:GetArmyStrengthAtPos(vPos, 50, true)
 	if (iEnemyPower <= 0) then
+		self.m_bHarassAttackLatched = true
 		return true
 	end
 	local vGatherPos = self.m_vHarassingLeaderPos or self.waypoint_pos
 	local iGathered = self:GetGatheredStrength(vGatherPos, 50)
-	return iGathered >= self.m_iHarassingRatio * iEnemyPower
+	local iNeed = self.m_iHarassingRatio * iEnemyPower
+	-- Hysteresis: once pushing, don't drop on tiny gather flicker (harass↔choke bounce)
+	if (self.m_bHarassAttackLatched) then
+		if (iGathered >= 0.7 * iNeed) then
+			return true
+		end
+		self.m_bHarassAttackLatched = false
+		return false
+	end
+	if (iGathered >= iNeed) then
+		self.m_bHarassAttackLatched = true
+		return true
+	end
+	return false
+end
+
+-- When harass order is issued: top up if spare req (do not wait / do not spam)
+function DefendChokePointPlan:TryHarassReinforce(squad_ai)
+	if (squad_ai == nil or not squad_ai:IsValid()) then
+		return
+	end
+	local iRequisition = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition)
+	if (iRequisition <= 200 or g_iGMT >= DefendChokePointPlan.HarassingTime * 60) then
+		return
+	end
+	if (squad_ai:GetNumTroopers() >= squad_ai:GetMaxTroopers()) then
+		return
+	end
+	if (squad_ai:IsReinforcing()) then
+		return
+	end
+	if (squad_ai:CanReinforce(true, 0)) then
+		squad_ai:DoReinforce(true, 0)
+	elseif (squad_ai:CanReinforce(false, 0)) then
+		squad_ai:DoReinforce(false, 0)
+	end
 end
 
 function DefendChokePointPlan:CheckHarassingMode()
 
 	aitrace("DefendChokePointPlan: Check harassing mode...")
+
+	-- Homeside secure first — unless redirect (enemy blob > whole army at our homeside)
+	if (CapturePlan:NeedsHomeSideSecurePhase() and
+		(CapturePlan.ShouldRedirectFromOverwhelmedHomeSide == nil or
+		 not CapturePlan:ShouldRedirectFromOverwhelmedHomeSide())) then
+		self.m_iHarassingLeaderID = nil
+		self.m_vHarassingTarget = nil
+		self.m_vSupportPosition = nil
+		self.m_vHarassingLeaderPos = nil
+		self.m_bHarassAttackLatched = false
+		return false
+	end
 
 	-- Check harassing time
 	self.m_vSupportPosition = nil
@@ -126,8 +180,9 @@ function DefendChokePointPlan:CheckHarassingMode()
 		if (self.m_vHarassingTarget == nil) then
 		
 			-- Check gathered army for harass start (offense only)
+			-- Was 0.8× whole army → sat at leader while enemy capped empty points
 			local iEnemyStrength, iAlliedStrength, iMyStrength = cpu_manager:GetArmyStrengthAtPos(self.m_vHarassingLeaderPos, 50, true)
-			if (iMyStrength < math.min(600, cpu_manager:GetArmyStrength() * 0.8)) then
+			if (iMyStrength < math.min(350, cpu_manager:GetArmyStrength() * 0.5)) then
 				return false
 			end
 		else
@@ -148,6 +203,7 @@ function DefendChokePointPlan:CheckHarassingMode()
 	-- Reset harassing target
 	if (self.m_vHarassingTarget ~= nil) then
 		self.m_vHarassingTarget = nil
+		self.m_bHarassAttackLatched = false
 		self.m_iHarassingStart = g_iGMT + 15
 	end
 	return false
@@ -180,6 +236,10 @@ function DefendChokePointPlan:Defending()
 			-- Set harassing position as target
 			vTargetPos = Vector3f(self.m_vHarassingTarget)
 			aitrace("DefendChokePointPlan: Attack enemy strategic point!")
+		elseif (self.m_vHarassingLeaderPos ~= nil) then
+			-- Harass mode but not enough for push: hold gather, do NOT snap back to choke/base
+			vTargetPos = Vector3f(self.m_vHarassingLeaderPos)
+			aitrace("DefendChokePointPlan: Hold harass gather!")
 		else
 			vTargetPos = vDefendPos
 			aitrace("DefendChokePointPlan: Protect choke point!")
@@ -187,8 +247,10 @@ function DefendChokePointPlan:Defending()
 		self.m_iHarassingLeaderDistanceToTarget = distance_sqr(self.m_vHarassingLeaderPos, vTargetPos)
 	else
 		self.m_iHarassingLeaderDistanceToTarget = 0
+		self.m_bHarassAttackLatched = false
 		aitrace("DefendChokePointPlan: Protect choke point!")
 	end
+	local bHarassActive = (self.m_vHarassingLeaderPos ~= nil and g_iGMT < DefendChokePointPlan.HarassingTime * 60)
 	
 	-- Get save position
 	local vSavePos = Vector3f(cpu_manager.start_pos)
@@ -220,6 +282,7 @@ function DefendChokePointPlan:Defending()
 			local oTactic = squad_ai:GetTactic()
 
 			if (squad_ai:IsLocked() or squad_ai:IsCapturing() or oTactic:IsCapturePlanMove() or oTactic:IsCaptureGuardMove()) then
+			elseif (oTactic:IsSoftCapturerOnCaptureDuty()) then
 			elseif (oTactic:IsInEmergencySubState()) then
 			elseif (oTactic:ShouldRetreatToBase()) then
 				local vRetreatPos = vSavePos
@@ -247,7 +310,15 @@ function DefendChokePointPlan:Defending()
 				-- Get threat at squad pos
 				local vMovePos = vTargetPos
 				local oState = Tactic.GlobalDefenseState
-				if (bCanHarassAttack) then
+				local bThisHarass = bCanHarassAttack
+				-- Non-leader: race may cap how many of a unit type join (e.g. 1 guardsman)
+				if (bThisHarass and squad_ai:GetID() ~= self.m_iHarassingLeaderID and
+					oTactic.CanJoinArmyHarass ~= nil and not oTactic:CanJoinArmyHarass()) then
+					bThisHarass = false
+					vMovePos = vDefendPos
+					oState = Tactic.GlobalDefenseState
+				end
+				if (bThisHarass) then
 				
 					-- Check for leader
 					if (squad_ai:GetID() == self.m_iHarassingLeaderID) then
@@ -284,6 +355,10 @@ function DefendChokePointPlan:Defending()
 				if (oTactic:GetState() ~= oState or distance_sqr(oTactic:GetTarget(), vMovePos) > 1) then
 					oTactic:SetState(oState)
 					oTactic:SetTarget(vMovePos, Tactic.Variant.Vector)
+					-- Harass push: reinforce once when the go-order is (re)issued
+					if (bThisHarass) then
+						self:TryHarassReinforce(squad_ai)
+					end
 				end
 
 			-- Weak defenders still hold the choke point
@@ -293,8 +368,9 @@ function DefendChokePointPlan:Defending()
 					oTactic:SetTarget(vDefendPos, Tactic.Variant.Vector)
 				end
 			
-			-- Check if squad is idle	
-			elseif (not oTactic:IsOverwhelmSpamMode() and (squad_ai:IsIdle() or (not oTactic:IsDefender() and squad_ai:WasRecentlyHurt()))) then
+			-- Idle → base only when NOT in harass gather/push (that Retreat fought Attack-to-enemy-SP)
+			elseif (not bHarassActive and not oTactic:IsOverwhelmSpamMode() and
+				(squad_ai:IsIdle() or (not oTactic:IsDefender() and squad_ai:WasRecentlyHurt()))) then
 				if (oTactic:GetState() ~= Tactic.States.Retreat or distance_sqr(oTactic:GetTarget(), vSavePos) > 1) then
 					oTactic:SetState(Tactic.States.Retreat)
 					oTactic:SetTarget(vSavePos, Tactic.Variant.Vector)
@@ -302,6 +378,15 @@ function DefendChokePointPlan:Defending()
 			end
 		end		
 	end
+end
+
+-- Prefer homeside/flank where WE are stronger (not blind empty homeside)
+function DefendChokePointPlan:FindOpenExpandPoint(vFrom, iMaxDist)
+
+	if (CapturePlan ~= nil and CapturePlan.FindAdvantagePushPoint ~= nil) then
+		return CapturePlan:FindAdvantagePushPoint(vFrom, iMaxDist)
+	end
+	return nil
 end
 
 function DefendChokePointPlan:FindEnemyStrategicPoint()
@@ -324,8 +409,13 @@ function DefendChokePointPlan:FindEnemyStrategicPoint()
 	local iRetreatRatio = cpu_manager:GetRetreatRatio()
 	local iMaxAttackDistance = 280
 
-	-- Compare army strength
+	-- Globally outgunned: still push empty points (don't sit at choke forever)
 	if (iArmyStrength < self.m_iHarassingRatio * iEnemyStrength) then
+		local vOpen = self:FindOpenExpandPoint(self.waypoint_pos, iMaxAttackDistance)
+		if (vOpen ~= nil) then
+			self.m_vHarassingTarget = vOpen
+			return
+		end
 		self.m_iHarassingRatio = iAttackRatio
 		self.m_vHarassingTarget = nil
 		return
@@ -333,7 +423,11 @@ function DefendChokePointPlan:FindEnemyStrategicPoint()
 	
 	-- Check if we already have a harassing target
 	if (self.m_vHarassingTarget ~= nil and cpu_manager.cpu_player:FindFirstBaseEnemy(self.m_vHarassingTarget, 25, 1) == nil) then
-		self.m_vHarassingTarget = nil
+		-- Keep empty-SP expand targets (no enemy building on flag)
+		local iAtTarget = cpu_manager:GetArmyStrengthAtPos(self.m_vHarassingTarget, 50, true)
+		if (iAtTarget ~= nil and iAtTarget > 0) then
+			self.m_vHarassingTarget = nil
+		end
 	end
 
 	-- Check if we need a new harassing target
@@ -352,6 +446,14 @@ function DefendChokePointPlan:FindEnemyStrategicPoint()
 					self.m_vHarassingTarget = self:GetBestSupportPosition(vSquadPos, 50)
 				end
 			end
+		end
+	end
+
+	-- Prefer empty/neutral SP before chasing enemy blobs
+	if (self.m_vHarassingTarget == nil) then
+		local vOpen = self:FindOpenExpandPoint(self.waypoint_pos, iMaxAttackDistance)
+		if (vOpen ~= nil and self:CanAttackAtPos(vOpen)) then
+			self.m_vHarassingTarget = vOpen
 		end
 	end
 	

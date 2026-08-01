@@ -44,7 +44,7 @@ function DefendPlan:CheckDefendable()
 		return 0
 	end
 
-	-- Forward defense: always hold strategic points / choke, even if outnumbered
+	-- Non-HQ forward / homeside: hold the point (kite peel is decided in Defending)
 	if (not self.m_bDefendHQ) then
 		self.m_iLastDefenseStart = g_iGMT
 		return 1
@@ -91,6 +91,122 @@ function DefendPlan:IsEqual( plan_name, plan_id )
    return self:GetName() == plan_name and distance_sqr( plan_id, self.defend_pos ) < sqr(10)
 end
 
+-- Fight power = allies at zone + our locked defend force (incl. still approaching)
+function DefendPlan:GetKillZoneFightPower()
+
+	local iEnemyStrength, iAlliedStrength, iMyAtPos = cpu_manager:GetArmyStrengthAtPos(self.defend_pos, self.m_iDefendRange, true)
+	if (iEnemyStrength == nil) then
+		iEnemyStrength = 0
+	end
+	if (iAlliedStrength == nil) then
+		iAlliedStrength = 0
+	end
+	if (iMyAtPos == nil) then
+		iMyAtPos = 0
+	end
+	local iMyForce = self:GetArmyStrength()
+	if (iMyForce == nil) then
+		iMyForce = 0
+	end
+	local iAlliesOnly = iAlliedStrength - iMyAtPos
+	if (iAlliesOnly < 0) then
+		iAlliesOnly = 0
+	end
+	return (iAlliesOnly + iMyForce), iEnemyStrength
+end
+
+-- Always unlock (incl. dead) so ForceReleaseAll/UnlockAll never hits a corpse GetTactic
+function DefendPlan:ReleaseDefendSquad(oSquad, vRetreatPos)
+
+	if (oSquad == nil) then
+		return
+	end
+	Plan.UnlockResource(self, oSquad)
+	if (oSquad:IsValid() and vRetreatPos ~= nil) then
+		local oTactic = oSquad:GetTactic()
+		if (oTactic ~= nil) then
+			oTactic:SetState(Tactic.States.Retreat)
+			oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+		end
+	end
+end
+
+-- Non-homeside only: outgunned → unlock, retreat, end plan (no Attack↔Retreat yo-yo)
+function DefendPlan:TryBailKillZone()
+
+	if (self.m_bDefendHQ or cpu_manager:IsHomeSidePosition(self.defend_pos)) then
+		return false
+	end
+	local iFightPower, iEnemyStrength = self:GetKillZoneFightPower()
+	if (iEnemyStrength <= 0 or iFightPower >= iEnemyStrength) then
+		return false
+	end
+
+	aitrace("DefendPlan: Bail kill zone — outgunned ("..tostring(iFightPower).." < "..tostring(iEnemyStrength)..")")
+	cpu_manager:MarkKillZoneBail(self.defend_pos)
+
+	local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(self.defend_pos, cpu_manager.start_pos, true, false)
+	if (vBasePos == nil) then
+		vBasePos = cpu_manager.start_pos
+	end
+	local iCount = table.getn(self.defend_units)
+	for iLoop1 = iCount, 1, -1 do
+		self:ReleaseDefendSquad(self.defend_units[iLoop1], vBasePos)
+		table.remove(self.defend_units, iLoop1)
+	end
+	if (self.m_oSupportDetector ~= nil) then
+		self:ReleaseDefendSquad(self.m_oSupportDetector, vBasePos)
+		self.m_oSupportDetector = nil
+	end
+	self:SetComplete(true)
+	return true
+end
+
+
+-- True if any locked defend squad is taking fire / in a fight
+function DefendPlan:DefendForceUnderFire()
+
+	for iLoop1 in self.defend_units do
+		local oSquad = self.defend_units[iLoop1]
+		if (oSquad ~= nil and oSquad:IsValid()) then
+			if (oSquad:IsUnderAttack() or oSquad:IsInCombat() or oSquad:WasRecentlyHurt()) then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Homeside kite: under fire AND local power < 0.8 enemy → peel to LP/base
+function DefendPlan:ShouldHomesideKite()
+
+	if (self.m_bDefendHQ or not cpu_manager:IsHomeSidePosition(self.defend_pos)) then
+		return false
+	end
+	local iFightPower, iEnemyStrength = self:GetKillZoneFightPower()
+	if (iEnemyStrength <= 0) then
+		return false
+	end
+	if (iFightPower >= iEnemyStrength * ResponsePlan.HomeSideFightRatio) then
+		return false
+	end
+	return self:DefendForceUnderFire()
+end
+
+-- Commit Attack on zone; homeside always holds (ranged kite is per-squad); HQ gather path
+function DefendPlan:IsKillZoneCommit()
+
+	if (self.m_bDefendHQ) then
+		return false
+	end
+	if (cpu_manager:IsHomeSidePosition(self.defend_pos)) then
+		return true
+	end
+	local iFightPower, iEnemyStrength = self:GetKillZoneFightPower()
+	return (iEnemyStrength > 0 and iFightPower >= iEnemyStrength)
+end
+
+
 function DefendPlan:GetArmyStrength()
 
 	-- Check if we've already calculated the army strenth
@@ -109,14 +225,19 @@ function DefendPlan:GetArmyStrength()
 		-- Check if unit is valid			
 		if (oUnit:IsValid()) then
 		
-			-- Add unit strength to army strength
-			local iUnitStrength = oUnit:GetTactic():GetUnitStrength()
+			-- Add unit strength to army strength (nil tactic mid-death = Relic crash)
+			local oTactic = oUnit:GetTactic()
+			if (oTactic == nil) then
+				-- skip
+			else
+			local iUnitStrength = oTactic:GetUnitStrength()
 			iArmyStrength = iArmyStrength + iUnitStrength
 			
 			-- Add unit position to army position
 			local vUnitPosition = oUnit:GetPosition()
 			vArmyPosition.x = vArmyPosition.x + iUnitStrength * vUnitPosition.x
 			vArmyPosition.z = vArmyPosition.z + iUnitStrength * vUnitPosition.z
+			end
 		end
 	end
 	if (iArmyStrength > 0) then
@@ -264,14 +385,23 @@ function DefendPlan:ObtainForce()
 				bSquadOk = false
 			end 
 			
-			-- Check if unit is not a vehicle in urgent need of repairing
+			-- Vehicles: free for Attack on far choke; pull on homeside / base threat
+			-- Fire support + daemon/relic (Squiggoth, Land Raider…): always pull — no HQ AFK
 			local oTactic = oSquad:GetTactic()
-			if (oTactic:GetType() == Tactic.Types.Vehicle  and not bDefendHomeBase) then --and oTactic:NeedRepair()
+			local bPullTanks = (bDefendHomeBase or
+				cpu_manager:IsHomeSidePosition(self.defend_pos) or
+				cpu_manager:GetCriticalThreat() > 0 or cpu_manager:HQThreat())
+			if (oTactic:IsNoGatherCombatUnit()) then
+			elseif (oTactic:IsDefenseTankUnit() and not bPullTanks) then
 				bSquadOk = false
 			end
 		
 			-- Check if squad should be added to defend army
-			if (oTactic:AlwaysAttack() or (bSquadOk and oTactic:IsDefender())) then
+			-- AlwaysAttack = attack force only (Bloodthirster) — do not lock into Defend
+			-- Home-base defend may yank capture escorts; leave capturer on the flag
+			if (oSquad:IsCapturing() or oTactic:IsCapturePlanMove()) then
+			elseif (oTactic:IsCaptureGuardMove() and not bDefendHomeBase) then
+			elseif (bSquadOk and oTactic:IsDefender()) then
 				table.insert( defend_units, oSquad )
 				--iDefendPower = iDefendPower + squad_ai:GetTactic():GetUnitStrength()
 			
@@ -289,6 +419,9 @@ function DefendPlan:ObtainForce()
 		-- Assign a tactic to it
 		local tactic = defend_units[i]:GetTactic()
 		if (tactic ~= nil) then
+			if (tactic:IsCaptureGuardMove()) then
+				tactic:SetCaptureGuardMove(false, false)
+			end
 			Plan.LockResource( self, defend_units[i] )
 			
 			table.insert( self.defend_units, defend_units[i] )
@@ -316,6 +449,12 @@ end
 function DefendPlan:Defending()
 
 	aitrace("DefendPlan: Defending...")
+
+	-- Non-homeside kill zone: weaker → full bail (homeside unchanged)
+	if (self:TryBailKillZone()) then
+		return
+	end
+	local bKillZoneCommit = self:IsKillZoneCommit()
 	
 	-- Check if there is a building left to defend
 	local iRange = sqr(self.m_iDefendRange)
@@ -370,14 +509,21 @@ function DefendPlan:Defending()
 	-- Check if we are strong enough to defend
 	local vBestDefendPosition = self.m_vLastDefendPos
 	local iArmyStrength, vArmyPos = self:GetArmyStrength()
+	local bHomesideKite = self:ShouldHomesideKite()
 	if (iSituation < 0) then
 
-		-- Get save position (HQ defense only — gather before counter-push)
+		-- HQ only: gather at safe base before counter-push
 		aitrace("DefendPlan: Gather defense forces...")
 		if (self.m_bDefendHQ) then
-			local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vArmyPos, self.defend_pos, true, false)
+			local vFrom = vArmyPos
+			if (vFrom == nil) then
+				vFrom = self.defend_pos
+			end
+			local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vFrom, self.defend_pos, true, false)
 			if (vBasePos ~= nil) then
 				vBestDefendPosition = Vector3f(vBasePos)
+			else
+				vBestDefendPosition = Vector3f(cpu_manager.start_pos)
 			end
 			self.m_bGatherTroops = true
 		else
@@ -395,6 +541,28 @@ function DefendPlan:Defending()
 		elseif (not self.m_bDefendHQ) then
 			vBestDefendPosition = Vector3f(self.defend_pos)
 		end
+		self.m_bGatherTroops = false
+	end
+
+	-- Homeside kite peel target for ranged only (melee stays on point)
+	local vHomesideKitePos = nil
+	if (bHomesideKite) then
+		aitrace("DefendPlan: Homeside kite under fire (ranged only)...")
+		local vFrom = vArmyPos
+		if (vFrom == nil) then
+			vFrom = self.defend_pos
+		end
+		local vBasePos = cpu_manager:FindClosestFriendlyBaseOrStrategicPoint(vFrom, self.defend_pos, true, false)
+		if (vBasePos ~= nil) then
+			vHomesideKitePos = Vector3f(vBasePos)
+		else
+			vHomesideKitePos = Vector3f(cpu_manager.start_pos)
+		end
+	end
+
+	-- Kill-zone / homeside hold: stay on the fight point (no soft gather/jitter)
+	if (bKillZoneCommit) then
+		vBestDefendPosition = Vector3f(self.defend_pos)
 		self.m_bGatherTroops = false
 	end
 		
@@ -415,8 +583,16 @@ function DefendPlan:Defending()
 	
 		-- Get squad tactic
 		local oSquad = self.defend_units[iLoop1]
+		if (oSquad == nil or not oSquad:IsValid()) then
+		else
 		local vSquadPos = oSquad:GetPosition()
 		local oTactic = oSquad:GetTactic()
+		if (oTactic == nil or vSquadPos == nil) then
+		else
+		-- Solo attach-commanders only (commissar/priest…): skip Attack/Hold yo-yo
+		-- Force Commander / Librarian / etc. must get Defend orders (not AFK at HQ)
+		if (oTactic:IsSoloAttachCommander() and not oSquad:IsAttached()) then
+		else
 		local vRetreatPos = cpu_manager.start_pos
 		local sCell = math.floor(vSquadPos.x / 40).."_"..math.floor(vSquadPos.z / 40)
 		local vBasePos = mRetreatBaseCache[sCell]
@@ -435,10 +611,49 @@ function DefendPlan:Defending()
 			vRetreatPos = Vector3f(vBasePos)
 		end
 
-		if (oTactic:IsInEmergencySubState()) then
+		if (oTactic:IsInEmergencySubState() or oTactic:ShouldRetreatToBase()) then
+			-- Peel / hurt: keep Retreat (don't skip → Attack when AvoidDeath flickers off)
+			if (oTactic:GetState() ~= Tactic.States.Retreat or
+				distance_sqr(oTactic:GetTarget(), vRetreatPos) > 1) then
+				oTactic:SetState(Tactic.States.Retreat)
+				oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+			end
+		elseif (bHomesideKite and oSquad:IsRanged() and not oTactic:IsDefenseTankUnit()) then
+			-- Soft ranged peel to LP/base; tanks/Squiggoth hold (not HQ AFK)
+			local vKite = vHomesideKitePos
+			if (vKite == nil) then
+				vKite = vRetreatPos
+			end
+			if (oTactic:GetState() ~= Tactic.States.Retreat or distance_sqr(oTactic:GetTarget(), vKite) > 1) then
+				oTactic:SetState(Tactic.States.Retreat)
+				oTactic:SetTarget(vKite, Tactic.Variant.Vector)
+			end
+		elseif (bKillZoneCommit) then
+			-- Stronger at kill zone / homeside hold: Attack commit; only critical home retreat
+			if (oTactic:ShouldRetreatAllTheWayHome()) then
+				local vHomePos = oTactic:GetHomeRetreatPos()
+				if (vHomePos ~= nil) then
+					vRetreatPos = vHomePos
+				end
+				oTactic:SetState(Tactic.States.Retreat)
+				oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
+			else
+				local iDistance = distance_sqr(vSquadPos, vBestDefendPosition)
+				if (vDetectorTarget == nil or iDistance < iClosestDistance) then
+					vDetectorTarget = vSquadPos
+					iClosestDistance = iDistance
+				end
+				if (oTactic:GetState() ~= Tactic.States.Attack or distance_sqr(oTactic:GetTarget(), vBestDefendPosition) > 1) then
+					oTactic:SetState(Tactic.States.Attack)
+					oTactic:SetTarget(vBestDefendPosition, Tactic.Variant.Vector)
+				end
+			end
 		elseif (oTactic:ShouldRetreatToBase()) then
 			if (oTactic:ShouldRetreatAllTheWayHome()) then
-				vRetreatPos = oTactic:GetHomeRetreatPos()
+				local vHomePos = oTactic:GetHomeRetreatPos()
+				if (vHomePos ~= nil) then
+					vRetreatPos = vHomePos
+				end
 			end
 			oTactic:SetState(Tactic.States.Retreat)
 			oTactic:SetTarget(vRetreatPos, Tactic.Variant.Vector)
@@ -476,37 +691,50 @@ function DefendPlan:Defending()
 			oTactic:SetTarget(vBestDefendPosition, Tactic.Variant.Vector)
 		end
 		end
+		end
+		end
+		end
 	end
 	self.m_vLastDefendPos = Vector3f(vBestDefendPosition)
 	
-	-- Set deepstrike pos
+	-- Set deepstrike pos (ranged / default)
 	local vDeepStrikePos = vBestDefendPosition
 	if (vDetectorTarget == nil) then
 		vDetectorTarget = vArmyPos
 	else
 		vDeepStrikePos = vDetectorTarget
 	end
-	
-	-- Deepstrike if I can
-	for build_channel in build_manager:GetBuildChannelAIs() do
-		 
-		local id = build_channel:GetBlueprintID()
-		if (build_channel:CanDeepStrike() and cpu_manager:MilitaryDeepStrike(id)) then
-	
-			if (build_channel:CanOnlyDeepStrikeToEntity()) then
- 			   
-				-- Find someone who can summon
-				local can_summon = function( squad_ai )
-					return squad_ai:CanSummon()
+
+	-- Melee DS: only ≤5m of enemy / building (skip rear dumps)
+	if (cpu_manager:HasMeleeDeepStrikeQueued()) then
+		local vMeleeLand = cpu_manager:GetMeleeDeepStrikePos(vDetectorTarget)
+		if (vMeleeLand == nil) then
+			vMeleeLand = cpu_manager:GetMeleeDeepStrikePos(vBestDefendPosition)
+		end
+		vDeepStrikePos = vMeleeLand
+	end
+
+	if (vDeepStrikePos ~= nil) then
+		for build_channel in build_manager:GetBuildChannelAIs() do
+			 
+			local id = build_channel:GetBlueprintID()
+			if (build_channel:CanDeepStrike() and cpu_manager:MilitaryDeepStrike(id)) then
+		
+				if (build_channel:CanOnlyDeepStrikeToEntity()) then
+	 			   
+					-- Find someone who can summon
+					local can_summon = function( squad_ai )
+						return squad_ai:CanSummon()
+					end
+					
+					-- Summon unit
+					local summon_unit = cpu_manager:GetClosestSquad(vDeepStrikePos, 100, can_summon)
+					if (summon_unit) then
+						build_channel:DoDeepStrikeToSquad( summon_unit:GetSquad() )
+					end
+				else
+					build_channel:DoDeepStrikeToPos(vDeepStrikePos)
 				end
-				
-				-- Summon unit
-				local summon_unit = cpu_manager:GetClosestSquad(vDeepStrikePos, 100, can_summon)
-				if (summon_unit) then
-					build_channel:DoDeepStrikeToSquad( summon_unit:GetSquad() )
-				end
-			else
-				build_channel:DoDeepStrikeToPos(vDeepStrikePos)
 			end
 		end
 	end
@@ -611,18 +839,32 @@ function DefendPlan:RemoveLosses()
 			-- Get tactic
 			local oTactic = oSquad:GetTactic()
 			local bWeak	= (oSquad:CanReinforce(false, 0) and oTactic:GetUnitStrength() < iMinStrength)
+			local bHurtCommander = (oTactic:IsCommander() and oSquad:GetHealthPercentage() < 0.5 and
+				(oSquad:IsUnderAttack() or oSquad:WasRecentlyHurt() or oTactic:IsInEmergencySubState()))
 			local bCanRetreat = (oSquad:IsRanged() or not oSquad:IsInCombat())
-			if (not oTactic:IsOverwhelmSpamMode() and (not oTactic:IsDefender() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
+			local bSoftExpand = (oTactic:IsDedicatedCapturer() and CapturePlan ~= nil and
+				CapturePlan.HasSafeEmptyCaptureTarget ~= nil and CapturePlan:HasSafeEmptyCaptureTarget() and
+				not oSquad:IsUnderAttack() and not oSquad:WasRecentlyHurt() and
+				oSquad:GetHealthPercentage() >= 0.5)
+			if (not oTactic:IsOverwhelmSpamMode() and
+				(bHurtCommander or not oTactic:IsDefender() or (bWeak and bCanRetreat and not oTactic:AlwaysAttack()))) then
 		
+				-- Soft map expand: unlock to SoftTry — do NOT Retreat to HQ (that kept Harlequin AFK)
+				if (bSoftExpand and not bHurtCommander and not oTactic:IsDefender()) then
+					Plan.UnlockResource(self, oSquad)
+					table.remove(self.defend_units, iLoop1)
+					oTactic.stateID = Tactic.StateID.NoState
+					oTactic.m_eSubStateID = Tactic.StateID.NoState
 				-- Send severly hurt squads back to base
-				if (vBasePos ~= nil) then
+				elseif (vBasePos ~= nil) then
 					Plan.UnlockResource(self, oSquad)
 					table.remove(self.defend_units, iLoop1)
 					oTactic:SetState(Tactic.States.Retreat)
 					oTactic:SetTarget(vBasePos, Tactic.Variant.Vector)
 				end
 				
-			elseif (not oTactic:IsOverwhelmSpamMode() and oTactic:GetType() == Tactic.Types.Vehicle and oTactic:NeedRepair() and not bDefendHomeBase) then
+			elseif (not oTactic:IsOverwhelmSpamMode() and oTactic:GetType() == Tactic.Types.Vehicle and
+				oTactic:NeedRepair() and not bDefendHomeBase and not oTactic:ShouldHoldDefenseLine()) then
 		
 				-- Send severly hurt vehicles back to base for repair
 				Plan.UnlockResource(self, oSquad)
@@ -664,7 +906,7 @@ function DefendPlan:Update()
 		return
 	end
 	
-	aitrace("Defendplan: Update...", true)
+	AITrace.Log("Defend.Noise", "Defendplan: Update...")
 		
 	-- Remove lost and severly damaged squads
 	self:RemoveLosses()

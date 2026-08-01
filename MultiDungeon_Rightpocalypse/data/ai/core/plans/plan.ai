@@ -2,6 +2,7 @@
 -- File: 'plan.ai'
 -- Edited by Thudmeizer @ 06.03.2005
 -- Edited by LarkinVB   @ 15.08.2005
+-- Edited by [DAG05]Simon @ 21.07.2026
 
 --? @module AI
 --? @group Plan
@@ -212,17 +213,20 @@ function Plan:UnlockAll()
 			print(name)
 			dbBreak()
 		else
+			-- Dead squads: GetTactic can be nil — do not crash
 			if self.locked_resources[i]:GetType() == AIResource.AI_Squad then
 				local tactic = self.locked_resources[i]:GetTactic()
-				dbAssert( tactic ~= nil )
-				tactic:SetState( Tactic.States.Idle )
+				if (tactic ~= nil) then
+					tactic:SetState( Tactic.States.Idle )
+				end
 			end
 			self.locked_resources[i]:Unlock()
 		end
 	end
 	
-	locked_resources = {}
+	self.locked_resources = {}
 end
+
 
 --? @shortdesc Returns true if this plan owns a resource of id and type
 --? @args int id, AIResource.AI_ResourceType res_type
@@ -253,19 +257,20 @@ function Plan:UnlockResource( resource )
 	local num_items = table.getn( self.locked_resources )
 	for i = num_items, 1, -1 do
 		if(	(self.locked_resources[i]:GetID() == resource:GetID() ) and (self.locked_resources[i]:GetType() == resource:GetType() ) ) then
-			self.locked_resources[i]:Unlock()
-			
+			-- Idle before Unlock; skip if squad already dead (GetTactic nil)
 			if self.locked_resources[i]:GetType() == AIResource.AI_Squad then
 				local tactic = self.locked_resources[i]:GetTactic()
-				dbAssert( tactic ~= nil )
-				tactic:SetState( Tactic.States.Idle )
+				if (tactic ~= nil) then
+					tactic:SetState( Tactic.States.Idle )
+				end
 			end
-			
+			self.locked_resources[i]:Unlock()
 			table.remove( self.locked_resources, i )
 			return
 		end
 	end
 end
+
 
 --? @shortdesc Set whether this plan is ready to be deleted
 --? @args bool complete

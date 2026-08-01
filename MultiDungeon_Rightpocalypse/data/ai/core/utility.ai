@@ -23,11 +23,97 @@ INT_MAX				= 100000
 stack_trace_num = 0
 tracing = {}
 
-g_bAITrace =  false --true  
+g_bAITrace =  false --false --true  -- legacy flood: EVERY aitrace (avoid; use AITrace panel)
 
-g_bDebugMode = false --true  
+g_bDebugMode = false --false --true  
+
+-- =============================================================================
+-- AI TRACE PANEL — flip true/false per bug. Shipping: Enabled=false.
+--
+-- Workflow:
+--   1) Keep g_bAITrace=false (no ocean of Update...)
+--   2) AITrace.Enabled=true
+--   3) Set only the channels you need to true
+--
+-- Recipes (uncomment mentally / flip flags):
+--   approach yo-yo:     Capture.Order
+--   escort steal:       Capture.Assign + Capture.Escort
+--   dropped capture:    Capture.Abort + Capture.Assign
+--   build stuck:        Build.Noise
+--   raid response:      Defend.Noise
+--   full old flood:     AllowLegacy=true  (or g_bAITrace=true with Enabled=false)
+-- =============================================================================
+AITrace = {
+	Enabled = false,      -- master: channelled AITrace.Log
+	AllowLegacy = false,  -- if Enabled and false → plain aitrace() dropped
+
+	Capture = {
+		Assign = false, -- ASSIGN / FREE / refuse
+		Order  = false, -- approach / DoDefault / skip / RETARGET / tactic move
+		Escort = false, -- ESCORT assign/release + tactic escort
+		Wait   = false, -- clear-then / secure-push waits
+		Abort  = false, -- danger / yield / homeside / peel
+		Noise  = false, -- Capturing flag... / Find free...
+	},
+	Cpu = {
+		Think = false, -- Update strategies/plans, critical range/threat
+	},
+	Build = {
+		Noise = false, -- BuildBase / BuildController heartbeat + building X
+	},
+	Defend = {
+		Noise = false, -- DefendStrategy / DefendPlan Update...
+	},
+	Attack = {
+		Noise = false, -- AttackStrategy / AttackPlan Update...
+	},
+	Resource = {
+		Noise = false, -- ResourcePlan Update / ObtainFlag / LP
+	},
+	Tactic = {
+		Noise = false, -- Tactic: Update <squad>...
+	},
+	Plan = {
+		Noise = false, -- generic BuildPlan / BuildBuildingPlan Update...
+	},
+}
+
+function AITrace.On(sChannel)
+
+	if (not AITrace.Enabled or sChannel == nil) then
+		return false
+	end
+	local iDot = string.find(sChannel, "%.")
+	if (iDot == nil) then
+		return (AITrace[sChannel] == true)
+	end
+	local tGroup = AITrace[string.sub(sChannel, 1, iDot - 1)]
+	if (tGroup == nil) then
+		return false
+	end
+	return (tGroup[string.sub(sChannel, iDot + 1)] == true)
+end
+
+function AITrace.Log(sChannel, sMsg)
+
+	if (not AITrace.On(sChannel)) then
+		return
+	end
+	-- Force one write; bypass AllowLegacy filter via _Writing
+	AITrace._Writing = true
+	local bPrev = g_bAITrace
+	g_bAITrace = true
+	aitrace("["..tostring(sChannel).."] "..tostring(sMsg))
+	g_bAITrace = bPrev
+	AITrace._Writing = false
+end
 
 function aitrace( msg, bAILog, bReset )
+
+	-- Channelled mode: drop legacy aitrace unless AllowLegacy or AITrace.Log is writing
+	if (AITrace ~= nil and AITrace.Enabled and not AITrace.AllowLegacy and not AITrace._Writing) then
+		return
+	end
 
 	if (g_bAITrace or (bAILog and g_bDebugMode)) then
 	
@@ -38,6 +124,9 @@ function aitrace( msg, bAILog, bReset )
 		table.insert(tracing, msg)
 		
 	    local gmt = g_iGMT
+	    if (gmt == nil) then
+	    	gmt = 0
+	    end
 	    local mint = math.floor( gmt / 60 )
 	    local sec = math.mod( gmt, 60 )
 	    local timestr = string.format("%02.0f",mint)..":"..string.format("%02.0f",sec)

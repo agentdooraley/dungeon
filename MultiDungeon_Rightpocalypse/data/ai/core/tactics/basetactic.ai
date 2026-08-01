@@ -77,12 +77,11 @@ function BaseTactic:__init( base_ai )
 	self.update_bunker_time = nil
 	self.m_iNextBunkerCheckTime = 0
 	self.m_iLastFocusEnemy = 0
-	
-	if cpu_manager:IsHQ(self.base_ai:GetBlueprintID()) then
-		self.m_iLifeTime = g_iGMT + 600
-	else
-		self.m_iLifeTime = g_iGMT
-	end
+	self.m_fNoconstructLastHP = nil
+	self.m_iNoconstructLastGMT = nil
+
+	-- Same start for all unfinished templates (incl. HQ)
+	self.m_iLifeTime = g_iGMT
 	self.m_bCanDeepStrikeTroops = false
 	
 	self:SetState( Tactic.States.Idle )
@@ -138,7 +137,28 @@ BaseTactic.DaemonsAndRelics = {
 	"space_marine_squad_land_raider",
 	"tau_greater_knarloc_squad",
 	"tau_krootox_squad",
+	"eldar_squad_avatar",
+	"necron_night_bringer",
 }
+
+-- Long-range tanks that must defend/attack, never gather / abandon base
+-- (Looted Tank, Fighta-Bomma, Leman Russ)
+function BaseTactic:IsBaseFireSupportSquadName( sSquadName )
+
+	if (sSquadName == nil) then
+		return false
+	end
+	if (string.find( sSquadName, "looted_tank" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "fighta_bomba" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "lemanruss" ) ~= nil) then
+		return true
+	end
+	return false
+end
 
 function BaseTactic:IsDaemonRelicSquadName( sSquadName )
 
@@ -174,6 +194,15 @@ function BaseTactic:IsDaemonRelicSquadName( sSquadName )
 		return true
 	end
 	if (string.find( sSquadName, "krootox" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "avatar" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "night_bringer" ) ~= nil) then
+		return true
+	end
+	if (string.find( sSquadName, "land_raider" ) ~= nil) then
 		return true
 	end
 
@@ -248,20 +277,46 @@ function BaseTactic:ShouldCancelNoconstructTemplate()
 	end
 
 	local iHP = self.base_ai:GetHealthPercentage()
-	local iTimeExtra = 0
-	if (cpu_manager:IsHQ( self.base_ai:GetBlueprintID() ) and iHP > 0.2) then
-		iTimeExtra = 60
-	end
-
 	local t = self.m_iLifeTime
-	if ((g_iGMT > t + 60 + iTimeExtra and iHP == 0.2) or
-		(g_iGMT > t + 60 + iTimeExtra and iHP <= 0.2) or
-		(g_iGMT > t + 100 + iTimeExtra and iHP <= 0.6) or
-		(g_iGMT > t + 200 + iTimeExtra and iHP <= 0.8)) then
+	if ((g_iGMT > t + 60 and iHP == 0.2) or
+		(g_iGMT > t + 60 and iHP <= 0.2) or
+		(g_iGMT > t + 100 and iHP <= 0.6) or
+		(g_iGMT > t + 200 and iHP <= 0.8)) then
 		return true
 	end
 
 	return false
+end
+
+-- Pause noconstruct cancel clock while pad HP is rising (under construction)
+function BaseTactic:MaintainNoconstructLifeTimer()
+
+	if (self.m_bCheckDelete or self.base_ai == nil or not self.base_ai:IsValid()) then
+		return
+	end
+	if (self.base_ai:IsConstructionDone()) then
+		return
+	end
+
+	local iHP = self.base_ai:GetHealthPercentage()
+	if (self.m_fNoconstructLastHP == nil or self.m_iNoconstructLastGMT == nil) then
+		self.m_fNoconstructLastHP = iHP
+		self.m_iNoconstructLastGMT = g_iGMT
+		return
+	end
+
+	local iDt = g_iGMT - self.m_iNoconstructLastGMT
+	if (iDt < 0) then
+		iDt = 0
+	end
+
+	-- HP went up → being built: push lifetime so cancel deadlines don't advance
+	if (iHP > self.m_fNoconstructLastHP) then
+		self.m_iLifeTime = self.m_iLifeTime + iDt
+	end
+
+	self.m_fNoconstructLastHP = iHP
+	self.m_iNoconstructLastGMT = g_iGMT
 end
 
 -- Cancel at most one startup duplicate per bp_id per interval; keep the oldest foundation
@@ -544,8 +599,22 @@ function BaseTactic:Update()
 							end
 						end
 
-						local search_range = 15
+						local search_range = 15 + (self.m_iStuckRangeExtra or 0)
 						local target = cpu_manager:GetClosestSquad(self.base_ai:GetPosition(), search_range, squad_filter)
+
+						-- 5 HQ + 12 gen: +1 range every 30s while blocker is nearby
+						if (target ~= nil and self:GetCompletedGeneratorCount() >= 12 and
+							cpu_manager.build_base_strategy:GetBuildingCountByName( cpu_manager.build_base_strategy:GetBuildingName( "HQ" ), true ) >= 5) then
+							if (self.m_iStuckRangeNext == nil) then
+								self.m_iStuckRangeNext = g_iGMT + 30
+							elseif (g_iGMT >= self.m_iStuckRangeNext) then
+								self.m_iStuckRangeExtra = (self.m_iStuckRangeExtra or 0) + 1
+								self.m_iStuckRangeNext = g_iGMT + 30
+							end
+						else
+							self.m_iStuckRangeExtra = nil
+							self.m_iStuckRangeNext = nil
+						end
 
 						if (self.m_iIdleTimeDestroy < critical_timer_idle) then
 							if (target ~= nil) then
@@ -587,7 +656,8 @@ function BaseTactic:Update()
             end
         end
 
-        -- noconstruct templates (unfinished foundations); HQ included, +60s timers if HP > 0.2
+        -- noconstruct templates: timer pauses while HP rises (under construction)
+        self:MaintainNoconstructLifeTimer()
         if (self:ShouldCancelNoconstructTemplate()) then
             build_manager:CancelBuilding(self.base_ai:GetEntity():GetID())
             self.m_iLifeTime = g_iGMT + 5
@@ -658,7 +728,10 @@ function BaseTactic:BunkerCheck()
 		return
 	end
 
-	if (self.base_ai:IsAttacking() and self.base_ai:GetHealthPercentage() > 0.2) then
+	-- Stay while enemies in bunker fire range (~25); IsAttacking alone sticks with no shots
+	local vBunkerPos = self.base_ai:GetPosition()
+	if (cpu_manager.terrain_analyzer:HasThreat(vBunkerPos, 25) and
+		self.base_ai:GetHealthPercentage() > 0.2) then
 		self.m_iNextSquadReleaseTime = g_iGMT + 2
 		return
 	end

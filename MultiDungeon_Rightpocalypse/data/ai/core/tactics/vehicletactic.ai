@@ -164,6 +164,9 @@ function VehicleTactic:UnloadTroops(iDistance)
 end
 
 function VehicleTactic:HarrasingAttack()
+	-- Disabled: per-squad idle raids (solo into turrets/armies any time window looked "open")
+	return
+--[[
     if (self:IsCaptureGuardMove() or not self:CanCaptureGuard()) then
 		return
 	end
@@ -211,13 +214,20 @@ function VehicleTactic:HarrasingAttack()
 				end
 			end
 
+			-- Solo harass only if path AND destination are safe (no walking through armies)
 			if (vHarassingTarget ~= nil and self:CanSafelyAdvanceTo(vHarassingTarget, 50)) then
-				Tactic.SetState(self, Tactic.States.Attack)
-				cpu_manager:DoMove(self.squad_ai, vHarassingTarget, true, "AttackState")
+				local vMyPos = self.squad_ai:GetPosition()
+				local iNearEnemy, iNearAllied = cpu_manager:GetArmyStrengthAtPos(vMyPos, 55, true)
+				-- Need a buddy nearby, or no real fight on the way — never lone suicide
+				if (iNearAllied + self:GetUnitStrength() >= 350 or iNearEnemy <= 0) then
+					Tactic.SetState(self, Tactic.States.Attack)
+					cpu_manager:DoMove(self.squad_ai, vHarassingTarget, true, "AttackState")
+				end
 			end
 
 		end
 	end
+]]
 end
 
 function VehicleTactic:BeginHoldState()
@@ -992,9 +1002,47 @@ function VehicleTactic:DoDance()
 	end
 end
 
+-- Short kite when chipped — never HQ gather/abandon (Looted/Bomma/Leman + daemon/relic ranged)
+function VehicleTactic:TryFireSupportSoftPeel()
+
+	local bFireSupport = self:IsBaseFireSupportUnit()
+	local bRelicRanged = (self:IsDaemonRelicUnit() and self.squad_ai:IsRanged())
+	if (not bFireSupport and not bRelicRanged) then
+		return false
+	end
+	if (self:IsOverwhelmSpamMode()) then
+		return false
+	end
+	if (self.squad_ai:IsCapturing()) then
+		return false
+	end
+	if (not self.squad_ai:IsUnderAttack() and not self.squad_ai:WasRecentlyHurt()) then
+		return false
+	end
+	local fHP = self.squad_ai:GetHealthPercentage()
+	-- Fire support: mid-chip only; daemon/relic: short dance on any chip while fighting
+	if (bFireSupport and (fHP >= 0.9)) then
+		return false
+	end
+	if (bRelicRanged and fHP >= 0.95) then
+		return false
+	end
+	if (self.m_iLastDisengage ~= nil and g_iGMT < self.m_iLastDisengage + 4) then
+		return false
+	end
+	self.tolerance = 23
+	self.squad_ai:DoMoveToClosestSafePoint( self.safe_point, self.tolerance )
+	self.m_iLastDisengage = g_iGMT
+	return true
+end
+
 function VehicleTactic:CheckForDance()
 
 	if (self:IsOverwhelmSpamMode()) then
+		return false
+	end
+	-- Homeside / base threat: hold, don't dance into the base AFK
+	if (self:ShouldHoldDefenseLine() or self:IsBaseFireSupportUnit()) then
 		return false
 	end
 
@@ -1080,6 +1128,11 @@ end
 
 function VehicleTactic:Upgrade()
 
+	if (g_iGMT < (self.m_iLastUpgradeCheck or 0) + 2) then
+		return
+	end
+	self.m_iLastUpgradeCheck = g_iGMT
+
 	-- Check situation
 	if (self.squad_ai:HasUpgradableTrooper() and self.squad_ai:GetHealthPercentage() > 0.5) then
 	
@@ -1100,6 +1153,11 @@ function VehicleTactic:Upgrade()
 end
 
 function VehicleTactic:Reinforce()
+
+	if (g_iGMT < (self.m_iLastReinforceCheck or 0) + 2) then
+		return
+	end
+	self.m_iLastReinforceCheck = g_iGMT
 
 	-- Don't reinforce if we can't reinforce or need repair
 	if (self.squad_ai:GetMaxTroopers() == 1 or self.m_bNeedRepair) then
@@ -1132,6 +1190,9 @@ function VehicleTactic:CanCaptureGuard()
 	if (not Tactic.CanCaptureGuard(self)) then
 		return false
 	end
+	if (CapturePlan:NeedsHomeSideSecurePhase()) then
+		return true
+	end
 	if (CpuManager.AISettings.bHarassing and g_iGMT < DefendChokePointPlan.HarassingTime * 60 and g_iGMT > 30 and
 		self.squad_ai:IsIdle() and cpu_manager:GetUnitStrength(self.squad_ai) > 180 and not self:IsDefender()) then
 		return false
@@ -1144,6 +1205,11 @@ function VehicleTactic:Update()
 	-- State machine
 	if (not Tactic.Update(self)) then
 		return false
+	end
+
+	-- Sentinel / Reaver / Wraith: after decap leave the flag (do not AFK-block capture)
+	if (self:ManageCanOnlyDecapCapture()) then
+		return true
 	end
 
 	self:SyncTransportCargo()

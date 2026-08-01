@@ -1,6 +1,7 @@
 ----------------------------------------
 -- File: 'buildresearchplan.ai'
 -- Edited by LarkinVB @   15.08.2005
+-- Edited by [DAG05]Simon @ 23.07.2026
 
 import ("Plans/BuildPlan.ai")
 
@@ -67,7 +68,14 @@ end
 
 function BuildResearchPlan:BuildResearch()
 
-	aitrace("BuildResearchPlan: Update...", true)
+	AITrace.Log("Plan.Noise", "BuildResearchPlan: Update...")
+
+	-- Stale plan after research finished / wrong name — do not BuildResearch again
+	if (self.item_name ~= nil and
+		cpu_manager.cpu_player:IsResearchComplete(self.item_name)) then
+		Plan.SetComplete(self, true)
+		return
+	end
 
 	if self.builder ~= nil then
 		--build it!

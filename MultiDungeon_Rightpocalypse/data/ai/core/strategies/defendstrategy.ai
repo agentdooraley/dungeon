@@ -18,6 +18,9 @@ function DefendStrategy:__init( info ) super()
 	self.m_oResponsePlan = nil
 	self.m_iDelayTime = 0
 	self.m_iLastChokeCalc = nil
+	self.m_iLastLocalThreatScan = 0
+	self.m_vCachedPostThreat = nil
+	self.m_vCachedRaidThreat = nil
 end
 
 function DefendStrategy:ShouldUseResponseForce(vPos, iRange, iEnemyStrength, iAlliedStrength)
@@ -45,6 +48,12 @@ function DefendStrategy:RespondToThreat(vPos, iRange)
 
 	aitrace("DefendStrategy: Respond to threat at "..vec2str(vPos))
 
+	-- Non-homeside kill-zone bail cooldown: do not re-pull into meat grinder
+	if (not cpu_manager:IsHomeSidePosition(vPos) and cpu_manager:IsOnKillZoneBailCooldown(vPos)) then
+		aitrace("DefendStrategy: Skip response — kill zone bail cooldown")
+		return
+	end
+
 	if (not self:PlanExists("Response Plan", vPos)) then
 
 		if (self.m_oResponsePlan ~= nil) then
@@ -64,6 +73,12 @@ function DefendStrategy:HandleLocalThreat(vPos, iRange, bHQ)
 		return
 	end
 
+	-- Homeside always fights; non-homeside respects bail cooldown
+	if (not cpu_manager:IsHomeSidePosition(vPos) and cpu_manager:IsOnKillZoneBailCooldown(vPos)) then
+		aitrace("DefendStrategy: Skip local threat — kill zone bail cooldown")
+		return
+	end
+
 	local iEnemyStrength, iAlliedStrength = cpu_manager:GetArmyStrengthAtPos(vPos, iRange, true)
 	if (self:ShouldUseResponseForce(vPos, iRange, iEnemyStrength, iAlliedStrength)) then
 		self:RespondToThreat(vPos, iRange)
@@ -71,6 +86,7 @@ function DefendStrategy:HandleLocalThreat(vPos, iRange, bHQ)
 		self:DefendPosition(vPos, iRange, false)
 	end
 end
+
 
 function DefendStrategy:FindRaidThreat()
 
@@ -102,8 +118,8 @@ end
 
 function DefendStrategy:CalculateNewChokepoint()
 
-	-- Pathing-heavy; reuse last choke ~1.5s if still valid
-	if (self.m_iLastChokeCalc ~= nil and self.chokept_pos ~= nil and g_iGMT < self.m_iLastChokeCalc + 1.5) then
+	-- Pathing-heavy; reuse last choke ~2s if still valid
+	if (self.m_iLastChokeCalc ~= nil and self.chokept_pos ~= nil and g_iGMT < self.m_iLastChokeCalc + 2) then
 		return
 	end
 	self.m_iLastChokeCalc = g_iGMT
@@ -173,13 +189,20 @@ function DefendStrategy:DefendPosition(vPos, iRange, bHQ)
 	
 	aitrace("DefendStrategy: Defend position "..tostring(vPos.x)..", "..tostring(vPos.z))
 
+	-- Non-homeside forward defend blocked during bail cooldown (HQ always allowed)
+	if (not bHQ and not cpu_manager:IsHomeSidePosition(vPos) and cpu_manager:IsOnKillZoneBailCooldown(vPos)) then
+		aitrace("DefendStrategy: Skip defend — kill zone bail cooldown")
+		return
+	end
+
 	if (self.m_oResponsePlan ~= nil) then
 		self.m_oResponsePlan:SetComplete( true )
 		self.m_oResponsePlan = nil
 	end
 	
 	-- Make sure that we have a defend plan
-	if (not self:PlanExists("Defend Plan", vPos)) then 
+	if (not self:PlanExists("Defend Plan", vPos)) then
+ 
 	
 		-- End existing defend plans
 		if (self.m_oDefendPlan ~= nil) then
@@ -302,7 +325,7 @@ function DefendStrategy:Update()
 	-- Superclass
 	Strategy.Update(self)
 	
-	aitrace("DefendStrategy: Update...", true)
+	AITrace.Log("Defend.Noise", "DefendStrategy: Update...")
 	
 	-- Update choke point
 	self:CalculateNewChokepoint()
@@ -349,15 +372,24 @@ function DefendStrategy:Update()
 				self:HandleLocalThreat(self.chokept_pos, 50, false)
 			else
 			
-				-- Check listening posts
-				local vPostThreatPos = self:GetPostThreat()
+				-- Post / raid scan every ~2s (pathing + strength)
+				if (g_iGMT >= (self.m_iLastLocalThreatScan or 0) + 2) then
+					self.m_iLastLocalThreatScan = g_iGMT
+					self.m_vCachedPostThreat = self:GetPostThreat()
+					if (self.m_vCachedPostThreat == nil) then
+						self.m_vCachedRaidThreat = self:FindRaidThreat()
+					else
+						self.m_vCachedRaidThreat = nil
+					end
+				end
+				local vPostThreatPos = self.m_vCachedPostThreat
 				if (vPostThreatPos ~= nil) then
 					aitrace("DefendStrategy: Defend a listening post!")
 					self:HandleLocalThreat(vPostThreatPos, 50, false)
 				else
 
 					-- Check for small raids on our territory
-					local vRaidPos = self:FindRaidThreat()
+					local vRaidPos = self.m_vCachedRaidThreat
 					if (vRaidPos ~= nil) then
 						aitrace("DefendStrategy: Respond to raid!")
 						self:HandleLocalThreat(vRaidPos, 40, false)
@@ -397,10 +429,16 @@ function DefendStrategy:Update()
 			self.m_oResponsePlan = nil
 
 			if (bNeedFullDefend and self.m_oDefendPlan == nil) then
-				aitrace("DefendStrategy: Escalate response to full defense!")
-				self:DefendPosition(vEscalatePos, 50, false)
+				if (not cpu_manager:IsHomeSidePosition(vEscalatePos) and
+					cpu_manager:IsOnKillZoneBailCooldown(vEscalatePos)) then
+					aitrace("DefendStrategy: Skip escalate — kill zone bail cooldown")
+				else
+					aitrace("DefendStrategy: Escalate response to full defense!")
+					self:DefendPosition(vEscalatePos, 50, false)
+				end
 			end
 		end
 	end
 end
+
 
