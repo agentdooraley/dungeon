@@ -2,7 +2,7 @@
 -- File: 'buildplan.ai'
 -- Edited by Thudmeizer @ 23.02.2006
 -- Edited by Flenser    @ 16.06.2005
--- Edited by [DAG05]Simon @ 23.07.2026
+-- Edited by Aliaska_RuS
 
 class 'BuildPlan' (Plan)
 
@@ -67,28 +67,14 @@ function BuildPlan:BuildingState()
 		end
 		
 	elseif (self.started_building == true) then
-
-		-- Worker left IsBuilding(). Unfinished pad may still exist.
-		local bPending = (type(self.IsConstructionStillPending) == "function" and
-			self:IsConstructionStillPending())
-		if (bPending) then
-			-- Dark Eldar AutoConstruct (non-epoch): tap-and-go — end plan, pad finishes alone
-			if (cpu_manager:AutoConstructBuildings() and
-				(type(self.IsEpochPlan) ~= "function" or not self:IsEpochPlan())) then
-				aitrace("BuildPlan: Building completed! End build plan for "..self.item_name)
-				Plan.SetComplete(self, true)
-			else
-				-- Eldar/others + epoch: keep plan until ConstructionDone (no duplicate templates)
-				aitrace("BuildPlan: Still finishing "..self.item_name)
-			end
-		else
-			aitrace("BuildPlan: Building completed! End build plan for "..self.item_name)
-			Plan.SetComplete(self, true)
-		end
+		
+		-- Done building!
+		aitrace("BuildPlan: Building completed! End build plan for "..self.item_name)
+		Plan.SetComplete(self, true)
 	else
 	
-		self.time_out = self.time_out + 1
-		if (self.time_out > 3) then
+		self.time_out = self.time_out + 3
+		if (self.time_out > 1) then
 			self:Retry()
 			self.time_out = 0
 		end
@@ -98,7 +84,7 @@ end
 
 function BuildPlan:Update()
 
-	AITrace.Log("Plan.Noise", "BuildPlan: Update...")
+	aitrace("BuildPlan: Update...", true)
 
 	-- Quit out if our builder died
 	if (self.builder ~= nil and not self.builder:IsValid()) then

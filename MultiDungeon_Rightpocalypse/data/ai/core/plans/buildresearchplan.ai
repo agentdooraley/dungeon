@@ -1,7 +1,7 @@
 ----------------------------------------
 -- File: 'buildresearchplan.ai'
 -- Edited by LarkinVB @   15.08.2005
--- Edited by [DAG05]Simon @ 23.07.2026
+-- Edited by Aliaska_RuS
 
 import ("Plans/BuildPlan.ai")
 
@@ -25,8 +25,8 @@ function BuildResearchPlan:__init( research_id, wait_on_builder) super( CpuPlaye
 end
 
 function BuildResearchPlan:ObtainBuilder()
-
-	for build_channel in build_manager:GetUnlockedBuildChannelAIs() do
+        local uManager = build_manager:GetUnlockedBuildChannelAIs()
+	for build_channel in uManager do
 
 		--don't queue
 		if build_channel:IsBuilding() == 0 then
@@ -68,14 +68,7 @@ end
 
 function BuildResearchPlan:BuildResearch()
 
-	AITrace.Log("Plan.Noise", "BuildResearchPlan: Update...")
-
-	-- Stale plan after research finished / wrong name — do not BuildResearch again
-	if (self.item_name ~= nil and
-		cpu_manager.cpu_player:IsResearchComplete(self.item_name)) then
-		Plan.SetComplete(self, true)
-		return
-	end
+	aitrace("BuildResearchPlan: Update...", true)
 
 	if self.builder ~= nil then
 		--build it!

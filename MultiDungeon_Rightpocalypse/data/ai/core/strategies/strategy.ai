@@ -5,7 +5,13 @@
 -- Edited by Flenser    @ 30.05.2005
 -- Edited by Arkhan     @ 22.10.2005
 -- Edited by Dark40k    @ 14.10.2008
--- Edited by [DAG05]Simon
+-- Edited by Aliaska_RuS
+
+----
+
+
+
+
 --? @module AI
 --? @group Strategy
 class 'Strategy'
@@ -18,6 +24,11 @@ Strategy.Events =
 	OnAttack = "OnAttack"
 }
 
+Strategy.NextUpdateUnitDoProd = AI_GetPlayerID()-1000
+Strategy.RallyPoint = AI_GetPlayerID()-1000
+Strategy.bFlagUpdateObt1 = true
+Strategy.bFlagUpdateObt2 = false
+ 
 --? @shortdesc Ctor
 --? @args 
 --? @result void
@@ -32,7 +43,8 @@ function Strategy:__init( info )
 	end
 	
 	self.plans = {}
-	self:ResetDemand()
+	self:ResetDemand(1)
+	self:ResetDemand(2)
 
 	self.now = 0
 	
@@ -56,17 +68,17 @@ end
 --? @shortdesc Reset all the demand tables
 --? @args 
 --? @result void
-function Strategy:ResetDemand()
-
+function Strategy:ResetDemand(setting)
+        if setting==1 then
 	self.unit_class_demand = {}
 	self.effectiveness_demand = {}
-	self.squad_demand = {}
-	
-	for i = 0, UnitStatsAI.UC_Count - 1 do
+	 for i = 0, UnitStatsAI.UC_Count - 1 do
 		self.unit_class_demand[ i ] = 0
 		self.effectiveness_demand[ i ] = 0
+	 end
+        else
+	self.squad_demand = {}
 	end
-	
 end
 
 --? @shortdesc Adpot control of all the plans that the strategy is running
@@ -113,10 +125,14 @@ end
 --? @args 
 --? @result void
 function Strategy:Update()
-
+        if Strategy.NextUpdateUnitDoProd == 32 then
 	--reset demands
-	self:ResetDemand()
-	
+--	self:ResetDemand()
+        Strategy.NextUpdateUnitDoProd = 0
+	end
+        if Strategy.RallyPoint<g_iGMT then
+        Strategy.RallyPoint = g_iGMT + 5
+        end
 	-- Update building count
 	self:UpdateBuildingCount()
 end
@@ -145,7 +161,7 @@ end
 --? @result void
 function Strategy:AddPlan( plan )
 
-	table.insert( self.plans, plan )
+	 table.insert(self.plans,plan)
 end
 
 function Strategy:PostEvent( event )
@@ -190,6 +206,13 @@ function Strategy:PlanExists( plan_name, plan_id )
 	return true
 end
 
+--? @shortdesc Get the plans table for this strategy
+--? @args 
+--? @result table
+function Strategy:GetPlans()
+	return self.plans
+end
+
 function Strategy:GetPlan(sPlanName, iPlanID)
 
 	-- Compute all plans
@@ -230,6 +253,21 @@ function Strategy:PlanCount(sPlanName, iPlanID)
 	return count
 end
 
+-- Arkhan 10.2005: Abstract method to get the building name of a specific type
+function Strategy:GetBuildingName( sType )
+	return nil
+end
+
+-- Arkhan 10.2005: Now usable by all races
+function Strategy:HasBuilding( sName )
+
+	-- Get building ID
+	local iBuildingID = cpu_manager.stats:GetBuildingID(sName)
+
+	-- Count finished buildings of this type
+	return cpu_manager.player_stats:GetNumBasesByBPID(iBuildingID, true)
+end
+
 function Strategy:GetBuildingCountByName(sName, bFinished)
 
 	-- Return building count
@@ -251,15 +289,9 @@ function Strategy:GetBuildingCountByBPID(iBPID, bFinished)
 end
 
 function Strategy:UpdateBuildingCount()
-
-	-- Shared across all strategies for this GMT (was rebuilt 3–4× per think)
-	if (cpu_manager.m_iBuildingCountCacheGMT == g_iGMT and cpu_manager.m_aBuildingCountsShared ~= nil) then
-		self.m_aBuildingCounts = cpu_manager.m_aBuildingCountsShared
-		return
-	end
 	
 	-- Create building list and validate start point
-	local aCounts = {}
+	self.m_aBuildingCounts = {}
 	for oBuilding in military_manager:GetBases() do
 	
 		-- Check for valid building
@@ -267,38 +299,33 @@ function Strategy:UpdateBuildingCount()
 		
 			-- Check if building entry exists
 			local iBPID = oBuilding:GetBlueprintID()
-			if (aCounts[iBPID] == nil) then
+			if (self.m_aBuildingCounts[iBPID] == nil) then
 			
 				-- Create new entry
 				if (oBuilding:IsConstructionDone()) then
-					aCounts[iBPID] = { 1, 0 }
+					self.m_aBuildingCounts[iBPID] = { 1, 0 }
 				else
-					aCounts[iBPID] = { 0, 1 }
+					self.m_aBuildingCounts[iBPID] = { 0, 1 }
 				end
 			else
 			
 				-- Increase building count
 				if (oBuilding:IsConstructionDone()) then
-					aCounts[iBPID][1] = aCounts[iBPID][1] + 1
+					self.m_aBuildingCounts[iBPID][1] = self.m_aBuildingCounts[iBPID][1] + 1
 				else
-					aCounts[iBPID][2] = aCounts[iBPID][2] + 1
+					self.m_aBuildingCounts[iBPID][2] = self.m_aBuildingCounts[iBPID][2] + 1
 				end
 			end
 		end
 	end
-	cpu_manager.m_aBuildingCountsShared = aCounts
-	cpu_manager.m_iBuildingCountCacheGMT = g_iGMT
-	self.m_aBuildingCounts = aCounts
 end
 
 --? @shortdesc Builds creates a plan to build a prerequisite
 --? @args CpuPrerequisites.BuildType build_type
 --? @result void
-function Strategy:BuildPrereq( build_type, unfill )
+function Strategy:BuildPrereq( build_type )
 	aitrace("build prereq start"..build_type.name..":")
-        if unfill==nil then
-           unfill=false
-        end
+
 	-- Check build type
 	if (build_type.btype == CpuPrerequisites.BT_Squad) then
 
@@ -333,40 +360,18 @@ function Strategy:BuildPrereq( build_type, unfill )
 		
 		-- Add building plan
 		local id = cpu_manager.stats:GetBuildingID( build_type.name )
-
-		if (cpu_manager.build_base_strategy ~= nil and
-			cpu_manager.build_base_strategy:IsBuildingBuildBlocked( id )) then
-			return
-		end
-
-		local iPlanCount = self:PlanCount("Build Building Plan", id)
-		local iMaxPlans = 3
-		if (not unfill and g_iGMT < 180) then
-			local bLimitParallel = true
-			if (cpu_manager:IsGenerator(id) or cpu_manager:IsBiggerGenerator(id) or
-				cpu_manager:IsListeningPost(id) or cpu_manager:IsMine(id)) then
-				bLimitParallel = false
-			end
-			if (bLimitParallel) then
-				iMaxPlans = 1
-				if (self:GetBuildingCountByBPID(id, false) >= 1) then
-					return
-				end
-			end
-		end
-
 --		if (self:PlanExists("Build Building Plan", id) == false) or id == cpu_manager.stats:GetBuildingID(self:GetBuildingName("BiggerGenerator")) or id == cpu_manager.stats:GetBuildingID(self:GetBuildingName("Generator")) then
-                if ((self:GetBuildingCountByBPID(id, false) + self:GetBuildingCountByBPID(id, true) + iPlanCount < 1) and unfill ) or ((iPlanCount < iMaxPlans) and not unfill)  then
+                if self:PlanCount("Build Building Plan", id) < 3 then
 			local start_pos = cpu_manager.start_pos
 			local build_pos = nil
                         
 --[[                        if cpu_manager:IsListeningPost(id) then
-				self:PlanBuildBuilding(id, start_pos) 
+				self:DeepStrikeBuilder(start_pos)
+				self.AddPlan(self, BuildBuildingPlan(id, start_pos, nil)) 
                         end]]
 			
 			-- Check placement
 			local sPlacement = self:GetPlacementType(id)
-			sPlacement = cpu_manager:AdjustBuildingPlacement(id, sPlacement)
 			if (sPlacement == "HQ") then
 			
 				-- Check placement
@@ -374,7 +379,8 @@ function Strategy:BuildPrereq( build_type, unfill )
 				if (num_hq < self.m_iNumHQAtStartPos and not cpu_manager:HQThreat()) then
 				
 					-- Rebuild HQ at home
-					self:PlanBuildBuilding(id, start_pos)
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan(id, start_pos))
 				else
 				
 					-- Build at allied base
@@ -382,27 +388,19 @@ function Strategy:BuildPrereq( build_type, unfill )
 					if (friend ~= nil) then
 						build_pos = friend:GetStartingPosition()
 					end
-                    if build_pos == nil then
+                                        if build_pos == nil then
                                         -- Check posts
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 50)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 200)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
 				          end
-                    end
-                    if build_pos == nil then
+                                        end
+                                        if build_pos == nil then
                                         -- Check posts
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
-				    if (vPos ~= nil) then
-						build_pos = vPos
-						fClosestDistance = fDistance
-				    end
-                                        end
-					if (build_pos == nil) then
-				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 50)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 200)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -410,7 +408,7 @@ function Strategy:BuildPrereq( build_type, unfill )
                                         end
 					if (build_pos == nil) then
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 30, 150)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -418,7 +416,15 @@ function Strategy:BuildPrereq( build_type, unfill )
                                         end
 					if (build_pos == nil) then
 				        local sName = self:GetBuildingName("ListeningPost")
-				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 50)
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 150)
+				          if (vPos ~= nil) then
+						build_pos = vPos
+						fClosestDistance = fDistance
+				          end
+                                        end
+					if (build_pos == nil) then
+				        local sName = self:GetBuildingName("ListeningPost")
+				        local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, 1, 10, 100)
 				          if (vPos ~= nil) then
 						build_pos = vPos
 						fClosestDistance = fDistance
@@ -434,9 +440,11 @@ function Strategy:BuildPrereq( build_type, unfill )
                                         end
 					-- Add building plan
 					if (build_pos ~= nil) then
-						self:PlanBuildBuilding(id, build_pos)
+						self:DeepStrikeBuilder(build_pos)
+						self.AddPlan( self, BuildBuildingPlan( id, build_pos, nil))
 					else
-						self:PlanBuildBuilding(id, nil)
+						self:DeepStrikeBuilder(start_pos)
+						self.AddPlan( self, BuildBuildingPlan( id, start_pos, nil))
 					end
 				end
 
@@ -448,14 +456,17 @@ function Strategy:BuildPrereq( build_type, unfill )
 					if (friend ~= nil and (distFvE<distPvE)) then
 						build_pos = friend:GetStartingPosition()
 				        else
-                                                self:PlanBuildBuilding(id, nil) 
+                                                self:DeepStrikeBuilder(start_pos)
+					        self.AddPlan(self, BuildBuildingPlan(id, start_pos, nil)) 
 					end
 
 					-- Add building plan
 					if (build_pos ~= nil) then
-						self:PlanBuildBuilding(id, build_pos)
+						self:DeepStrikeBuilder(build_pos)
+						self.AddPlan( self, BuildBuildingPlan( id, build_pos, nil))
 					else
-						self:PlanBuildBuilding(id, nil) 
+						self:DeepStrikeBuilder(start_pos)
+						self.AddPlan( self, BuildBuildingPlan( id, start_pos, nil)) 
 					end
 
 			elseif (sPlacement == "Military") then
@@ -475,22 +486,11 @@ function Strategy:BuildPrereq( build_type, unfill )
 				
 				-- Add building plan
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos) 
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, build_pos, nil)) 
 				else
-					self:PlanBuildBuilding(id, nil) 
-				end
-
-			elseif (sPlacement == "Front1Safe" or sPlacement == "Front2Safe") then
-			
-				local iCount = 1
-				if (sPlacement == "Front2Safe") then
-					iCount = 2
-				end
-				build_pos = cpu_manager:ResolveFrontBuildPositionPreferSafe(id, build_type.name, iCount)
-				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos, nil, true)
-				else
-					self:PlanBuildBuilding(id, nil, nil, false)
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, start_pos, nil)) 
 				end
 
 			elseif (sPlacement == "Front1" or sPlacement == "Front2") then
@@ -500,33 +500,39 @@ function Strategy:BuildPrereq( build_type, unfill )
 				if (sPlacement == "Front2") then
 					iCount = 2
 				end
-				local aCandidates = {}
-				local vAnchor = cpu_manager:GetBaseFrontAnchor()
+				local fClosestDistance = 0
 			
-				local function TryAdd(sKey, iBias)
-					local sName = self:GetBuildingName(sKey)
-					if (sName == nil) then
-						return
-					end
-					local vPos, fDistance = cpu_manager:GetFrontBuildPosition(sName, build_type.name, iCount, iBias)
-					if (vPos ~= nil and cpu_manager:IsEnemyFacingPosition(vPos, vAnchor)) then
-						vPos = cpu_manager:EnsureEnemyFacingBuildPosition(vPos, 12)
-						table.insert(aCandidates, { vPos, -fDistance })
-					end
+				-- Check bigger generators
+				local sName = self:GetBuildingName("BiggerGenerator")
+				local vPos, fDistance = cpu_manager:GetFrontBuildPosition(sName, build_type.name, iCount, 5)
+				if (vPos ~= nil) then
+					build_pos = vPos
+					fClosestDistance = fDistance
 				end
 				
-				TryAdd("BiggerGenerator", 8)
-				TryAdd("ListeningPost", 5)
-				TryAdd("HQ", 12)
+				-- Check posts
+				sName = self:GetBuildingName("ListeningPost")
+				vPos, fDistance = cpu_manager:GetFrontBuildPosition(sName, build_type.name, iCount, -5)
+				if (vPos ~= nil and (build_pos == nil or fDistance < fClosestDistance)) then
+					build_pos = vPos
+					fClosestDistance = fDistance
+				end	
 				
-				local oEng = nil
-				local bHadCandidates = false
-				build_pos, oEng, bHadCandidates = cpu_manager:PickTemplateBuildCandidate(id, aCandidates)
+				-- Check HQs
+				sName = self:GetBuildingName("HQ")
+				vPos, fDistance = cpu_manager:GetFrontBuildPosition(sName, build_type.name, iCount, 10)
+				if (vPos ~= nil and (build_pos == nil or fDistance < fClosestDistance)) then
+					build_pos = vPos
+					fClosestDistance = fDistance
+				end
 				
+				-- Add building plan
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos, nil, true, false, oEng) 
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, build_pos, nil)) 
 				else
-					self:PlanBuildBuilding(id, nil) 
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, start_pos, nil)) 
 				end
 				
 			elseif (sPlacement == "Safeplace") then
@@ -553,9 +559,11 @@ function Strategy:BuildPrereq( build_type, unfill )
 				
 				-- Add building plan
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos) 
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, build_pos, nil)) 
 				else
-					self:PlanBuildBuilding(id, nil) 
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, start_pos, nil)) 
 				end
 				
 			elseif (sPlacement == "Mine") then
@@ -565,9 +573,11 @@ function Strategy:BuildPrereq( build_type, unfill )
 
 				-- Add building plan
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos)
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, build_pos ))
 				else
-					self:PlanBuildBuilding(id, nil)
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan( id, start_pos ))
 				end
 
 			elseif (sPlacement == "BaseBack") then
@@ -595,12 +605,14 @@ function Strategy:BuildPrereq( build_type, unfill )
 				-- Try to build at closest post behind the base
 				--build_pos = cpu_manager:FindClosestPostToBase(120, true)
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos) 
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan(id, build_pos, nil)) 
 				else
-					self:PlanBuildBuilding(id, nil) 
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan(id, start_pos, nil)) 
 				end
 
-            elseif (sPlacement == "AroundStructure") then
+                        elseif (sPlacement == "AroundStructure") then
                          	-- Check posts
 				local sName = self:GetBuildingName("AroundStructure")
 				local vPos, fDistance = cpu_manager:GetSafeBuildPosition(sName, build_type.name, iCount, math.random(-10,10))
@@ -609,35 +621,15 @@ function Strategy:BuildPrereq( build_type, unfill )
 					fClosestDistance = fDistance
 				end
 				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos) 
+					self:DeepStrikeBuilder(build_pos)
+					self.AddPlan(self, BuildBuildingPlan(id, build_pos, nil)) 
 				else
-					self:PlanBuildBuilding(id, nil) 
-                end			
-			
-			elseif (sPlacement == "Around HQ") then
-				local sName = self:GetBuildingName("HQ")
-				local aHQPositions = {}
-				
-				for oBuilding in military_manager:GetBases() do
-					if (oBuilding:IsValid() and oBuilding:GetBaseName() == sName) then
-						table.insert(aHQPositions, oBuilding:GetPosition())
-					end
-				end
-
-				local build_pos = nil
-				local oEng = nil
-				local bFallback = true
-				if (table.getn(aHQPositions) > 0) then
-					build_pos, oEng, bHadCandidates, bFallback = cpu_manager:ResolveAroundHQBuildPosition(id, aHQPositions)
-				end
-
-				if (build_pos ~= nil) then
-					self:PlanBuildBuilding(id, build_pos, nil, not bFallback, false, oEng)
-				else
-					self:PlanBuildBuilding(id, nil)
-				end													
+					self:DeepStrikeBuilder(start_pos)
+					self.AddPlan(self, BuildBuildingPlan(id, start_pos, nil)) 
+                                end
 			else
-				self:PlanBuildBuilding(id, nil) 
+				self:DeepStrikeBuilder(start_pos)
+				self.AddPlan(self, BuildBuildingPlan(id, start_pos, nil)) 
 			end
 		end
   
@@ -647,18 +639,9 @@ function Strategy:BuildPrereq( build_type, unfill )
 		if (not cpu_manager.components[CpuPlayer.CT_BuildResearch]) then
 			return
 		end
-
-		-- Already done / bad name → never spam BuildResearchPlan (Relic crash)
-		if (cpu_manager.cpu_player:IsResearchComplete(build_type.name)) then
-			return
-		end
 		
 		-- Add research plan
 		local id = cpu_manager.stats:GetResearchID( build_type.name )
-		if (id == nil or id == 0) then
-			aitrace("build prereq: invalid research id "..tostring(build_type.name))
-			return
-		end
 		if (self:PlanExists("Build Research Plan", id) == false) then 
 			self.AddPlan(self, BuildResearchPlan(id))
 		end
@@ -690,27 +673,6 @@ function Strategy:BuildPrereq( build_type, unfill )
 	end
 end
 
--- Opt-in: SM / Sisters / Chaos / Guard override → true
-function Strategy:UsesHomeSideForwardFirstTurret()
-	return false
-end
-
--- Default later turrets: Front2. First turret HomeSideForward only if race opts in + not large map.
-function Strategy:GetTurretPlacementType()
-
-	local iTurrets = 0
-	if (cpu_manager.build_base_strategy ~= nil) then
-		iTurrets = cpu_manager.build_base_strategy:GetTurretStructureCount()
-	end
-	if (iTurrets < 1 and self:UsesHomeSideForwardFirstTurret()) then
-		local sMapSize = self:GetMapSize()
-		if (sMapSize ~= "large") then
-			return "HomeSideForward"
-		end
-	end
-	return "Front2"
-end
-
 -- Arkhan 03.2006: Return placement type for buildings
 function Strategy:GetPlacementType(iBuildingID)
 	
@@ -718,39 +680,13 @@ function Strategy:GetPlacementType(iBuildingID)
 	if (cpu_manager:IsHQ(iBuildingID)) then
 		return "HQ"		
 	elseif (cpu_manager:IsTurret(iBuildingID)) then
-		return self:GetTurretPlacementType()
+		return "Front2"
 	elseif (cpu_manager:IsMine(iBuildingID)) then
 		return "Mine"
 	elseif (cpu_manager:IsGenerator(iBuildingID)) then
 		return "BaseBack"
 	end
 	return "Basic"
-end
-
-function Strategy:PlanBuildBuilding(iBuildingID, build_pos, wait_on_builder, bKeepBuildPos, bPlacementResolved, oAssignedEngineer)
-	if (build_pos == nil) then
-		local sPlacement = self:GetPlacementType(iBuildingID)
-		sPlacement = cpu_manager:AdjustBuildingPlacement(iBuildingID, sPlacement)
-		if (sPlacement == "Basic") then
-			build_pos, oAssignedEngineer = cpu_manager:ResolveBuildFallbackChain(iBuildingID, cpu_manager.start_pos)
-		else
-			build_pos, oAssignedEngineer = cpu_manager:ResolveTemplateBuildFallback(iBuildingID, sPlacement)
-		end
-		bKeepBuildPos = false
-		bPlacementResolved = true
-	end
-	if (bPlacementResolved == nil) then
-		bPlacementResolved = false
-	end
-	if (oAssignedEngineer == nil) then
-		oAssignedEngineer = cpu_manager:GetClosestEngineerForBuild(iBuildingID, build_pos, true, false)
-	end
-	self:DeepStrikeBuilder(build_pos)
-	if (wait_on_builder == nil) then
-		self.AddPlan(self, BuildBuildingPlan(iBuildingID, build_pos, nil, bKeepBuildPos, bPlacementResolved, oAssignedEngineer))
-	else
-		self.AddPlan(self, BuildBuildingPlan(iBuildingID, build_pos, wait_on_builder, bKeepBuildPos, bPlacementResolved, oAssignedEngineer))
-	end
 end
 
 -- Arkhan 03.2006: Abstract method to allow races to deepstrike builder to build positions
@@ -798,10 +734,26 @@ end
 --? @result void
 -- Arkhan 10.2005: No prerequisites are built any more
 function Strategy:TryBuild( build_type )
+	aitrace("try build start "..build_type.name..":")
 
-	-- Dark40k 10.2008 : replaced CpuPrerequisites by CpuPrerequisites2
 	local prereq = CpuPrerequisites2( cpu_manager.cpu_player, build_type.name, build_type.btype )
 	
+--[[	--Kaiser Soze 04.2007
+	if (build_type.btype == CpuPrerequisites.BT_AddOn) then
+		self:BuildPrereq( build_type )
+		blg( nil, "Want to build prereq for: "..build_type.name)
+		for i in prereq:GetUnfulfilledPrerequisites() do
+			
+			if i.prereq_fulfilled  then
+				blg( nil, "Build "..i.name)
+			else
+				blg( nil, "Can't build "..i.name)
+			end
+		end
+		return true
+	end
+	--End of Kaiser's changes]]
+
 	if prereq:PrerequisitesFulfilled() then
 		self:BuildPrereq( build_type )
 		return true
@@ -895,14 +847,14 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 				local iSupportCapRequirement = oUnitStats:GetSupportCapReq()
 				if ((iSquadCapRequirement > 0 and build_manager:GetSquadCapLeft() - iSquadCapRequirement < 0) or 
 					(iSupportCapRequirement > 0 and build_manager:GetSupportCapLeft() - iSupportCapRequirement < 0)) then
-					table.remove(self.squad_demand, iLoop1)
+					--table.remove(self.squad_demand, iLoop1)
 				end
 			end
 		end
 	end
 		
 	-- Check build channels
-	for oBuildChannel in build_manager:GetUnlockedBuildChannelAIs() do
+	for oBuildChannel in build_manager:GetBuildChannelAIs() do
 	
 		-- Make sure the building is complete
 		if (oBuildChannel:ConstructionDone()) then
@@ -915,7 +867,7 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 				if (iItemIndex ~= BuildChannelAI.INVALID_INDEX) then
 					
 					-- Check if the building is already building
-					if (oBuildChannel:IsBuilding() == 0 or not bBuildNow) then
+					if (oBuildChannel:IsBuilding() == 0) then
 						self.squad_demand[iLoop1][3] = true
 					end
 				end
@@ -926,15 +878,49 @@ function Strategy:GetHighestDemandedSquad(bBuildNow)
 	-- Get highest demanded unit
 	local iUnitID = nil
 	local iHighestDemand = 0
+	local iUnitIDTANK = nil
+	local iHighestDemandTANK = 0
+	local iUnitIDNoLimit = nil
+	local iHighestDemandNoLimit = 0
+	local iUnitIDNoLimitTANK = nil
+	local iHighestDemandNoLimitTANK = 0
 	for iLoop1 in self.squad_demand do
-	
+		local oUnitStats = cpu_manager.stats:GetUnitStatsFromBPID(self.squad_demand[iLoop1][1])
+	        local bVehicle = (UnitStatsAI.UC_VehicleLow or UnitStatsAI.UC_VehicleMed or UnitStatsAI.UC_VehicleHigh or UnitStatsAI.UC_MonsterMed or UnitStatsAI.UC_MonsterHigh or UnitStatsAI.UC_AirLow or UnitStatsAI.UC_AirMed or UnitStatsAI.UC_AirHigh)
+
 		-- Check if unit can be built and demand is higher than last one
-		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemand) then
+		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemand) and oUnitStats:GetClass() ~= bVehicle and (oUnitStats:GetSquadCapReq() > 0 or (oUnitStats:GetSquadCapReq() >= 0 and oUnitStats:GetSupportCapReq() > 0)) then
 			iUnitID = self.squad_demand[iLoop1][1]
 			iHighestDemand = self.squad_demand[iLoop1][2]
 		end
+
+		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandTANK) and oUnitStats:GetClass() == bVehicle and (oUnitStats:GetSupportCapReq() > 0 or (oUnitStats:GetSquadCapReq() > 0 and oUnitStats:GetSupportCapReq() >= 0)) then
+			iUnitIDTANK = self.squad_demand[iLoop1][1]
+			iHighestDemandTANK = self.squad_demand[iLoop1][2]
+		end
+
+		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandNoLimit) and oUnitStats:GetClass() ~= bVehicle and oUnitStats:GetSupportCapReq() == 0 and oUnitStats:GetSquadCapReq() == 0 then
+			iUnitIDNoLimit = self.squad_demand[iLoop1][1]
+			iHighestDemandNoLimit = self.squad_demand[iLoop1][2]
+		end
+
+		if (self.squad_demand[iLoop1][3] and self.squad_demand[iLoop1][2] > iHighestDemandNoLimitTANK) and oUnitStats:GetClass() == bVehicle and oUnitStats:GetSupportCapReq() == 0 and oUnitStats:GetSquadCapReq() == 0 then
+			iUnitIDNoLimitTANK = self.squad_demand[iLoop1][1]
+			iHighestDemandNoLimitTANK = self.squad_demand[iLoop1][2]
+		end
 	end
-	return iUnitID, iHighestDemand
+        local tableitem =
+        {
+                iUnitID = iUnitID,
+                iHighestDemand = iHighestDemand,
+                iUnitIDTANK = iUnitIDTANK,
+                iHighestDemandTANK = iHighestDemandTANK,
+                iUnitIDNoLimit = iUnitIDNoLimit,
+                iHighestDemandNoLimit = iHighestDemandNoLimit,
+                iUnitIDNoLimitTANK = iUnitIDNoLimitTANK,
+                iHighestDemandNoLimitTANK = iHighestDemandNoLimitTANK
+        }
+	return tableitem
 end
 
 --begin Project QuickStart code
@@ -945,34 +931,20 @@ function Strategy:GetMapSize()
     local strat_pts = resource_manager:GetTotalNumStrategicPoints()
     local strat_objs = resource_manager:GetTotalNumStrategicObjectives()
 
-    -- Living players only (g_iNumPlayers refreshed each Think)
-    local players = g_iNumPlayers
-    if (players == nil or players < 1) then
-        if (cpu_manager ~= nil and cpu_manager.UpdateNumPlayers ~= nil) then
-            players = cpu_manager:UpdateNumPlayers()
-        else
-            players = 1
-        end
+    local players = 0
+    for i in cpu_manager.stats:GetPlayerStats() do
+        players = players + 1
     end
-    if (players < 1) then
-        players = 1
-    end
-	--print("Strat pnts") ---Relics+ str_pnts
-	--print(strat_pts)
-	--print("Strat obj") --critical pnts
---	print(strat_objs)
-    local map_resources = strat_pts -- + strat_objs
-	--print("map_res")
-	--print(map_resources)
-    local resources_per_player = math.floor(map_resources / players) --math.ceil(map_resources // players)
-	--print("res_per_playa")
-	--print(resources_per_player)
-    --get closest enemy distance (living only)
+
+    local map_resources = strat_pts + strat_objs
+    local resources_per_player = math.ceil(map_resources/ players)
+
+    --get closest enemy distance
     local closest_enemy = nil
     local this_enemy_dist = 0
     -- scan enemies
     for enemy in cpu_manager.stats:GetPlayerStats() do
-        if cpu_manager.player_stats:IsEnemy( enemy ) and not enemy:IsPlayerDead() then
+        if cpu_manager.player_stats:IsEnemy( enemy ) then
             -- distance from us
             this_enemy_dist = cpu_manager:GetShortestPathingDistance( cpu_manager.player_stats:GetStartingPosition(), enemy:GetStartingPosition() )
             if (closest_enemy == nil) or (this_enemy_dist < closest_enemy) then
@@ -982,14 +954,11 @@ function Strategy:GetMapSize()
         end
     end
     
-    if (resources_per_player < 5) then
-	--	print('small')
+    if (closest_enemy < 150 or resources_per_player <= 4) then
        return "small", closest_enemy
-    elseif (resources_per_player <= 7) then
-		--print('medium')
+    elseif (closest_enemy < 300 or resources_per_player <= 8) then
         return "medium", closest_enemy
     else
-	--	print('large')
         return "large", closest_enemy
     end
 end

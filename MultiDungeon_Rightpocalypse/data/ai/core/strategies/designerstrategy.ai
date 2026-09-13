@@ -1,6 +1,12 @@
 ----------------------------------------
 -- File: 'designerstrategy.ai'
 -- Edited by Dark40k @ 14.10.2008
+-- Edited by Aliaska_RuS
+
+----
+
+
+
 
 class 'DesignerStrategy' (Strategy)
 
@@ -192,9 +198,9 @@ end
 function DesignerStrategy:SetClassPreference( unit_class, pref )
 	
 	dbAssert( type(pref) == "number" )
---[[	dbAssert( 	(unit_class == UnitStatsAI.UC_HeavyInfantry) or
+	dbAssert( 	(unit_class == UnitStatsAI.UC_HeavyInfantry) or
 					(unit_class == UnitStatsAI.UC_LightInfantry) or
-					(unit_class == UnitStatsAI.UC_Vehicle) )]]
+					(unit_class == UnitStatsAI.UC_Vehicle) )
 	
 	self:ResetBuildTable()
 	self.class_preference[ unit_class ] = pref
@@ -236,9 +242,9 @@ function DesignerStrategy:ProcessWaypoints()
 		total = total + self.waypoints[i]
 		if( rand < total ) then 
 			self.current_waypoint = cpu_manager.terrain_analyzer:GetMarkerPositionByID( i )
---[[			for build_channel in build_manager:GetBuildChannelAIs() do
+			for build_channel in build_manager:GetBuildChannelAIs() do
 				build_channel:SetRallyPoint( self.current_waypoint )
-			end]]
+			end
 			return
 		end
 	end
