@@ -15,6 +15,7 @@ BuildBaseStrategyInfo =
 		
 		-- need at least this at all times
 		squad_cap_threshold = 2,
+		max_engineers = 4, 
 
 		-- need at least this at all times
 		support_cap_threshold = 3,

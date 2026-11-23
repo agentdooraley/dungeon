@@ -17,12 +17,12 @@ BuildBaseStrategyInfo =
 
 		--need at least this at all times
 		support_cap_threshold = 3,
-		
+		max_engineers = 4, 
 		--used to calculate wants for engineers
 		Engineers =
 		{
 			--number of engineers we're aiming for
-			want = 8,
+			want = 4,
 		},
 		
 		-- Is used to modify the army strength in the build programs (Allows faster balancing adjustments)
