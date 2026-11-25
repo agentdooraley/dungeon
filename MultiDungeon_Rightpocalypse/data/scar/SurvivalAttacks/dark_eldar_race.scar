@@ -1,0 +1,444 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "dark_eldar_squad_mandrake"
+DeCapturingSquadMmbrs = 6
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "dark_eldar_wych_cult_arena"
+EnemyBuilding1Squad1 = {"dark_eldar_squad_wych", 2, 5}
+EnemyBuilding1Squad2 = {"dark_eldar_squad_reaver", 2, 4}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "dark_eldar_soul_cage"
+EnemyBuilding2Squad1 = {"dark_eldar_squad_warp_beast", 2, 5}
+EnemyBuilding2Squad2 = {"dark_eldar_squad_scourge", 2, 6}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"dark_eldar_squad_rampage",1,1}
+EnemyBuilding2SquadA2 = {"dark_eldar_squad_tempest",1,1}
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "dark_eldar_squad_raider"
+EnemyTransportedSquad = {"dark_eldar_squad_warrior_leader_hg_dxp3",3,3}
+EnemyHonourGuardSquad1 = {"dark_eldar_squad_warrior_leader_hg_dxp3",2,3}
+EnemyHonourGuardSquad2 = {"dark_eldar_squad_mandrake_hg_dxp3",2,3}
+EnemyHonourGuardSquad3 = {"dark_eldar_squad_haemonculus_hg_dxp3",1,1}
+EnemyHonourGuardSquad4 = {"dark_eldar_squad_wych_leader_hg_dxp3",2,3}
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+-- LEADERS: If a commander squad has leaders, add the number of		------
+-- each, after the name. The first number, is the number of leaders ------
+-- of the first type (index 1), etc. 								------
+-- WARNING: DO NOT add non-existing ones or you will get a CTD!!!	------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"dark_eldar_squad_warrior_leader_hg_dxp3"}
+EnemyCommanderSquadName2 = {"dark_eldar_squad_beastmaster"}
+EnemyCommanderSquadName3 = {"dark_eldar_squad_haemonculus_hg_dxp3"}
+EnemyCommanderSquadName4 = {"dark_eldar_squad_wych_leader_hg_dxp3"}
+EnemyCommanderSquadName5 = {"dark_eldar_squad_archon", 2}
+EnemyCommanderSquadName6 = {"dark_eldar_squad_archon_hg_dxp3", 4}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_dais_of_destruction", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_reaper_titan", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_warp_beast_greater", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_ravager", "mk_uberspawn_2", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_reaver", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_warp_beast", "mk_enemy_pos", 3, 10)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "dark_eldar_squad_raven", "mk_enemy_pos", 4, 1)
+end
+	
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_wych", marker, 2, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_haemonculus", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_beastmaster", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_hellion", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_wych", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warp_beast", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_haemonculus", marker, 2, 1)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 4, 4)
+	if Srvl_PlayerInfo.Techlvl[slot]==1then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_wych", marker, 2, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_haemonculus", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_beastmaster", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warrior", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_mandrake", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_hellion", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_wych", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_warp_beast", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "dark_eldar_squad_haemonculus", marker, 2, 1)
+	end
+end
+
+	
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 1, 4)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 2, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 5,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 1, 7)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_haemonculus", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_beastmaster", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 1, 5)
+		end
+	elseif wave == 4 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_power_scythe")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_destructor")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_poisoned_blades_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 4, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 2, 4)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 1, 7)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 2, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 1, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 4, 1)
+		end
+	elseif wave == 5 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_infiltration_mandrake_research")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_commander_health")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 2, 7)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 6, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 1, 10)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 2, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 6, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 1, 10)
+		end
+	elseif wave == 6 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_soulseeker_ammunition")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_agonizer")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_vehicle_armor")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_reaver_targeting_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 2, 7)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_haemonculus", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 2, 10)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_rampage", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 1, 10)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_infantry_health")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_commander_health_2")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_mandrake_melee")
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_grotesque_melee")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 1, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 7, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 2, 10)
+		if g_surv_high_resources then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 1, 7)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_hellion", marker, 2, 4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 5, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_rampage", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_talos", marker, 3, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 1, 10)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				Player_GrantResearch(g_enemy_PlayerID, "dark_eldar_upgrade_vehicle_armor_2")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 6, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 2, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_shredder_rifle_trueborn",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 2, 7)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_grotesque", marker, 1, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 8, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 6, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaver", marker, 10, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_rampage", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast_greater", marker, 2, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 6, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 2, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_dark_lance_trueborn",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 10, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_rampage", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 4, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast_greater", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_dais_of_destruction", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_haemonculus", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wrack", marker, 1, 7)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_grotesque", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_tempest", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_void_dragon_phoenix_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warrior", marker, 10, 5)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_shredder_rifle_warrior",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_warrior","dark_eldar_dark_matter_blaster_warrior",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_thermal_lance_scourge",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_scourge", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_dark_lance_scourge",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_scourge","dark_eldar_haywire_blaster_scourge",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 2, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_venom","dark_eldar_thermal_lance_venom",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 1, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_dark_matter_blaster_trueborn",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 1, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_dark_lance_trueborn",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_splinter_cannon_trueborn",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_trueborn", marker, 2, 7)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_splinter_cannon_trueborn",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_dark_lance_trueborn",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_shredder_rifle_trueborn",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"dark_eldar_squad_trueborn","dark_eldar_dark_matter_blaster_trueborn",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_venom", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_raider", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_mandrake", marker, 8, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_archon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_ravager", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_rampage", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_warp_beast", marker, 3, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_dais_of_destruction", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_reaper_titan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych_leader_hg_dxp3", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_wych", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_tempest", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_void_dragon_phoenix_titan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_voidraven_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "dark_eldar_squad_lelith", marker, 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "dark_eldar_squad_lelith"), g_enemy_PlayerID)
+		end
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_DarkEldarPirates,Get_NextRule_InitiationTMR_Survival(),Get_NextRule_InitiationTMR_Survival())
+end
+
+
+function Rule_DarkEldarPirates()
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) and Srvl_PlayerInfo.Level[pIDX] <= Surv_Max_Waves then
+			for j=1, Srvl_PlayerInfo.Techlvl[pIDX] do
+				local marker = "mk_enemy_player_"..(pIDX+1)
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_raiderP"..pIDX.."N"..j))
+				SGroup_Clear(SGroup_CreateIfNotFound("sg_rsquadP"..pIDX.."N"..j))
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_raiderP"..pIDX.."N"..j, "dark_eldar_squad_raider", marker, 1, 1)
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_rsquadP"..pIDX.."N"..j, "dark_eldar_squad_warrior", marker, 1, 6)
+				Rule_LockSGroupSurvivalPlayer("sg_raiderP"..pIDX.."N"..j)
+				Rule_LockSGroupSurvivalPlayer("sg_rsquadP"..pIDX.."N"..j)
+				Cmd_EnterTransport( "sg_rsquadP"..pIDX.."N"..j, "sg_raiderP"..pIDX.."N"..j )
+			end
+		end
+	end
+	Rule_AddOneShot(Rule_DarkEldarPiratesAttack,12)
+end
+
+
+function Rule_DarkEldarPiratesAttack()
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			for j=1, 4 do
+				if SGroup_Exists("sg_raiderP"..pIDX.."N"..j) then
+					Cmd_AttackMovePos("sg_raiderP"..pIDX.."N"..j,Srvl_PlayerInfo.HQpos[pIDX])
+				end
+			end
+		end
+	end
+end
+

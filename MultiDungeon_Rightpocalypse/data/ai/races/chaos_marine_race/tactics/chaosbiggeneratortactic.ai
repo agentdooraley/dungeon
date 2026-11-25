@@ -1,0 +1,16 @@
+----------------------------------------
+-- File: 'chaosbiggeneratortactic.ai'
+-- Edited by Thudmeizer @ 12.06.2016
+
+class 'ChaosBigGeneratorTactic' (BaseTactic)
+
+ChaosBigGenerator = {}
+
+function ChaosBigGeneratorTactic:__init( base_ai ) super( base_ai )
+
+	self:SetName("Chaos Big Generator Tactic")
+
+	self.m_iNukeID = cpu_manager.stats:GetBuildingID( "chaos_hq_super" )
+
+	ResourcesGenTMR = g_iGMT
+end

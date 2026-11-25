@@ -1,0 +1,278 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                             DefendMgr Class                                      ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+if DefendMgr_Class==nil then
+	DefendMgr_Class={
+		ClassType="DefendMgr_Class",
+		sg_01=SgroupMgr:New("DefendMgr_Class"),
+		sg_02=SgroupMgr:New("DefendMgr_Class"),
+		eg_01=EgroupMgr:New("DefendMgr_Class"),
+	}
+end
+DefendMgr_Class.DebugON=0
+
+local DefendMgr_Metatable={
+	__index=DefendMgr_Class
+}
+
+--[[ create a wave that defends a position
+
+WaveDef: wave definition table
+{	{
+	bp=, 
+	position=,
+	stance=,
+	[starthidden=] -- used to set if unit is to be created immediatly on start or using HidingMgr
+	CreatePos: object with ClosestActivePos(Pos) method for squads resurections
+	[attachbp=],
+	[leader=],
+	[weapons_list=] 
+}, ...}
+
+WaveParams: table
+{
+	PosErrorMin: min position error (no repositionning if closer)
+	PosErrorMax: max position error (forced repositionning if farther)
+}
+
+-- ]]
+function DefendMgr_Class:New(PlayerID, WaveDef, WaveParams)
+	
+	local NewDefendMgr={
+		PlayerID=PlayerID,
+		WaveDef=WaveDef,
+		WaveParams=WaveParams,
+		SquadResurQuery={},
+		SquadList={},
+	}
+	
+	-- create object
+	setmetatable(NewDefendMgr, DefendMgr_Metatable)
+	
+	-- save a global pointer to the object
+	NewDefendMgr.Pointer=PointerTable.Add(NewDefendMgr)
+	
+	return NewDefendMgr
+end
+
+function DefendMgr_Class.Reload(DefendMgr)
+
+	setmetatable(DefendMgr,DefendMgr_Metatable)
+	PointerTable.Add(DefendMgr,DefendMgr.Pointer)
+	
+	for squad_index,squad in pairs(DefendMgr.SquadList) do 
+		Squad_Class.Reload(squad) 
+	end
+	
+end
+
+function DefendMgr_Class:ForceStartCreation()
+
+	for squad_index,squad_def in pairs(self.WaveDef) do
+		if squad_def.starthidden then
+			self.SquadList[squad_index]=HiddenSquad_Class:New(self.PlayerID, squad_def, squad_def.position, true, squad_def.stance,self.Pointer)
+		else
+			self.SquadList[squad_index]=Squad_Class:New(self.PlayerID, squad_def, squad_def.position, true, squad_def.stance,self.Pointer)
+		end
+		self.SquadList[squad_index]:SetOrder_Defend(squad_def.position,self.WaveParams.PosErrorMin,self.WaveParams.PosErrorMax,false)
+	end
+
+end
+
+function DefendMgr_Class:UpdateLiveStatus()
+	for squad_index,squad in pairs(self.SquadList) do squad:UpdateLiveStatus() end
+end
+
+function DefendMgr_Class:RequireReinforcement(ReinforceMgr)
+	
+	for squad_index,squadDef in pairs(self.WaveDef) do 
+		
+		if self.SquadList[squad_index]~=nil then
+			
+			if self.SquadList[squad_index]:IsAlive() then
+				self.SquadList[squad_index]:RequireReinforcement(ReinforceMgr)
+			else
+				ReinforceMgr:RemoveAllQueries(self.SquadList[squad_index])
+				self.SquadList[squad_index]=nil
+				if CreatePos_Class.Get(squadDef.CreatePos):CanProvidePos() then
+					self.SquadResurQuery[squad_index]=ReinforceMgr:Require(self, "squad", squad_index)
+				end
+			end
+			
+		else
+			if self.SquadResurQuery[squad_index]==nil then
+				if CreatePos_Class.Get(squadDef.CreatePos):CanProvidePos() then
+					self.SquadResurQuery[squad_index]=ReinforceMgr:Require(self, "squad", squad_index)
+				end
+			end
+		end
+	end
+	
+end
+
+function DefendMgr_Class:CancelReinforcement(ReinforcementMgr)
+	for squad_index,squad in pairs(self.SquadList) do
+		squad:CancelReinforcement(ReinforcementMgr)
+	end
+	ReinforcementMgr:RemoveAllQueries(self)
+	self.SquadResurQuery={}
+end
+
+function DefendMgr_Class:DoReinforce(ReinforceType, ReinforceData)
+	
+	if ReinforceType=="squad" then
+		
+		self.SquadResurQuery[ReinforceData]=nil
+		
+		local squad_def=self.WaveDef[ReinforceData]
+		
+		local ReinforcePosition=CreatePos_Class.Get(squad_def.CreatePos):ClosestActivePos(squad_def.position)
+		
+		if ReinforcePosition==nil then return false end
+		
+		self.SquadList[ReinforceData]=Squad_Class:New(
+			self.PlayerID,squad_def,ReinforcePosition, false, squad_def.stance,self.Pointer)
+		
+		if self.SquadList[ReinforceData]==nil then return false end
+		
+		self.SquadList[ReinforceData]:SetOrder_Defend(self.WaveDef[ReinforceData].position,self.WaveParams.PosErrorMin,self.WaveParams.PosErrorMax,true)
+		
+		return true
+		
+	else
+		print("Warning DefendMgr_Class: ReinforceType unknown =" .. ReinforceType)
+		return false
+	end
+end
+
+-- return false if defend is dead (no more troops)
+function DefendMgr_Class:DoOrders()
+	for squad_index,squad in pairs(self.SquadList) do squad:DoOrders() end
+end
+
+--[[ return WaveDef table from Map
+
+	SquadList : table {SQUAD_GROUP_NAME,...} listing squadgroup names to find groups
+	
+	StanceList: table :1st matching group is used, "Default" is used if no group found
+		Default=STANCEVALUE
+		SQUAD_GROUP_NAME=STANCEVALUE, ... 1st matching group is used. 
+		
+	LeaderList: table {SQUAD_GROUP_NAME,...} if unit is in one of the squad groups then it has a leader
+	
+	AttachList: table {SQUAD_GROUP_NAME="ATTACHBP", ...} 1st matching group is used. 
+	
+	WeaponList: table {SQUAD_GROUP_NAME={WeaponName1=Nbr1, ...}, ...} 1st matching group is used. 
+	
+	ResurList: table :  1st matching group is used, "Default" is used if no group found
+		Default= <ResurPos object with ClosestActivePos(Pos) method>
+		SQUAD_GROUP_NAME=<ResurPos object with ClosestActivePos(Pos) method>, ... 
+		
+	HiddenList: table {SQUAD_GROUP_NAME,...} if unit is in one of the squad groups then it starts inactivated
+	
+]]
+function DefendMgr_Class:WaveDefFromMap(SquadList, StanceList, LeaderList, AttachList, WeaponList, EntrenchWeaponList, ResurList,HiddenList)
+	
+	local WaveDef={}
+	
+	SGroup_Clear(self.sg_01.ID)
+	for SquadGroup_Index, SquadGroup_Name in (SquadList) do
+		SGroup_AddGroup(self.sg_01.ID, SGroup_FromName(SquadGroup_Name))
+	end
+	
+	for SquadNbr=1,SGroup_CountSpawned(self.sg_01.ID) do
+		
+		local SquadID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,SquadNbr)
+		
+		WaveDef[SquadNbr]={
+			bp=Squad_GetBlueprintName(SquadID),
+			position=Squad_GetPosition(SquadID)
+		}
+		
+		for StanceGroupName,Stance in (StanceList) do
+			if StanceGroupName~="DefaultStance" then
+				if not SGroup_Exists(StanceGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. StanceGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(StanceGroupName),SquadID) then
+					WaveDef[SquadNbr].stance=Stance
+					break
+				end
+			end
+		end
+		if WaveDef[SquadNbr].stance==nil then WaveDef[SquadNbr].stance=StanceList["DefaultStance"] end
+		
+		for LeaderGroupIndex,LeaderGroupName in (LeaderList) do
+				if not SGroup_Exists(LeaderGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. LeaderGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(LeaderGroupName),SquadID) then
+				WaveDef[SquadNbr].leader=true
+				break
+			end
+		end
+		
+		for AttachGroupName,Attachbp in (AttachList) do
+				if not SGroup_Exists(AttachGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. AttachGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(AttachGroupName),SquadID) then
+				WaveDef[SquadNbr].attachbp=Attachbp
+				break
+			end
+		end
+		
+		for WeaponGroupName,WeaponDef in (WeaponList) do
+				if not SGroup_Exists(WeaponGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. WeaponGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(WeaponGroupName),SquadID) then
+				WaveDef[SquadNbr].weapons_list=WeaponDef
+				break
+			end
+		end
+		
+		for WeaponGroupName,WeaponDef in (EntrenchWeaponList) do
+				if not SGroup_Exists(WeaponGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. WeaponGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(WeaponGroupName),SquadID) then
+				WaveDef[SquadNbr].entrenchweapons_list=WeaponDef
+				break
+			end
+		end
+		
+		local ResurGroups=false -- used to check if there are resurgroups or if Default is the only option
+		for ResurGroupName,ResurPos in (ResurList) do
+			if ResurGroupName~="DefaultPos" then
+				ResurGroups=true
+				if not SGroup_Exists(ResurGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. ResurGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(ResurGroupName),SquadID) then
+					WaveDef[SquadNbr].CreatePos=ResurPos
+					break
+				end
+			end
+		end
+		if WaveDef[SquadNbr].CreatePos==nil then 
+			if ResurGroups then print("WARNING: Squad " .. WaveDef[SquadNbr].bp .. " ID=" .. SquadID.id .. " ResurGroup not found, using default") end
+			WaveDef[SquadNbr].CreatePos=ResurList["DefaultPos"] 
+		end
+		
+		for HiddenGroupIndex,HiddenGroupName in (HiddenList) do
+				if not SGroup_Exists(HiddenGroupName) then 
+					print("DefendMgr_Class:WaveDefFromMap ERROR : sgroup does not exist (skipping):" .. HiddenGroupName)
+				elseif SGroup_ContainsSquad(SGroup_FromName(HiddenGroupName),SquadID) then
+					WaveDef[SquadNbr].starthidden=true
+				break
+			end
+		end
+		
+	end
+	
+	return WaveDef
+	
+end
+
+function DefendMgr_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	for squad_index,squad in pairs(self.SquadList) do squad:DoSpecAbility(Friend_Sampling,Ennemy_Sampling) end
+end
+

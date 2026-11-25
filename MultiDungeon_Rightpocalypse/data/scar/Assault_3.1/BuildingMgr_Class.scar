@@ -1,0 +1,151 @@
+
+if BuildingMgr_Class==nil then
+	BuildingMgr_Class={}
+end
+BuildingMgr_Class.DebugON=0
+	
+local BuildingMgr_Metatable={
+	__index=BuildingMgr_Class
+}
+
+function BuildingMgr_Class:New()
+	
+	local NewBuildingMgr={
+		List={},
+		ListCount=0
+	}
+	
+	setmetatable(NewBuildingMgr, BuildingMgr_Metatable)
+	
+	return NewBuildingMgr
+
+end
+
+function BuildingMgr_Class.Reload(BuildingMgr)
+
+	setmetatable(BuildingMgr,BuildingMgr_Metatable)
+	
+	for BuildingIndex, Building in pairs(BuildingMgr.List) do
+		Building_Class.Reload(Building)
+	end
+	
+end
+
+function BuildingMgr_Class:AddBuildingList(BuildingList)
+	for BuildingIndex,Building in pairs(BuildingList.List) do
+		self.ListCount=self.ListCount+1
+		self.List[self.ListCount]=Building
+	end
+end
+
+function BuildingMgr_Class:AddEntity(EntityID, AddonList)
+	self.ListCount=self.ListCount+1
+	if Building_Class.Building_List.Get(EntityID.id)~=nil then
+		if self.DebugON>0 then print("BuildingMgr_Class:AddEntity() Building " ..  Entity_GetBlueprintName(EntityID) .. " id=" .. EntityID.id .. " allready exist, using existing") end
+		self.List[self.ListCount]=Building_Class.Building_List.Get(EntityID.id)
+	else
+		if self.DebugON>0 then print("BuildingMgr_Class:AddEntity() - Creating Building " ..  Entity_GetBlueprintName(EntityID) .. " id=" .. EntityID.id) end
+		self.List[self.ListCount]=Building_Class:NewExisting(EntityID, AddonList)
+	end
+end
+
+function BuildingMgr_Class:AddListeningPost(PlayerID, ListeningPostID, ListeningPostBP, AddonList)
+
+	if Can_Have_ListeningPoint[Entity_GetBlueprintName(ListeningPostID)]~=true then
+		print("WARNING: BuildingMgr_Class:AddListeningPost: BuildingID.id " .. ListeningPostID.id .." BP=" .. Entity_GetBlueprintName(ListeningPostID) .. " cannot receive listening point, skipping")
+		return
+	end
+
+	self.ListCount=self.ListCount+1
+	
+	self.List[self.ListCount]=Building_Class:New(
+		PlayerID, 
+		ListeningPostBP, 
+		Entity_GetPosition(ListeningPostID), 
+		AddonList,
+		ListeningPostID
+	)
+	
+end
+
+--[[ Add buildings belonging to an existing Egroup
+
+EgroupID
+
+FullAddonList: addon definition table
+{ 
+	<BuildingBP>=AddonList,
+	...
+}
+
+]]
+function BuildingMgr_Class:AddEntityEgroup(EgroupID, FullAddonList)
+	for i=1, EGroup_CountSpawned(EgroupID) do
+		self:AddEntity(EGroup_GetSpawnedEntityAt(EgroupID,i), FullAddonList[Entity_GetBlueprintName(EGroup_GetSpawnedEntityAt(EgroupID,i))])
+	end
+end
+
+function BuildingMgr_Class:AddListeningPostEgroup(PlayerID, EgroupID, ListeningPostBP, AddonList)
+	for i=1, EGroup_CountSpawned(EgroupID) do
+		self:AddListeningPost(PlayerID, EGroup_GetSpawnedEntityAt(EgroupID,i), ListeningPostBP, AddonList)
+	end
+end
+
+-- return closest building that is functional (nil if none found)
+function BuildingMgr_Class:ClosestActivePos(Position)
+	
+	local min_Distance
+	local min_Building
+	
+	for BuildingIndex, Building in pairs(self.List) do
+		
+		if Building:IsFunctional() then
+			
+			local Tmp_Distance=World_DistancePointToPoint(Position, Building.Position)
+			
+			if (min_Distance==nil) then
+				min_Distance=Tmp_Distance
+				min_Building=Building
+			elseif min_Distance>Tmp_Distance then
+				min_Distance=Tmp_Distance
+				min_Building=Building
+			end
+			
+		end
+	end
+	
+	return min_Building
+	
+end
+
+function BuildingMgr_Class:UpdateLiveStatus()
+	for BuildingIndex, Building in pairs(self.List) do
+		Building:UpdateLiveStatus()
+	end
+end
+
+function BuildingMgr_Class:DoOrders()
+	for BuildingIndex, Building in pairs(self.List) do
+		Building:DoOrders()
+	end
+end
+
+function BuildingMgr_Class:RequireReinforcement(ReinforcementMgr)
+	for BuildingIndex, Building in pairs(self.List) do
+		Building:RequireReinforcement(ReinforcementMgr)
+	end
+end
+
+function BuildingMgr_Class:CancelReinforcement(ReinforcementMgr)
+	for BuildingIndex, Building in pairs(self.List) do
+		Building:CancelReinforcement(ReinforcementMgr)
+	end
+end
+
+function BuildingMgr_Class:ForceStartCreation()
+	for BuildingIndex, Building in pairs(self.List) do
+		if Building:CanRebuild() then
+			Building:Rebuild(true)
+		end
+	end
+end

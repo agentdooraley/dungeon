@@ -1,0 +1,13 @@
+----------------------------------------
+-- File: 'darkeldarraidertactic.ai'
+-- Edited by Thudmeizer @ 11.11.2016
+
+class 'DarkEldarRaiderTactic' (DarkEldarVehicleTactic)
+
+DarkEldarRaider = {}
+
+function DarkEldarRaiderTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Dark Eldar Raider Tactic")
+
+end

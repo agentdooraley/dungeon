@@ -1,0 +1,31 @@
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+
+function OnInit()
+t_Players = {}
+print "STEEL RAIN!"
+	if G_Is_Assault_Map == nil then
+		print("NON-Assault Map.  Assault: Increasing Response (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+
+Rule_AddOneShot(helldive_players,15)
+
+end
+
+
+Scar_AddInit(OnInit)
+
+
+function helldive_players()
+local count = World_GetPlayerCount()
+	for i = 0, count - 1 do
+	j = i + 1
+		t_Players[j]= World_GetPlayerAt(i)
+		local playerID = World_GetPlayerAt(i)
+		local pos = Player_GetStartPosition(t_Players[j]); pos.x = pos.x - 13
+		Entity_CreateBuildingPositionForce(playerID, "eg_helldive_building_"..j, "space_marine_orbital_relay_hd", pos, 1)
+		
+	end
+end

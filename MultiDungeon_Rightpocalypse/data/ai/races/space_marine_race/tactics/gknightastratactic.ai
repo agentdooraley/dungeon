@@ -1,0 +1,122 @@
+----------------------------------------
+-- File: 'gknightstactic.ai'
+-- Edited by Thudmeizer @ 07.06.2016
+
+class 'GKnightsAstraTactic' (SpaceMarineInfantryTactic)
+
+GKnightsAstra = {}
+
+function GKnightsAstraTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("GKnightsAstra Tactic")
+end
+
+function GKnightsAstraTactic:AlwaysAttack()
+	return true
+end
+
+function GKnightsAstraTactic:SetTarget( target, variant_type )
+
+    self.variant_type = variant_type
+    self.variant_type = variant_type
+       if self.variant_type==Tactic.Variant.Vector then
+    self.target = Vector3f(target)
+       elseif self.variant_type==Tactic.Variant.SquadAI then
+    self.target = target
+       elseif self.variant_type==Tactic.Variant.BaseAI then
+    self.target = target
+       end
+
+
+
+	
+	self.m_iMoveDelay = 0
+	self.last_jump = 0
+end
+
+function GKnightsAstraTactic:JumpAttack()
+	Tactic.JumpAttack(self)
+end
+
+function GKnightsAstraTactic:CanJumpAttached()
+	return true
+end
+
+
+-- Grey Knights are allowed to retreat even directly after a jump
+function GKnightsTactic:SetTarget( target, variant_type )
+
+    self.variant_type = variant_type
+    self.variant_type = variant_type
+       if self.variant_type==Tactic.Variant.Vector then
+    self.target = Vector3f(target)
+       elseif self.variant_type==Tactic.Variant.SquadAI then
+    self.target = target
+       elseif self.variant_type==Tactic.Variant.BaseAI then
+    self.target = target
+       end
+
+
+
+	
+	self.m_iMoveDelay = 0
+	self.last_jump = 0
+end
+
+function GKnightsAstraTactic:InitAbilities()
+	if (GKnights.rally_id == nil) then
+	    	GKnights.rally_id = cpu_manager.stats:GetAbilityID( "inquisition_rally_gk" )	
+	end
+
+	if (GKnights.smite_id == nil) then
+	    	GKnights.smite_id = cpu_manager.stats:GetAbilityID( "all_smite" )	
+	end
+
+	if (GKnights.run_id == nil) then
+		GKnights.run_id = cpu_manager.stats:GetAbilityID( "all_run!" )	
+	end
+end
+
+function GKnightsAstraTactic:DoAbilities()
+
+	-- We are dying, lower requisites for attacks
+	if (self.squad_ai:WasRecentlyHurt() and self.squad_ai:GetHealthPercentage() < 0.4) then
+		Ability.DoAbilityTarget( self.squad_ai, GKnights.smite_id, Ability.Filters.CloseInfantryEnemy, 4 )
+	else
+		Ability.DoAbilityTarget( self.squad_ai, GKnights.smite_id, Ability.Filters.CloseInfantryEnemy, 6 )
+	end
+	
+	-- Run if safe
+	if ((not self.squad_ai:IsInCombat() and self.squad_ai:IsInStateMove()) or self.stateID ~= Tactic.StateID.NoState) then
+
+		-- If I am safe I can run
+		if (self.squad_ai:CanDoAbility( GKnights.run_id )) then
+			self.squad_ai:DoSpecialAbility( GKnights.run_id )
+		end
+	end
+end
+
+function GKnightsAstraTactic:CheckForBroken()
+
+	if (self.squad_ai:IsBroken()) then
+	
+		-- Check if I can repair my morale
+		if (self.squad_ai:CanDoAbility( GKnights.rally_id )) then
+			self.squad_ai:DoSpecialAbility( GKnights.rally_id )
+		end
+	end
+   
+	-- Call basic broken check method
+	InfantryTactic.CheckForBroken(self)
+end
+
+function GKnightsAstraTactic:Update()
+
+	-- State machine
+	if (not InfantryTactic.Update(self)) then
+		return
+	end
+	
+	-- Check if we are in serious trouble
+	self:EmergencyRetreat()
+end

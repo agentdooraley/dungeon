@@ -1,0 +1,233 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                    Reinforcement Manager Class                                     ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+if ReinforceMgr_Class==nil then 
+	ReinforceMgr_Class={}
+end
+ReinforceMgr_Class.DebugON=0
+
+local ReinforceMgr_Metatable={
+	__index=ReinforceMgr_Class
+}
+
+--[[ New(DefaultDelay,DefaultCost) : create new manager
+	-DefaultDelay: table containing default delays, must contain at least index Default
+	-DefaultCost: table containing default costs, must contain at least index Default
+]]
+function ReinforceMgr_Class:New(KeyName,IncomeRate,MaxMoney,DefaultDelay,DefaultCost,StartMoney)
+	local New_ReinforceMgr={
+		KeyName=KeyName,
+		DefaultDelay=DefaultDelay,
+		DefaultCost=DefaultCost,
+		IncomeTime=World_GetGameTime(),
+		IncomeRate=IncomeRate,
+		MaxMoney=MaxMoney,
+		Money=StartMoney,
+		ListQuery={},
+		SortedQuery={},
+		SortedValid=true,
+		QueryNbr=0,
+	}
+	
+	if self.DebugON>0 then print("ReinforceMgr_Class:New(), ReinforceMgr=" .. tostring(New_ReinforceMgr)) end
+
+	setmetatable(New_ReinforceMgr, ReinforceMgr_Metatable)
+	
+	-- save a global pointer to the object
+	New_ReinforceMgr.Pointer=PointerTable.Add(New_ReinforceMgr)
+	
+	return New_ReinforceMgr
+end
+
+function ReinforceMgr_Class.Reload(ReinforceMgr)
+	
+	setmetatable(ReinforceMgr, ReinforceMgr_Metatable)
+	PointerTable.Add(ReinforceMgr,ReinforceMgr.Pointer)
+	
+end
+
+-- write query for squad, return query pointer
+function ReinforceMgr_Class:Require(ReinforceTarget, ReinforceType, ReinforceData, MinDelay, Cost)
+	
+	if MinDelay==nil then
+		if self.DefaultDelay[ReinforceType]~=nil then
+			MinDelay=self.DefaultDelay[ReinforceType]
+		else
+			MinDelay=self.DefaultDelay.Default
+		end
+	end
+	
+	if Cost==nil then
+		if self.DefaultCost[ReinforceType]~=nil then
+			Cost=self.DefaultCost[ReinforceType]
+		else
+			Cost=self.DefaultCost.Default
+		end
+	end
+	
+	if ReinforceTarget.Pointer==nil then 
+		print("Error for:" .. ReinforceTarget.ClassType)
+	end
+	
+	assert(ReinforceTarget.Pointer~=nil)
+	
+	self.QueryNbr=self.QueryNbr+1
+	local NewQuery={
+		QueryNbr=self.QueryNbr,
+		ReinforceTargetPointer=ReinforceTarget.Pointer,
+		Type=ReinforceType, 
+		Data=ReinforceData, 
+		AllowTime=World_GetGameTime()+MinDelay, 
+		Cost=Cost
+	}
+	self.ListQuery[self.QueryNbr]=NewQuery
+	
+	table.insert(self.SortedQuery,self.QueryNbr)
+	self.ListSorted=false
+	
+	if self.DebugON>0 then print(tostring(self) .. " ReinforceMgr_Class:Require() " .. ReinforceType .. " for " .. tostring(ReinforceTarget) .. " Cost=" .. NewQuery.Cost .. " CurrentTime=" .. World_GetGameTime() .. " AllowTime=" .. NewQuery.AllowTime) end
+	
+	return NewQuery.QueryNbr
+	
+end
+
+function ReinforceMgr_Class:SortQuery()
+
+	function CompareQueries(QueryNbr1,QueryNbr2)
+		return self.ListQuery[QueryNbr1].AllowTime<self.ListQuery[QueryNbr2].AllowTime
+	end
+	table.sort(self.SortedQuery,CompareQueries)
+	
+	self.ListSorted=true
+	
+end
+
+function ReinforceMgr_Class:GetQuery(QueryNbr)
+	return self.ListQuery[QueryNbr]
+end
+
+function ReinforceMgr_Class:HasQuery(ReinforceTarget)
+	return (self:GetClosestQuery(ReinforceTarget)~=nil)
+end
+
+function ReinforceMgr_Class:GetClosestQueryNbr(ReinforceTarget)
+
+	if not self.ListSorted then self:SortQuery() end
+	
+	local ReinforceTargetPointer=ReinforceTarget.Pointer
+	
+	for Sorted_Index,Query_Index in ipairs(self.SortedQuery) do
+		if self.ListQuery[Query_Index].ReinforceTargetPointer==ReinforceTargetPointer then
+			return Query_Index
+		end
+	end
+	
+end
+
+function ReinforceMgr_Class:RemoveQuery(QueryNbr)
+
+	if self.DebugON>1 then 
+		print(tostring(self) .. " ReinforceMgr_Class:RemoveQuery(), QueryNbr=" .. tostring(QueryNbr) .. " CurrentTime=" .. World_GetGameTime() ) 
+	end
+
+	self.ListQuery[QueryNbr]=nil
+	
+	for Sorted_Index,Query_Index in ipairs(self.SortedQuery) do
+		if Query_Index==QueryNbr then
+			table.remove(self.SortedQuery,Sorted_Index)
+			return true
+		end
+	end
+	
+end
+
+-- cancel reinforcement queries from target
+function ReinforceMgr_Class:RemoveAllQueries(ReinforceTarget)
+
+	if self.DebugON>1 then 
+		print(tostring(self) .. " ReinforceMgr_Class:RemoveAllQueries(), ReinforceTarget=" .. tostring(ReinforceTarget) .. 
+		" CurrentTime=" .. World_GetGameTime()
+		) 
+	end
+	
+	local ReinforceTargetPointer=ReinforceTarget.Pointer
+
+	local Sorted_Index=1	
+	while self.SortedQuery[Sorted_Index]~=nil do
+		if self.ListQuery[self.SortedQuery[Sorted_Index]].ReinforceTargetPointer==ReinforceTargetPointer then
+			self.ListQuery[self.SortedQuery[Sorted_Index]]=nil
+			table.remove(self.SortedQuery,Sorted_Index)
+		else
+			Sorted_Index=Sorted_Index+1
+		end
+	end
+	
+end
+
+-- evaluates allowed reinforcements based on delay table and allowed cost
+-- function returns the rest of AllowedCost
+function ReinforceMgr_Class:DoReinforce()
+
+	self:UpdateMoney()	
+	
+	if not self.ListSorted then self:SortQuery() end
+	
+	local CurrentTime=World_GetGameTime() 
+	local FirstSortedQuery
+	
+	while self.SortedQuery[1]~=nil do
+		
+		FirstSortedQuery=self.ListQuery[self.SortedQuery[1]]
+		
+		if FirstSortedQuery.AllowTime>CurrentTime then break end
+		if FirstSortedQuery.Cost>self.Money then break end
+		
+		if self.DebugON>0 then 
+			print(tostring(self) .. " ReinforceMgr_Class:DoReinforce(), ReinforceType= " .. FirstSortedQuery.Type .. 
+				" Target=" .. tostring(PointerTable.Get(FirstSortedQuery.ReinforceTargetPointer)) .. " Cost=" .. FirstSortedQuery.Cost .. 
+				" CurrentTime=" .. World_GetGameTime() .. " AllowTime=" .. FirstSortedQuery.AllowTime
+			) 
+		end
+		
+		local ReinforceTarget=PointerTable.Get(FirstSortedQuery.ReinforceTargetPointer)
+		
+		if ReinforceTarget==nil then 
+		elseif ReinforceTarget.DoReinforce==nil then
+			print("ERROR " .. tostring(self) .. " ReinforceMgr_Class:DoReinforce(), ReinforceType= " .. FirstSortedQuery.Type .. 
+				" TargetPointer=" .. tostring(FirstSortedQuery.ReinforceTargetPointer) ..
+				" Target=" .. tostring(PointerTable.Get(FirstSortedQuery.ReinforceTargetPointer)) .. 
+				" Cost=" .. FirstSortedQuery.Cost .. 
+				" CurrentTime=" .. World_GetGameTime() .. " AllowTime=" .. FirstSortedQuery.AllowTime) 
+			fullprint("ReinforceTarget",ReinforceTarget)
+			fullprint("ReinforceMgr",self)
+			if self.DebugON>0 then AllScarPlayerMgr.PrintAll() end
+		elseif ReinforceTarget:DoReinforce(FirstSortedQuery.Type,FirstSortedQuery.Data) then
+			self.Money=self.Money-FirstSortedQuery.Cost
+			if self.DebugON>0 then print(tostring(self) .. " ReinforceMgr_Class:DoReinforce(), Reinforce Done, Remaining Money=" .. self.Money) end
+		end
+		
+		self.ListQuery[self.SortedQuery[1]]=nil
+		table.remove(self.SortedQuery,1)
+		
+	end
+
+	return self.Money
+	
+end
+
+function ReinforceMgr_Class:UpdateMoney()
+	local NewTime=World_GetGameTime()
+	self.Money=self.Money+(NewTime-self.IncomeTime)*self.IncomeRate
+	if self.Money>self.MaxMoney then self.Money=self.MaxMoney end
+	self.IncomeTime=NewTime
+	if self.DebugON>1 then print(tostring(self) .. " ReinforceMgr_Class:UpdateMoney(), Available=" .. self.Money .. " CurrentTime=" .. World_GetGameTime()) end
+end
+
+function ReinforceMgr_Class:SetIncomeRate(IncomeRate)
+	self:UpdateMoney()
+	self.IncomeRate=IncomeRate
+end
+

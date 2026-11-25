@@ -1,0 +1,87 @@
+
+local DebugON=0
+
+-- ===================================================================================
+--
+-- ork_squad_stormboy
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "ork_squad_stormboy", "jump",
+	{
+		DebugON=DebugON,
+		MinDelay=45, 
+		HealthFilter="Infantry", MinRange=20, SearchRange=50, MinCosAngle=0.5, HealthRange=7.5, HealthMin=2500, MaxEnnemies=15000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityJump
+)
+
+SpecAbilityMgr.AddAbility( "ork_squad_stormboy", "ork_stikkbombs",
+	{
+		DebugON=DebugON,
+		MinDelay=75, HealthRange=20, HealthMin=2500, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+-- ===================================================================================
+--
+-- ork_squad_mek_boy
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "ork_squad_mek_boy", "ork_kustom_tellyporta",
+	{
+		DebugON=DebugON,
+		MinDelay=45, 
+		HealthFilter="Infantry", MinRange=20, SearchRange=50, MinCosAngle=0.5, HealthRange=7.5, HealthMin=2500, MaxEnnemies=15000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityJump
+)
+
+SpecAbilityMgr.AddAbility( "ork_squad_mek_boy", "ork_tank_zappa",
+	{
+		DebugON=DebugON,
+		MinDelay=90, HealthRange=25, HealthMin=1000, 
+		ArmorFilterList={"tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquadPos
+)
+
+-- ===================================================================================
+--
+-- ork_squad_bad_dok
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "ork_squad_bad_dok", "ork_fightin_juice",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- ork_squad_warboss
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "ork_squad_warboss", "ork_power_of_waagh",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+--[[SpecAbilityMgr.AddAbility( "ork_squad_warboss_advance_sp_wg", "ork_power_of_waagh",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=30, HealthMin=7500,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)]]
+

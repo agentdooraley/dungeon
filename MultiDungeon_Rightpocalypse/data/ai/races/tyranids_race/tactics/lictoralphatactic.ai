@@ -1,0 +1,89 @@
+----------------------------------------
+-- File: 'lictoralphatactic.ai'
+-- Edited by Thudmeizer @ 25.04.2016
+
+class 'LictorAlphaTactic' (TyranidInfantryTactic)
+
+LictorAlpha = {}
+
+function LictorAlphaTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Lictor Alpha Tactic")
+end
+
+function LictorAlphaTactic:AutoBuildAddOn( addonSlot )
+	for e in self.squad_ai:GetEntities() do
+		local buildChannelLictorAlpha = build_manager:GetBuildChannelFromID(e:GetID())
+		if (buildChannelLictorAlpha ~= nil) then
+			local addOnID = buildChannelLictorAlpha:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
+			if (buildChannelLictorAlpha:IsBuilding() == 0 and buildChannelLictorAlpha:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
+				buildChannelLictorAlpha:BuildAddOn(addOnID)
+				return
+			end
+		end
+	end
+	return
+end
+
+function LictorAlphaTactic:AutoBuildResearch( researchSlot )
+	for e in self.squad_ai:GetEntities() do
+		local buildChannelLictorAlpha = build_manager:GetBuildChannelFromID(e:GetID())
+		if (buildChannelLictorAlpha ~= nil) then
+			local ResearchID = buildChannelLictorAlpha:GetItemIDAt(BuildChannelAI.PQ_Research, researchSlot)
+			if (buildChannelLictorAlpha:IsBuilding() == 0 and buildChannelLictorAlpha:CanAddToQueue(BuildChannelAI.PQ_Research, ResearchID) == BuildChannelAI.CANBUILD_Ok) then			
+				buildChannelLictorAlpha:BuildResearch(ResearchID)
+				return
+			end
+		end
+	end
+	return
+end
+
+function LictorAlphaTactic:AlwaysAttack()
+	return true
+end
+
+function LictorAlphaTactic:IsDefender()
+	return self:IsCommanderDefender()
+end
+
+function LictorAlphaTactic:InitAbilities()
+
+	-- Init ability ID's
+	if (LictorAlpha.run_id == nil) then
+		LictorAlpha.run_id = cpu_manager.stats:GetAbilityID( "all_run!" )	
+	end
+end
+
+function LictorAlphaTactic:DoAbilities()
+	
+		if (self.squad_ai:CanDoAbility( LictorAlpha.run_id )) then
+			self.squad_ai:DoSpecialAbility( LictorAlpha.run_id )
+		end
+end
+
+function LictorAlphaTactic:Upgrade()
+	if not (cpu_manager.cpu_player:IsResearchComplete("tyranids_lictor_implant_research")) then
+		self:AutoBuildResearch(0) -- Implant
+	elseif not (cpu_manager.cpu_player:IsResearchComplete("tyranids_lictor_adrenal_research")) then
+		self:AutoBuildResearch(1) -- Adrenal
+	elseif not (cpu_manager.cpu_player:IsResearchComplete("tyranids_lictor_senses_research")) then
+		self:AutoBuildResearch(2) -- Senses
+	elseif not (cpu_manager.cpu_player:IsResearchComplete("tyranids_lictor_tendrils_research")) then
+		self:AutoBuildResearch(3) -- Tendrils
+	end
+end
+
+function LictorAlphaTactic:Update()
+
+	if (self:IsComplete()) then
+		return
+	end
+	
+	-- State machine
+	if (not InfantryTactic.Update(self)) then
+		return
+	end
+	
+end
+

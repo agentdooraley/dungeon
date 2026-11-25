@@ -1,0 +1,24 @@
+----------------------------------------
+-- File: 'titantactic.ai'
+-- Edited by Cylarne @ 2012
+-- Edited by Thudmeizer	@ 01.07.2016
+
+class 'TitanTactic' (ChaosMarineVehicleTactic)
+
+Titan = {}
+
+function TitanTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Titan Tactic")
+end
+
+function TitanTactic:Upgrade()
+
+	-- If there are no ressources available, don't upgrade!
+	if (not Tactic.Options.can_reinforce) then
+		return
+	end
+  
+	local class_type = cpu_manager:FindClosestEnemyPlayer():GetMajorityClassType()
+		self.squad_ai:DoBestUpgrade( class_type )
+end

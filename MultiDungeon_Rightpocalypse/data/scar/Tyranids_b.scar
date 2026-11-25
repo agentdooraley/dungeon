@@ -1,0 +1,402 @@
+----------------------------------------------------------------------
+-- Influence code for Tyranids										--
+-- Created by Miros  @  3.Dec.2011	(Updated @ 03.Oct.2013)			--
+-- Updated by Gambit @  9.Oct.2016	(Updated @ 23.jul.2017)			--
+--																	--
+--  It's alive!														--
+--																	--
+-- (c) 2003 Relic Entertainment Inc.								--
+----------------------------------------------------------------------
+
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+Tyranids_HQ_Name = "tyranids_hq"
+--------------------------------------------------
+--           Overall Rule managing              --
+--------------------------------------------------
+
+function Tyranids_Threshold()
+
+	-- global table that stores Tyranids players' IDs
+	g_TyranidsPlayersIDs = {}
+
+	for i = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(i)
+		if Player_GetRaceName(playerID) == "tyranids_race" then
+			table.insert(g_TyranidsPlayersIDs, playerID)
+		end
+	end
+
+	-- Tyranids Players number global variable
+	Tyranids_Players_Number = table.getn(g_TyranidsPlayersIDs)
+
+	-- Do not run if there are no Tyranids players in-game
+	if Tyranids_Players_Number == 0 then return end
+
+	-- Set everything up
+	Influence_SetUp()
+
+	-- Initial Influence and Builders' definition
+	Rule_AddOneShot( Influence_StartingResTyranids, 0.4 )
+
+	-- Builder stuck fix
+	--Rule_AddIntervalDelay( Tyranids_BuilderStuckFixTest, 3.125, 0.75 )
+
+	-- Resource Rules
+	Rule_Add( InfluenceCap_Rule )
+
+end
+
+
+--------------------------------------------------
+-- Global Functions that count key elements     --
+--------------------------------------------------
+
+-- Custom function to count fully constructed chimneys
+Tyr_Count_Chimneys = function( egroupid, itemindex, entityID )
+	if Entity_GetBlueprintName(entityID) == "tyranids_digest_pool" and Entity_GetBuildingProgress(entityID) >= 1.0 then
+		ChimneyCount = ChimneyCount + 1
+	end
+end
+
+-- Custom function to count chimneys' addons
+Tyr_Count_LP_Addons = function( egroupid, itemindex, entityID )
+	if Entity_GetBlueprintName(entityID) == "tyranids_digest_pool" and Entity_GetBuildingProgress(entityID) >= 1.0 then
+		Tyr_nLP0 = Tyr_nLP0 + 1
+		if Entity_ContainsAddOn(entityID,"tyranids_list_post_addon_2") then
+			Tyr_nLP1 = Tyr_nLP1 + 1
+			Tyr_nLP2 = Tyr_nLP2 + 1
+		elseif Entity_ContainsAddOn(entityID,"tyranids_list_post_addon_1") then
+			Tyr_nLP1 = Tyr_nLP1 + 1
+		end
+	end
+end
+-- Trick to re-calculate Tyranids Players variable number on-load
+if g_TyranidsPlayersIDs ~= nil then
+	Tyranids_Players_Number = table.getn(g_TyranidsPlayersIDs)
+end
+
+
+--------------------------------------------------
+--           Starting Influence AND           	--
+-- 		  	  Builder Finder Rule				--
+--------------------------------------------------
+
+function Influence_StartingResTyranids()
+
+	-- Manage resources
+	for i=1, Tyranids_Players_Number do
+		local starting_req = Player_GetResource(g_TyranidsPlayersIDs[i], RT_Requisition)
+		if starting_req < 2000 then
+			Player_SetResource( g_TyranidsPlayersIDs[i], RT_Faith, 20 )
+		end
+	end
+end
+
+
+--------------------------------------------------
+--                SetUp Rule                    --
+--------------------------------------------------
+
+function Influence_SetUp()
+
+	-- Influence Bar Dynamic Textures
+	-- Foreground (Resource Cap)
+	Bar_InfCap = {
+		"Tyranids_icons/influencebar/5frame_00",
+		"Tyranids_icons/influencebar/5frame_01",
+		"Tyranids_icons/influencebar/5frame_02",
+		"Tyranids_icons/influencebar/5frame_03",
+		"Tyranids_icons/influencebar/5frame_04",
+		"Tyranids_icons/influencebar/5frame_05",
+		"Tyranids_icons/influencebar/5frame_06",
+	}
+	-- Background (Actual Resource)
+	Bar_InfCur = {
+		"Tyranids_icons/influencebar/sglass_00",
+		"Tyranids_icons/influencebar/sglass_01",
+		"Tyranids_icons/influencebar/sglass_02",
+		"Tyranids_icons/influencebar/sglass_03",
+		"Tyranids_icons/influencebar/sglass_04",
+		"Tyranids_icons/influencebar/sglass_05",
+		"Tyranids_icons/influencebar/sglass_06",
+		"Tyranids_icons/influencebar/sglass_07",
+		"Tyranids_icons/influencebar/sglass_08",
+		"Tyranids_icons/influencebar/sglass_09",
+		"Tyranids_icons/influencebar/sglass_10",
+		"Tyranids_icons/influencebar/sglass_11",
+		"Tyranids_icons/influencebar/sglass_12",
+		"Tyranids_icons/influencebar/sglass_13",
+		"Tyranids_icons/influencebar/sglass_14",
+		"Tyranids_icons/influencebar/sglass_15",
+		"Tyranids_icons/influencebar/sglass_16",
+		"Tyranids_icons/influencebar/sglass_17",
+		"Tyranids_icons/influencebar/sglass_18",
+		"Tyranids_icons/influencebar/sglass_19",
+		"Tyranids_icons/influencebar/sglass_20",
+		"Tyranids_icons/influencebar/sglass_21",
+		"Tyranids_icons/influencebar/sglass_22",
+		"Tyranids_icons/influencebar/sglass_23",
+		"Tyranids_icons/influencebar/sglass_24",
+		"Tyranids_icons/influencebar/sglass_25",
+		"Tyranids_icons/influencebar/sglass_26",
+		"Tyranids_icons/influencebar/sglass_27",
+		"Tyranids_icons/influencebar/sglass_28",
+		"Tyranids_icons/influencebar/sglass_29",
+		"Tyranids_icons/influencebar/sglass_30",
+	}
+	-- Ceate an empty group
+	tyr_eg_empty = EGroup_CreateIfNotFound( "tyr_eg_empty" )
+	local local_player = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+
+	if Player_GetRaceName(local_player) == "tyranids_race" then
+		-- Button_SetTextures( ButtonID, enabled, disabled, hover )
+		Button_SetTextures( Influence_Percent, "Tyranids_icons/percent/20", "Tyranids_icons/percent/20", "Tyranids_icons/percent/20" )
+		Button_SetTextures( Influence_FG, Bar_InfCap[2], Bar_InfCap[2], Bar_InfCap[2] )
+		Button_SetTextures( Influence_BG, Bar_InfCur[6], Bar_InfCur[6], Bar_InfCur[6] )
+	end
+	-- And tooltips too
+	Button_SetTooltip( Influence_FG, "$16025447", "$16025448" )
+	Button_SetTooltip( Influence_Percent, "$16025447", "$16025448" )
+
+end
+
+--------------------------------------------------
+--            AI Resource fix Rule              --
+--------------------------------------------------
+
+-- AI players only get a tenth of the faith/souls resource for a given income. We'll fix that for Nids.
+function AI_Res_Fix_Rule()
+	for i=1, Tyranids_Players_Number do
+		if Player_IsAlive(g_TyranidsPlayersIDs[i]) then
+			if player_IsTyrAI(g_TyranidsPlayersIDs[i]) then -- Only for AI!
+
+				-- set default number of LP's and addons to zero
+				Tyr_nLP0=0
+				Tyr_nLP1=0
+				Tyr_nLP2=0
+
+				-- Create EGroup with all entities of the current AI Tyranids Player
+				Player_GetEntities( g_TyranidsPlayersIDs[i] )
+
+				-- Count number of constructed chimneys with their addons in this EGroup
+				EGroup_ForEach( EGroup_FromName( "__Player"..Player_GetID(g_TyranidsPlayersIDs[i]).."Entities" ), Tyr_Count_LP_Addons )
+
+				-- Calculate missing Influence from the expected incomes
+				local missing_inf = 0.9*( 0.15*Tyr_nLP0 + 0.0625*Tyr_nLP1 + 0.125*Tyr_nLP2 )
+
+				-- Cap Influence Income to 1.0 according to tyranids' racebps AE file (0.9 + 0.1)
+				if missing_inf > 0.9 then
+					missing_inf = 0.9
+				end
+
+				-- Add the missing Influence to the AI player
+				Player_AddResource( g_TyranidsPlayersIDs[i], RT_Faith, missing_inf )
+			end
+		else
+			table.remove(g_TyranidsPlayersIDs, i)
+			Tyranids_Players_Number = table.getn(g_TyranidsPlayersIDs)
+			-- If all Tyranids players are dead, remove the rules
+			if Tyranids_Players_Number == 0 then
+				Rule_Remove(Tweaks_AddMainRule)
+				Rule_Remove(InfluenceCap_Rule)
+				Rule_Remove(AI_Res_Fix_Rule)
+				Rule_Remove(Tyranids_BuilderStuckFixTest)
+				Tyranids_DisplayDeadPlayer()
+				print("Tyranids TaskBar and Influence Rules removed!")
+			end
+			return
+		end
+	end
+end
+
+
+--------------------------------------------------
+--       Influence Rules    (it sure does!)     --
+--------------------------------------------------
+
+-- Influence Managing
+function InfluenceCap_Rule()
+
+	for i=1, Tyranids_Players_Number do
+		-- Keep Max Influence (faith) to 100
+		if Player_GetResource( g_TyranidsPlayersIDs[i], RT_Faith ) > 100 then
+			Player_SetResource( g_TyranidsPlayersIDs[i], RT_Faith, 100 )
+		end
+		-- Keep Power > 0, because there are cases where an AI player gets
+		-- negative values of power, crippling the race
+		if Player_GetResource( g_TyranidsPlayersIDs[i], RT_Power ) < 0 then
+			Player_SetResource( g_TyranidsPlayersIDs[i], RT_Power, 0 )
+		end
+	end
+end
+
+
+function Tyranids_DisplayDeadPlayer()
+	Button_SetTextures( Influence_Percent, "Tyranids_icons/percent/0", "Tyranids_icons/percent/0", "Tyranids_icons/percent/0" )
+	Button_SetTextures( Influence_FG, Bar_InfCap[1], Bar_InfCap[1], Bar_InfCap[1] )
+	Button_SetTextures( Influence_BG, Bar_InfCur[1], Bar_InfCur[1], Bar_InfCur[1] )
+	Button_SetTooltip( Influence_FG, "$16025447", "$16025448" )
+	Button_SetTooltip( Influence_Percent, "$16025447", "$16025448" )
+end
+
+
+-- Local display
+function InfluenceDisp_Rule()
+
+		local playerID = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+
+		if not Player_IsAlive( playerID ) then
+			Tyranids_DisplayDeadPlayer()
+			return
+		end
+
+		-- Set default number of chimneys to zero
+		ChimneyCount = 0
+
+		-- Create EGroup with all entities of the focused_player
+		Player_GetEntities( playerID )
+
+		-- Count number of constructed chimneys in this EGroup
+		EGroup_ForEach( EGroup_FromName( "__Player"..Player_GetID(playerID).."Entities" ), Tyr_Count_Chimneys )
+
+
+		  --[[ CurSPs = Player_GetNumStrategicPoints( playerID )
+		   CurRelics = Player_GetBlueprintCount( playerID, "relic_struct" )
+		   ChimneyCount = Player_GetBlueprintCount( focused_player, "tyranids_spore_chimney" )	
+		   Tyr_nLP0 = Player_GetBuildingsCountOnly(playerID, {"tyranids_spore_chimney"}) ]]
+
+		-- Get current Influence
+		iInfluence = Player_GetResource( playerID, RT_Faith )
+
+		-- Make sure we didn't go over 100 (in case the limiting rule was a bit delayed), in terms of textures
+		if iInfluence > 100 then iInfluence = 100 end
+
+		-- Set Influence Cap
+		InfCap = 20+10*ChimneyCount
+		if InfCap > 100 then
+			InfCap = 100
+		end
+
+		-- "Paint" resource text!
+		Button_SetTextures( Influence_Percent, "Tyranids_icons/percent/"..iInfluence.."", "Tyranids_icons/percent/"..iInfluence.."", "Tyranids_icons/percent/"..iInfluence.."" )
+
+		-- Manage the Influence UI: Foreground (hard cap)
+		if ( InfCap == 0 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[1], Bar_InfCap[1], Bar_InfCap[1] )
+		elseif ( InfCap == 20 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[2], Bar_InfCap[2], Bar_InfCap[2] )
+		elseif ( InfCap == 30 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[3], Bar_InfCap[3], Bar_InfCap[3] )
+		elseif ( InfCap == 40 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[4], Bar_InfCap[4], Bar_InfCap[4] )
+		elseif ( InfCap == 50 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[5], Bar_InfCap[5], Bar_InfCap[5] )
+		elseif ( InfCap == 60 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[6], Bar_InfCap[6], Bar_InfCap[6] )
+		elseif ( InfCap == 100 ) then
+			Button_SetTextures( Influence_FG, Bar_InfCap[7], Bar_InfCap[7], Bar_InfCap[7] )
+		else	-- In doubt, show all
+			Button_SetTextures( Influence_FG, Bar_InfCap[7], Bar_InfCap[7], Bar_InfCap[7] )
+		end
+
+		-- Manage the Influence UI: Background (resource)
+		if ( iInfluence >= 100 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[31], Bar_InfCur[31], Bar_InfCur[31] )
+		elseif ( iInfluence >= 96 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[30], Bar_InfCur[30], Bar_InfCur[30] )
+		elseif ( iInfluence >= 93 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[29], Bar_InfCur[29], Bar_InfCur[29] )
+		elseif ( iInfluence >= 90 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[28], Bar_InfCur[28], Bar_InfCur[28] )
+		elseif ( iInfluence >= 87 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[27], Bar_InfCur[27], Bar_InfCur[27] )
+		elseif ( iInfluence >= 84 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[26], Bar_InfCur[26], Bar_InfCur[26] )
+		elseif ( iInfluence >= 80 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[25], Bar_InfCur[25], Bar_InfCur[25] )
+		elseif ( iInfluence >= 77 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[24], Bar_InfCur[24], Bar_InfCur[24] )
+		elseif ( iInfluence >= 74 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[23], Bar_InfCur[23], Bar_InfCur[23] )
+		elseif ( iInfluence >= 71 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[22], Bar_InfCur[22], Bar_InfCur[22] )
+		elseif ( iInfluence >= 68 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[21], Bar_InfCur[21], Bar_InfCur[21] )
+		elseif ( iInfluence >= 64 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[20], Bar_InfCur[20], Bar_InfCur[20] )
+		elseif ( iInfluence >= 61 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[19], Bar_InfCur[19], Bar_InfCur[19] )
+		elseif ( iInfluence >= 58 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[18], Bar_InfCur[18], Bar_InfCur[18] )
+		elseif ( iInfluence >= 55 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[17], Bar_InfCur[17], Bar_InfCur[17] )
+		elseif ( iInfluence >= 52 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[16], Bar_InfCur[16], Bar_InfCur[16] )
+		elseif ( iInfluence >= 48 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[15], Bar_InfCur[15], Bar_InfCur[15] )
+		elseif ( iInfluence >= 45 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[14], Bar_InfCur[14], Bar_InfCur[14] )
+		elseif ( iInfluence >= 42 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[13], Bar_InfCur[13], Bar_InfCur[13] )
+		elseif ( iInfluence >= 39 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[12], Bar_InfCur[12], Bar_InfCur[12] )
+		elseif ( iInfluence >= 36 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[11], Bar_InfCur[11], Bar_InfCur[11] )
+		elseif ( iInfluence >= 32 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[10], Bar_InfCur[10], Bar_InfCur[10] )
+		elseif ( iInfluence >= 29 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[9], Bar_InfCur[9], Bar_InfCur[9] )
+		elseif ( iInfluence >= 26 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[8], Bar_InfCur[8], Bar_InfCur[8] )
+		elseif ( iInfluence >= 23 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[7], Bar_InfCur[7], Bar_InfCur[7] )
+		elseif ( iInfluence >= 20 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[6], Bar_InfCur[6], Bar_InfCur[6] )
+		elseif ( iInfluence >= 16 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[5], Bar_InfCur[5], Bar_InfCur[5] )
+		elseif ( iInfluence >= 12 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[4], Bar_InfCur[4], Bar_InfCur[4] )
+		elseif ( iInfluence >= 8 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[3], Bar_InfCur[3], Bar_InfCur[3] )
+		elseif ( iInfluence >= 4 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[2], Bar_InfCur[2], Bar_InfCur[2] )
+		elseif ( iInfluence >= 0 ) then
+			Button_SetTextures( Influence_BG, Bar_InfCur[1], Bar_InfCur[1], Bar_InfCur[1] )
+		end
+end
+
+
+------------------------------------
+-- Assisting Function (MP games)  --
+------------------------------------
+
+-- Checks if a player is Human or CPU in MP games. Cpu_IsCpuPlayer does not suffice in MP games.
+function player_IsTyrAI( playerID )
+	local name = string.sub(Player_GetDisplayName(playerID)[1], -2)
+	if (name == " 1" or name == " 2" or name == " 3" or name == " 4" or name == " 5" or name == " 6" or name == " 7" or name == " 8") then
+		return true
+	else
+		return false
+	end
+end
+
+
+--------------------------------------------------
+--              Start the show!                 --
+--------------------------------------------------
+
+Scar_AddInit(Tyranids_Threshold)
+
+
+--------------------------------------------------
+--		Let's try this thing		--
+--------------------------------------------------
+function AI_reinit_Tyranids()
+	if AI_DIS_WC_Switch ~= true then
+		if AI_ReInit_AIFlag == 1 then
+		Rule_AddOneShot(AI_Proper_ReInit,0)
+		print "Tyranid Reinit flag detected"
+		end
+	end
+end

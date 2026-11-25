@@ -1,0 +1,38 @@
+----------------------------------------------------------------------------------------------------------------
+-- Single player tables of entities to precache for Soulstorm
+-- Created by CornCobMan @ 2/4/2023
+-------------------------------------------------
+-- Uni 
+-------------------------------------------------
+_t_Uni_Precache = {
+}
+
+function Uni_DoNotPrecacheForRace(playerID, racename)
+	for k, v in pairs( _t_Uni_Precache ) do
+		if k ~= racename then -- If race doesn't match Player's race
+			-- Don't precache anything for this race
+			if _t_Uni_Precache[k].old_stuff ~= nil then
+				Player_DoNotPrecache(playerID, _t_Uni_Precache[k].old_stuff )
+			end
+			if _t_Uni_Precache[k].new_stuff ~= nil then
+				Player_DoNotPrecache(playerID, _t_Uni_Precache[k].new_stuff )
+			end
+			if _t_Uni_Precache[k].titan_stuff ~= nil then
+				Player_DoNotPrecache(playerID, _t_Uni_Precache[k].titan_stuff )
+			end
+		else -- If race matches Player's race
+			-- Don't precache new stuff if the new stuff game rule isn't enabled
+			if NewVanillaSquadsEnabled_Switch ~= true then
+				if _t_Uni_Precache[k].new_stuff ~= nil then
+					Player_DoNotPrecache(playerID, _t_Uni_Precache[k].new_stuff )
+				end
+			end
+			-- Don't precache titan stuff if the new titans rule isn't enabled
+			if VanillaTitansWC_Enabled ~= true then
+				if _t_Uni_Precache[k].titan_stuff ~= nil then
+					Player_DoNotPrecache(playerID, _t_Uni_Precache[k].titan_stuff )
+				end
+			end
+		end
+	end
+end

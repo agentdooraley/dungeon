@@ -1,0 +1,458 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "space_marine_squad_tactical"
+DeCapturingSquadMmbrs = 5
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "space_marine_barracks"
+EnemyBuilding1Squad1 = {"space_marine_squad_dreadnought", 1, 1}
+EnemyBuilding1Squad2 = {"space_marine_squad_vanguard_veteran", 1, 5}
+EnemyBuilding1Squad3 = {"space_marine_squad_sternguard_veteran", 1, 5}
+EnemyBuilding2Name = "space_marine_armoury"
+EnemyBuilding2Squad1 = {"space_marine_squad_dreadnought", 1, 1}
+EnemyBuilding2Squad2 = {"space_marine_squad_razorback_rikarius", 1, 1}
+EnemyBuilding2Squad3 = {"space_marine_squad_terminator", 1, 8}
+EnemyBuilding2SquadA1 = {"space_marine_squad_whirlwind",1,1}
+EnemyBuilding2SquadA2 = {"space_marine_squad_whirlwind",1,1}
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "space_marine_squad_rhino"
+EnemyTransportedSquad = {"space_marine_squad_tactical", 2, 5}
+EnemyHonourGuardSquad1 = {"space_marine_squad_veteran_stronghold_sp", 1, 8}
+EnemyHonourGuardSquad2 = {"space_marine_squad_chaplain_advance_sp", 1, 1}
+EnemyHonourGuardSquad3 = {"space_marine_squad_sp_metiel", 1, 1}
+EnemyHonourGuardSquad4 = {"space_marine_squad_primaris_intercessor", 1, 7}
+EnemyHonourGuardSquad_Uber = {"space_marine_squad_venerable_dreadnought", 1, 1}	
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"space_marine_squad_sp_metiel"}
+EnemyCommanderSquadName2 = {"space_marine_squad_apothecary_veteran_stronghold_sp"}
+EnemyCommanderSquadName3 = {"space_marine_squad_chaplain"}
+EnemyCommanderSquadName4 = {"space_marine_squad_librarian"}
+EnemyCommanderSquadName5 = {"space_marine_squad_force_commander"}
+EnemyCommanderSquadName6 = {"space_marine_squad_force_commander_advance_sp"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_warhound_titan", "mk_uberspawn_2", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_land_raider", "mk_uberspawn_1", 4, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_predator", "mk_uberspawn_2", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_dreadnought", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_librarian", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_storm_talon", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "space_marine_squad_tempest", "mk_enemy_pos", 2, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_gun_scout", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_tactical", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_gun", 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_sniper_rifle", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_1b", "space_marine_squad_tactical", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_1b"), 1), "space_marine_plasma_gun", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_chaplain_advance_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_grey_knights", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_sniper_rifle", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_devastator", marker, 1, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_cannon_devastator", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_vanguard_veteran", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_terminator_veteran_sp", marker, 1, 5)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_assault_cannon_terminator_veteran", 4)
+	end
+end
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_tactical", marker, 3, 6)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_gun_scout", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_tactical", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_gun", 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_sniper_rifle", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_1b", "space_marine_squad_tactical", marker, 2, 8)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_1b"), 1), "space_marine_plasma_gun", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_chaplain_advance_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_grey_knights", marker, 1, 5)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_scout", marker, 1, 3)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_sniper_rifle", 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_devastator", marker, 1, 6)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_plasma_cannon_devastator", 2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_vanguard_veteran", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "space_marine_squad_terminator_veteran_sp", marker, 1, 5)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), "space_marine_assault_cannon_terminator_veteran", 4)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_scout", marker, 2, 3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_scout", marker, 1, 3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_scout","space_marine_sniper_rifle",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 2, 1)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_assault", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 1, 1)
+		if g_surv_high_resources then
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_heavy_bolter_tactical",2)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 4,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 1, 1)
+		end
+	elseif wave == 4 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "marine_health_upgrade_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_heavy_bolter_tactical",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_chaplain", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_assault", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 1, 1)
+		if g_surv_high_resources then
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_missile_launcher_tactical",2)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_whirlwind", marker, 1,1 )
+		end
+	elseif wave == 5 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "marine_accuracy_upgrade_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_primaris_intercessor", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_primaris_intercessor","space_marine_grenade_launcher_intercessor",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_devastator", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_missile_launcher_tactical",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_heavy_bolter_tactical",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_assault", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_razorback_rikarius", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_whirlwind", marker, 1,1 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_whirlwind", marker, 2,1 )
+		end
+	elseif wave == 6 then
+			if g_difficulty ~= nil then
+				if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+					pcall(Player_GrantResearch, g_enemy_PlayerID, "marine_scout_infiltrate_research")
+				end
+			end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_scout", marker, 2, 3)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_scout","space_marine_flamer_scout",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_missile_launcher_tactical",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_heavy_bolter_tactical",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 5, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_speeder", marker, 2,1 )
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "marine_health_upgrade_research_2")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "marine_accuracy_upgrade_research_2")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_sternguard_veteran", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_sternguard_veteran","space_marine_bolter_sternguard_vengeance",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tactical", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tactical","space_marine_heavy_bolter_tactical",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_vanguard_veteran", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_vanguard_veteran","space_marine_power_sword_vanguard",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_vanguard_veteran","space_marine_thunder_hammer_vanguard",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_tempest",marker,2,1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_tempest","space_marine_missile_frag_tempest",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_storm_talon",marker,3,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 2, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_devastator", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_lascannon_devastator",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_grav_gun_devastator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_terminator_assault", marker, 8, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_chaplain_advance_sp", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_chaplain", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_raider",marker,1,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 3, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_devastator", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_lascannon_devastator",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_grav_gun_devastator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_terminator", marker, 4, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_raider",marker,1,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_ironclad", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_terminator_assault", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 3, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_predator","space_marine_lascannon_twin_predator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_whirlwind", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_raider",marker,1,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_warhound_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)		
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_devastator", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_lascannon_devastator",2)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_devastator","space_marine_grav_gun_devastator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_sternguard_veteran", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_sternguard_veteran","space_marine_bolter_sternguard_tempest",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_sternguard_veteran", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_sternguard_veteran","space_marine_bolter_sternguard_vengeance",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_predator", marker, 3, 1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_predator","space_marine_lascannon_twin_predator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_terminator_assault", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_force_commander_primaris", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_xerill", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_raider_anvilarum",marker,1,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_land_raider_helios",marker,1,1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought_hellfire", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_dreadnought", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_librarian", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_whirlwind", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_warhound_titan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_reaver_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+		-- Add special Boss Encounters, if the Heroic Defence WC is enabled
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+				Rule_AddOneShot(Rule_Bananaman_Returns, 70)
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_legio_custodes_assault", marker, 1, 6)
+				SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_legio_custodes_assault","space_marine_legio_custodes_relic_blade_tactical",3)
+			elseif g_difficulty=="insane"	then mdfr = 4
+				Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_legio_custodes_assault", marker, 2, 6)
+				SGroup_UpgradeSquadsWithWeapon(sgroupName,"space_marine_squad_legio_custodes_assault","space_marine_legio_custodes_relic_blade_tactical",3)
+				Rule_AddOneShot(Rule_Bananaman_Returns_Hard, 70)
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_terminator_assault", "mk_uberspawn_1", 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "space_marine_squad_chapter_master", "mk_uberspawn_1", 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "space_marine_squad_chapter_master"), g_enemy_PlayerID)
+		end
+	end
+end	
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_ThunderHawkLanding,Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1),Get_NextRule_InitiationTMR_Survival())
+end
+
+
+function Rule_ThunderHawkLanding()
+	g_thunderhawk_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local temp_pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	g_thunderhawk_pos[0] = Community_Extended_SpawnablePositionSearch(temp_pos,"thunderhawk_survival",g_enemy_PlayerID,10)
+	Util_StartIntel(EVENTS.IE_SM_Arrive_P1)
+	pg_ThunderHawk_P1 = Ping_Position(g_thunderhawk_pos[0],true)
+	Rule_AddOneShot(Rule_TH_Landing_Start, 14)
+end
+
+
+function Rule_TH_Landing_Start()
+	Ping_Stop(pg_ThunderHawk_P1)
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_Thunderhawk_Land"))
+	local temp_pos = Community_Extended_SpawnablePositionSearch(g_thunderhawk_pos[0],"thunderhawk_survival",g_enemy_PlayerID,30)
+	g_thunderhawk_pos[0] = temp_pos
+	local surv_TH_Landing_Entity = Entity_Create("thunderhawk_survival", g_enemy_PlayerID, g_thunderhawk_pos[0])
+	Entity_Spawn(surv_TH_Landing_Entity);EGroup_Add("eg_Thunderhawk_Land",surv_TH_Landing_Entity)
+	Anim_PlayEGroupAnim("eg_Thunderhawk_Land", "sp_land")
+	Rule_AddOneShot(Rule_Unload_TH_Squads, 8)
+end
+
+
+function Rule_Unload_TH_Squads()
+	if EGroup_CountSpawned("eg_Thunderhawk_Land") > 0 then
+		local marines = nil; local pos = nil
+		local front_pos = World_Pos(g_thunderhawk_pos[0].x + 11,g_thunderhawk_pos[0].y,g_thunderhawk_pos[0].z + 3.2)
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_TH_attackers"))
+		pos = Community_Extended_SpawnablePositionSearch(front_pos,"spawn_test_entity",g_enemy_PlayerID,15)
+		marines = Squad_Create("space_marine_squad_tactical_dxp3_nis", g_enemy_PlayerID, pos, 8)
+		Squad_Spawn(marines, pos); SGroup_Add("sg_TH_attackers",marines)
+		SGroup_UpgradeSquadsWithWeapon("sg_TH_attackers","space_marine_squad_tactical_dxp3_nis","space_marine_missile_launcher_tactical",2)
+		pos = Community_Extended_SpawnablePositionSearch(front_pos,"spawn_test_entity",g_enemy_PlayerID,15)
+		marines = Squad_Create("space_marine_squad_tactical_dxp3_nis", g_enemy_PlayerID, pos, 8)
+		Squad_Spawn(marines, pos); SGroup_Add("sg_TH_attackers",marines)
+		pos = Community_Extended_SpawnablePositionSearch(front_pos,"spawn_test_entity",g_enemy_PlayerID,15)
+		marines = Squad_Create("space_marine_squad_tactical_dxp3_nis", g_enemy_PlayerID, pos, 8)
+		Squad_Spawn(marines, pos); SGroup_Add("sg_TH_attackers",marines)
+		SGroup_UpgradeSquadsWithWeapon("sg_TH_attackers","space_marine_squad_tactical_dxp3_nis","space_marine_heavy_bolter_tactical",2)
+		Rule_LockSGroupSurvivalPlayer("sg_TH_attackers")
+		Cmd_AttackMovePos("sg_TH_attackers",Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]])
+		Rule_AddOneShot(Rule_TH_Takeoff, 3)
+	else
+		EGroup_DeSpawn("eg_Thunderhawk_Land")
+		EGroup_Destroy("eg_Thunderhawk_Land")
+	end
+end
+
+
+function Rule_TH_Takeoff()
+	if EGroup_CountSpawned("eg_Thunderhawk_Land") > 0 then
+		Anim_PlayEGroupAnim("eg_Thunderhawk_Land", "sp_take_off")
+		Rule_AddOneShot(Rule_TH_Remove, 7.5)
+	else
+		EGroup_DeSpawn("eg_Thunderhawk_Land")
+		EGroup_Destroy("eg_Thunderhawk_Land")
+	end
+end
+
+
+function Rule_TH_Remove()
+	if EGroup_Count("eg_Thunderhawk_Land") > 0 then
+		EGroup_DeSpawn("eg_Thunderhawk_Land")
+		EGroup_Destroy("eg_Thunderhawk_Land")
+	end
+end
+
+function Rule_Bananaman_Returns()
+	g_banana_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_bananaman_attack"))
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local banana_pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	g_banana_pos[0] = Community_Extended_SpawnablePositionSearch(banana_pos,"spawn_test_entity",g_enemy_PlayerID,10)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_LC_attackers"))
+	Util_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_LC_attackers", "space_marine_squad_legio_custodes_custodian", Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]], 1, 6)
+	SGroup_UpgradeSquadsWithWeapon	("sg_LC_attackers","space_marine_squad_legio_custodes_custodian","space_marine_legio_custodes_flamer_heavy_tactical",4)
+	print "Now."
+ 	Cmd_SetStance( "sg_LC_attackers", STANCE_StandGround ) 
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+	Cmd_AttackMovePos("sg_LC_attackers",sg,Srvl_PlayerInfo.HQpos[0])
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+end
+
+
+
+function Rule_Bananaman_Returns_Hard()
+	g_banana_pos = {}
+	g_player_to_attack_IDX = {}
+	local alive_players = {}
+	EGroup_Clear(EGroup_CreateIfNotFound("eg_bananaman_attack"))
+	for i=0, World_GetPlayerCount()-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[i]) then table.insert(alive_players,i) end
+	end
+	
+	g_player_to_attack_IDX[0] = alive_players[World_GetRand(1,table.getn(alive_players))]
+	local banana_pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[g_player_to_attack_IDX[0]]))
+	g_banana_pos[0] = Community_Extended_SpawnablePositionSearch(banana_pos,"spawn_test_entity",g_enemy_PlayerID,10)
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_LC_attackers"))
+	Util_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_LC_attackers", "space_marine_squad_legio_custodes_custodian", Srvl_PlayerInfo.HQpos[g_player_to_attack_IDX[0]], 2, 6)
+	SGroup_UpgradeSquadsWithWeapon	("sg_LC_attackers","space_marine_squad_legio_custodes_custodian","space_marine_legio_custodes_flamer_heavy_tactical",4)
+	print "Now."
+ 	Cmd_SetStance( "sg_LC_attackers", STANCE_StandGround ) 
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+	Cmd_AttackMovePos("sg_LC_attackers",sg,Srvl_PlayerInfo.HQpos[0])
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+	Rule_LockSGroupSurvivalPlayer("sg_LC_attackers")
+	
+
+end

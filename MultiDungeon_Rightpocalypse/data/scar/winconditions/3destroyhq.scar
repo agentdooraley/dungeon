@@ -1,0 +1,125 @@
+-------------------------------------------------------------------------------------------------
+-- Destroy HQ Condtition (for all mod factions)
+-- Edited by Thudmeizer  @ 04.06.2008
+-- Edited by Gambit @ 10.03.2013, in order to include most of the know races and secondary HQs.
+-- Edited by Gambit @ 28.10.2015, in order to include support for the Mobile HQ of Ad Mech
+--	Players with no HQs lose.
+-- Re-coded by Gambit @ 20.1.2018
+--
+-- (c) 2003 Relic Entertainment Inc.
+-------------------------------------------------------------------------------------------------
+import("ScarUtil.scar")
+
+function DestroyHQ()
+	DestroyHQ_WC_Enabled = true
+	-- wait a bit of time before adding this rule so it doesn't get
+	-- executed on the same frame as the other win conditions
+	Rule_AddOneShot(DestroyHQ_AddMainRule, 0.75)
+end
+
+Scar_AddInit(DestroyHQ)
+
+function DestroyHQ_AddMainRule()
+	if G_Is_LastStand_Map ~= nil then
+		print("LAST STAND Map.  Destroy HQ (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	if G_Is_SpaceHulk_Map ~= nil then
+		print("SPACE HULK Map.  Destroy HQ (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+	-- Create the global HQ blueprint tables for each player
+	PlayerHQ_BPT = {}
+	PlayerHQSquads_BPT = {}
+	for i=0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(i)
+		local race_name = Player_GetRaceName(playerID)
+		if Global_RaceStats[race_name] ~= nil then
+			-- Create the ENTITY bp table from the array
+			PlayerHQ_BPT[i] = {}
+			local total_HQs = table.getn(Global_RaceStats[race_name].HQ)
+			if total_HQs > 0 then -- Only for races that DO have HQs!! (see droptroops_race, for example) So put in a nil, and check it
+				for j=1, total_HQs do
+					local entry = { name = Global_RaceStats[race_name].HQ[j], count = 1 }
+					table.insert( PlayerHQ_BPT[i], entry )
+				end
+			end
+			-- Create the SQUAD bp table from the array, IF the race has squad HQs
+			if Global_RaceStats[race_name].HQSquad ~= nil then
+				PlayerHQSquads_BPT[i] = {}
+				for j=1, table.getn(Global_RaceStats[race_name].HQSquad) do
+					local entry = { name = Global_RaceStats[race_name].HQSquad[j], count = 1 }
+					table.insert( PlayerHQSquads_BPT[i], entry )
+				end
+			end
+		else
+			print("Race "..race_name.." NOT supported for DestroyHQ! Rule won't start!")
+			return
+		end
+	end
+	-- Now, start the DestroyHQ win condition
+	obj_table_P4 = { title_id = 60006, short_desc_id = 60306, help_tip_id = 60306 }
+	Objective_Add( obj_table_P4, 1 )
+	Rule_AddIntervalDelay(CheckDestroyHQ, 1, 1)
+end
+
+
+function CheckDestroyHQ()
+	for i=0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(i)
+		if Player_IsAlive(playerID) then
+			if table.getn(PlayerHQ_BPT[i]) > 0 then -- Normal DestroyHQ check
+				if EGroup_ContainsBlueprints(Player_GetEntities(playerID),PlayerHQ_BPT[i],false) then
+				elseif PlayerHQSquads_BPT[i] ~= nil and SGroup_ContainsBlueprints(Player_GetSquads(playerID),PlayerHQSquads_BPT[i],false) then
+				else Player_Kill(playerID) end
+			else -- The race has no HQs! Go directly into Annihilate check to see if it has other buildings.
+				local race_name = Player_GetRaceName(playerID)
+				local bldngEX_Anhlt = Global_RaceStats[race_name].NoSqdBldngs
+				if table.getn(bldngEX_Anhlt) == 0 and Global_RaceStats[race_name].NoProductionBldngs ~= nil then -- The race DOES NOT EVEN HAVE NoSquad buildings! Use Exterminate check
+					local squads_alive = false
+					if Global_RaceStats[race_name].NotActualSqds ~= nil then
+						if Player_HasSquadsExcept(playerID,Global_RaceStats[race_name].NotActualSqds) then squads_alive = true end
+					else
+						if SGroup_CountSpawned(Player_GetSquads(playerID)) > 0 then squads_alive = true end
+					end
+					if not squads_alive then
+						if Global_RaceStats[race_name].InitialHQ ~= nil then
+							local dummy_HQ_number = table.getn(Global_RaceStats[race_name].InitialHQ)
+							local initial_HQ_finder = function(egroupid, itemindex, entityID)
+								for j=1, dummy_HQ_number do
+									if Entity_GetBlueprintName(entityID) == Global_RaceStats[race_name].InitialHQ[j] then return true end
+								end
+							end
+							if EGroup_ForEachAllOrAny(Player_GetEntities(playerID), false, initial_HQ_finder) then
+							else Player_Kill(playerID)
+							end
+						else
+							Player_Kill(playerID)
+						end
+					end
+				else
+					if not Player_HasBuildingsExcept( playerID, bldngEX_Anhlt ) then
+						if Global_RaceStats[race_name].HQSquad ~= nil then
+							local hq_nmbr = table.getn(Global_RaceStats[race_name].HQSquad)
+							local mobile_hq_decetion = function(sgroupid, itemindex, squadID)
+								local name = Squad_GetBlueprintName(squadID)
+								for j = 1, hq_nmbr do
+									if name == Global_RaceStats[race_name].HQSquad[j] then
+										return true
+									end
+								end
+							end				
+							if not SGroup_ForEachAllOrAnyEx(Player_GetSquads(playerID), false, mobile_hq_decetion, true, false) then
+								Player_Kill(playerID)
+							end
+						else
+							Player_Kill(playerID)
+						end
+					end
+				end
+			end
+		end
+	end
+	-- check if only one team left -- if only one team left, they win and everybody else loses
+	Util_CheckOneTeamLeft("3destroyhq")
+end

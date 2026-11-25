@@ -1,0 +1,182 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                             LUA Extensions                                         ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+function deepcopy(object)
+	local lookup_table = {}
+	local function _copy(object)
+	    if type(object) ~= "table" then
+		return object
+	    elseif lookup_table[object] then
+		return lookup_table[object]
+	    end
+	    local new_table = {}
+	    lookup_table[object] = new_table
+	    for index, value in pairs(object) do
+		new_table[_copy(index)] = _copy(value)
+	    end
+	    return setmetatable(new_table, getmetatable(object))
+	end
+	return _copy(object)
+end
+
+--[[ void fullprint( String inittext, Var printval, [table exclulist], [table subslist])
+prints object content to console
+exclulist: table
+	"keyname"=0,
+subslist: table
+	"keyname"="substitute name"
+]]
+function fullprint(inittext,printval,exclulist, subslist)
+
+	local function comptable(table1,table2)
+		return table1.name>table2.name
+	end
+
+	if exclulist==nil then exclulist={} end
+	if subslist==nil then subslist={} end
+	
+	local ListedData={}
+	
+	local stacktable={ { name=inittext, value=printval } }
+	local stackindex=1
+
+	while stackindex>0 do
+		
+		if type(stacktable[stackindex].value)=="table" then
+			
+			if ListedData[stacktable[stackindex].value]==nil then
+				
+				print(stacktable[stackindex].name .. "=" .. tostring(stacktable[stackindex].value) .. " (" .. type(stacktable[stackindex].value) .. ")")
+				
+				ListedData[stacktable[stackindex].value]=stacktable[stackindex].name
+				
+				local search_table=stacktable[stackindex].value
+				local search_name=stacktable[stackindex].name
+				
+				stacktable[stackindex]=nil
+				stackindex=stackindex-1
+				
+				for key_name,key_value in pairs(search_table) do
+					if exclulist[key_name]==nil then
+						stackindex=stackindex+1
+						if subslist[key_name]==nil then
+							stacktable[stackindex]={name=search_name .. "." .. tostring(key_name),value=key_value}
+						else
+							stacktable[stackindex]={name=search_name .. "." .. tostring(subslist[key_name]),value=key_value}
+						end
+					else
+						print(search_name .. "." .. tostring(key_name) .. "=" .. tostring(key_value) .. " (" .. type(key_value) .. ") --IN EXCLUSIONLIST--")
+					end
+				end
+				
+				table.sort(stacktable,comptable)
+				
+			else
+				
+				print(stacktable[stackindex].name .. "=" .. tostring(stacktable[stackindex].value) .. " (" .. type(stacktable[stackindex].value) .. ")".. " => " .. ListedData[stacktable[stackindex].value])
+				stacktable[stackindex]=nil
+				stackindex=stackindex-1
+				
+			end
+			
+		else
+			print(stacktable[stackindex].name .. "=" .. tostring(stacktable[stackindex].value) .. " (" .. type(stacktable[stackindex].value) .. ")")
+			stacktable[stackindex]=nil
+			stackindex=stackindex-1
+		end
+	end
+
+end
+
+-- function used to pointers that do not generate loops
+-- the returned object has two methods:
+-- <objectname>.Add(Object,[Pointer]) stores a pointer to Object. Adress can be forced using Pointer. returns the adress
+-- <objectname>.Get(Pointer) returns the stored object at adress
+--
+-- Warning: storing is weak : data is scrapped by garbage collector if only pointed in this object 
+--
+function NewPointerTable()
+	
+	-- create private table to store pointers
+	local PointerList={} 
+	
+	-- mark the table as weak to allow freeing memory
+	setmetatable(PointerList,{__mode="v"}) 
+
+	-- initialize private counter
+	local Count=0 
+	
+	-- create PointerTable object to be returned
+	local PointerTable={}
+	
+	-- returns the hidden table, do not store.
+	function PointerTable.GetHiddenTable()
+		return PointerTable
+	end
+	
+	-- function used to add objects to the table, pointer can be forced to a position
+	function PointerTable.Add(Object,Pointer)
+		if Pointer==nil then
+			Count=Count+1
+			PointerList[Count]=Object
+			return Count
+		else
+			Count=math.max(Count,Pointer)
+			PointerList[Pointer]=Object
+			return Pointer
+		end
+	end
+	
+	-- recovers an object from the pointer 
+	function PointerTable.Get(Pointer)
+		return PointerList[Pointer]
+	end
+	
+	function PointerTable.Clear(Pointer)
+		PointerList[Pointer]=nil
+	end
+	
+	return PointerTable
+	
+end
+
+-- search for cyclic data in a table. Example: find_cyclicdata("_G",_G)
+function find_cyclicdata(inittext,initvar)
+
+	function scan_data(DataTable)
+		
+		for key_name,key_value in pairs(DataTable) do
+			
+			if type(key_value)=="table" then
+				
+				if callstack[key_value]~=nil then
+					
+					print("Loop found: " .. callstack[DataTable] .. "." .. key_name .. " => " .. callstack[key_value])
+					
+				else
+					
+					callstack[key_value]=callstack[DataTable] .. "." .. key_name
+					
+					scan_data(key_value)
+					
+					callstack[key_value]=nil
+					
+				end
+				
+			end
+			
+		end
+		
+	end
+	
+	callstack={}
+	callstack[initvar]=inittext
+
+	scan_data(initvar)
+	
+end
+
+

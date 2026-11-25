@@ -1,0 +1,87 @@
+------------------------------------------
+-- Campaign Win Conditions Configurator --
+-- User-based condition initiator v 0.3 --
+--    Created by Gambit @ 29/08/2020    --
+------------------------------------------
+
+-- Only works on Campaign!
+if pcall(MetaMap_GetAttackerRaceIndex) then
+	import("Campaign_Conditions_Settings.SCAR")
+	if G_Campaign__TESTING_MODE_DEV == true then import("winconditions/00_GameTesting.scar") end
+	if G_Campaign__Disable_AI == true then import("winconditions/00_GameTesting_ai_disable.scar") end
+	if G_Campaign__AI_Advanced_Tactics == true then import("winconditions/740AIAdvancedTactics.scar") end
+	if G_Campaign__AI_Advanced_Map_Pathing == true then import("winconditions/740AIMapDB.scar") end
+	if G_Campaign__Auto_Reinforce == true then import("winconditions/740AutoReinforce.scar") end
+	if G_Campaign__Day_And_Night == true then
+		-- Not all maps should have a Day/Night cycle. Enable it, in 1 out of 3.
+		if G_DayNight_Campaign_First_Time == nil then
+			G_DayNight_Campaign_First_Time = true
+		else
+			G_DayNight_Campaign_First_Time = false
+		end
+		if G_DayNight_Campaign_Enabled == true then
+			import("winconditions/740Daynight.scar")
+		elseif G_DayNight_Campaign_First_Time and World_GetRand(1,3) == 1 then
+			G_DayNight_Campaign_Enabled = true
+			import("winconditions/740Daynight.scar")
+		end
+	end
+	if G_Campaign__Enable_New_Vanilla_Squads == true then import("winconditions/4Enable_New_Vanilla_Squads.scar") end
+	if G_Campaign__Enable_Bourbon_Squads == true then import("winconditions/742IG_Bourbon_Enable.scar") end
+	if G_Campaign__Enable_Tau_Psi_Ops == true then import("winconditions/745Tau_Psi_Ops_Enable.scar") end
+	if G_Campaign__Player_Auto_Artillery_Fire == true then import("winconditions/740Player_Artillery_Structures_Proper_Firing.scar") end
+	if G_Campaign__Fall_Back == true then import("winconditions/740FallbackMod.scar") end
+	if G_Campaign__FallbackButton == true then import("winconditions/740FallbackButtonMod.scar") end	
+	if G_Campaign__Fortress == true then import("winconditions/740fortress.scar") end
+	if G_Campaign__AutoWIN_Button == true then import("SoulStorm_Campaign_Win.scar") end
+	if G_Campaign__NecronPyramid == true then import("winconditions/5Enable_Necron_Pyramid.scar") end
+	if G_Campaign__DarkEldar_Turrets == true then import("winconditions/5Enable_DarkEldar_Turrets.scar") end
+	if G_Campaign__Tau_Turrets == true then import("winconditions/5Enable_Tau_Turrets.scar") end
+	if G_Campaign__Tyranids_Turrets == true then import("winconditions/745Tyranids_Turrets.scar") end	
+--	if G_Campaign__RandomMapHazardsAndTraps == true then import("winconditions/740Hazards.scar") end
+	if G_Campaign__Heroes == true then import("winconditions/740Heroes.scar") end
+	if G_Campaign__Interval_Dump == true then import("winconditions/740Intervaldump.scar") end
+	if G_Campaign__Small_Battles == true then import("winconditions/6MassiveBattles2.scar") end
+	if G_Campaign__Massive_Battles == true then import("winconditions/6MassiveBattles4.scar") end
+	if G_Campaign__Huge_Battles == true then import("winconditions/6MassiveBattles5.scar") end
+	if G_Campaign__Titanic_Battles == true then import("winconditions/6MassiveBattles6.scar") end
+	if G_Campaign__Impossible_Battles == true then import("winconditions/6MassiveBattles7.scar") end
+	if G_Campaign__Extraordinary_Battles == true then import("winconditions/6MassiveBattles8.scar") end
+	if G_Campaign__Easier_AI == true then import("winconditions/740Easier_AI.scar") end
+	if G_Campaign__Softcore == true then
+		import("winconditions/740Softcore.scar")
+	elseif G_Campaign__Hardcore == true then
+		import("winconditions/740SoftcoreHard.scar")
+	end
+	if G_Campaign__No_Flyers == true then import("winconditions/740NoFlyZone.scar") end
+	if G_Campaign__Race_Specific_Themes == true then import("winconditions/740Race_Specific_Themes.scar") end
+	if G_Campaign__Restricted_Tiering == true then import("winconditions/740RestrictedTiering.scar") end
+	if G_Campaign__Titans == true then import("winconditions/4Titans.scar") end
+	if G_Campaign__Titans_T2 == true then import("winconditions/4TitansTier2.scar") end
+	if G_Campaign__True_Reinforcement == true then import("winconditions/740True_Reinforcement.scar") end
+	if G_Campaign__Weather == true then
+		-- Not all maps should have a weather. Enable it, in 1 out of 3.
+		if G_Weather_Campaign_First_Time == nil then
+			G_Weather_Campaign_First_Time = true
+		else
+			G_Weather_Campaign_First_Time = false
+		end
+		if G_Weather_Campaign_Enabled == true then
+			import("winconditions/740Weather.scar")
+		elseif G_Weather_Campaign_First_Time and World_GetRand(1,3) == 1 then
+			G_Weather_Campaign_Enabled = true
+			import("winconditions/740Weather.scar")
+		end
+	end
+	if G_Campaign__Enable_Eldar_Autarch == true then import("winconditions/742Eldar_Allow_Autarch.scar") end
+	if G_Campaign__Enable_IG_Castor == true then import("winconditions/742IG_Allow_Castor.scar") end
+	if G_Campaign__Enable_IG_Experimental_Weapons == true then import("winconditions/742IG_Experimental_Weapons.scar") end
+	if G_Campaign__Enable_IG_Mogryns_swap == true then import("winconditions/742IG_Mogryns_swap.scar") end
+	if G_Campaign__Enable_WH_ObiWan == true then import("winconditions/747WH_AllowObiWan.scar") end
+	if G_Campaign__Enable_WH_SaintKatherine == true then import("winconditions/747WH_AllowSaintKatherine.scar") end
+	if G_Campaign__Enable_Tekarn_Daimyo == true then import("winconditions/745K_Daimyo.scar") end
+	if G_Campaign__Enable_Tekarn_Acheron == true then import("winconditions/745KAcheron.scar") end
+	if G_Campaign__Enable_Cathay_Units == true then import("winconditions/743CKrieg_Liyue_Units_Enable.scar") end		
+	if G_Campaign__Enable_Necron_Pyramid2_pokeball == true then import("winconditions/5Enable_Necron_Pyramid2_pokeball.scar") end
+	if G_Campaign__Enable_Necron_Pyramid3_pokeball == true then import("winconditions/5Enable_Necron_Pyramid3_pokeball.scar") end
+end

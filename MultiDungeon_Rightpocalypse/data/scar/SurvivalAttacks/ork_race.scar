@@ -1,0 +1,364 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "ork_squad_slugga"
+DeCapturingSquadMmbrs = 6
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "ork_boy_hut"
+EnemyBuilding1Squad1 = {"ork_squad_armored_nob", 2, 4}
+EnemyBuilding1Squad2 = {"ork_squad_tankbusta", 2, 5}
+EnemyBuilding1Squad3 = nil
+EnemyBuilding2Name = "ork_pile_o_guns"
+EnemyBuilding2Squad1 = {"ork_squad_killa_kan", 2, 1}
+EnemyBuilding2Squad2 = {"ork_squad_deff_dread", 1, 1}
+EnemyBuilding2Squad3 = nil
+EnemyBuilding2SquadA1 = {"ork_squad_gunwagon",1,1}
+EnemyBuilding2SquadA2 = {"ork_squad_gunwagon",1,1}
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "ork_squad_looted_rhino"
+EnemyTransportedSquad = {"ork_squad_nob_advance_sp", 3, 2}
+EnemyHonourGuardSquad1 = {"ork_squad_nob_advance_sp", 2, 2}
+EnemyHonourGuardSquad2 = {"ork_squad_bad_dok_sp_trainer", 1, 1}
+EnemyHonourGuardSquad3 = {"ork_squad_warboss_sp_md2", 1, 1}
+EnemyHonourGuardSquad4 = {"ork_squad_slugga_advance_sp", 1, 8}
+
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"ork_squad_bad_dok"}
+EnemyCommanderSquadName2 = {"ork_squad_flyboy"}
+EnemyCommanderSquadName3 = {"ork_squad_mek_boy"}
+EnemyCommanderSquadName4 = {"ork_squad_weirdboy"}
+EnemyCommanderSquadName5 = {"ork_squad_blastajet"}
+EnemyCommanderSquadName6 = {"ork_squad_warboss_advance_sp"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_squiggoth", "mk_uberspawn_1", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_stompa", "mk_uberspawn_1", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_looted_tank", "mk_uberspawn_2", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_looted_tank_pred", "mk_uberspawn_2", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_killa_kan", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_mek_boy", "mk_enemy_pos", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_warboss", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_weirdboy", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_fighta_bomba", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "ork_squad_blastajet", "mk_enemy_pos", 2, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_flakkatrukk", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_armored_nob_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_flakkatrukk", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_armored_nob_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_flash_gitz_squad", marker, 2, 4)
+	end
+end
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga", marker, 5, 4)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_flakkatrukk", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_armored_nob_advance_sp", marker, 1, 4)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_slugga_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_shoota_boy_advance_sp", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_flakkatrukk", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_squad_armored_nob_advance_sp", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "ork_flash_gitz_squad", marker, 2, 4)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_mek_boy", marker, 1, 1)
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_mek_boy", marker, 1, 1)
+		if g_surv_high_resources then 
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 2, 1)
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 6, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 1, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_armored_nob", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_tankbusta", marker, 2, 4)
+		if g_surv_high_resources then 
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 4,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_warboss", marker, 1, 1)
+		end
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 3, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 2, 4)				
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 2, 1)
+		if g_surv_high_resources then
+			SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 3,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_tankbusta", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 2, 1)
+		end
+	elseif wave == 5 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stikk_bomma", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 2, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 3, 4)				
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 2, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_armored_nob", marker, 1, 4)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deff_dread", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 2, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_tankbusta", marker, 2, 6)
+		end
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 6, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 3, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 3, 4)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_fighta_bomba", marker, 2, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_weirdboy", marker, 1, 1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gunwagon", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_bad_dok", marker, 4, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 4, 6)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_warboss", marker, 1, 1)
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 3, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 7, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stikk_bomma", marker, 1, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_burna_bomba", marker, 2, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_blastajet", marker, 1, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deff_dread", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank_pred", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_armored_nob", marker, 2, 4)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kommandoz", marker, 1, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_burna_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_big_shoota_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_rokkit_launcha_kommando",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 4, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 6, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stikk_bomma", marker, 2, 10)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 5, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_fighta_bomba", marker, 2, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_squiggoth", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 3, 4)				
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gunwagon", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stormboy", marker, 3, 8)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_weirdboy", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_loota", marker, 1, 5)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_loota","ork_kustom_big_burna_loota",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_loota","ork_kustom_big_shoota_loota",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_loota","ork_kustom_dakka_shoota_loota",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_loota","ork_kustom_mega_blasta_loota",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kommandoz", marker, 2, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_burna_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_big_shoota_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_rokkit_launcha_kommando",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 1, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_squiggoth", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 3, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 3, 4)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 6, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deff_dread", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_fighta_bomba", marker, 4, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_blastajet", marker, 1, 1)			
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stikk_bomma", marker, 2, 10)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_blasta", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_bursta", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_krusha", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_armored_nob", marker, 4, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_battlewagon", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gargant_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)		
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_loota", marker, 2, 5)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_loota","ork_kustom_big_shoota_loota",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kommandoz", marker, 1, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_burna_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_big_shoota_kommando",1)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_rokkit_launcha_kommando",2)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kommandoz", marker, 1, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_kommandoz","ork_rokkit_launcha_kommando",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_deffkopta", marker, 3, 4)				
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_slugga", marker, 8, 6)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_slugga","ork_burna_slugga",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_shoota_boy", marker, 4, 8)
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"ork_squad_shoota_boy","ork_big_shoota_shoota",3)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_squiggoth", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_stompa", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sgroupName", "ork_squad_blastajet", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_burna_bomba", marker, 2, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_nob", marker, 5, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_stikk_bomma", marker, 2, 10)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_killa_kan", marker, 7, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_trukk", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_fighta_bomba", marker, 4, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_wartrak", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_looted_tank", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_blasta", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_bursta", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_kill_krusha", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gunwagon", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_battle_fortress", marker, 1, 1)	
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_armored_nob", marker, 5, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_weirdboy", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gargant_titan", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_great_gargant_titan", marker, 1, 1)
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_gorkanaut", marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "ork_squad_morkanaut", marker, 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "ork_squad_morkanaut"), g_enemy_PlayerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "ork_squad_gorkanaut"), g_enemy_PlayerID)
+		end		
+		SGroup_AddLeaders(sgroupName)
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_OrkHordeAttack,Get_NextRule_InitiationTMR_Survival(),Get_NextRule_InitiationTMR_Survival())
+end
+
+
+function Rule_OrkHordeAttack()
+	if g_Survival_Enemy_Waves_Have_Failed then
+		if g_difficulty ~= "insane" then
+			Rule_Remove(Rule_OrkHordeAttack)
+			return
+		end
+	end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) and Srvl_PlayerInfo.Level[pIDX] <= Surv_Max_Waves then
+			local sgroup = "sg_OrkHordeAttackP"..pIDX
+			SGroup_Clear(SGroup_CreateIfNotFound(sgroup))
+			local nobs = 5*Srvl_PlayerInfo.Techlvl[pIDX]
+			local kans = math.ceil(Srvl_PlayerInfo.Techlvl[pIDX]/2)
+			local marker = "mk_enemy_player_"..(pIDX+1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroup, "ork_squad_warboss_advance_sp",marker, 1, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroup, "ork_squad_nob_advance_sp",marker, nobs, 1)
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroup, "ork_squad_killa_kan_advance_sp",marker, kans, 1)
+			Rule_LockSGroupSurvivalPlayer(sgroup)
+			Cmd_AttackMovePos(sgroup,Srvl_PlayerInfo.HQpos[pIDX])
+			Util_StartIntel(EVENTS.IE_Orks_Arrive_P1)
+		end
+	end
+end
+

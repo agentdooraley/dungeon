@@ -1,0 +1,141 @@
+----------------------------------------
+-- File: 'RangersTactic.ai'
+
+--eldar_squad_dark_Rangerss
+
+class 'RangersTactic' (EldarInfantryTactic)
+
+Rangers = {}
+
+function RangersTactic:__init( squad_ai ) super( squad_ai )
+
+    self:SetName("Rangers Tactic")
+	
+	-- Assume squad just stop
+	self.m_iLastStopTime = g_iGMT
+	
+end
+
+
+function RangersTactic:Reinforce()
+
+	local iRequisition = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+
+	-- Always try to reinforce, as long as I have money
+	if g_iGMT < 180 and iRequisition < 100 then
+		return
+	end
+	
+	if (not self.squad_ai:IsReinforcing()) then
+			
+		if (self.squad_ai:CanReinforce( true, 0 )) then
+			self.squad_ai:DoReinforce( true, 0 )
+		elseif (self.squad_ai:CanReinforce( false, 0 )) then
+			self.squad_ai:DoReinforce( false, 0 )
+		end
+	end
+	
+end
+
+function RangersTactic:Update()
+
+
+
+
+	local vMyPos = self.squad_ai:GetPosition()
+	-- Get closest enemy unit to target position
+   -- local oEnemySquad = cpu_manager.cpu_player:FindFirstEnemy(vMyPos, 1500, 1)	
+	local tierlvl = cpu_manager:GetTierLevel()
+	local attackrange = 30
+	local vPosThreat = cpu_manager.terrain_analyzer:GetThreatAtPos(vMyPos, attackrange, false)
+	local targetpos
+	local vTargetThreat
+	
+
+	
+	local target_squads = {"chaos_squad_cultist", "chaos_squad_slave", "dark_eldar_squad_slave", 
+	"eldar_guardian_squad", "sisters_squad_missionary", "space_marine_squad_scout", "dark_eldar_squad_mandrake" }
+			--it is to laggy when refresh recently
+	local enemyfindtime 
+	if enemyfindtime == nil then
+		enemyfindtime = 0
+	end
+
+	if tierlvl < 2 and g_iGMT > enemyfindtime + 1 then-- and vPosThreat < 450 
+
+		
+		local findString = function (input, table)
+			for _, str in ipairs(table) do
+				if str == input then
+					return true
+				end
+			end
+			return false
+		end
+		
+		for oPlayer in cpu_manager.stats:GetPlayerStats() do
+
+			if (cpu_manager.player_stats:IsEnemy(oPlayer) and not oPlayer:IsPlayerDead()) then
+				for oUnit in oPlayer:GetSquads() do	
+										-- Check for valid building	
+						if (oUnit:IsValid()) then
+							--targetpos = oUnit:GetPosition()
+							--vTargetThreat = cpu_manager.terrain_analyzer:GetThreatAtPos(targetpos, attackrange, false)		
+							if findString(oUnit:GetSquadName(),target_squads) then 
+							-- and vTargetThreat < 600  then				
+								if g_iGMT < 180 then
+									if oUnit:IsCapturing() then
+										oEnemySquad = oUnit
+										if not self.squad_ai:IsUnderAttack() and g_iGMT > enemyfindtime + 2 then 
+											enemyfindtime = g_iGMT
+											local iDistance=distance_sqr(oEnemySquad:GetPosition(),vMyPos) 
+											if iDistance > (attackrange*attackrange) then
+												cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemySquad:GetPosition()), false, "HoldState")
+											else--iLastStopTime+10 then
+												cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemySquad:GetPosition()), true, "AttackState")			
+											end			
+										end
+									end
+								else
+									oEnemySquad = oUnit
+									if not self.squad_ai:IsUnderAttack() and g_iGMT > enemyfindtime + 5 then 
+										enemyfindtime = g_iGMT
+										local iDistance=distance_sqr(oEnemySquad:GetPosition(),vMyPos) 
+										if iDistance > (attackrange*attackrange) then
+											cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemySquad:GetPosition()), false, "HoldState")
+										else--iLastStopTime+10 then
+											cpu_manager:DoMove(self.squad_ai, Vector3f(oEnemySquad:GetPosition()), true, "AttackState")	
+											enemyfindtime = g_iGMT
+										end			
+									end
+								end
+							end
+						end
+				end
+			end
+		end
+
+	end
+	
+	
+	
+	if (self:IsComplete()) then
+        return
+    end
+
+        -- State machine
+    if (not InfantryTactic.Update( self )) then
+        return
+    end
+
+end
+
+function RangersTactic:CanOnlyDecap()
+	local scout_count
+	scout_count=EldarBuildBaseStrategy:CountSquads("eldar_guardian_squad")
+	if scout_count >= 2 then
+		return true
+	else
+		return false
+	end
+end

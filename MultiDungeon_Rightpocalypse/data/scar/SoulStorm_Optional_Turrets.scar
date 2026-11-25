@@ -1,0 +1,50 @@
+----------------------------------
+-- Optionally Enables Turrets	--
+--  for the Turretless races	--
+-- Gambit @06/8/ 2021			--
+----------------------------------
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+function ENBL_Optional_Turrets_Init()
+Rule_AddOneShot(ENBL_Optional_Turrets_Init2,1)
+end
+
+function ENBL_Optional_Turrets_Init2()
+print("Turret Step 2")
+	-- Cannot be used in Kill-Team, Last Stand or Survival
+	if G_Is_Survival_Map ~= nil then
+		print("SURVIVAL Map.  Optional Turrets not needed!")
+		return
+	end
+	if G_Is_LastStand_Map ~= nil then
+		print("LAST STAND Map.  Optional Turrets not needed!")
+		return
+	end
+	if G_Is_SpaceHulk_Map ~= nil then
+		print("SPACE HULK Map.  Optional Turrets not needed!")
+		return
+	end
+	if KTGM_ENABLED ~= nil then
+		print("Kill-Team Game Mode.  Optional Turrets not needed!")
+		return
+	end
+	-- OK, proceed unrestricting
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+		if Global_RaceStats[race_name].Turret_Special ~= nil then
+-- EDIT HERE, by adding one more OR, to include the race you want!! --
+			if (race_name == "dark_eldar_race"		and DE_Turrets_Enabled ~= nil)
+			or (race_name == "tau_race"			and TAU_Turrets_Enabled ~= nil)
+			or (race_name == "tyranids_race"		and Tyranids_Turrets_Enabled ~= nil) then
+			Player_UnRestrictBuildingList( playerID, Global_RaceStats[race_name].Turret_Special )
+			print "unlocking turret!"
+			end
+		end
+	end
+end
+
+
+Scar_AddInit(ENBL_Optional_Turrets_Init)

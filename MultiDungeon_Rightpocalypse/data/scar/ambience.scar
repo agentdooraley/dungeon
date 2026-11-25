@@ -1,0 +1,25 @@
+----------------------------------------------------------------------------------------------------------------
+-- Plays appropriate ambient tracks for each map
+-- Kasrkin84 2018.01.23
+----------------------------------------------------------------------------------------------------------------
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+function Ambience_Init()
+	
+	if t_Ambience_Playlist ~= nil then
+		
+		print( "Starting t_Ambience_Playlist for map." )
+		
+		Playlist_Manager( PC_Ambient, t_Ambience_Playlist, true , true , { 5, 10 } )
+		
+	else
+		
+		print( "t_Ambience_Playlist not found." )
+		
+	end
+	
+end
+
+Scar_AddInit( Ambience_Init )

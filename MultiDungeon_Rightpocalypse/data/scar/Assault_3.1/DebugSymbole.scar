@@ -1,0 +1,86 @@
+if DebugSymbole==nil then
+	DebugSymbole={
+		List={},
+		Next=1,
+		DefaultDelay=5,
+		DebugON=0,
+		ForceUpdate=false,
+		Color={
+			White={r=255,v=255,b=255},
+			Red={r=255,v=0,b=0},
+			Green={r=0,v=255,b=0},
+		},
+	}
+end
+
+function DebugSymbole.Init()
+	dr_setdisplay( "DebugSymbole", 1000 ) 
+	dr_setautoclear( "DebugSymbole", true ) 
+end
+
+function DebugSymbole.Add(Position,Radius,Text,Color,DelayTime)
+
+	if Color==nil then Color=DebugSymbole.Color.White end
+
+	if DelayTime==nil then DelayTime=DebugSymbole.DefaultDelay end
+
+	local NewSymbole={
+		Position=Position,
+		Radius=Radius,
+		Text=Text,
+		Color=Color,
+		EndTime=World_GetGameTime()+DelayTime,
+	}
+	DebugSymbole.DrawSymbole(NewSymbole)
+	
+--~ 	if DebugSymbole.NextUpdate==nil then
+--~ 		Rule_AddOneShot(DebugSymbole.Show,DelayTime)
+--~ 		DebugSymbole.NextUpdate=NewSymbole.EndTime
+--~ 	elseif DebugSymbole.NextUpdate>NewSymbole.EndTime then
+--~ 		if Rule_Exists(DebugSymbole.Show) then Rule_Remove(DebugSymbole.Show) end
+--~ 		Rule_AddOneShot(DebugSymbole.Show,DelayTime)
+--~ 		DebugSymbole.NextUpdate=NewSymbole.EndTime
+--~ 	end
+
+	if not Rule_Exists(DebugSymbole.Show) then Rule_Add(DebugSymbole.Show) end
+
+	DebugSymbole.List[DebugSymbole.Next]=NewSymbole
+	DebugSymbole.Next=DebugSymbole.Next+1
+	
+end
+
+function DebugSymbole.Show()
+
+	local CurrentTime=World_GetGameTime()
+	
+	DebugSymbole.NextUpdate=nil
+	
+--	dr_clear("DebugSymbole") 
+	
+	for Index,Symbole in pairs(DebugSymbole.List) do
+		
+		if Symbole.EndTime<CurrentTime then
+			DebugSymbole.List[Index]=nil
+		else
+			DebugSymbole.DrawSymbole(Symbole)
+			if DebugSymbole.NextUpdate==nil then
+				DebugSymbole.NextUpdate=Symbole.EndTime
+			else
+				DebugSymbole.NextUpdate=math.min(DebugSymbole.NextUpdate,Symbole.EndTime)
+			end
+			
+		end
+		
+	end
+	
+	if DebugSymbole.NextUpdate==nil then
+		if Rule_Exists(DebugSymbole.Show) then Rule_Remove(DebugSymbole.Show) end
+	end
+
+end
+
+function DebugSymbole.DrawSymbole(Symbole)
+	dr_drawCircle("DebugSymbole", Symbole.Position.x, Symbole.Position.y+0.1 , Symbole.Position.z, Symbole.Radius, Symbole.Color.r, Symbole.Color.v, Symbole.Color.b )
+	dr_text3d( Symbole.Position.x+Symbole.Radius/2, Symbole.Position.y+0.1 , Symbole.Position.z+Symbole.Radius/2, Symbole.Text, Symbole.Color.r, Symbole.Color.v, Symbole.Color.b ) 
+end
+

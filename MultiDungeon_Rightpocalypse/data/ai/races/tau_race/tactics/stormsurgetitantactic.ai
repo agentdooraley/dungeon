@@ -1,0 +1,51 @@
+----------------------------------------
+-- File: 'stormsurgetitantactic.ai'
+-- Edited by Gambit @ 08.18.2020
+
+class 'StormsurgeTitanTactic' (TauVehicleTactic)
+
+function StormsurgeTitanTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Stormsurge Titan Tactic")
+	
+	-- Assume squad just entrenched/retrenched
+	self.m_iLastEntrenchTime = g_iGMT
+end
+
+
+function StormsurgeTitanTactic:DoAbilities()
+
+	-- Try to entrench
+	self:DoEntrenchAbility()
+end
+
+
+function StormsurgeTitanTactic:DoEntrenchAbility()
+
+	-- Don't entrench/detrench too fast after a detrench/entrench
+	if (g_iGMT < self.m_iLastEntrenchTime + 6) then
+		return
+	end
+
+	local bDoEntrench = false	-- Detrench, by default
+	local self_pos = self.squad_ai:GetPosition()
+	if cpu_manager.terrain_analyzer:HasThreat(self_pos, 40) then
+		bDoEntrench = false		-- Melee/Close Range: Detrench
+	elseif cpu_manager.terrain_analyzer:HasThreat(self_pos, 70) then
+		bDoEntrench = true		-- Pulse Cannon Range: Entrench
+	end
+	-- Check if we can entrench/detrench
+	if self.squad_ai:CanEntrench(true) then
+		-- Try to entrench
+		if bDoEntrench then
+			self.squad_ai:DoEntrench(true)
+			self.m_iLastEntrenchTime = g_iGMT
+		end
+	elseif self.squad_ai:CanEntrench(false) then
+		-- Try to detrench
+		if not bDoEntrench then
+			self.squad_ai:DoEntrench(false)
+			self.m_iLastEntrenchTime = g_iGMT
+		end
+	end
+end

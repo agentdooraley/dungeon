@@ -1,0 +1,21 @@
+Just COPY the - chaos_marine_race.scar - then rename it to match your race, and input the entries you want!
+
+...For a more complex config, see the daemonhnters race.
+Note also that there is the DeCapturingSquadName_2 and the DeCapturingSquadMmbrs_2, for races that their capturers are not fighters. (see TSons and Nec)
+
+
+Missing Races:
+enclaves_race
+iron_warriors_race
+Legio_Titanicus_race
+xenos_hunters_race
+
+
+
+No Special Attacks for Races:
+imperial_fists_race
+salamanders_race
+tyranid_race
++
+
+Also, some races DO NOT have CritL reinforcements

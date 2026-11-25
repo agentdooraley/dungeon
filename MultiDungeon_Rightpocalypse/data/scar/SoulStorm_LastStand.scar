@@ -1,0 +1,1725 @@
+----------------------------------------------------------
+-- LAST STAND Game Mode main code						--
+-- Greatly inspired by DoW2 Last Sand mode!				--
+-- Idea suggested by ZmajOgnjeniVuk and Gambit			--
+-- Coded and Designed by Gambit 		@ 09.05.2018	--
+-- Added support for possession 		@ 09.10.2021	--
+-- Added Keen Sight to Waves    		@ 11.10.2021	--
+-- Added Player disconnection support	@ 15.10.2021	--
+-- Added Possession/Attachment support	@ 27.10.2021	--
+-- Added enemy resurrection support		@ 28.10.2021	--
+-- Added multiple research buildings	@ 28.10.2021	--
+-- Added Souls as research limit		@ 03.11.2021	--
+-- Added To the Last mode after waves	@ 06.11.2021	--
+-- Version 2.98											--
+----------------------------------------------------------
+import("Community_Functions.scar")
+import("CameraShake.scar")
+import("World_Race_GeneralStats.scar")
+import("World_Race_Entities.scar")
+import("SoulStorm_LastStand_HeroResearchesLimiter.scar")
+
+-- Put here the name of the Hero and the number of Souls (limiter)
+LastStand_SoulResearchHeroLimiter = {{"necron_lord_squad_ktgm", 3}, }
+
+
+-- Global flag, used to distinguish Last Stand maps.
+G_Is_LastStand_Map = true
+
+------- Gambit @ 4/8/2021 -------
+--  Remove model Precaching!!  --
+-- Monumental breakthrough  :) --
+---------------------------------
+
+--[[ The following DOES work, but we better keep Team Colouring enabled. This is why it is commented
+-- Do NOT Precache unneeded model for the races!
+print("Starting Removing Precaching...")
+-- Create the array with all the entities that are not needed (exclude the _ktgm ones!)
+local total_noPrecachingArray_LS = {}
+for race_name_no_pc, entities_array_no_pc in pairs(Global_RaceEntities) do
+	for i = 1, table.getn(entities_array_no_pc.building_list) do
+		if string.sub(entities_array_no_pc.building_list[i], -5) ~= "_ktgm" then
+			table.insert(total_noPrecachingArray_LS,entities_array_no_pc.building_list[i])
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.infantry_list) do
+		if string.sub(entities_array_no_pc.infantry_list[i], -5) ~= "_ktgm" then
+			table.insert(total_noPrecachingArray_LS,entities_array_no_pc.infantry_list[i])
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.vehicle_list) do
+		if string.sub(entities_array_no_pc.vehicle_list[i], -5) ~= "_ktgm" then
+			table.insert(total_noPrecachingArray_LS,entities_array_no_pc.vehicle_list[i])
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.aircraft_list) do
+		if string.sub(entities_array_no_pc.aircraft_list[i], -5) ~= "_ktgm" then
+			table.insert(total_noPrecachingArray_LS,entities_array_no_pc.aircraft_list[i])
+		end
+	end
+end
+-- Players only, hence the World_GetPlayerCount()-2 (to exclude NotPrecaching the Attacking AI)
+for player_idx_noprecache = 0, World_GetPlayerCount()-2 do
+	for i = 1, table.getn(total_noPrecachingArray_LS) do
+		pcall(Player_DoNotPrecache, World_GetPlayerAt(player_idx_noprecache), {total_noPrecachingArray_LS[i]})
+	end
+end
+-- Memory cleanup
+local total_noPrecachingArray_LS = nil
+local entities_array_no_pc = nil
+print("Removing Precaching Commenced.")
+]]
+
+
+--[[   EBP_Exists does NOT work....
+-- Do NOT Precache unneeded model for the races!
+print("Starting Removing Precaching...")
+-- Create the array with all the entities that are not needed (exclude the _ktgm ones!)
+local total_noPrecachingArray_LS = {}
+for race_name_no_pc, entities_array_no_pc in pairs(Global_RaceEntities) do
+	for i = 1, table.getn(entities_array_no_pc.building_list) do
+		if string.sub(entities_array_no_pc.building_list[i], -5) ~= "_ktgm" then
+			if EBP_Exists(entities_array_no_pc.building_list[i]) then
+				table.insert(total_noPrecachingArray_LS,entities_array_no_pc.building_list[i])
+			end
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.infantry_list) do
+		if string.sub(entities_array_no_pc.infantry_list[i], -5) ~= "_ktgm" then
+			if EBP_Exists(entities_array_no_pc.infantry_list[i]) then
+				table.insert(total_noPrecachingArray_LS,entities_array_no_pc.infantry_list[i])
+			end
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.vehicle_list) do
+		if string.sub(entities_array_no_pc.vehicle_list[i], -5) ~= "_ktgm" then
+			if EBP_Exists(entities_array_no_pc.vehicle_list[i]) then
+				table.insert(total_noPrecachingArray_LS,entities_array_no_pc.vehicle_list[i])
+			end
+		end
+	end
+	for i = 1, table.getn(entities_array_no_pc.aircraft_list) do
+		if string.sub(entities_array_no_pc.aircraft_list[i], -5) ~= "_ktgm" then
+			if EBP_Exists(entities_array_no_pc.aircraft_list[i]) then
+				table.insert(total_noPrecachingArray_LS,entities_array_no_pc.aircraft_list[i])
+			end
+		end
+	end
+end
+-- Players only, hence the World_GetPlayerCount()-2 (to exclude NotPrecaching the Attacking AI)
+for player_idx_noprecache = 0, World_GetPlayerCount()-2 do
+	Player_DoNotPrecache(World_GetPlayerAt(player_idx_noprecache), total_noPrecachingArray_LS)
+end
+-- Memory cleanup
+local total_noPrecachingArray_LS = nil
+local entities_array_no_pc = nil
+print("Removing Precaching Commenced.")
+]]
+----------------------------------
+
+
+-- This function contains special fixes because of the specifics of certain races
+-- Add more, if needed (for example, AD Mech may ned one, in the future, for the Link Mechanic)
+function LastStandGM_SpecialEnemyRaceRules()
+	-- CHAOS DAEMONS
+	-- Spawn dummy entities that prevent instability if Chaos Daemons
+	if LSGM_Enemy_RaceName == "deamons_race" then
+		local pos = Player_GetStartPosition(World_GetPlayerAt(0))
+		print("Last Stand - Chaos Daemons Instability Fix added.")
+		Entity_Spawn(Entity_Create("daemons_survival_instability_fix_ktgm", LSGM_EnemyPlayerID, pos))
+		Entity_Spawn(Entity_Create("daemons_survival_instability_fix", LSGM_EnemyPlayerID, pos))
+	end
+end
+
+
+function LastStandGM_Init()
+	LSGM_Total_Waves = table.getn(LSGM_ResourcesGainedWave) -- Global var for the number of waves of the map.
+	LSGM_PlayerIDs = {}					-- Global table that stores Player IDs
+	LSGM_PlayerRaceNames = {}			-- Global table that stores Player Race names
+	LSGM_PlayerSquadIDs = {}			-- The IDs of the player squads
+	LSGM_PlayerSquadCanPossess = {nil,nil,nil,nil}		-- three values: nil -> the squad cannot posses / YES -> Can possess and maintains form
+														--   upon revival / NO -> Can possess and reverts to original form upon revival
+	LSGM_PlayersSquadNamePossess = {nil,nil,nil,nil}	-- Used ONLY for possession + YES (see above), to store the maintained form squad name
+	LSGM_PlayerSquadPositions = {nil,nil,nil,nil}		-- The current positions of the spawned squads
+	LSGM_PlayerDEADSquadPositions = {nil,nil,nil,nil}	-- The positions the player squads fell
+	LSGM_PlayerATTACHEDSquadIDs = {nil,nil,nil,nil}		-- The squads the player is attached to
+	LSGM_PlayerSquadNames = {nil,nil,nil,nil}			-- The names of the player selected squads. Can contain tables (possession)!
+	LSGM_PlayerReviveEntities = {nil,nil,nil,nil}		-- The entityIDs of the spawned dummy "revives"
+	LSGM_Wave = 1						-- The current attach wave number
+	LSGM_TMR = 0						-- The game timer for spawning waves
+	LSGM_BONUS_RESURRECT_TMR = 0		-- Additional timer for resurrection/possession delay
+	LSGM_SpawnPosition = {}				-- The positions where the waves spawn
+	LSGM_EnemyPlayerID = World_GetPlayerAt(World_GetPlayerCount()-1)
+	LSGM_Enemy_RaceName = Player_GetRaceName(LSGM_EnemyPlayerID)
+	LSGM_Unsupported_Enemy_RaceName = Player_GetRaceName(LSGM_EnemyPlayerID)
+	LSGM_IsUnsupported_EnemyRace = false
+	LSGM_ActiveSpawnPositions = 0
+	LSGM_Difficulty = ""
+	-- Make an initial config check, and then proceed with the Game mode.
+	-- Check if the enemy race is one of the supported in the Map Profile
+	local total_races = 0
+	local race_names = {}
+	local enemy_race_supported = false
+	local all_good = true
+	for array_race_name, array_entry in pairs(LSGM_Wave_Stats) do
+		table.insert(race_names, array_race_name)
+		total_races = total_races + 1
+		if LSGM_Enemy_RaceName == array_race_name then
+			enemy_race_supported = true
+		end
+		if table.getn(array_entry) ~= LSGM_Total_Waves then
+			print("Map profile configuration wrong. Waves and Resources number differ...")
+			all_good = false
+		end
+	end
+	if not enemy_race_supported then
+		print("Not Supported Last Stand Enemy Race. Supported Races:")
+		for i=1, total_races do print(race_names[i]) end
+		LSGM_IsUnsupported_EnemyRace = true
+		print("Unsupported ENEMY Race ("..LSGM_Enemy_RaceName..") detected!!")
+		LSGM_Enemy_RaceName = "space_marine_race"
+		local race_chosen = ""
+		for j = 1, 10 do
+			race_chosen = race_names[World_GetRand(1,total_races)]
+			if Global_RaceStats[race_chosen] ~= nil then
+				if EBP_Exists(Global_RaceStats[race_chosen].HQ[1]) then
+					LSGM_Enemy_RaceName = race_chosen
+					break
+				end
+			end
+		end
+		print("Existing ENEMY Race forced: "..LSGM_Enemy_RaceName..". Enabling AI not possible (if selected).")
+    end
+
+	-- Populate the spawn positions
+	local counter = 0
+	for i = 1, LSGM_TotalSpawnPositions do
+		local marker_name = "last_stand_marker_"..i
+		if Marker_Exists(marker_name,"basic_marker") then
+			LSGM_SpawnPosition[i] = Marker_GetPosition(Marker_FromName(marker_name,"basic_marker"))
+			counter = counter + 1
+		end
+	end
+	if counter < LSGM_TotalSpawnPositions then
+		print(" ");print("LAST STAND: Problem with Markers!!!");print(" ")
+		all_good = false
+	end
+	-- Populate single-entry SGroups and EGroups of each player
+	for idx = 0, 7 do
+		EGroup_Clear(EGroup_CreateIfNotFound("eg_LSGM_Building_Player"..idx))
+		EGroup_Clear(EGroup_CreateIfNotFound("eg_LSGM_Ability_Player"..idx))
+		SGroup_Clear(SGroup_CreateIfNotFound("sg_LSGM_Squad_Player"..idx))
+	end
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_LSGM_wave_squads"))	-- The enemies' SGroup - NOT USED currently, for deceive (Necron) SGroup_CountSpawned("sg_LSGM_wave_squads") == 0 does not work
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_LSGM_singe_squad"))	-- A one-squad SGroup
+	LSGM_Wave_EnemySquadIDs = {}			-- We put here enemy wave squad IDs, to check if they exist
+	KTGM_AllPlayersHaveChosen = {}			-- Global, single boolean Switch for various win conditions (like Change Players)
+	KTGM_AllPlayersHaveChosen[0] = false	-- ... so initial value is false
+	LSGM_UnitsKilledPlayer = {}				-- holds the number of killed units per player, using his INDEX
+	LSGM_UnitsKilledPreviousWavePlayer = {}	-- holds the number of killed units per player, using his INDEX
+	LSGM_AllPlayersNumber = 0
+	LSGM_UnitsKilledPlayerIDs = {}			-- We will NOT delete entries from this table
+
+	-- Help variables for start
+	LSGM_PlayerHasChosenSquad = {}
+	LSGM_Initial_PlayerHQs_IDs = {}		-- Global table that stores the initial players' KTGM HQs
+	LSGM_High_Resources = false
+	LSGM_Local_PlayerID = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+	LSGM_Local_RaceName = Player_GetRaceName(LSGM_Local_PlayerID)
+	LSGM_Proper_Starting_Positions = {}		-- Initial player starting positions may be invalid... 
+	LSGM_MP_Game = false
+
+	-- Player initiation
+	local all_players = World_GetPlayerCount()
+	for i=1, all_players-1  do
+		WinWarning_Add( "ui_ktls_gm"..i, LSGM_Local_PlayerID, "", "", "" )
+
+	end
+		WinWarning_Add( "remainSquad"..1, LSGM_Local_PlayerID, "", "", "" )
+
+	local human_players = 0
+	for i = 1, all_players  do
+		local playerID = World_GetPlayerAt(i-1)
+		-- Check for unsupported races
+		LSGM_Unsupported_RaceName = Player_GetRaceName(playerID)
+		if i ~= all_players and Global_RaceStats[LSGM_Unsupported_RaceName].KTGM == nil then
+			Rule_AddInterval(LastStandGM_ERROR_UnsupportedRace,1)
+			all_good = false
+		end
+		if Player_IsAlive(playerID) then
+			-- Disable the AI components NOT needed by ANY AI player.
+			if Cpu_IsCpuPlayer(playerID) then
+				Cpu_EnableComponent(playerID, false, CT_Attacking)
+				Cpu_EnableComponent(playerID, true, CT_Tactics)
+				Cpu_EnableComponent(playerID, false, CT_BuildBuildings)
+				Cpu_EnableComponent(playerID, true, CT_BuildResearch)
+				Cpu_EnableComponent(playerID, false, CT_Defending)
+				Cpu_EnableComponent(playerID, false, CT_BuildUnits)
+				Cpu_EnableComponent(playerID, true, CT_BuildAddOns)
+				Cpu_EnableComponent(playerID, false, CT_Resourcing)
+			end
+			-- Setup teams correctly
+			if i ~= all_players then Player_SetTeam( playerID, 0 )
+			else Player_SetTeam( playerID, 7 ) end
+			-- Check for high resources
+			if Player_GetResource(playerID, RT_Requisition) > 2000
+			or Player_GetResource(playerID, RT_Power) > 2000 then
+				LSGM_High_Resources = true
+			end
+			-- Zero original resources
+			Player_SetResource(playerID, RT_Requisition, 0)
+			Player_SetResource(playerID, RT_Power, 0)
+			Player_SetResource(playerID, RT_Faith, 0)
+			Player_SetResource(playerID, RT_Souls, 0)
+			Player_SetResource(playerID, RT_Pop, 0)
+			-- Destroy original entities and squads
+			local despawnEntities = function(egroupid, itemindex, entityID)
+				pcall(Entity_DeSpawn, entityID); pcall(Entity_Destroy, entityID)
+			end
+			local despawnSquads = function(sgroupid, itemindex, squadID)
+				pcall(Squad_DeSpawn, squadID); pcall(Squad_Destroy, squadID)
+			end
+			EGroup_ForEachEx(Player_GetEntities(playerID), despawnEntities, true, true)
+			SGroup_ForEachEx(Player_GetSquads(playerID), despawnSquads, true, true)
+			-- Zero original max caps
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "max_squad_cap_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "max_support_cap_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			-- Zero Req/Pow income rates!
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_requisition_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_power_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			-- Faith and Pop?
+			-- Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_faith_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			-- Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "income_population_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			-- Zero Necron Stats ?????????????
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "research_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "reinforce_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "recruit_time_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+			-- Orcs?
+			---Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "population_cap_player_modifier", MUT_Multiplication, false, 0, ""), playerID)
+
+			if i < all_players then
+				LSGM_ActiveSpawnPositions = LSGM_ActiveSpawnPositions + 1
+				local player_race = Player_GetRaceName(playerID)
+				-- Perform the necessary researches for each PLAYER race
+				local p_idx = World_GetPlayerIndex(playerID)
+				local start_pos = Player_GetStartPosition(playerID)
+				local pos = Community_Extended_SpawnablePositionSearch(start_pos,hq_entity_name,playerID,nil)
+				LSGM_Proper_Starting_Positions[p_idx] = pos
+				if all_good then
+					if Global_RaceStats[player_race].KTGM_LastStand_Researches ~= nil then
+						for k = 1, table.getn(Global_RaceStats[player_race].KTGM_LastStand_Researches) do
+							Player_GrantResearch(playerID, Global_RaceStats[player_race].KTGM_LastStand_Researches[k])
+						end
+					end
+					table.insert(LSGM_PlayerIDs, playerID)
+					table.insert(LSGM_PlayerRaceNames,player_race)
+					LSGM_UnitsKilledPlayer[p_idx] = 0
+					LSGM_UnitsKilledPreviousWavePlayer[p_idx] = 0
+					table.insert(LSGM_UnitsKilledPlayerIDs, playerID)
+					LSGM_AllPlayersNumber = LSGM_AllPlayersNumber + 1
+					if Player_IsHuman(playerID) then
+						table.insert(LSGM_PlayerHasChosenSquad, false)
+						human_players = human_players + 1
+						-- Spawn new buildings with the new squads for HUMAN players
+						local hq_entity_name = Global_RaceStats[player_race].KTGM.kthq
+						LSGM_Initial_PlayerHQs_IDs[i] = Entity_Create(hq_entity_name, playerID, pos)
+						Entity_Spawn(LSGM_Initial_PlayerHQs_IDs[i])
+						W40k_SelectEGroup(Player_GetEntities(World_GetPlayerAt(Tut_GetLocalPlayerIndex())))
+					else
+						table.insert(LSGM_PlayerHasChosenSquad, true)
+					end
+				end
+			end
+		end
+	end
+	
+	-- Initiate any possible enemy race rules for various required fixes
+	LastStandGM_SpecialEnemyRaceRules()
+
+	--[[	LSGM_ActiveSpawnPositions = LSGM_TotalSpawnPositions
+	-- If more spawn positions than total, use as many players
+	if LSGM_ActiveSpawnPositions >= World_GetPlayerCount() then
+		LSGM_ActiveSpawnPositions = World_GetPlayerCount() - 1
+	end]]
+
+	-- Add keen sight modifier to all entities of the enemy player, so that to be able to detect stealth heroes at melee range.
+	-- Exclude KTGM entities, they have their own stats. The value added is FIVE (5).
+	print("Applying Keen Sight (+5 radius) to enemy troops.")
+	local all_enemy_entities = Global_RaceEntities[LSGM_Enemy_RaceName]
+	local enemy_troops = {}
+	for i = 1, table.getn(all_enemy_entities.infantry_list) do
+		if string.sub(all_enemy_entities.infantry_list[i], -5) ~= "_ktgm" then
+			table.insert(enemy_troops,all_enemy_entities.infantry_list[i])
+		end
+	end
+	for i = 1, table.getn(all_enemy_entities.vehicle_list) do
+		if string.sub(all_enemy_entities.vehicle_list[i], -5) ~= "_ktgm" then
+			table.insert(enemy_troops,all_enemy_entities.vehicle_list[i])
+		end
+	end
+	for i = 1, table.getn(all_enemy_entities.aircraft_list) do
+		if string.sub(all_enemy_entities.aircraft_list[i], -5) ~= "_ktgm" then
+			table.insert(enemy_troops,all_enemy_entities.aircraft_list[i])
+		end
+	end
+	for i = 1, table.getn(enemy_troops) do
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType,"keen_sight_radius_modifier",MUT_Addition,false,5,enemy_troops[i]), LSGM_EnemyPlayerID)
+	end
+
+	-- Set Difficulty manually in MP game, otherwise proceed normally
+	if human_players > 1 then
+		-- MP game. Difficulty cannot be detected at 100% 
+		print("MP game, Difficulty MUST ALSO be set by the first player as set in settings!")
+		LSGM_MP_Game = true
+	else
+		-- Single-PC game
+		print("Single-PC game. Difficulty is always calculated correctly...")
+		local difs = {"easy", "standard", "hard", "harder", "insane"}
+		LSGM_Difficulty = difs[Cpu_GetDifficulty(LSGM_EnemyPlayerID)+1]
+		print("MP Final Difficulty: "..LSGM_Difficulty)
+		Rule_AddOneShot(LSGM_DifficultyModificationHPs,0.5)
+	end
+
+	FOW_Reset()
+	Camera_FocusOnTargetPos(LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 2)
+
+	if not all_good then
+		print("LAST STAND: Errors occurred. We cannot proceed.")
+		return
+	end
+
+	-- Start the rules
+	LastStandGM_ChooseCPUSquadsRule()
+	Rule_AddDelay(LastStandGM_ChoosePlayersSquadsRule, 0.25)
+	Rule_AddInterval(LastStandGM_LockCameraRule, 0.25)
+	Rule_AddDelay(LastStandGM_Display_Message1,2)
+	Rule_AddInterval(LastStandGM_RevealInitialPlayerPositions,1)
+
+	-- Gambit 12.2023: Create the dummy building so that the AI can know if this is a Last Stand Map
+	local sp_pos = Player_GetStartPosition(World_GetPlayerAt(0)); sp_pos.x = sp_pos.x + 1024; sp_pos.z = sp_pos.z + 1024
+	for i = 0, all_players-1  do
+		Entity_Spawn(Entity_Create("last_stand_map_designator_for_ai", World_GetPlayerAt(i), sp_pos))
+	end
+end
+
+
+Scar_AddInit(LastStandGM_Init)
+
+
+function LastStandGM_MP_Game_Difficulty()
+	LastStandPlayerID_DifficultyChoose = {}
+	LastStandPlayerID_DifficultyChoose[0] = World_GetPlayerAt(0)
+	for i=1, table.getn(LSGM_PlayerIDs) do
+		if Player_IsHuman(LSGM_PlayerIDs[i]) and Player_IsAlive(LSGM_PlayerIDs[i]) then
+			LastStandPlayerID_DifficultyChoose[0] = LSGM_PlayerIDs[i]
+			break
+		end
+	end 
+	LSGM_Surv_DifficultyTimer = World_GetGameTime()
+	-- Spawn difficulty building for player one.
+	local test_pos = Player_GetStartPosition(LastStandPlayerID_DifficultyChoose[0]); test_pos.x = test_pos.x + 5; test_pos.z = test_pos.z - 5
+	local pos = Community_Extended_SpawnablePositionSearch(test_pos,"surv_diff_building_dummy",nil,nil)
+	LSGM_DifficultySpawnEntity = Entity_Create("surv_diff_building_dummy", LastStandPlayerID_DifficultyChoose[0], pos)
+	Entity_Spawn(LSGM_DifficultySpawnEntity)
+	local eg_LSGM_diff_dummyID = EGroup_CreateIfNotFound( "eg_Surv_diff_dummy_group0" )
+	EGroup_Add("eg_Surv_diff_dummy_group0", LSGM_DifficultySpawnEntity)
+	if Tut_GetLocalPlayerIndex() == World_GetPlayerIndex(LastStandPlayerID_DifficultyChoose[0]) then
+		W40k_SelectEGroup(eg_LSGM_diff_dummyID)
+		Camera_FocusOnTargetPos(pos, 1)
+	end
+	-- Start checking which difficulty hew chose
+	Rule_Add(LSGM_DifficultyChosenByAliveHumanPlayer)
+	Rule_Add(LSGM_Display_MP_Diff_Choice)
+end
+
+function LSGM_Display_MP_Diff_Choice()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Multi-Player game! You must re-choose the proper difficulty, within 10 seconds!")
+		Rule_Remove(LSGM_Display_MP_Diff_Choice)
+	end
+end
+
+
+function LSGM_DifficultyChosenByAliveHumanPlayer()
+	local dif = ""
+	local checkDiff = function( sgroupid, itemindex, squadID )
+		local name = Squad_GetBlueprintName( squadID )
+		if name == "surv_squad_diff_easy_dummy" then dif = "easy"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_normal_dummy" then dif = "standard"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_hard_dummy" then dif = "hard"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_harder_dummy" then dif = "harder"; Squad_Destroy(squadID); return true
+		elseif name == "surv_squad_diff_insane_dummy" then dif = "insane"; Squad_Destroy(squadID); return true end
+	end
+	if SGroup_ForEachAllOrAnyEx( Player_GetSquads(LastStandPlayerID_DifficultyChoose[0]), false, checkDiff, true, true ) then
+		Entity_DeSpawn(LSGM_DifficultySpawnEntity)
+		Entity_Destroy(LSGM_DifficultySpawnEntity)
+		LSGM_Difficulty = dif
+		Rule_AddOneShot(LSGM_DifficultyModificationHPs,0.125)
+		Rule_Remove(LSGM_DifficultyChosenByAliveHumanPlayer)
+		print("MP Final Difficulty: "..LSGM_Difficulty)
+	elseif World_GetGameTime() > LSGM_Surv_DifficultyTimer + 10 then
+		-- Time is up, randomly choose difficulty
+		Entity_DeSpawn(LSGM_DifficultySpawnEntity)
+		Entity_Destroy(LSGM_DifficultySpawnEntity)
+		local random = World_GetRand(1,20)
+		if random < 4 then LSGM_Difficulty = "easy"
+		elseif random < 7 then LSGM_Difficulty = "standard"
+		elseif random < 10 then LSGM_Difficulty = "hard"
+		elseif random < 15 then LSGM_Difficulty = "harder"
+		else LSGM_Difficulty = "insane" end
+		Rule_AddOneShot(LSGM_DifficultyModificationHPs,0.125)
+		Rule_Remove(LSGM_DifficultyChosenByAliveHumanPlayer)
+		print("MP Final Difficulty: "..LSGM_Difficulty)
+	end
+end
+
+
+function LSGM_DifficultyModificationHPs()
+	local mdfr = 1	-- for normal Difficulty
+	if     LSGM_Difficulty=="easy"   then mdfr = 0.75
+	elseif LSGM_Difficulty=="hard"   then mdfr = 1.10
+	elseif LSGM_Difficulty=="harder" then mdfr = 1.20
+	elseif LSGM_Difficulty=="insane" then mdfr = 1.30
+	end
+	if mdfr~=1 then
+		print("...Applying Max Health Enemy modifier for *"..LSGM_Difficulty.."* Difficulty.")
+		local all_entities = Global_RaceEntities[LSGM_Enemy_RaceName]
+		for i=1, table.getn(all_entities.infantry_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.infantry_list[i]), LSGM_EnemyPlayerID) end
+		for i=1, table.getn(all_entities.vehicle_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.vehicle_list[i]), LSGM_EnemyPlayerID) end
+		for i=1, table.getn(all_entities.aircraft_list) do Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, all_entities.aircraft_list[i]), LSGM_EnemyPlayerID) end
+	end
+end
+
+
+function LastStandGM_Display_Message1()
+	if Event_IsAnyRunning()==false then
+		local hq_name = Global_RaceStats[LSGM_Local_RaceName].HQucs  -- not used, we do not use HQ as buildings...
+		hq_name = "last building"
+		Util_MissionTitle("Select one Unit from your "..hq_name..", before it is destroyed!")
+		Rule_Remove(LastStandGM_Display_Message1)
+		Rule_AddDelay(LastStandGM_Display_Message2,3)
+	end
+end
+function LastStandGM_Display_Message2()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Make your choice while you can, or else it will be chosen randomly.")
+		Rule_Remove(LastStandGM_Display_Message2)
+	end
+end
+function LastStandGM_Display_Message3()
+	if Event_IsAnyRunning()==false then
+		local player_name = Player_GetDisplayName(World_GetPlayerAt(Tut_GetLocalPlayerIndex()))[1]
+		Util_MissionTitle("Now "..player_name..", control and upgrade your Unit to withstand "..LSGM_Total_Waves.." Waves of enemies!")
+		Rule_Remove(LastStandGM_Display_Message3)
+		if LSGM_IsUnsupported_EnemyRace then
+			Rule_Add(LastStandGM_Display_UnsupportedEnemyRace)
+		end
+	end
+end
+function LastStandGM_ERROR_UnsupportedRace()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Unsupported Player Race detected!! Game will not start.")
+	end
+end
+function LastStandGM_Display_UnsupportedEnemyRace()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Unsupported Enemy Race: "..LSGM_Unsupported_Enemy_RaceName.." detected!! Existing Enemy Race forced: "..LSGM_Enemy_RaceName)
+		Rule_Remove(LastStandGM_Display_UnsupportedEnemyRace)
+	end
+end
+function LastStandGM_LockCameraRule()
+	Camera_FocusOnTargetPos(LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 1)
+	W40k_SelectEGroup(Player_GetEntities(World_GetPlayerAt(Tut_GetLocalPlayerIndex())))
+end
+
+
+function LastStandGM_RevealInitialPlayerPositions()
+	local local_player_team = Player_GetTeam(LSGM_Local_PlayerID)
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		local playerID = LSGM_PlayerIDs[i]
+		if local_player_team == Player_GetTeam(playerID) then
+			local start_pos = LSGM_Proper_Starting_Positions[World_GetPlayerIndex(playerID)]
+			FOW_RevealArea( start_pos.x, start_pos.z, 10, 2 )
+		end
+	end
+end
+
+
+function LastStandGM_ChooseCPUSquadsRule()
+	LSGM_Pings = {}
+	local local_player_team = Player_GetTeam(LSGM_Local_PlayerID)
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		local playerID = LSGM_PlayerIDs[i]
+		local start_pos = LSGM_Proper_Starting_Positions[World_GetPlayerIndex(playerID)]
+		if local_player_team == Player_GetTeam(playerID) then
+			LSGM_Pings[i] = Ping_Position(start_pos, true)
+		end
+		if not Player_IsHuman(playerID) then
+			local race_name = Player_GetRaceName(LSGM_PlayerIDs[i])
+			local all_quads = table.getn(Global_RaceStats[race_name].KTGM.squad)
+			local choice = World_GetRand(1, all_quads)
+			local squad_name = ""
+			if type(Global_RaceStats[race_name].KTGM.squad[choice]) == "table" then
+				squad_name = Global_RaceStats[race_name].KTGM.squad[choice][1]
+				local last_value = table.getn(Global_RaceStats[race_name].KTGM.squad[choice])
+				LSGM_PlayerSquadCanPossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][last_value]
+				LSGM_PlayersSquadNamePossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][1]
+			else
+				squad_name = Global_RaceStats[race_name].KTGM.squad[choice]
+			end
+			LSGM_PlayerSquadNames[i] = Global_RaceStats[race_name].KTGM.squad[choice]
+			LSGM_PlayerSquadIDs[i] = Squad_Create(squad_name, playerID, start_pos, 0)
+			local proper_pos = Community_Extended_SpawnablePositionSearch(start_pos,"space_marine_turret_bolter",playerID,nil)
+			Squad_Spawn(LSGM_PlayerSquadIDs[i], proper_pos)
+			local idx = World_GetPlayerIndex(playerID)
+			SGroup_Add("sg_LSGM_Squad_Player"..idx, LSGM_PlayerSquadIDs[i])
+			local research_building = ""
+			local ability_building = ""
+			local pos = Player_GetStartPosition(playerID); pos.x=pos.x-1024; pos.z=pos.z-1024
+			if type(Global_RaceStats[race_name].KTGM.ktrsrch) == "table" then
+				print("1")
+				if(type(Global_RaceStats[race_name].KTGM.ktrsrch[choice]) == "table") then
+					print("2")
+					research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][1]
+					ability_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][2]
+				else
+					print("3")
+					research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice]
+				end
+			else
+					print("4")
+					research_building = Global_RaceStats[race_name].KTGM.ktrsrch
+			end
+
+			if research_building ~= "" then
+				local eID = Entity_Create(research_building, playerID, pos)
+				Entity_Spawn(eID)
+				EGroup_Add("eg_LSGM_Building_Player"..idx, eID)
+				
+			end
+
+			if ability_building ~= "" then
+				local aID = Entity_Create(ability_building, playerID, pos)
+				Entity_Spawn(aID)
+				EGroup_Add("eg_LSGM_Ability_Player"..idx, aID)
+			end
+			--Squad_SetWorldOwner(LSGM_PlayerSquadIDs[i])  -- Occasionally CRASHES the game!!!
+			print("++++++++++++++")
+			print(race_name)
+			if type(LSGM_PlayerSquadNames[i]) == "table" then
+				for name=1,table.getn(LSGM_PlayerSquadNames[i]) do
+					print(LSGM_PlayerSquadNames[i][name])
+				end
+			else
+				print(LSGM_PlayerSquadNames[i])
+			end
+			print("++++++++++++++")
+		end
+	end
+end
+
+
+LastStandGM_InitialHeroChosenByPlayer = function( sgroupid, itemindex, squadID )
+	local squad_name = Squad_GetBlueprintName(squadID)
+	local squad_table = Global_RaceStats[KTGM_chosen_Initial_Hero_PlayerRACE].KTGM.squad
+	for i = 1, table.getn(squad_table) do
+		if type(squad_table[i]) == "table" then
+			for j = 1, table.getn(squad_table[i]) do
+				if squad_name == squad_table[i][j] then
+					KTGM_chosen_Initial_Hero_squadID = squadID
+					return true
+				end
+			end
+		else
+			if squad_name == squad_table[i] then
+				KTGM_chosen_Initial_Hero_squadID = squadID
+				return true
+			end
+		end
+	end					
+end
+	
+
+function LastStandGM_ChoosePlayersSquadsRule()
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		local playerID = LSGM_PlayerIDs[i]
+		if Player_IsAlive(playerID) then
+			if not LSGM_PlayerHasChosenSquad[i] then
+				local squadsSG = Player_GetSquads(LSGM_PlayerIDs[i])
+				local entityExists, entityHealth = pcall( Entity_GetHealth, LSGM_Initial_PlayerHQs_IDs[i] )
+				if SGroup_CountSpawned(squadsSG) > 0 then
+					KTGM_chosen_Initial_Hero_squadID = nil
+					KTGM_chosen_Initial_Hero_PlayerRACE = Player_GetRaceName(playerID)
+					if SGroup_ForEachAllOrAnyEx(squadsSG,false,LastStandGM_InitialHeroChosenByPlayer,true,false) and KTGM_chosen_Initial_Hero_squadID ~= nil then
+						LSGM_PlayerHasChosenSquad[i] = true
+						LSGM_PlayerSquadIDs[i] = KTGM_chosen_Initial_Hero_squadID
+						-- find which one squad type is it, to find the names
+						local race_name = Player_GetRaceName(playerID)
+						local choice = 0
+						local chosen_squad_name = Squad_GetBlueprintName(LSGM_PlayerSquadIDs[i])
+						for j = 1, table.getn(Global_RaceStats[race_name].KTGM.squad) do
+							if type(Global_RaceStats[race_name].KTGM.squad[j]) == "table" then
+								for k = 1, table.getn(Global_RaceStats[race_name].KTGM.squad[j]) do
+									if chosen_squad_name == Global_RaceStats[race_name].KTGM.squad[j][k] then
+										choice = j
+										local last_value = table.getn(Global_RaceStats[race_name].KTGM.squad[choice])
+										LSGM_PlayerSquadCanPossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][last_value]
+										LSGM_PlayersSquadNamePossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][1]
+										break
+									end
+								end
+							else
+								if chosen_squad_name == Global_RaceStats[race_name].KTGM.squad[j] then
+									choice = j
+									break
+								end
+							end
+						end					
+						LSGM_PlayerSquadNames[i] = Global_RaceStats[race_name].KTGM.squad[choice]
+						local idx = World_GetPlayerIndex(playerID)
+						SGroup_Add("sg_LSGM_Squad_Player"..idx, LSGM_PlayerSquadIDs[i])
+						Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_regeneration_modifier", MUT_Addition, true, -500, Global_RaceStats[race_name].KTGM.kthq), playerID)
+						if i == Tut_GetLocalPlayerIndex() + 1 then
+							CameraShake_Large( LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 3 )
+							LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()] = Squad_GetPosition(LSGM_PlayerSquadIDs[i])
+							Rule_Remove(LastStandGM_LockCameraRule)
+						end
+						local research_building = ""
+						local ability_building = ""
+						local pos = Player_GetStartPosition(playerID); pos.x=pos.x-1024; pos.z=pos.z-1024
+						if type(Global_RaceStats[race_name].KTGM.ktrsrch) == "table" then
+							print("1")
+							if(type(Global_RaceStats[race_name].KTGM.ktrsrch[choice]) == "table") then
+								print("2")
+								research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][1]
+								ability_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][2]
+							else
+								print("3")
+								research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice]
+							end
+						else
+								print("4")
+								research_building = Global_RaceStats[race_name].KTGM.ktrsrch
+						end
+
+						if research_building ~= "" then
+							local eID = Entity_Create(research_building, playerID, pos)
+							Entity_Spawn(eID)
+							EGroup_Add("eg_LSGM_Building_Player"..idx, eID)
+							
+						end
+
+						if ability_building ~= "" then
+						local aID = Entity_Create(ability_building, playerID, pos)
+							Entity_Spawn(aID)
+							EGroup_Add("eg_LSGM_Ability_Player"..idx, aID)
+						end
+
+						--Squad_SetWorldOwner(LSGM_PlayerSquadIDs[i])  -- Occasionally CRASHES the game!!!
+						print("++++++++++++++")
+						print(race_name)
+						if type(LSGM_PlayerSquadNames[i]) == "table" then
+							for name=1,table.getn(LSGM_PlayerSquadNames[i]) do
+								print(LSGM_PlayerSquadNames[i][name])
+							end
+						else
+							print(LSGM_PlayerSquadNames[i])
+						end
+					end
+				elseif not entityExists or entityHealth <= 0 then
+					LSGM_PlayerHasChosenSquad[i] = true
+					local race_name = Player_GetRaceName(playerID)
+					local all_quads = table.getn(Global_RaceStats[race_name].KTGM.squad)
+					local choice = World_GetRand(1, all_quads)
+					local squad_name = ""
+					if type(Global_RaceStats[race_name].KTGM.squad[choice]) == "table" then
+						squad_name = Global_RaceStats[race_name].KTGM.squad[choice][1]
+						local last_value = table.getn(Global_RaceStats[race_name].KTGM.squad[choice])
+						LSGM_PlayerSquadCanPossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][last_value]
+						LSGM_PlayersSquadNamePossess[i] = Global_RaceStats[race_name].KTGM.squad[choice][1]
+					else
+						squad_name = Global_RaceStats[race_name].KTGM.squad[choice]
+					end
+					local start_pos = LSGM_Proper_Starting_Positions[World_GetPlayerIndex(playerID)]
+					LSGM_PlayerSquadNames[i] = Global_RaceStats[race_name].KTGM.squad[choice]
+					LSGM_PlayerSquadIDs[i] = Squad_Create(squad_name, playerID, start_pos, 0)
+					local idx = World_GetPlayerIndex(playerID)
+					SGroup_Add("sg_LSGM_Squad_Player"..idx, LSGM_PlayerSquadIDs[i])
+					local proper_pos = Community_Extended_SpawnablePositionSearch(start_pos,"space_marine_turret_bolter",playerID,nil)
+					Squad_Spawn(LSGM_PlayerSquadIDs[i], proper_pos)
+					if i == Tut_GetLocalPlayerIndex() + 1 then
+						CameraShake_Large( LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 3 )
+						LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()] = Squad_GetPosition(LSGM_PlayerSquadIDs[i])
+						Rule_Remove(LastStandGM_LockCameraRule)
+					end
+					local research_building = ""
+					local ability_building = ""
+					local pos = Player_GetStartPosition(playerID); pos.x=pos.x-1024; pos.z=pos.z-1024
+					if type(Global_RaceStats[race_name].KTGM.ktrsrch) == "table" then
+						print("1")
+						if(type(Global_RaceStats[race_name].KTGM.ktrsrch[choice]) == "table") then
+							print("2")
+							research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][1]
+							ability_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice][2]
+						else
+							print("3")
+							research_building = Global_RaceStats[race_name].KTGM.ktrsrch[choice]
+						end
+					else
+							print("4")
+							research_building = Global_RaceStats[race_name].KTGM.ktrsrch
+					end
+
+					if research_building ~= "" then
+						local eID = Entity_Create(research_building, playerID, pos)
+						Entity_Spawn(eID)
+						EGroup_Add("eg_LSGM_Building_Player"..idx, eID)
+						
+					end
+
+					if ability_building ~= "" then
+						local aID = Entity_Create(ability_building, playerID, pos)
+						Entity_Spawn(aID)
+						EGroup_Add("eg_LSGM_Ability_Player"..idx, aID)
+					end
+
+					--Squad_SetWorldOwner(LSGM_PlayerSquadIDs[i])  -- Occasionally CRASHES the game!!!
+					print("++++++++++++++")
+					print(race_name)
+					if type(LSGM_PlayerSquadNames[i]) == "table" then
+						for name=1,table.getn(LSGM_PlayerSquadNames[i]) do
+							print(LSGM_PlayerSquadNames[i][name])
+						end
+					else
+						print(LSGM_PlayerSquadNames[i])
+					end
+				end
+			end
+		else
+			-- The player is dropped. Disallow choosing and continue the game with one less
+			LSGM_PlayerHasChosenSquad[i] = true
+			LSGM_PlayerSquadNames[i] = nil
+			LSGM_PlayerSquadIDs[i] = nil
+		end
+	end
+	KTGM_AllPlayersHaveChosen[0] = true
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		if not LSGM_PlayerHasChosenSquad[i] then
+			KTGM_AllPlayersHaveChosen[0] = false; break
+		end
+	end
+	if KTGM_AllPlayersHaveChosen[0] then
+		obj_table_KTGM = { title_id = 5802065, short_desc_id = 5802066, help_tip_id = 5802066 }
+		Objective_Add( obj_table_KTGM, 1 )
+		WinWarning_Add( "ui_resLevel", World_GetPlayerAt(0), "", "", "" )
+		--WinWarning_SetText( "ui_resLevel", "Resource Level - SP:"..tostring( LSGM_StrategicPointBonus[0] ).." / CL: "..tostring( LSGM_CriticalLocationBonus[0] ).." / REL: "..tostring( LSGM_RelicBonus[0] ))
+		LastStandGM_SetOriginalResources()
+		for i = 1, table.getn(LSGM_PlayerIDs) do
+			if LSGM_PlayerSquadIDs[i] ~= nil then
+				Squad_SetPlayerOwner(LSGM_PlayerSquadIDs[i],LSGM_PlayerIDs[i])
+			end
+			pcall(Ping_Stop,LSGM_Pings[i])
+		end
+		Camera_FocusOnTargetPos(LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()], 1)
+		World_FXEvent("data:Art/Events/sisters/emperorstouch_impact", LSGM_Proper_Starting_Positions[Tut_GetLocalPlayerIndex()])
+		if Rule_Exists(LastStandGM_Display_Message1) then Rule_Remove(LastStandGM_Display_Message1) end
+		if Rule_Exists(LastStandGM_Display_Message2) then Rule_Remove(LastStandGM_Display_Message2) end
+		-- Set Souls to a specific number, for races that use souls as a research LIMITER
+		LastStandGM_SoulResearchLimiterRule()
+		-- Start the rules
+		Rule_Add(LastStandGM_GetPlayerPositions)
+		Rule_Add(LastStandGM_Display_Message3)
+		Rule_AddInterval(LastStandGM_MainRule,0.25)
+		Rule_AddOneShot(LastStandGM_ButtonInitialisation, 0.75)
+		Rule_AddIntervalDelay(LastStandGM_CPU_AI_Attacks, 2.25, 4)
+		Rule_Remove(LastStandGM_ChoosePlayersSquadsRule)
+		Rule_Remove(LastStandGM_RevealInitialPlayerPositions)
+		-- In MP games, difficulty must be set manually
+		if LSGM_MP_Game then
+			Rule_AddOneShot(LastStandGM_MP_Game_Difficulty, 0.375)
+		end
+		-- Setup the research limitation rule
+		local limit_rule_needed = false
+		for i = 1, table.getn(LSGM_PlayerIDs) do
+			if Global_LS_Hero_Researches_Limiter[LSGM_PlayerRaceNames[i]] ~= nil then
+				limit_rule_needed = true
+				print("Race: "..LSGM_PlayerRaceNames[i]..", needs the Limit Research Rule.")
+			end
+		end
+		if limit_rule_needed then
+			-- NOT used. It makes a short delay before removing the researches...
+			-- Rule_Add(LastStandGM_Hero_Research_Limit_Rule)
+		end
+		return
+	end
+end
+
+
+function LastStandGM_SoulResearchLimiterRule()
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		local name = ""
+		if type(LSGM_PlayerSquadNames[i]) == "table" then
+			name = LSGM_PlayerSquadNames[i][1]
+		else
+			name = LSGM_PlayerSquadNames[i]
+		end
+		for j = 1, table.getn(LastStand_SoulResearchHeroLimiter) do
+			if LastStand_SoulResearchHeroLimiter[j][1] == name then
+				local playerID = LSGM_PlayerIDs[i]	
+				local souls = LastStand_SoulResearchHeroLimiter[j][2]
+				Player_SetResource(playerID, RT_Souls, souls)
+				print("Squad "..name..", got "..souls.." soul-points, to spend on researches.")
+				break
+			end
+		end
+	end
+end
+
+
+function LastStandGM_Hero_Research_Limit_Rule()
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		local array = Global_LS_Hero_Researches_Limiter[LSGM_PlayerRaceNames[i]]
+		if array ~= nil then
+			for j = 1, table.getn(array) do
+				local lim = array[j].limit
+				local res = array[j].researches
+				local total_done = 0
+				for k = 1, table.getn(res) do
+					if Player_GetResearchState(LSGM_PlayerIDs[i], res[k]) == RS_Complete then
+						total_done = total_done + 1
+					end
+				end
+				if total_done >= lim then
+					-- Restrict all other researches
+					for n = 1, table.getn(res) do
+						Player_RestrictResearch(LSGM_PlayerIDs[i],res[n])
+					end
+				end
+			end
+		end	
+	end
+end
+
+
+function LastStandGM_SetOriginalResources()
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		if LSGM_High_Resources then
+			Player_SetResource(LSGM_PlayerIDs[i], RT_Power, 200)
+			Player_SetResource(LSGM_PlayerIDs[i], RT_Requisition, 200)
+		else
+			Player_SetResource(LSGM_PlayerIDs[i], RT_Power, 0)
+			Player_SetResource(LSGM_PlayerIDs[i], RT_Requisition, 0)
+		end
+	end
+end
+
+
+function LastStandGM_ButtonInitialisation()
+	-- KTGM_SquadButton = Button_Add( "btn_ScarUI1", true, true, false )
+	-- Button_SetTooltip( KTGM_SquadButton, "$17473095", "$17473096" )
+	-- Button_SetTextures( KTGM_SquadButton, "event_cue_icons/player_host_migrated", "event_cue_icons/player_host_migrated", "event_cue_icons/player_host_migrated" )
+	KTGM_BuildingButton = Button_Add( "btn_ScarUI1", true, true, false )
+	Button_SetTooltip( KTGM_BuildingButton, "$17473097", "$17473098" )
+	Button_SetTextures( KTGM_BuildingButton, "speech_icons/dc_archivist_icon", "speech_icons/dc_archivist_icon", "speech_icons/dc_archivist_icon" )
+	KTGM_AbilityButton = Button_Add( "btn_ScarUI2", true, true, false )
+	Button_SetTooltip( KTGM_AbilityButton, "$17473092", "$17473093")
+	Button_SetTextures( KTGM_AbilityButton, "speech_icons/wxp_tutorial_icon", "speech_icons/wxp_tutorial_icon", "speech_icons/wxp_tutorial_icon" )
+	Rule_Add(LastStandGM_ButtonPressing)
+end
+
+ 
+function LastStandGM_ButtonPressing()
+	-- if Button_GetPressed(KTGM_SquadButton) then
+	-- 	local sgroup = "sg_LSGM_Squad_Player"..Tut_GetLocalPlayerIndex()
+	-- 	if SGroup_Exists(sgroup) and SGroup_CountSpawned(sgroup) > 0 then
+	-- 		local pos = SGroup_GetPosition(sgroup)
+	-- 		if not (pos.x == 0 and pos.y == 0 and pos.z == 0) then
+	-- 			Camera_FocusOnTargetPos(pos, 1)
+	-- 			W40k_SelectSGroup(sgroup)
+	-- 		end
+	-- 	else
+	-- 		local egroup = "eg_LSGM_Dummy_Revival_Player"..Tut_GetLocalPlayerIndex()
+	-- 		if EGroup_Exists(egroup) and EGroup_CountSpawned(egroup) > 0 then
+	-- 			local pos = EGroup_GetPosition(egroup)
+	-- 			if not (pos.x == 0 and pos.y == 0 and pos.z == 0) then
+	-- 				Camera_FocusOnTargetPos(pos, 1)
+	-- 			end
+	-- 		end
+	-- 	end
+	-- else
+		if Button_GetPressed(KTGM_BuildingButton) then
+		W40k_SelectEGroup("eg_LSGM_Building_Player"..Tut_GetLocalPlayerIndex())
+	elseif Button_GetPressed(KTGM_AbilityButton) then
+		W40k_SelectEGroup("eg_LSGM_Ability_Player"..Tut_GetLocalPlayerIndex())
+	end
+end
+
+
+function LastStandGM_AreThereRemainingWaveSquads(squad_table)
+	local sg = Player_GetSquads(LSGM_EnemyPlayerID)
+	WinWarning_SetText( "remainSquad"..1, "Remaining Enemy Squad "..SGroup_Count(sg))
+	for i = 1, table.getn(squad_table) do
+		if Squad_Exists(squad_table[i].id) then
+			LSGM_BONUS_RESURRECT_TMR = World_GetGameTime()
+			return true
+		end
+	end
+	-- See if we have possessed/resurrected or any other squads spawned by the waves themselves
+	if World_GetGameTime() < LSGM_BONUS_RESURRECT_TMR + 14 then
+		return true
+	end
+	local sg = Player_GetSquads(LSGM_EnemyPlayerID)
+	if SGroup_Count(sg) > 0 then
+		local newSquads = function(sgroupid, itemindex, squadID)
+			table.insert(LSGM_Wave_EnemySquadIDs, squadID)
+		end
+		SGroup_ForEachEx(sg, newSquads, true, true)
+		return true
+	end
+	return false
+end
+
+
+function LastStandGM_GetPlayerPositions()
+	for i = 1, table.getn(LSGM_PlayerIDs) do
+		if LSGM_PlayerSquadIDs[i] ~= nil and Squad_Exists(LSGM_PlayerSquadIDs[i].id) and Squad_GetHealth(LSGM_PlayerSquadIDs[i]) > 0 then
+			LSGM_PlayerSquadPositions[i] = Squad_GetPosition(LSGM_PlayerSquadIDs[i])
+			LSGM_PlayerDEADSquadPositions[i] = LSGM_PlayerSquadPositions[i]
+		elseif LSGM_PlayerATTACHEDSquadIDs[i] ~= nil and Squad_Exists(LSGM_PlayerATTACHEDSquadIDs[i].id) and Squad_GetHealth(LSGM_PlayerATTACHEDSquadIDs[i]) > 0 then  
+			LSGM_PlayerSquadPositions[i] = Squad_GetPosition(LSGM_PlayerATTACHEDSquadIDs[i])
+			LSGM_PlayerDEADSquadPositions[i] = LSGM_PlayerSquadPositions[i]
+		end
+	end
+end
+
+
+-- HERE IS THE MAIN RULE
+function LastStandGM_MainRule()
+	local playersNbr = table.getn(LSGM_PlayerIDs)
+	for i = playersNbr, 1, -1 do
+		if not Player_IsAlive(LSGM_PlayerIDs[i]) then
+			-- Player is removed due to CONNECTION issues
+			LSGM_ActiveSpawnPositions = LSGM_ActiveSpawnPositions - 1
+			if LSGM_PlayerReviveEntities[i] ~= nil then
+				pcall(Entity_DeSpawn, LSGM_PlayerReviveEntities[i]); pcall(Entity_Destroy, LSGM_PlayerReviveEntities[i])
+			end
+			LastStandGM_TablePlayerRemoval(i)
+			playersNbr = playersNbr - 1
+		end
+	end
+	-- Spawning waves command
+	if not LastStandGM_AreThereRemainingWaveSquads(LSGM_Wave_EnemySquadIDs) and World_GetGameTime() > LSGM_TMR then
+		LSGM_TMR = World_GetGameTime() + LSGM_Time_Between_waves + 1
+		SGroup_Clear("sg_LSGM_wave_squads")
+		LSGM_Wave_EnemySquadIDs = {}
+		-- Reward players after 1st wave is spawned (the counter changes later, that is why it is -1, below)
+		if LSGM_Wave > 1 then
+			if LS_HunterModeEnabled ~= nil and LSGM_Wave <= LSGM_Total_Waves then
+				local Wave_Kills_Player = {}
+				for i=1, table.getn(LSGM_PlayerIDs) do
+					local playerID = LSGM_PlayerIDs[i]
+					if Player_IsAlive(playerID) then
+						local player_kills = Stats_PlayerUnitsKilled(Player_GetID(playerID))
+						local wave_kills = player_kills - LSGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(playerID)]
+						table.insert(Wave_Kills_Player, {pID = playerID, kills = wave_kills, name = Player_GetDisplayName(playerID)[1]}) 
+						LSGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(playerID)] = player_kills
+					end
+				end
+				local players = table.getn(Wave_Kills_Player)
+				if players > 1 then
+					local max_kills = Wave_Kills_Player[1].kills
+					for i=2, players do
+						if Wave_Kills_Player[i].kills > max_kills then max_kills = Wave_Kills_Player[i].kills end
+					end
+					local winners = {}
+					for i=1, players do
+						if Wave_Kills_Player[i].kills == max_kills then
+							Player_AddResource(Wave_Kills_Player[i].pID, RT_Requisition, LSGM_ResourcesGainedWave[LSGM_Wave-1]/2)
+							Player_AddResource(Wave_Kills_Player[i].pID, RT_Power, LSGM_ResourcesGainedWave[LSGM_Wave-1]/2)
+							table.insert(winners, Wave_Kills_Player[i].name)
+						end
+					end	
+					g_LS_Hunter_Message = "Best Hunter Resources, are won by"
+					local all_winners = table.getn(winners)
+					if all_winners == 1 then
+						g_LS_Hunter_Message = g_LS_Hunter_Message.." "..winners[1].." !!  WAVE KILLS: "..max_kills
+					else
+						local mssg = ""
+						for i=1, all_winners do
+							if i == all_winners then
+								mssg = mssg.." "..winners[i].." "
+							else
+								mssg = mssg.." "..winners[i].." And"
+							end
+						end
+						g_LS_Hunter_Message = g_LS_Hunter_Message..mssg.." !!  WAVE KILLS: "..max_kills
+					end
+					Rule_AddOneShot(LastStandGM_HUNTERWINS, 0)
+				end
+			end
+			for i=1, table.getn(LSGM_PlayerIDs) do
+				if Player_IsAlive(LSGM_PlayerIDs[i]) then
+					-- Create the wave dummy requirement building. No need to spawn it
+					Entity_Create("last_stand_wave_"..(LSGM_Wave-1), LSGM_PlayerIDs[i], Player_GetStartPosition(LSGM_PlayerIDs[i]))
+					Player_AddResource(LSGM_PlayerIDs[i], RT_Requisition, LSGM_ResourcesGainedWave[LSGM_Wave-1])
+					Player_AddResource(LSGM_PlayerIDs[i], RT_Power, LSGM_ResourcesGainedWave[LSGM_Wave-1])
+					LSGM_UnitsKilledPreviousWavePlayer[World_GetPlayerIndex(LSGM_PlayerIDs[i])] = Stats_PlayerUnitsKilled(Player_GetID(LSGM_PlayerIDs[i]))
+				end
+			end
+		end
+		-- See if this is the last wave, otherwise prepare then next
+		if LSGM_Wave < LSGM_Total_Waves then
+			Rule_AddOneShot(LastStandGM_SpawnWave, LSGM_Time_Between_waves)
+		elseif LSGM_Wave == LSGM_Total_Waves then
+			Rule_AddOneShot(LastStandGM_LASTWAVE, 5)
+			Rule_AddOneShot(LastStandGM_SpawnWave, LSGM_Time_Between_waves)
+		else
+			-- Game ended successfully!
+			Util_ObjectiveComplete(obj_table_KTGM.title_id)
+			if LS_ToTheLastModeEnabled ~= nil and table.getn(LSGM_PlayerIDs) > 1 then
+				Rule_AddOneShot(LastStandGM_ToTheLastMode, 0)
+			else
+				-- Game ended successfully!
+				Rule_AddOneShot(LastStandGM_EndGameWIN, 0)
+			end
+			Rule_Remove(LastStandGM_MainRule)
+			return
+		end
+	end
+	-- Check for dead players
+	local all_defeated = 0
+	for i = playersNbr, 1, -1 do
+		if not Player_IsAlive(LSGM_PlayerIDs[i]) then
+			-- Player is removed due to CONNECTION issues
+			LSGM_ActiveSpawnPositions = LSGM_ActiveSpawnPositions - 1
+			if LSGM_PlayerReviveEntities[i] ~= nil then
+				pcall(Entity_DeSpawn, LSGM_PlayerReviveEntities[i]); pcall(Entity_Destroy, LSGM_PlayerReviveEntities[i])
+			end
+			LastStandGM_TablePlayerRemoval(i)
+			playersNbr = playersNbr - 1
+		else
+			local playerIDX = World_GetPlayerIndex(LSGM_PlayerIDs[i])
+			LSGM_UnitsKilledPlayer[playerIDX] = Stats_PlayerUnitsKilled(Player_GetID(LSGM_PlayerIDs[i]))
+			if LSGM_PlayerSquadIDs[i] == nil or not Squad_Exists(LSGM_PlayerSquadIDs[i].id) then
+				local squadsSG = Player_GetSquads(LSGM_PlayerIDs[i])
+				local player_is_defeated = true
+				-- Check if, instead of killed, the squad has possessed to another form
+				if LSGM_PlayerSquadCanPossess[i] ~= nil then
+					if SGroup_Count(squadsSG) > 0 then
+						-- check if we can find one of the squads available to player
+						local check_for_squad = function(sgroupid, itemindex, squadID)
+							local name = Squad_GetBlueprintName(squadID)
+							for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+								if name == LSGM_PlayerSquadNames[i][k] then
+									player_is_defeated = false
+									LSGM_PlayerSquadIDs[i] = squadID
+									LSGM_PlayersSquadNamePossess[i] = name
+									SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+									SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+									return true
+								end
+							end
+						end
+						SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_squad, true, true)
+					end
+				end
+				-- Check if, instead of killed, the squad is attached
+				local squadsSG = Player_GetSquads(LSGM_PlayerIDs[i])
+				LSGM_PlayerATTACHEDSquadIDs[i] = nil
+				if SGroup_Count(squadsSG) > 0 then
+					-- check if we can find one of the squads available to player
+					local check_for_attached_squad = function(sgroupid, itemindex, squadID)
+						if Squad_IsAttached(squadID) then
+							local name = Squad_GetAttachedBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										player_is_defeated = false
+										LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								player_is_defeated = false
+								LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+								return true
+							end
+						else
+							local name = Squad_GetBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										player_is_defeated = false
+										LSGM_PlayerSquadIDs[i] = squadID
+										SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+										SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								player_is_defeated = false
+								LSGM_PlayerSquadIDs[i] = squadID
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								return true
+							end
+						end
+					end
+					SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_attached_squad, true, true)
+				end
+				if player_is_defeated then
+					all_defeated = all_defeated + 1
+					if LS_HardCoreModeEnabled ~= nil then
+						if table.getn(LSGM_PlayerIDs) > 1 then
+							Player_Kill(LSGM_PlayerIDs[i])
+						end
+						-- One less player, one less spawn position
+						LSGM_ActiveSpawnPositions = LSGM_ActiveSpawnPositions - 1
+						LastStandGM_TablePlayerRemoval(i)
+					else
+						-- Player defeated, spawn the revival dummy ONCE, at the place of defeat.
+						if LSGM_PlayerSquadPositions[i] ~= nil then
+							LSGM_PlayerSquadPositions[i] = Community_Extended_SpawnablePositionSearchRevival(LSGM_PlayerSquadPositions[i],LSGM_PlayerIDs[i])
+							LSGM_PlayerReviveEntities[i] = Entity_Create("last_stand_revival_struct_dummy", LSGM_PlayerIDs[i], LSGM_PlayerSquadPositions[i])
+							Entity_Spawn(LSGM_PlayerReviveEntities[i])
+							EGroup_Clear(EGroup_CreateIfNotFound("eg_LSGM_Dummy_Revival_Player"..playerIDX))
+							EGroup_Add("eg_LSGM_Dummy_Revival_Player"..playerIDX, LSGM_PlayerReviveEntities[i])
+							-- Store dead player pos
+							LSGM_PlayerDEADSquadPositions[i] = LSGM_PlayerSquadPositions[i]
+							-- This way, we ensure it is spawned ONCE
+							LSGM_PlayerSquadPositions[i] = nil
+						else
+						-- Now check if an ally has captured this "point", so that to revive the player
+							local revive_pos = nil
+							for j = 1, playersNbr do
+								local eg_name = "eg_LSGM_Dummy_Revival_Player"..playerIDX
+								if EGroup_Exists(eg_name) and EGroup_IsCapturedByPlayer(eg_name,LSGM_PlayerIDs[j],true) then
+									revive_pos = EGroup_GetPosition(eg_name)
+									EGroup_DeSpawn(eg_name); EGroup_Destroy(eg_name)
+									break
+								end
+							end
+							if revive_pos ~= nil then
+								-- revive the player
+								local squad_name = ""
+								if LSGM_PlayerSquadCanPossess[i] ~= nil then
+									if LSGM_PlayerSquadCanPossess[i] == "YES" then
+										squad_name = LSGM_PlayersSquadNamePossess[i]
+									elseif LSGM_PlayerSquadCanPossess[i] == "NO" then
+										squad_name = LSGM_PlayerSquadNames[i][1]
+									else
+										print("ERROR: Last Stand Problem with YES/NO!")
+									end
+								else
+									squad_name = LSGM_PlayerSquadNames[i]
+								end
+								LSGM_PlayerSquadIDs[i] = Squad_Create(squad_name, LSGM_PlayerIDs[i], revive_pos, 0)
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								local proper_pos = Community_Extended_SpawnablePositionSearch(revive_pos,"space_marine_turret_bolter",LSGM_PlayerIDs[i],nil)
+								Squad_Spawn(LSGM_PlayerSquadIDs[i], proper_pos)
+								World_FXEvent("data:Art/Events/sisters/emperorstouch_impact", Squad_GetPosition(LSGM_PlayerSquadIDs[i]))
+							end
+						end
+					end
+				end		
+			end
+		end
+	end
+	-- Check if we have NO player left
+	if all_defeated == playersNbr then
+		--Util_CheckOneTeamLeft( "5KillTeam_Gamemode" )
+		-- Game ended in defeat!
+		Rule_Remove(LastStandGM_MainRule)
+		Rule_AddOneShot(LastStandGM_EndGameLOSE, 3)
+		return
+	end
+	-- Display Kills
+	local wave = nil
+	if LSGM_Wave > LSGM_Total_Waves then
+		wave = "LAST! ("..(LSGM_Wave-1)..")"
+	else
+		wave = (LSGM_Wave-1).."/"..LSGM_Total_Waves
+	end
+	--local count = "Wave: "..wave.." / Body Count - "
+	for i=1, LSGM_AllPlayersNumber do
+		local pID = LSGM_UnitsKilledPlayerIDs[i]
+		if Player_IsAlive(pID) then
+			local pIDX = World_GetPlayerIndex(pID)
+			local text = Player_GetDisplayName(pID)[1].." Kills: "..LSGM_UnitsKilledPlayer[pIDX].." Wave: "..wave
+			WinWarning_SetText( "ui_ktls_gm"..i, text )
+		end
+	end
+end
+
+
+function LastStandGM_SpawnWave()
+	-- First, perform the AI researches for THIS wave, if enabled
+	if LS_EnemyAdvancementEnabled ~= nil and LS_EnemyAdvancementEnabled == true then
+		for i = 1, table.getn(LSGM_ResearchesCompletedForTheAI[LSGM_Wave]) do
+			-- We do not know if the research exists (in case a race is NOT in play)
+			pcall(Player_GrantResearch, LSGM_EnemyPlayerID, LSGM_ResearchesCompletedForTheAI[LSGM_Wave][i])
+		end
+	end
+	local random_SpawnPosition = {}	-- Array with randomised order of spawn positions
+	for i = 1, LSGM_ActiveSpawnPositions do
+		random_SpawnPosition[i] = LSGM_SpawnPosition[World_GetRand(1,LSGM_TotalSpawnPositions)]
+	end
+	local wave_type = {}
+	for i = 1, LSGM_TotalSpawnPositions do
+		wave_type[i] = i
+	end
+	for map_pos = 1, LSGM_ActiveSpawnPositions do
+		local chosen_wave_type = wave_type[World_GetRand(1, table.getn(wave_type))]
+		table.remove(wave_type, chosen_wave_type)
+		local position = random_SpawnPosition[map_pos]
+		for squad_type = 1, table.getn(LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type]) do
+			local squad_name = LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].name
+			local squad_loadout = LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].loadout
+			for instances = 1, LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].nmbr do
+				local squadID = Squad_Create(squad_name, LSGM_EnemyPlayerID, position, squad_loadout)
+				if LS_AI_Enabled == nil then
+					Cpu_LockSquad(LSGM_EnemyPlayerID,Squad_GetGameID(squadID))
+				end
+				local pos = Community_Extended_SpawnablePositionSearch(position,nil,LSGM_EnemyPlayerID,nil)
+				Squad_Spawn(squadID, pos)
+				World_FXEvent("unit_ability_fx/machine_spirit", Squad_GetPosition(squadID))
+				-- Add Weapons, if any
+				if LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].weapons ~= nil then
+					for weapon = 1, table.getn(LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].weapons) do
+						local weapon_name = LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].weapons[weapon]
+						for t = 1, LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].weapons_nmbr[weapon] do
+							Squad_UpgradeWeapon(squadID, weapon_name)
+						end
+					end
+				end
+				-- Add Leaders, if any
+				if LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].leaders ~= nil then
+					for leader = 1, table.getn(LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].leaders) do
+						for j = 1, LSGM_Wave_Stats[LSGM_Enemy_RaceName][LSGM_Wave][chosen_wave_type][squad_type].leaders[leader] do
+							Squad_AddLeaderAtIndex(squadID, leader)
+						end
+					end
+				end
+				SGroup_Add("sg_LSGM_wave_squads", squadID)
+				table.insert(LSGM_Wave_EnemySquadIDs, squadID)
+			end
+		end
+	end
+	-- Increase wave counter
+	LSGM_Wave = LSGM_Wave + 1	
+end
+
+
+function LastStandGM_CPU_AI_Attacks()
+	if LS_AI_Enabled ~= nil and Cpu_IsCpuPlayer(LSGM_EnemyPlayerID) then
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_Attacking)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, true, CT_Tactics)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_BuildBuildings)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_BuildResearch)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_Defending)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_BuildUnits)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_BuildAddOns)
+		pcall(Cpu_EnableComponent, LSGM_EnemyPlayerID, false, CT_Resourcing)
+	end
+	-- Modifier for disabling waves squad reinforcement, in case it is needed
+	g_LS_ReinforcementModifier = Modifier_Create(MAT_Squad,"enable_squad_reinforcement",MUT_Enable,true,-10,"")
+	for i = 1, table.getn(LSGM_Wave_EnemySquadIDs) do
+		local squadID = LSGM_Wave_EnemySquadIDs[i]
+		if squadID ~= nil and Squad_Exists(squadID.id) and Squad_GetPlayerOwner(squadID).id == LSGM_EnemyPlayerID.id then
+			pcall(Modifier_ApplyToSquad, g_LS_ReinforcementModifier, squadID)
+			if LS_AI_Enabled == nil then
+				Cpu_LockSquad(LSGM_EnemyPlayerID, Squad_GetGameID(squadID))
+			end
+			if LS_AI_Enabled ~= nil and Squad_IsMoraleBroken(squadID) then
+				-- Do nothing, in case the AI decides to retreat
+			elseif not Squad_IsUnderAttack(squadID) or Squad_GetActiveCommand(squadID) == 0 then
+				-- Choose a random player to attack
+				local alive_players = table.getn(LSGM_PlayerSquadIDs)
+				if alive_players > 0 then
+					local sID_distances = {}
+					local player_pos = nil
+					local enemy_pos = Squad_GetPosition(squadID)
+					for j = 1, alive_players do
+						local dist = 0
+						if LSGM_PlayerSquadIDs[j].id ~= nil and Squad_Exists(LSGM_PlayerSquadIDs[j].id) then
+							player_pos = Squad_GetPosition(LSGM_PlayerSquadIDs[j])
+							dist = World_DistancePointToPoint(player_pos, enemy_pos)
+							table.insert(sID_distances, {LSGM_PlayerSquadIDs[j],dist})
+						elseif LSGM_PlayerATTACHEDSquadIDs[j] ~= nil and LSGM_PlayerATTACHEDSquadIDs[j].id ~= nil and Squad_Exists(LSGM_PlayerATTACHEDSquadIDs[j].id) then
+							player_pos = Squad_GetPosition(LSGM_PlayerATTACHEDSquadIDs[j])
+							dist = World_DistancePointToPoint(player_pos, enemy_pos)
+							table.insert(sID_distances, {LSGM_PlayerATTACHEDSquadIDs[j],dist})
+						end
+					end
+					if table.getn(sID_distances) > 0 then
+						table.sort(sID_distances, function(oUnit1, oUnit2) return oUnit1[2] < oUnit2[2] end)
+						local player_pos = Squad_GetPosition(sID_distances[1][1])
+						SGroup_Clear("sg_LSGM_singe_squad")
+						SGroup_Add("sg_LSGM_singe_squad", squadID)
+						Cmd_AttackMovePos("sg_LSGM_singe_squad", player_pos)
+					end
+				end
+			end
+		end
+	end
+end
+
+
+function LastStandGM_HUNTERWINS()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle(g_LS_Hunter_Message)
+	end
+end
+function LastStandGM_LASTWAVE()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Prepare for the FINAL WAVE!!!!")
+	end
+end
+function LastStandGM_EndGameWIN()
+	print("Game WON by players!")
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("YOU WON!!!!")
+	end
+	Rule_AddOneShot(LastStandGM_WinCurtains, 8)
+end
+function LastStandGM_EndGameLOSE()
+	print("Game LOST...!")
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("YOU LOSE...")
+	end
+	Rule_AddOneShot(LastStandGM_LoseCurtains, 2)
+end
+function LastStandGM_WinCurtains()
+	W40k_ImageFade("white", 10, 0.25, 10)
+	Rule_AddOneShot(LastStandGM_WinEnd, 6.5)
+end
+function LastStandGM_LoseCurtains()
+	W40k_ImageFade("black", 7, 0.45, 4)
+	Rule_AddOneShot(LastStandGM_LoseEnd, 5.5)
+end
+function LastStandGM_WinEnd()
+	pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+	--World_SetTeamWin( World_GetPlayerAt(Tut_GetLocalPlayerIndex()), "5KillTeam_Gamemode")
+	World_SetGameOver()
+	Player_Kill(LSGM_EnemyPlayerID)
+end
+function LastStandGM_LoseEnd()
+	pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+	--World_SetTeamWin( LSGM_EnemyPlayerID, "5KillTeam_Gamemode")
+	World_SetGameOver()
+	for idx = 0, World_GetPlayerCount()-2 do
+		pcall(Player_Kill,World_GetPlayerAt(idx))
+	end
+end
+
+
+function LastStandGM_TablePlayerRemoval(iPlayer)
+	table.remove(LSGM_PlayerIDs,iPlayer)
+	table.remove(LSGM_PlayerSquadIDs,iPlayer)
+	table.remove(LSGM_PlayerRaceNames,iPlayer)
+	table.remove(LSGM_PlayerSquadCanPossess,iPlayer)
+	table.remove(LSGM_PlayersSquadNamePossess,iPlayer)
+	table.remove(LSGM_PlayerSquadPositions,iPlayer)
+	table.remove(LSGM_PlayerDEADSquadPositions,iPlayer)
+	table.remove(LSGM_PlayerATTACHEDSquadIDs,iPlayer)
+	table.remove(LSGM_PlayerSquadNames,iPlayer)
+	table.remove(LSGM_PlayerReviveEntities,iPlayer)
+end
+
+
+
+---------------------------
+-- To the Last Game Mode --
+---------------------------
+function LastStandGM_ToTheLastMode()
+	print("Game WON by players. Now they must fight amongst themselves!")
+	Rule_Add(LastStandGM_ToTheLast_Message1)
+end
+function LastStandGM_ToTheLast_Message1()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("YOU WON THE ENEMY ... But the greatest challenge is yet to come!")
+		Rule_Remove(LastStandGM_ToTheLast_Message1)
+		Rule_AddDelay(LastStandGM_ToTheLast_Message2,1)
+	end
+end
+function LastStandGM_ToTheLast_Message2()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("You must now fight your ALLIES, to the Last One Standing!")
+		Rule_Remove(LastStandGM_ToTheLast_Message2)
+		W40k_ImageFade("black", 5, 0.45, 2)
+		Rule_AddOneShot(LastStandGM_ToTheLast_Setup_Players, 4)
+	end
+end
+
+
+
+function LastStandGM_ToTheLast_Setup_Players()
+	-- Check alive Players
+	local playersNbr = table.getn(LSGM_PlayerIDs)
+	for i = playersNbr, 1, -1 do
+		-- Remove any possible revival entities
+		if LSGM_PlayerReviveEntities[i] ~= nil then
+			pcall(Entity_DeSpawn, LSGM_PlayerReviveEntities[i]); pcall(Entity_Destroy, LSGM_PlayerReviveEntities[i])
+		end
+		if not Player_IsAlive(LSGM_PlayerIDs[i]) then
+			-- Player is removed due to CONNECTION issues
+			LastStandGM_TablePlayerRemoval(i)
+			playersNbr = playersNbr - 1
+		end
+	end
+	-- Setup players
+	for i = playersNbr, 1, -1 do
+		local playerID = LSGM_PlayerIDs[i]
+		local playerIDX = World_GetPlayerIndex(playerID)
+		local squadsSG = Player_GetSquads(playerID)
+		-- Check if the player is absent, because he has either possessed, or is attached
+		if LSGM_PlayerSquadIDs[i] == nil or not Squad_Exists(LSGM_PlayerSquadIDs[i].id) then
+			-- 1] Check if, instead of killed, the squad has possessed to another form
+			if LSGM_PlayerSquadCanPossess[i] ~= nil then
+				if SGroup_Count(squadsSG) > 0 then
+					-- check if we can find one of the squads available to player
+					local check_for_squad = function(sgroupid, itemindex, squadID)
+						local name = Squad_GetBlueprintName(squadID)
+						for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+							if name == LSGM_PlayerSquadNames[i][k] then
+								LSGM_PlayerSquadIDs[i] = squadID
+								LSGM_PlayersSquadNamePossess[i] = name
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								return true
+							end
+						end
+					end
+					SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_squad, true, true)
+				end
+			end
+			-- 2] Check if the squad has not possessed, but it is attached
+			if LSGM_PlayerSquadIDs[i] == nil then
+				LSGM_PlayerATTACHEDSquadIDs[i] = nil
+				if SGroup_Count(squadsSG) > 0 then
+					-- check if we can find one of the squads available to player
+					local check_for_attached_squad = function(sgroupid, itemindex, squadID)
+						if Squad_IsAttached(squadID) then
+							local name = Squad_GetAttachedBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+								return true
+							end
+						else
+							local name = Squad_GetBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										LSGM_PlayerSquadIDs[i] = squadID
+										SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+										SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								LSGM_PlayerSquadIDs[i] = squadID
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								return true
+							end
+						end
+					end
+					SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_attached_squad, true, true)
+				end
+			end
+		end
+		-- OK, now we setup Players
+		local spawn_pos = LSGM_SpawnPosition[i]
+		pcall(Community_RepositionSGroupToPos, squadsSG, spawn_pos, playerID)
+		pcall(Community_RepositionSGroupToPos, "sg_LSGM_Squad_Player"..playerIDX, spawn_pos, playerID)
+		if playerIDX == Tut_GetLocalPlayerIndex() then
+			Camera_FocusOnTargetPos(spawn_pos, 1)
+			World_FXEvent("data:Art/Events/sisters/emperorstouch_impact", spawn_pos)
+		end
+		-- Recreate dead players
+		if not (LSGM_PlayerSquadIDs[i] ~= nil and Squad_Exists(LSGM_PlayerSquadIDs[i].id)) and LSGM_PlayerATTACHEDSquadIDs[i] == nil then
+			-- revive the player
+			local squad_name = ""
+			if LSGM_PlayerSquadCanPossess[i] ~= nil then
+				if LSGM_PlayerSquadCanPossess[i] == "YES" then
+					squad_name = LSGM_PlayersSquadNamePossess[i]
+				elseif LSGM_PlayerSquadCanPossess[i] == "NO" then
+					squad_name = LSGM_PlayerSquadNames[i][1]
+				else
+					print("ERROR: Last Stand Problem with YES/NO!")
+				end
+			else
+				squad_name = LSGM_PlayerSquadNames[i]
+			end
+			LSGM_PlayerSquadIDs[i] = Squad_Create(squad_name, LSGM_PlayerIDs[i], spawn_pos, 0)
+			SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+			SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+			local proper_pos = Community_Extended_SpawnablePositionSearch(spawn_pos,"space_marine_turret_bolter",LSGM_PlayerIDs[i],nil)
+			Squad_Spawn(LSGM_PlayerSquadIDs[i], proper_pos)
+		end
+		-- Chnage teams to make them enemies!
+		Player_SetTeam( playerID, i )
+	end
+	obj_table_KTGM_ToTheLast = { title_id = 5802067, short_desc_id = 5802068, help_tip_id = 5802068 }
+	Objective_Add( obj_table_KTGM_ToTheLast, 1 )
+	Rule_AddInterval(LastStandGM_ToTheLastCheckDeadRule, 1)
+end
+
+
+function LastStandGM_ToTheLastCheckDeadRule()
+	-- Check alive Players
+	local playersNbr = table.getn(LSGM_PlayerIDs)
+	for i = playersNbr, 1, -1 do
+		if not Player_IsAlive(LSGM_PlayerIDs[i]) then
+			LastStandGM_TablePlayerRemoval(i)
+			playersNbr = playersNbr - 1
+		end
+	end
+	for i = playersNbr, 1, -1 do
+		local playerID = LSGM_PlayerIDs[i]
+		local playerIDX = World_GetPlayerIndex(playerID)
+		local squadsSG = Player_GetSquads(playerID)
+		local player_is_defeated = true
+		if LSGM_PlayerSquadIDs[i] == nil or not Squad_Exists(LSGM_PlayerSquadIDs[i].id) then
+			if LSGM_PlayerSquadCanPossess[i] ~= nil then
+				if SGroup_Count(squadsSG) > 0 then
+					-- check if we can find one of the squads available to player
+					local check_for_squad = function(sgroupid, itemindex, squadID)
+						local name = Squad_GetBlueprintName(squadID)
+						for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+							if name == LSGM_PlayerSquadNames[i][k] then
+								player_is_defeated = false
+								LSGM_PlayerSquadIDs[i] = squadID
+								LSGM_PlayersSquadNamePossess[i] = name
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								return true
+							end
+						end
+					end
+					SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_squad, true, true)
+				end
+			else
+				-- Check if, instead of killed, the squad is attached
+				LSGM_PlayerATTACHEDSquadIDs[i] = nil
+				if SGroup_Count(squadsSG) > 0 then
+					-- check if we can find one of the squads available to player
+					local check_for_attached_squad = function(sgroupid, itemindex, squadID)
+						if Squad_IsAttached(squadID) then
+							local name = Squad_GetAttachedBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										player_is_defeated = false
+										LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								player_is_defeated = false
+								LSGM_PlayerATTACHEDSquadIDs[i] = squadID
+								return true
+							end
+						else
+							local name = Squad_GetBlueprintName(squadID)
+							if type(LSGM_PlayerSquadNames[i]) == "table" then
+								for k = 1, table.getn(LSGM_PlayerSquadNames[i]) do
+									if name == LSGM_PlayerSquadNames[i][k] then
+										player_is_defeated = false
+										LSGM_PlayerSquadIDs[i] = squadID
+										SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+										SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+										return true
+									end
+								end
+							elseif name == LSGM_PlayerSquadNames[i] then
+								player_is_defeated = false
+								LSGM_PlayerSquadIDs[i] = squadID
+								SGroup_Clear("sg_LSGM_Squad_Player"..playerIDX)
+								SGroup_Add("sg_LSGM_Squad_Player"..playerIDX, LSGM_PlayerSquadIDs[i])
+								return true
+							end
+						end
+					end
+					SGroup_ForEachAllOrAnyEx(squadsSG, false, check_for_attached_squad, true, true)
+				end
+			end
+		else
+			player_is_defeated = false
+		end
+		if player_is_defeated then
+			Player_Kill(playerID)
+			LastStandGM_TablePlayerRemoval(i)
+			if table.getn(LSGM_PlayerIDs) <= 1 then
+				if not Rule_Exists(LastStandGM_ToTheLast_Win) then
+					Rule_AddOneShot(LastStandGM_ToTheLast_Win, 8.5)
+				end
+			end
+		end
+	end
+end
+
+
+function LastStandGM_ToTheLast_Win()
+	Rule_Remove(LastStandGM_ToTheLastCheckDeadRule)
+	local alive_players = 0
+	local winnerID = nil
+	for i = table.getn(LSGM_PlayerIDs), 1, -1 do
+		local playerID = LSGM_PlayerIDs[i]
+		if Player_IsAlive(playerID) then
+			alive_players = alive_players + 1
+			winnerID = playerID
+			break
+		end
+	end
+	if alive_players > 0 and winnerID ~= nil then
+		LastStandGM_EndGameWIN()
+	else
+		LastStandGM_EndGameLOSE()
+	end
+end
+
+
+----------------------------- Help Function -----------------------------
+
+function Community_Extended_SpawnablePositionSearchRevival(initial_pos, player_id)
+	local spwnpstn1 = World_Pos(0,10,0)
+	local spwnpstn2 = World_Pos(0,10,0)
+	local found, dstnc = false, 0
+	local entityID = Entity_Create("space_marine_turret_bolter", player_id, initial_pos)
+	repeat
+		for i=1, 12 do
+			spwnpstn2.x = initial_pos.x + (Community_Vectors12[i].x * dstnc)
+			spwnpstn2.z = initial_pos.z + (Community_Vectors12[i].z * dstnc)
+			spwnpstn1 = spwnpstn2
+			spwnpstn2 = World_GetSpawnablePosition(spwnpstn2,entityID)
+			if (spwnpstn1.x ~= spwnpstn2.x or spwnpstn1.z ~= spwnpstn2.z) and spwnpstn1.y ~= spwnpstn2.y then
+				for j=1, 4 do
+					local iPos = LSGM_PlayerDEADSquadPositions[j]
+					if iPos ~= nil then
+						if (iPos.x ~= spwnpstn2.x or iPos.z ~= spwnpstn2.z) and iPos.y ~= spwnpstn2.y then
+							found = true
+							break
+						end
+					end
+				end
+				if found then break end
+			end
+		end
+		dstnc = dstnc + 1
+		if dstnc>10 then
+			Entity_Destroy(entityID)
+			return World_GetSpawnablePosition(initial_pos,entityID)
+		end
+	until found
+	Entity_Destroy(entityID)
+	return spwnpstn2
+end

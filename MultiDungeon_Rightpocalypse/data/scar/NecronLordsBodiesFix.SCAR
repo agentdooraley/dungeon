@@ -1,0 +1,72 @@
+-- Custom NecronLordsDeadBodiesSpawn
+-- Created by Gambit
+
+import("WXPScarUtil.scar")
+
+function NecronLordsDeadBodiesSpawn()
+	-- NO need to spawn any necron bodies if Assassinate in enabled
+	if AssassinateIsEnabled == true then return end
+	-- The initial squads later-to-be-destroyed SGroup - this is what is all about
+	SGroup_Clear(SGroup_CreateIfNotFound("necron_lord_squads_to_destroy"))
+	-- Global table that stores the IDs of Necrons players' Lords.
+	-- NecronLordBodiesIDs = { nil, nil, nil, nil, nil, nil, nil, nil }   -- NOT USED!!
+	-- No need to work this on campaign
+	local is_campaign = pcall( MetaMap_GetAttackerRaceIndex )
+	if is_campaign then
+		for i = 0, World_GetPlayerCount()-1 do
+			local type = g_Necrons_PlayersIDXs[i]
+			if type ~= 0 then
+				local playerID = World_GetPlayerAt(i)
+				if Cpu_IsCpuPlayer(playerID) then
+					local necron_lord_squad = g_NecronLordTypes[type]
+					local pos = Player_GetStartPosition(playerID); pos.x = pos.x - 8; pos.z = pos.z - 5
+					necron_lord_to_destroy_squadID = Squad_Create(necron_lord_squad, playerID, pos, 1)
+					-- NecronLordBodiesIDs[i] = necron_lord_to_destroy_squadID
+					SGroup_Add("necron_lord_squads_to_destroy", necron_lord_to_destroy_squadID)
+					Squad_Spawn(necron_lord_to_destroy_squadID, pos)
+				end
+			end
+		end
+	-- No Lord at all for Last Stand and Kill Team and Space Hulk games...
+	elseif KTGM_ENABLED == nil and G_Is_LastStand_Map == nil and G_Is_SpaceHulk_Map == nil then
+		for i = 0, World_GetPlayerCount()-1 do
+			local type = g_Necrons_PlayersIDXs[i]
+			if type ~= 0 then
+				local necron_lord_squad = g_NecronLordTypes[type]
+				local playerID = World_GetPlayerAt(i)
+				local pos = Player_GetStartPosition(playerID); pos.x = pos.x - 8; pos.z = pos.z - 5
+				necron_lord_to_destroy_squadID = Squad_Create(necron_lord_squad, playerID, pos, 1)
+				-- NecronLordBodiesIDs[i] = necron_lord_to_destroy_squadID
+				SGroup_Add("necron_lord_squads_to_destroy", necron_lord_to_destroy_squadID)
+				Squad_Spawn(necron_lord_to_destroy_squadID, pos)
+			end
+		end
+	end
+	World_SetDeadMissionStart(SGroup_FromName("necron_lord_squads_to_destroy"))
+end
+
+
+function NecronLordsDeadBodiesSpawn_Init()
+	-- We do not use Necron Bodies in Kill-Team/Last Stand/Space Hulk game modes.
+	if KTGM_ENABLED ~= nil or G_Is_LastStand_Map ~= nil or G_Is_SpaceHulk_Map ~= nil then
+		return
+	end
+	Rule_AddOneShot(NecronLordsFXTrick,0.125)
+	Rule_AddOneShot(NecronLordsDeadBodiesSpawn, 0.5 )
+		
+end
+
+
+function NecronLordsFXTrick()
+	local playerID = World_GetPlayerAt(Tut_GetLocalPlayerIndex())
+	if Player_GetRaceName(playerID) == "necron_race" then
+		local pos = Player_GetStartPosition(playerID); pos.x = pos.x - 7; pos.z = pos.z - 4.5
+		print("Spawning Necron Lord dead body...")
+		World_FXEvent("necron/nec_lord_init", pos)
+	end
+end
+
+Scar_AddInit(NecronLordsDeadBodiesSpawn_Init)
+
+NecronPyramidEnabled_Switch = true
+

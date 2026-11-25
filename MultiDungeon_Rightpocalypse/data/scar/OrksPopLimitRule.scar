@@ -1,0 +1,141 @@
+-- Properly handles the Ork Pop limit.
+-- Created by Gambit @ 1/3/2021
+
+-- BASE POP STATS for Orks - modifiable by the Win Conditions
+G_ArmySquadCapModifier_OrkPop = { Max_POP = 150 , Start_POP = 15, Increase_Step = 10 }
+
+function OrkPopProperLimit_Init()
+
+	Ork_Pop_Player_BuiltBanners = {}
+	Ork_Pop_Player_BuiltBanners[0] = 0
+
+	-- Get all Ork-like Player IDs for Pop
+	g_Ork_Pop_PlayerIDs = {}
+	-- Get Vanilla Ork Player IDs
+	g_Ork_Vanilla_PlayerIDs = {}
+
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		local race_name = Player_GetRaceName(playerID)
+		if race_name == "ork_race" then
+			table.insert(g_Ork_Pop_PlayerIDs, { pID = playerID, pop = G_ArmySquadCapModifier_OrkPop.Start_POP })
+			table.insert(g_Ork_Vanilla_PlayerIDs, playerID)
+		elseif race_name == "orka_race" then
+			table.insert(g_Ork_Pop_PlayerIDs, { pID = playerID, pop = G_ArmySquadCapModifier_OrkPop.Start_POP })
+		end
+	end
+	-- Pop rule for all Ork-Like races (those that use Pop)
+	local pop_players = table.getn(g_Ork_Pop_PlayerIDs)
+	if pop_players > 0 then
+		print("Ork Pop Race in play. Ork Pop Limit Rule Enabled.")
+		-- Set Initial Pop
+		for i = 1, pop_players do
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "population_cap_player_modifier", MUT_Addition, false, G_ArmySquadCapModifier_OrkPop.Start_POP, ""), g_Ork_Pop_PlayerIDs[i].pID)
+		end
+		Rule_Add(OrkPopProperLimit_Rule)
+	end
+	-- Initiate Flyboy spawn rule for Dakka
+	if NewVanillaSquadsEnabled_Switch ~= nil and table.getn(g_Ork_Vanilla_PlayerIDs) >0 then
+		Rule_AddIntervalDelay(OrkVanillaSkyboySpawn_Rule, 1.5, 4)
+	end
+end
+
+
+Scar_AddInit(OrkPopProperLimit_Init)
+
+
+OrkPlayer_BannerCount = function(egroupid, itemindex, entityID)
+	if Entity_IsBuilding(entityID) and Entity_GetBuildingProgress(entityID) >= 1.0 then
+		local name = Entity_GetBlueprintName(entityID)
+		if name == "ork_waagh_banner" or name == "ork_waagh_banner_no_limit" or name == "ork_waagh_banner_turret_sp"
+		or name == "ork_waagh_banner_missile_sp" or name == "ork_giant_waagh_banner_sp_dxp3" then
+			Ork_Pop_Player_BuiltBanners[0] = Ork_Pop_Player_BuiltBanners[0] + 1
+		end
+	end
+end
+
+
+OrkPlayer_WarbossPresent = function(sgroupid, itemindex, squadID)
+	local name = Squad_GetBlueprintName(squadID)
+	if name == "ork_squad_warboss_advance_sp" or name == "ork_squad_warboss_advance_sp_wg" then
+		return true
+	end
+end	
+
+
+function OrkPopProperLimit_Rule()
+	for i = table.getn(g_Ork_Pop_PlayerIDs), 1, -1 do
+		local playerID = g_Ork_Pop_PlayerIDs[i].pID
+		if Player_IsAlive(playerID) then
+			Ork_Pop_Player_BuiltBanners[0] = 0
+			EGroup_ForEach(Player_GetEntities(playerID), OrkPlayer_BannerCount)
+			local built_banners = Ork_Pop_Player_BuiltBanners[0]
+			local special_research = Player_GetResearchState(playerID,"ork_wargear10") == RS_Complete
+			local current_max_pop = G_ArmySquadCapModifier_OrkPop.Start_POP + built_banners*G_ArmySquadCapModifier_OrkPop.Increase_Step
+			if special_research then
+				if SGroup_ForEachAllOrAnyEx(Player_GetSquads(playerID), false, OrkPlayer_WarbossPresent, true, false) then
+					current_max_pop = current_max_pop + G_ArmySquadCapModifier_OrkPop.Max_POP/5
+				end
+			end
+			if current_max_pop > G_ArmySquadCapModifier_OrkPop.Max_POP then
+				current_max_pop = G_ArmySquadCapModifier_OrkPop.Max_POP
+			end
+			if current_max_pop ~= g_Ork_Pop_PlayerIDs[i].pop then
+				local diff = current_max_pop - g_Ork_Pop_PlayerIDs[i].pop
+				g_Ork_Pop_PlayerIDs[i].pop = current_max_pop
+				Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "population_cap_player_modifier", MUT_Addition, false, diff, ""), playerID)
+			end
+		else
+			table.remove(g_Ork_Pop_PlayerIDs, i)
+			if table.getn(g_Ork_Pop_PlayerIDs) == 0 then
+				-- No more Pop players, remove the rule
+				print("Ork Pop Limit Rule no longer needed, Removed!")
+				Rule_Remove(OrkPopProperLimit_Rule)
+				return
+			end
+		end
+	end
+end
+
+
+-- Vanilla Skyboy Spawn Rules
+OrkVanillaSkyboySpawnCheck = function(egroupid, itemindex, entityID)
+	if Entity_GetBlueprintName(entityID) == "ork_flyboy_dummy" then
+		local pos = Entity_GetPosition(entityID)
+		local pos2 = Entity_GetPosition(entityID)
+		local ownerID = Entity_GetPlayerOwner(entityID)
+		Entity_DeSpawn(entityID); Entity_Destroy(entityID)
+		-- Give him 2 out of 3 chances, to survive. NOTE: The possibility is smaller if his plane is heavily damaged
+		--  because of the AoE effect of the 2nd child ability that can destroy his craft before the 3rd that spawns the dummy.
+		if World_GetRand(1,10) ~= 1 then
+			local test_entityID = Entity_Create("space_marine_ability_building", ownerID, pos)
+			local newPos = World_GetSpawnablePosition(pos2, test_entityID)
+			if (newPos.x ~= pos.x or newPos.z ~= pos.z) and newPos.y ~= pos.y and World_DistancePointToPoint(pos, newPos) < 20 then
+				local flyboy_id = Squad_Create("ork_squad_flyboy", ownerID, newPos, 1)
+				Squad_Spawn(flyboy_id, newPos)
+				Squad_SetHealth(flyboy_id, World_GetRand(2,9)/10)
+				World_FXEvent("unit_upgrade_morale_fx/reinforce_ork_trooper", newPos)
+			end
+		end
+		Entity_DeSpawn(test_entityID); Entity_Destroy(test_entityID)
+	end
+end
+
+
+function OrkVanillaSkyboySpawn_Rule()
+	for i = table.getn(g_Ork_Vanilla_PlayerIDs), 1, -1 do
+		local playerID = g_Ork_Vanilla_PlayerIDs[i]
+		if Player_IsAlive(playerID) then
+			EGroup_ForEach(Player_GetEntities(playerID), OrkVanillaSkyboySpawnCheck)
+		else
+			table.remove(g_Ork_Vanilla_PlayerIDs, i)
+			if table.getn(g_Ork_Vanilla_PlayerIDs) == 0 then
+				-- No more Vanilla Ork Race players, remove the rule
+				print("Vanilla Ork Skyboy Spawn Rule no longer needed, Removed!")
+				Rule_Remove(OrkVanillaSkyboySpawn_Rule)
+				return
+			end
+		end
+	end
+end
+

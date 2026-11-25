@@ -1,0 +1,24 @@
+-- Research SCaR limiter
+-- DOES NOT WORKD as needed, it takes a short delay ... :(
+
+Global_LS_Hero_Researches_Limiter =
+{
+
+
+	necron_race = {
+		{	limit = 3,
+			researches = {	"necron_ls_necron_lord_chronometron_research",
+							"necron_ls_necron_lord_lightning_field_research",
+							"necron_ls_necron_lord_nightmare_shroud_research",
+							"necron_ls_necron_lord_phase_shifter_research",
+							"necron_ls_necron_lord_phylactery_research",
+							"necron_ls_necron_lord_resurrection_orb_research",
+							"necron_ls_necron_lord_solar_pulse_research",
+							"necron_ls_necron_lord_veil_of_darkness_research"	}
+		},
+		
+	},
+
+
+
+}

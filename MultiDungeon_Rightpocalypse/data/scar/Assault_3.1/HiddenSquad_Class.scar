@@ -1,0 +1,147 @@
+
+if HiddenSquad_Class==nil then
+	HiddenSquad_Class={}
+end
+HiddenSquad_Class.DebugON=0
+
+local HiddenSquad_Metatable={
+	__index=HiddenSquad_Class
+}
+
+Squad_Class.SetMetatable(HiddenSquad_Class)
+
+function HiddenSquad_Class:New(PlayerID, CreationParams, CreationPos, StartFull, stance, FatherPointer)
+
+	local NewSquad=Squad_Class:NewEmpty(PlayerID, CreationParams, stance, FatherPointer)
+
+	setmetatable(NewSquad, HiddenSquad_Metatable)
+	
+	NewSquad.HiddenData={
+		CreationPos=CreationPos,
+		StartFull=StartFull,
+	}
+	
+	HiddingMgr.AddHiddenSquad(NewSquad, CreationPos)
+	
+	return NewSquad
+
+end
+
+function HiddenSquad_Class.Reload(Squad)
+
+	setmetatable(Squad, HiddenSquad_Metatable)
+
+	HiddingMgr.AddHiddenSquad(Squad, Squad.HiddenData.CreationPos)
+	
+	Squad.HiddenData.DoOrders=Squad.DoOrders
+	Squad.DoOrders=nil
+
+end
+
+function HiddenSquad_Class:ShowHidden()
+	
+	if self.DebugON>1 then print(tostring(self) .. " HiddenSquad_Class:ShowHidden BP=" .. self.CreationParams.bp .. " StartFull=" .. tostring(self.HiddenData.StartFull)) end
+
+	if Player_IsAlive(self.PlayerID) then
+		
+		if not Squad_Class.Create(self, self.HiddenData.CreationPos, self.HiddenData.StartFull) then return false end
+		
+		Squad_Class.SetMetatable(self)
+		
+		if self.HiddenData.DoOrders~=nil then 
+			self.DoOrders=self.HiddenData.DoOrders
+		end
+		
+	else
+		
+		if self.DebugON>1 then print(tostring(self) .. " HiddenSquad_Class:ShowHidden - Player is dead, Creation cancelled.") end
+		
+	end
+
+	HiddingMgr.RemoveHiddenSquad(self, self.HiddenData.CreationPos)
+
+	self.HiddenData=nil
+	
+	return true
+	
+end
+
+function HiddenSquad_Class.SetMetatable(Object)
+	setmetatable(Object,HiddenSquad_Metatable)
+end
+
+--
+--
+--
+
+function HiddenSquad_Class:UpdateLiveStatus()
+	return true
+end
+
+function HiddenSquad_Class:IsAlive()
+	return true
+end
+
+--
+--
+--
+
+function HiddenSquad_Class:RequireReinforcement(ReinforcementMgr)
+	return false
+end
+
+function HiddenSquad_Class:CancelReinforcement(ReinforcementMgr)
+	ReinforcementMgr:RemoveAllQueries(self)
+end
+
+function HiddenSquad_Class:DoReinforce(ReinforceType, ReinforceData)
+	return false
+end
+
+--
+--
+--
+
+function HiddenSquad_Class:CanCapture()
+	return (Can_Capture_Point[self.CreationParams.bp]==true)
+end
+
+--
+--
+--
+
+function HiddenSquad_Class:SetOrder_Attack(AttackPos,DistMax)
+	Squad_Class.SetOrder_Attack(self,AttackPos,DistMax)
+	self.HiddenData.DoOrders=self.DoOrders
+	self.DoOrders=nil
+end
+
+function HiddenSquad_Class:SetOrder_Capture(CaptureID)
+	Squad_Class.SetOrder_Capture(self,CaptureID)
+	self.HiddenData.DoOrders=self.DoOrders
+	self.DoOrders=nil
+end
+
+function HiddenSquad_Class:SetOrder_Defend(DefendPos,DistMin,DistMax)
+	Squad_Class.SetOrder_Defend(self,DefendPos,DistMin,DistMax)
+	self.HiddenData.DoOrders=self.DoOrders
+	self.DoOrders=nil
+end
+
+function HiddenSquad_Class:SetOrder_StoreInBuilding(Building)
+	Squad_Class.SetOrder_StoreInBuilding(self,Building)
+	self.HiddenData.DoOrders=self.DoOrders
+	self.DoOrders=nil
+end
+
+--
+--
+--
+
+function HiddenSquad_Class:DoOrders()
+end
+
+function HiddenSquad_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+end
+
+

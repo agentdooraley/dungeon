@@ -1,0 +1,1209 @@
+--don't fit through doors
+-- no jamming?
+--race differences
+
+--v1.1 06/10/2022
+--QoL added, still just getting it working.
+--v1.0 02/10/2022
+--To DO
+--Tidy this bastard up.
+--------------------------------------------------------------
+-- Assault code, reworked (V1.00)						--
+-- Conceived and originally coded by Dark40k.				--
+-- Imported to Unification and totally re-coded by fuggles2k.	--
+--markers
+--servitor -> where spawneth the servitor
+--mkr_exit_1-3
+--mkr_gas1-3
+--mkr_bomb1-4
+--mkr_pump1-4 (this is aoe for bomb too)
+--mkr_enemy_pos
+--mkr_relic end point for something
+--mkr_relic_bomb
+--Squad1-6
+--mkr_spawn_1-6 (but then we can do a count +1 to get max ie g_numSpawnPoints)
+--mkr_P1_Pos (grab HQ)
+--mkr_turret_1-5
+--mkr_servitor_2 (if you lose one)
+--egroups
+--eg_gasfire - remove when not needed
+--eg_Pumps - powergens
+--eg_relic - relic
+
+--------------------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("Community_Functions.scar")
+import("SoulStorm_SpaceHulk_Generic_NIS.nis")
+import("World_Race_Entities.scar")
+-- this is a good way to identify the actual error and not just have it say "error"
+--import("guard_race.scar")
+
+-- Difficulty override for MP games. Set to [true], and then choose one: "easy", "standard", "hard", "harder", "insane".
+Override_Auto_Difficulty_2HP = false
+Override_Difficulty_Chosen_Assault = "insane"
+
+
+--------------------------------------------------------------------------------------------------------
+--++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+-- Trick, to make the proper import On load, before anything else!
+--lazy fuggles, but if it isn't broken...
+if g_enemy_RaceName~=nil then
+	print("Re-Importing Space Hulk stats for "..g_enemy_RaceName.." on load...")
+	import("AssaultAttacks/"..g_enemy_RaceName..".scar")
+	import("winconditions/destroyhq.scar")
+end
+
+
+
+-- Global flag, used to distinguish Survival maps.
+G_Is_SpaceHulk_Map = true
+
+
+function SpaceHulk_OnInit()
+	-- Initialise Global Variables
+	-- Global var set to true, so that other win conditions to know when waves have failed
+	g_Global_Rule_Initiation_Switch = true
+	-- Table that holds stats for each player's wave spawn time and position of the most remote attacking squad
+	g_Assault_Enemy_AI_Is_Human = false
+	g_Assault_SinglePC_Match = false
+	g_Assault_playerID_Difficulty_Choose = World_GetPlayerAt(0)
+	g_difficulty = ""
+	g_wavetimer = 100
+	g_final_music = 0
+	g_number_of_human_defending_players = 0
+	g_number_of_players = World_GetPlayerCount()
+	g_enemy_PlayerID = SpaceHulk_PlayerInfo.PlayerID[g_number_of_players-1]
+	g_enemy_RaceName = SpaceHulk_PlayerInfo.RaceName[g_number_of_players-1]
+	g_SpaceHulk_Unsupported_Race_flag = 0
+	-- Calculate the number of Human Defending Players
+	addoncheck = 0
+	for i=0, g_number_of_players-2 do
+		if Player_IsHuman(SpaceHulk_PlayerInfo.PlayerID[i]) then
+			g_number_of_human_defending_players = g_number_of_human_defending_players + 1
+		end
+	end
+	print("Human Attacking Players: "..g_number_of_human_defending_players)
+	-- Set Teams properly, if not already
+	for i=0, g_number_of_players-2 do Player_SetTeam( SpaceHulk_PlayerInfo.PlayerID[i], 0 ) end
+	Player_SetTeam( SpaceHulk_PlayerInfo.PlayerID[g_number_of_players-1], 1 )
+
+	-- Store the enemy Player ID and Race Name in separate vars, for convenience
+	g_enemy_PlayerID = SpaceHulk_PlayerInfo.PlayerID[g_number_of_players-1]
+	g_enemy_RaceName = SpaceHulk_PlayerInfo.RaceName[g_number_of_players-1]
+	print ("who is this "..g_enemy_RaceName)
+
+
+	
+	-- Unsupported Survival Game Setup Checks
+	g_ProblematicStartMessageASSAULT = ""
+	-- Check for unsupported attacking AI enemy races. IMPORT the race stats if supported!
+	-- import('SpaceHulkAttacks/XXXXXXXXXXXXXXXXXXX.scar') -- Use for testing, commenting the following if
+	if pcall(import, 'SpaceHulkAttacks/'..g_enemy_RaceName..'.scar') then
+		print("Importing stats for Enemy AI Attacking Race: "..g_enemy_RaceName)
+	else
+		print "here?"
+		g_SpaceHulk_Unsupported_Race_flag = 1
+		--g_ProblematicStartMessageSpaceHulk = "UNSUPPORTED ENEMY AI RACE ("..g_enemy_RaceName.."), OR SCaR ERROR IN RACE's PROFILE - GAME STOPPED !!!"
+		--Rule_AddInterval(Rule_Display_Start_Failure_SpaceHulk,3)
+		--return
+	end
+	-- Check if a Human player is controlling the defender!! --------------------
+	
+	if Player_IsHuman(g_enemy_PlayerID) then 
+		g_ProblematicStartMessageSpaceHulk = "UNSUPPORTED POSITIONING DETECTED - GAME STOPPED !!! You MUST have an ENEMY computer at the LAST Map Slot."
+		Rule_AddInterval(Rule_Display_Start_Failure_SpaceHulk,3)
+		g_Assault_Enemy_AI_Is_Human = true
+	end
+
+
+	Rule_AddInterval(Rule_CheckIfSpaceHulkAttackerIsHuman,0.5)
+	--Rule_AddOneShot(Rule_GetHowMuchReq,1)
+	--Rule_AddOneShot(Rule_KickThingsOff,16.5)
+	--Rule_AddOneShot(Rule_Setup_Cycle_Timers,2)
+	-- If the player has not activated an actual condition for wining
+	Rule_AddOneShot(Rule_Select_GameType,1.5)
+	--Rule_SetDifficultyChosen()
+	FOW_Reset()
+	--Rule_AddOneShot(Rule_SetUpTheMusic,5)
+	
+	
+
+
+
+Cpu_EnableAll(false)
+		--this was quite cool, but if this is single player then just use that?
+		--[[Level_Table={
+			[1]={level=AD_Easy, msg="Easy"},
+			[2]={level=AD_Standard, msg="Standard"},
+			[3]={level=AD_Hard, msg="Hard"},
+			[4]={level=AD_Advanced, msg="Advanced"},
+			[5]={level=AD_Insane, msg="Insane"}}
+		
+		Level_Set=1
+		
+		if not Marker_Exists("mk_SetLevel","basic_marker") then
+			print "Warning: mk_SetLevel marker not found, using standard level"
+			InitLevel(AD_Standard)
+		else
+			Rule_Level_Ctr=30
+			sg_LevelSet_ID=SGroup_Create("sg_LevelSet")
+			Util_CreateSquadsAtMarker(World_GetPlayerAt(0), "sg_LevelSet", "space_marine_squad_skull_probe", "mk_SetLevel", 1)
+			Rule_AddInterval(Rule_Level,1.0)
+		end]]
+lastspawner = 1
+spawntimer = 45
+clipSize = 200
+g_numSpawnPoints = 0
+g_numTurrets = 0
+escapecounter = 480
+repairtimer = {60,60,60,60}
+turretcheck = 0
+bosscheck = 0
+hazard = 0
+gamerule = 1
+spawnercheck=0
+t_difficulty =0
+WhoJams = 0
+bosstotal = 0
+ammo_Player = World_GetPlayerAt(0)
+
+	for j=1, 20 do
+		if Marker_Exists("mkr_spawn_"..j,"basic_marker") then
+		g_numSpawnPoints = g_numSpawnPoints +1
+		end
+	end
+	for j=1, 20 do
+		if Marker_Exists("mkr_turret_"..j,"basic_marker") then
+		g_numTurrets = g_numTurrets +1
+		end
+	end
+
+--fuggles speaking to future fuggles, or whoever.
+--It occurs to me that rather than full modular, I could just grab g_Player2 race and use variables
+--It would be untidy, but assuming only 3 races, I could see if P1 is admech and then spawn necrons.
+--And so on and so on.
+--Could also use for an admech switch?
+
+g_Player1 = World_GetPlayerAt(0)
+g_Player2 = World_GetPlayerAt(1)
+Player_Race = Player_GetRaceName(g_Player1)
+Enemy_Race = Player_GetRaceName(g_Player2)
+print ("I am a "..Player_Race)
+print ("They are a "..Enemy_Race)
+SGroup_Create("motion_blips")
+
+Player_GetAllSquadsNearMarker(g_Player1, "rando_servitor", "mkr_termiPlayer1")
+Player_GetAllEntitiesNearMarker(g_Player1, "eg_termiPlayer", "mkr_P1_Pos" ) 
+EGroup_DeSpawn( "eg_termiPlayer")
+SGroup_DeSpawn( "rando_servitor")
+Player_GetAllEntitiesNearMarker(g_Player2, "eg_enemyPlayer", "mkr_enemy_pos" ) 
+EGroup_DeSpawn( "eg_enemyPlayer")
+
+if Enemy_Race ~= "tyranids_race" then
+Player_GetAllSquadsNearMarker(g_Player2, "sg_enemyPlayer", "mkr_enemy_pos")
+SGroup_DeSpawn( "sg_enemyPlayer")
+end
+
+W40k_Letterbox( true, 0 )
+Camera_FocusOnTargetMarker( "mkr_termiPlayer1", 0.0)
+Fade_Start( 7, true )
+W40k_Letterbox( false, 10)
+if Player_Race == "mechanicus_race" then
+Util_MissionTitle("ADEPTUS MECHANICUS")
+else
+Util_MissionTitle("SPACE HULK")
+end
+--[[Variables]]
+g_Player1 = World_GetPlayerAt(0)
+g_Player2 = World_GetPlayerAt(1)
+--Let's try this?
+if g_SpaceHulk_Unsupported_Race_flag == 1 then
+spawnertype = "sh_enemy_spawn_tyranids"
+Enemy1 = "sh_tyranids_genestealer1"
+Enemy2 = "sh_tyranids_genestealer2"
+Enemy3 = "sh_tyranids_genestealer3"
+Boss1 = "sh_tyranids_squad_broodlord"
+end
+
+
+
+
+
+
+
+Sound_PlaylistClear( PC_Ambient )
+Sound_PlaylistPlayNow( PC_Music, "Kai_Hartwig-A_prayer_before_the_war") 
+
+end
+
+
+Scar_AddInit(SpaceHulk_OnInit)
+
+
+
+
+function Rule_CheckIfSpaceHulkAttackerIsHuman()
+	if Player_IsAlive(g_enemy_PlayerID) then
+		if Player_IsHuman(g_enemy_PlayerID) then 
+			g_Assault_Enemy_AI_Is_Human = true
+		else
+			g_Assault_Enemy_AI_Is_Human = false
+		end
+	else
+		Rule_Remove(Rule_CheckIfSpaceHulkAttackerIsHuman)
+	end
+end
+
+
+
+--We want a function here that picks a random game objective, this will then determine what is left on the board.
+function Rule_Select_GameType()
+	gamerule  = World_GetRand(1,4)
+	--fugglestest
+	--gamerule  = 4
+	
+
+--1 = kill spawners
+--2 = get servitor to computer
+--3 = kill boss
+--4 = fix pumps (this can be it's own toggle actually)
+--5 = kill generators to disable turrets
+--6 = get relic
+--let's do separately!
+---------------
+--Actual goals
+--1 burn spawners (no serv)
+--2 get relic
+--3 get servitor to stasis pods
+--4 kill bosses
+
+--Once done it will call
+Rule_AddOneShot(Rule_Boss_or_Not,0)
+Rule_AddOneShot(Rule_GasOrTurret,1)
+Rule_AddOneShot(Rule_Place_Pieces,0)
+Rule_AddOneShot(SetDifficultyLevel,0)
+
+end
+
+function Rule_Boss_or_Not()
+	if gamerule ~= 4 then
+	Bosschance = World_GetRand(1,6)
+		if Bosschance == 4 then
+			Util_CreateSquadsAtMarker(g_Player2, "sg_boss", Boss1, "mkr_servitor_2", 1)
+			Cpu_LockSGroup(g_Player2, "sg_boss")
+			Rule_AddInterval(Rule_Bosscheck, 0.5)
+		elseif Bosschance == 5 then
+			Util_CreateSquadsAtMarker(g_Player2, "sg_boss2", Boss2, "mkr_servitor_3", 1)
+			Cpu_LockSGroup(g_Player2, "sg_boss2")
+			Rule_AddInterval(Rule_Bosscheck2, 0.5)
+		elseif Bosschance == 6 then	
+			Util_CreateSquadsAtMarker(g_Player2, "sg_boss", Boss1, "mkr_servitor_2", 1)
+			Cpu_LockSGroup(g_Player2, "sg_boss")
+			Rule_AddInterval(Rule_Bosscheck, 0.5)
+			Util_CreateSquadsAtMarker(g_Player2, "sg_boss2", Boss2, "mkr_servitor_3", 1)
+			Cpu_LockSGroup(g_Player2, "sg_boss2")
+			Rule_AddInterval(Rule_Bosscheck2, 0.5)
+		end
+	end
+end
+
+function Rule_Bosscheck()
+	if SGroup_IsUnderAttack( "sg_boss", false) == true then
+	Cpu_UnlockSGroup(g_Player2, "sg_boss" ) 
+	Rule_Remove(Rule_Bosscheck)
+	end
+end
+
+function Rule_Bosscheck2()
+	if SGroup_IsUnderAttack( "sg_boss2", false) == true then
+	Cpu_UnlockSGroup(g_Player2, "sg_boss2" ) 
+	Rule_Remove(Rule_Bosscheck2)
+	end
+end
+
+-- Run this after boss check?
+function Rule_GasOrTurret()
+Hazard = World_GetRand(1,3)
+--fugglestest
+--Hazard = 3
+
+	if Hazard == 1  then
+		print "no hazard"
+		EGroup_DeSpawn( "eg_gasfire")
+		EGroup_DeSpawn( "eg_Pumps")
+	elseif Hazard == 2 then
+		print "turrets"
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Turrets", "Defence Turrets are live - kill the power generators!" )
+		turretcheck = 1
+		EGroup_SetPlayerOwner( "eg_Pumps", g_Player2 )
+		--EGroup_SetHealthInvulnerable( "eg_Pumps", True ) 
+			for j=1, g_numTurrets do
+				if Marker_Exists("mkr_turret_"..j,"basic_marker") then
+				local pos = Marker_GetPosition(Marker_FromName("mkr_turret_"..j,"basic_marker"))
+				--just regular turret? Ships defence and all that.
+				--if turrettype ~= Nil then
+				turrettype = ""
+				Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_enemy_turret"..j, "sh_steel_legion_tarantula", pos, 1)
+				end
+			end
+		EGroup_DeSpawn( "eg_gasfire")
+		--Rule_AddInterval(somekind of checks for bombs, 10.0)
+		Rule_AddInterval(Rule_TurretCheck,1)
+	elseif Hazard == 3 then
+		print "gas"
+		pumps_fixed_counter = 0
+		--gas
+		--I messed up, need to import all players I guess, or define here messily... let's be honest, it's the latter
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "Gas leak! Find a servitor and repair the generators!" )
+		EGroup_SetAvgHealth("eg_Pumps", 0.1)
+		Rule_AddInterval(Rule_GasCheck, 0.5)
+		Rule_AddOneShot(servitor_spawncheck, 1)
+		Rule_AddInterval(PumpRepair_1,1)
+		Rule_AddInterval(PumpRepair_2,1)
+		Rule_AddInterval(PumpRepair_3,1)
+		Rule_AddInterval(PumpRepair_4,1)
+		Rule_AddInterval(Rule_CheckPumpsHealth,1)
+		--need to check for second servitor
+	end
+end
+
+function servitor_spawncheck()
+--gamerule 3 is get servitor to stc, so you have one
+
+	if gamerule ~=3 then
+	--ping marker
+	Rule_AddInterval(boss_check, 2)
+	png_servitor = Ping_Marker( "mkr_relic", true, "bubecce" )
+	end
+	
+	if gamerule == 3 then
+	--Rule_AddInterval(ServitorMove,3)
+	png_servitor = Ping_Marker( "mkr_relic", true, "bubecce" )
+	--Rule_AddInterval(Rule_CheckServitorHealth, 2)
+	end
+	
+end
+
+function boss_check()
+	if SGroup_Exists("sg_boss") and SGroup_IsEmpty("sg_boss") == true and Prox_AnySquadNearMarker("sg_termiPlayer", "mkr_relic") == true then
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "You found a servitor in stasis! Don't let him die and repair those generators!" )
+		Util_CreateSquadsAtMarker(g_Player1, "sg_servitor", "sh_space_marine_squad_servitor", "mkr_servitor_2", 1)
+		Rule_AddInterval(Rule_CheckServitorHealth,1)
+		Ping_Stop(png_servitor)
+		Rule_Remove(boss_check)
+	end
+end
+
+
+
+function Rule_Place_Pieces()
+
+Player_SetResource( g_Player1, RT_Requisition, clipSize) 
+print ("how many spawns "..g_numSpawnPoints)
+	for j=1, g_numSpawnPoints do
+		if Marker_Exists("mkr_spawn_"..j,"basic_marker") then
+			local pos = Marker_GetPosition(Marker_FromName("mkr_spawn_"..j,"basic_marker"))
+			Entity_CreateBuildingPositionForce(g_enemy_PlayerID, "eg_enemy_spawner"..j, spawnertype, pos, 1)
+		else
+			break
+		end
+	end
+	
+	if Marker_Exists("Squad1","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad1", "sh_space_marine_squad_terminator_sgt", "Squad1", 1)
+	end
+	if Marker_Exists("Squad2","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad2", "sh_space_marine_squad_terminator_flamer", "Squad2", 1)
+	end
+	if Marker_Exists("Squad3","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad3", "sh_space_marine_squad_terminator_canon", "Squad3", 1)
+	end
+	if Marker_Exists("Squad4","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad4", "sh_space_marine_squad_terminator", "Squad4", 1)
+	end
+	if Marker_Exists("Squad5","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad5", "sh_space_marine_squad_terminator", "Squad5", 1)
+	end
+	if Marker_Exists("Squad6","basic_marker") then
+	Util_CreateSquadsAtMarker(g_Player1, "sg_Squad6", "sh_space_marine_squad_terminator", "Squad6", 1)
+	end
+
+
+Player_GetAllSquadsNearMarker(g_Player1, "sg_termiPlayer", "mkr_termiPlayer1")
+Player_GetAllSquadsNearMarker(g_Player1, "sg_TermiSquad0", "mkr_termiPlayer1")
+Player_GetAllSquadsNearMarker(g_Player1, "sg_BlipTarget", "mkr_termiPlayer1")
+Player_GetAllSquadsNearMarker(g_Player1, "sg_jamPlayer", "mkr_termiPlayer1")
+
+
+
+
+	if gamerule == 1 then
+	--burn stuff
+	EGroup_DeSpawn( "eg_relic")
+	Rule_AddInterval(Rule_CheckFlamerHealth,1)
+	Rule_AddInterval(Rule_SecureHoles,1)
+	Rule_AddOneShot(Rule_Pingstart,2)
+	--ping and check for all spawners to be killed
+	Util_MissionTitle("Mission Goal - Burn all the nests and escape - Do not let your flamer die.")
+	png_flamer = Ping_Marker( "Squad2", true, "bubecce" )
+	Rule_AddOneShot(Rule_StopFlamerPing,4)
+	--EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "Gas leak! Find a servitor and repair the generators!" )
+	elseif gamerule == 2 then
+	--get to relic
+	png_relic = Ping_Marker( "mkr_relic", true, "bubecce" )
+	Rule_AddInterval(Rule_RelicCheck,1)
+	Util_MissionTitle("Mission Goal - Seize the relic and escape")
+	elseif gamerule == 3 then
+	EGroup_DeSpawn( "eg_relic")
+	--get servitor to stasis pods
+	--fuggles
+	Util_MissionTitle("Mission Goal - Get the servitor to the cargo manifest and download the logs - Do not let your servitor die.")
+	Util_CreateSquadsAtMarker(g_Player1, "sg_servitor", "sh_space_marine_squad_servitor", "servitor", 1)
+	png_srvtor = Ping_Marker( "servitor", true, "bubecce" )
+	png_relic = Ping_Marker( "mkr_relic", true, "bubecce" )
+	Rule_AddInterval(Rule_CheckServitorHealth,1)
+	Rule_AddOneShot(Rule_StopStartServitorPing,4)
+	Rule_AddInterval(Rule_CheckServitorCloseToComputer,1)
+	elseif gamerule == 4 then
+	Util_MissionTitle("Mission Goal - Annihilate the enemy leaders at all costs.")
+	Rule_AddOneShot(Rule_AssassinateSetup,1)
+	end
+
+	
+--From here might as well call the logistical scar for blips, req, cannons etc
+--Rule_AddOneShot(Rule_Difficulty_Control,31)
+Rule_AddInterval(Rule_CheckAmmo, 10.0)
+Rule_AddInterval(Rule_CheckReload1, 1.1)
+Rule_AddInterval(Blips, 3.0)
+Rule_AddInterval(Rule_CheckJam, 2.5)
+Rule_AddInterval(Rule_CheckClear, 1)
+Rule_AddInterval(Rule_Enemy_Spawn, spawntimer)
+Rule_AddOneShot(Rule_AmmoCount_Triggers,1)
+-- Makes everyone invulnerable
+--Rule_AddOneShot(Rule_Testmode,1)
+end
+
+--Need this to display the objective on screen with fadeup
+function Rule_Display_Goal()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle("Original Space Hulk Concept and design by Space Hulk mod team, recoded by fuggles2k")
+		Rule_Remove(Rule_Display_Goal)
+	end
+
+
+end
+
+
+-- Always use Destroy HQ wincondition
+function Rule_CheckWinConditionChosen()
+	if DestroyHQ_WC_Enabled ~= nil then
+		print("DestroyHQ already chosen - started!")
+	else
+		print("DestroyHQ was not chosen. Force it!")
+		import("winconditions/destroyhq.scar"); DestroyHQ()
+	end
+end
+
+
+--likely we will need a version of this
+function Rule_Display_Start_Failure_SpaceHulk()
+	if Event_IsAnyRunning()==false then
+		Util_MissionTitle(g_ProblematicStartMessageSpaceHulk)
+	end
+end
+
+
+
+
+----------------------------------------------
+--     AI locking/Unlocking Functions       --
+----------------------------------------------
+
+function Rule_LockSGroupAssaultPlayer(sgroup)
+	if not Player_IsHuman(g_enemy_PlayerID) then
+		local lock = function(sgroupid,itemindex,squadID)
+			pcall(Cpu_LockSquad,g_enemy_PlayerID,Squad_GetGameID(squadID))
+		end
+		SGroup_ForEach(sgroup,lock)
+	end
+end
+
+
+function Rule_UnlockSGroupAssaultPlayer(sgroup)
+	if not Player_IsHuman(g_enemy_PlayerID) then
+		local unlock = function( sgroupid, itemindex, squadID )
+			pcall(Cpu_UnlockSquad,g_enemy_PlayerID,Squad_GetGameID(squadID))
+		end
+		SGroup_ForEach(sgroup,unlock)
+	end
+end
+
+function Rule_Enemy_Spawn()
+location = World_GetRand(1,g_numSpawnPoints)
+spawnmax = Player_GetBlueprintCount( g_Player2, "sh_enemy_spawn") 
+	
+	for j=1, g_numSpawnPoints do
+		if EGroup_CountSpawned("eg_enemy_spawner"..j) == 1 then
+			if spawnmax > 1 then
+				--if j ~= lastspawner then
+				local pos = Marker_GetPosition(Marker_FromName("mkr_spawn_"..j,"basic_marker"))
+				amount =  World_GetRand(1,3)
+					if amount == 1 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy1, pos, 1)
+					elseif amount == 2 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy2, pos, 2)
+					elseif amount == 3 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy3, pos, 3)
+					end
+				lastspawner = j
+				--end
+			else
+				local pos = Marker_GetPosition(Marker_FromName("mkr_spawn_"..j,"basic_marker"))
+				amount =  World_GetRand(1,3)
+					if amount == 1 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy1, pos, 1)
+					elseif amount == 2 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy2, pos, 2)
+					elseif amount == 3 then 
+					Util_CreateSquadsAtPosition(g_Player2, "sg_EnemySpawn"..j, Enemy3, pos, 3)
+					end
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+--Hulk code
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+function SetupMusicPlaylist()
+	Sound_PlaylistClear( PC_Ambient )
+	Sound_PlaylistAddTrack( PC_Ambient, "ambient/ambient_genestealer" )
+    	Sound_PlaylistSetorder( PC_Ambient, true )
+	Sound_PlaylistStart(PC_Ambient)	
+	Sound_PlaylistPlayNow(PC_Music, "Kai_Hartwig-A_prayer_before_the_war")
+	
+end
+
+function CheckAnnihilate()
+
+	-- total number of players
+	local count = World_GetPlayerCount();
+	
+	--check for annihilated dudes
+	for i = 0, count-1
+	do
+		-- check if player has been annihilated
+		local player = World_GetPlayerAt(i);
+	
+		--if no buildings and less than g_NumUnits, then you die
+		if( Player_IsAlive(player) ) then
+			if( Player_HasBuildingsExcept(player, _Annihilate.g_annihilate_exceptions) == false ) then
+ 				if( Player_GetUnitCount(player) < _Annihilate.g_NumUnits ) then
+					if count ~= 1 then
+						Player_Kill(player);
+					end
+ 				end
+			end
+		end
+	end
+	
+	-- check if only one team left -- if only one team left, they win and everybody else loses
+	Util_CheckOneTeamLeft("missions");
+end
+
+-------------------------------------------------
+--[[ Ammo Warning ]]
+-------------------------------------------------
+
+function Check_AssaultCanon()
+
+	ammo_Player = World_GetPlayerAt(0)
+
+	clipSize = 200
+
+	Player_GetAllSquadsNearMarker(ammo_Player, "sg_TermiSquad0", "mkr_termiPlayer1")
+
+	--This is the defined Asscannon character from the mod.
+	if SGroup_Exists("sg_Cerabus") == true then
+		SGroup_AddGroup( SGroup_FromName("sg_TermiSquad0"), SGroup_FromName("sg_Cerabus") )
+	end
+
+	Rule_AddInterval(Rule_CheckAmmo, 10.0)
+	Rule_AddInterval(Rule_CheckReload1, 1.1)
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+function Rule_CheckAmmo()
+
+	local count = World_GetPlayerCount();
+	
+	for i = 0, count-1
+	do
+
+		local g_player = World_GetPlayerAt(i);
+
+		local ammo = Player_GetResource(g_player, RT_Requisition ) 
+
+		if ammo >= 20 and ammo <= 50 then	
+	
+			EventCue_DoEvent("warning_low", "event_cue_notifications/general_alert", "Ammo Warning", "Your Assault Cannon Ammo is running low" )
+
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+function Rule_CheckReload1()
+
+    	local Termi_Reloading = function( sgroupid, itemindex, squadID )
+
+		if Squad_GetMorale( squadID ) <= 0.1 and Squad_GetBlueprintName( squadID ) == "sh_space_marine_squad_terminator_canon" then
+			
+			
+			Player_SetResource( ammo_Player, RT_Requisition, 0 )
+		end
+
+		if Squad_GetMorale( squadID ) >= 0.1 and Squad_GetMorale( squadID ) <= 0.4 and Squad_GetBlueprintName( squadID ) == "sh_space_marine_squad_terminator_canon" then
+						
+			Player_SetResource( ammo_Player, RT_Requisition, clipSize )
+			Squad_SetMorale( squadID, 1 )
+		end
+    	end
+
+    	SGroup_ForEach( SGroup_FromName("sg_TermiSquad0"), Termi_Reloading )
+end
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------
+---- Test Ping Code -------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------
+
+--[[function Ping_Blips()
+
+	Player_BlipTarget = World_GetPlayerAt(0)
+	g_blipPlayer = World_GetPlayerAt(1)
+
+	Player_GetAllSquadsNearMarker(Player_BlipTarget, "sg_BlipTarget", "mkr_termiPlayer1")
+
+	Rule_AddInterval(Blips, 3.0)
+end]]
+
+
+function Blips() 
+
+ 
+		Player_AddSquadsToSGroup( g_Player2, "motion_blips" ) 
+
+      		local volume = 1.0 - Prox_SGroupSGroup( "sg_BlipTarget", "motion_blips", PROX_SHORTEST )/100 
+               	
+		if volume <= 0.05 then 
+			volume = 0.05
+		end 
+	
+		Sound_SetSoundVolume( Sound_Play("ping/ping"), volume, 0.0) 
+               	SGroup_ForEach( "motion_blips", PingSquad ) --[[ this doesn't work ]]
+end
+
+function PingSquad(sgroupid, itemindex, squadID)
+	SGroup_NameFromSquadID("squad_to_ping", squadID)
+	pos = SGroup_GetPosition("squad_to_ping")
+	
+	W40k_MinimapPing( [[data:art\ui\minimap\blip_ping]], pos, 1 )
+end
+
+function SGroup_NameFromSGroupID(sgroupname, SGroupID)
+	SGroup_CreateIfNotFound (sgroupname)
+	SGroup_Clear(sgroupname)
+	SGroup_AddGroup( SGroup_FromName(sgroupname), SGroupID )
+end
+
+function SGroup_NameFromSquadID(sgroupname, squadID)
+	SGroup_CreateIfNotFound (sgroupname)
+	SGroup_Clear(sgroupname)
+	SGroup_Add( SGroup_FromName(sgroupname), squadID )
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+--[[function Rule_CheckJamSetup()
+
+	jam_Player = World_GetPlayerAt(0)
+
+	Player_GetAllSquadsNearMarker(jam_Player, "sg_jamPlayer", "mkr_termiPlayer1")
+
+	WhoJams = 0;
+
+	Rule_AddInterval(Rule_CheckJam, 5)
+	Rule_AddInterval(Rule_CheckClear, 1)
+end]]
+
+function Rule_CheckJam()
+
+	WhoJams = WhoJams + 1
+
+
+	
+
+	if WhoJams == 6 then
+		WhoJams = 0
+	end
+	
+	local Jam_Check = function( sgroupid, itemindex, squadID )
+
+	--[[if SGroup_IsUnderAttack("sg_Squad"..itemindex, true) == true then
+	print "Attack?"
+	end
+
+	if SGroup_IsUnderAttack("motion_blips", true) == true then
+	print "Enemy Attack?"
+	end
+
+	if Prox_SquadsInProximityOfSquads( "sg_Squad"..itemindex, "motion_blips", 60, false) then
+	print "near"
+	end]]
+
+	
+
+
+
+
+		if WhoJams == itemindex and (Squad_GetBlueprintName( squadID ) == "sh_space_marine_squad_terminator" or Squad_GetBlueprintName( squadID ) == "sh_space_marine_squad_terminator_sgt") and Prox_SquadsInProximityOfSquads( "sg_Squad"..itemindex, "motion_blips", 60, false) == true then
+			Squad_SetMorale( squadID, 0 ) 
+			Squad_ForceUpgradeWeapons( squadID , "sh_terminator_dummy2", 0 ) 
+			EventCue_DoEvent("warning_jam", "event_cue_notifications/general_alert", "Weapon Jam", "Storm Bolter Has Jammed" )
+		end
+	end
+
+    	SGroup_ForEach( SGroup_FromName("sg_jamPlayer"), Jam_Check )
+end
+
+function Rule_CheckClear()
+
+    	local Clear_Check = function( sgroupid, itemindex, squadID )
+		if Squad_GetMorale( squadID ) >= 0.2 and Squad_GetMorale( squadID ) < 0.6 and Squad_GetBlueprintName( squadID ) ~= "sh_space_marine_squad_terminator_canon" or Squad_GetBlueprintName( squadID ) == "sh_space_marine_squad_terminator_flamer" then
+			
+			Squad_SetMorale( squadID, 1 ) 
+			Squad_ForceResetWeapons( squadID )
+		end
+    	end
+
+    	SGroup_ForEach( SGroup_FromName("sg_jamPlayer"), Clear_Check )
+end
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------
+--RACE SPECIFIC VICTORY MUSIC??
+--------------------------------------------------------
+function Rule_SetUpTheMusic()
+	t_music = {"battle_01","battle_02","battle_03","battle_04","battle_05","battle_06","battle_07","battle_08"}
+	Rule_AddOneShot(Rule_Player1_Music,1)
+	print"Music triggered!"
+end
+
+function Rule_Player1_Music()
+	Playlist_Manager( PC_Music,t_music, true , false , {10, 10})
+end
+
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+--Goals
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+function PumpRepair_1()
+
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_pump1", "mkr_pump1")
+	if SGroup_Exists("sg_pump1") and SGroup_IsEmpty("sg_pump1") == false and Prox_AllSquadsNearMarker("sg_pump1", "mkr_pump1") then
+
+		EGroup_SetPlayerOwner( "EPump1", g_Player1 )
+	end
+	if EGroup_GetAvgHealth("EPump1") == 1.0 then 
+		
+
+		EGroup_ReSpawn("eg_replacmentPump01")
+		EGroup_DeSpawn("EPump1")
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "One pump fixed, get them all repaired to clear the gas!" )
+		pumps_fixed_counter = pumps_fixed_counter + 1
+		Rule_Remove(PumpRepair_1)
+	end
+end	
+
+function PumpRepair_2()
+
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_pump2", "mkr_pump2")
+	if SGroup_Exists("sg_pump2") and SGroup_IsEmpty("sg_pump2") == false and Prox_AllSquadsNearMarker("sg_pump2", "mkr_pump2") then
+
+		EGroup_SetPlayerOwner( "EPump2", g_Player1 )
+	end
+	if EGroup_GetAvgHealth("EPump2") == 1.0 then 
+				
+		EGroup_ReSpawn("eg_replacmentPump02")
+		EGroup_DeSpawn("EPump2")
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "One pump fixed, get them all repaired to clear the gas!" )
+		pumps_fixed_counter = pumps_fixed_counter + 1
+		Rule_Remove(PumpRepair_2)
+	end
+end
+
+function PumpRepair_3()
+
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_pump3", "mkr_pump3")
+	if SGroup_Exists("sg_pump3") and SGroup_IsEmpty("sg_pump3") == false and Prox_AllSquadsNearMarker("sg_pump3", "mkr_pump3") then
+
+		EGroup_SetPlayerOwner( "EPump3", g_Player1 )
+	end
+	if EGroup_GetAvgHealth("EPump3") == 1.0 then 
+		
+		EGroup_ReSpawn("eg_replacmentPump03")
+		EGroup_DeSpawn("EPump3")
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "One pump fixed, get them all repaired to clear the gas!" )
+		pumps_fixed_counter = pumps_fixed_counter + 1
+		Rule_Remove(PumpRepair_3)
+	end
+end
+
+function PumpRepair_4()
+
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_pump4", "mkr_pump4")
+	if SGroup_Exists("sg_pump4") and SGroup_IsEmpty("sg_pump4") == false and Prox_AllSquadsNearMarker("sg_pump4", "mkr_pump4") then
+
+	EGroup_SetPlayerOwner( "EPump4", g_Player1 )
+	end
+	if EGroup_GetAvgHealth("EPump4") == 1.0 then 
+		
+		EGroup_ReSpawn("eg_replacmentPump04")
+		EGroup_DeSpawn("EPump4")
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard - Gas", "One pump fixed, get them all repaired to clear the gas!" )
+		pumps_fixed_counter = pumps_fixed_counter + 1
+		Rule_Remove(PumpRepair_4)
+	end
+end
+------------------------------------------------------------------------------------------------------------------
+
+function Rule_CheckServitorHealth()
+	if (SGroup_CountSpawned(SGroup_FromName("sg_servitor"))==0) and SGroup_GetAvgHealth("sg_servitor")<=0 then
+	print "Death by servitor dying"
+		World_SetTeamWin(g_Player2, "annihilate")
+		World_SetGameOver()
+	end
+end
+
+function Rule_CheckPumpsHealth()
+	if pumps_fixed_counter >= 4 then
+		Rule_Remove(Rule_CheckPumpsHealth)
+		Rule_Remove(Rule_CheckServitorHealth)
+		--Util_ObjectiveComplete(OBJECTIVE_REPAIRPUMPS.title_id)
+		--Util_ObjectiveCreate(OBJECTIVE_LEAVE, true)
+		EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard Negated", "The gas has cleared, your exit route is clear" )
+		Rule_Remove(Rule_GasCheck)
+		if gamerule ~= 3 then
+		Rule_Remove(Rule_CheckServitorHealth)
+		end
+		EGroup_DeSpawn( "eg_gasfire")
+		--Rule_AddOneShot(Rule_FindMeAnExit, 1)
+		--Rule_AddOneShot(PingExit, 1.0)
+	end
+end
+
+function Rule_CheckNumberOfPumps()
+	if (EGroup_Count(EGroup_FromName("eg_Pumps")) ~=4) then
+		World_SetTeamWin(g_Player2, "annihilate")
+		World_SetGameOver() 
+	end
+end
+
+function Rule_GasCheck()
+	for j=1, 3 do 
+		Player_GetAllSquadsNearMarker(g_Player1, "sg_gascheck", "mkr_gas"..j)
+		SGroup_SetAvgHealth("sg_gascheck", 0)
+	end
+	
+end
+		
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+function CheckForBomb()
+
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_bomb", "mkr_place_bomb")
+	if SGroup_Exists("sg_bomb") and SGroup_IsEmpty("sg_bomb") == false and Prox_AllSquadsNearMarker("sg_bomb", "mkr_place_bomb") then
+
+		EGroup_ReSpawn( "EBomb" )
+	
+		Util_ObjectiveComplete(OBJECTIVE_PLACE_BOMB.title_id)
+		Ping_Stop(mkrPing1)
+		Objective_Add(OBJECTIVE_LEAVE, true)
+		Rule_AddOneShot(Rule_FindMeAnExit, 1)		
+		Rule_Remove(CheckForBomb)
+	end		
+end
+---------------------------------------------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------
+function Rule_CheckServitorCloseToComputer()
+
+	if Prox_AnySquadNearMarker("sg_servitor", "mkr_relic") == true then
+
+		uplink_counter = 61
+
+		Rule_AddOneShot(Rule_UplinkTimer,0)
+		Rule_AddInterval(Rule_servitorIsNearComputer, 1.0)
+		--Rule_AddInterval(ServitorComeAndGo, 6.0)
+		Rule_Remove(Rule_CheckServitorCloseToComputer)
+	end
+end
+
+---------------------------------------------------------------------------------------------------
+
+function Rule_UplinkTimer()
+
+	UI_ShowCountdown( 5805662, 60 )
+	Rule_Remove(Rule_UplinkTimer)
+
+end
+
+---------------------------------------------------------------------------------------------------
+
+function Rule_servitorIsNearComputer()
+	
+	if Prox_AnySquadNearMarker("sg_servitor", "mkr_relic") ~= true then
+		
+		UI_HideCountdown()
+		Rule_AddInterval(Rule_CheckServitorCloseToComputer, 1.0)
+		--Rule_Remove(ServitorComeAndGo)
+		Rule_Remove(Rule_servitorIsNearComputer)
+	end
+	
+	uplink_counter = uplink_counter - 1
+
+	if uplink_counter <= 0 then
+		Ping_Stop(png_relic)
+		Rule_AddOneShot(Rule_FindMeAnExit, 1)
+		--Util_ObjectiveComplete(OBJECTIVE_DOWNLOAD.title_id)
+		--Util_ObjectiveCreate(OBJECTIVE_LEAVE, true)
+		--Rule_Remove(ServitorComeAndGo)
+		Rule_Remove(Rule_servitorIsNearComputer)
+	end
+		
+
+end
+
+---------------------------------------------------------------------------------------------------
+--this will be rough with turrets, maybe disable?
+function ServitorMove()
+	Cmd_MoveToMarker("Servitor", "mkr_relic") 
+end
+
+---------------------------------------------------------------------------------------------------------------------------
+
+function Rule_CheckFlamerHealth()
+	if SGroup_CountSpawned(SGroup_FromName("sg_Squad2"))== 0 then 
+	print "Death by flamer dying"
+		World_SetTeamWin(g_Player2, "annihilate")
+		World_SetGameOver()
+	end
+end
+
+---------------------------------------------------------------------------------------------------------------------------
+
+function Rule_FindMeAnExit()
+	exitlocation = World_GetRand(1,3)
+		if exitlocation == 1 then
+		exitnode = "mkr_exit_1"
+		png_exit = Ping_Marker("mkr_exit_1", true, "bubecce" )
+		elseif exitlocation == 2 then
+		exitnode = "mkr_exit_2"
+		png_exit = Ping_Marker("mkr_exit_2", true, "bubecce" )
+		elseif exitlocation == 3 then
+		exitnode = "mkr_exit_3"
+		png_exit = Ping_Marker("mkr_exit_3", true, "bubecce" )
+		end
+
+	Rule_AddInterval(Rule_CheckForLeavingDynamic,0.5)
+	EventCue_DoEvent("warning_jam", "event_cue_notifications/general_alert", "Exit Identified", "This is where we get out of this place!" )
+end
+
+function Rule_CheckForLeavingDynamic()
+	Player_GetAllSquadsNearMarker(g_Player1, "sg_Exited", exitnode)
+	SGroup_DeSpawn("sg_Exited")
+	if SGroup_CountDeSpawned("sg_Exited") > 0 then
+		--Util_ObjectiveComplete(OBJECTIVE_LEAVE.title_id)
+		Rule_AddOneShot(Win, 2.0)
+		Rule_Remove(Rule_CheckForLeavingDynamic)
+	end  
+end
+
+
+function Rule_SecureHoles()
+spawnercheck = 0
+
+	for j=1, g_numSpawnPoints do
+		if EGroup_CountSpawned("eg_enemy_spawner"..j) == 1 then
+		spawnercheck = spawnercheck + 1
+		else
+			if j==1 then
+			Ping_Stop(Spawnpost1)
+			elseif j==2 then
+			Ping_Stop(Spawnpost2)		
+			elseif j==3 then
+			Ping_Stop(Spawnpost3)		
+			elseif j==4 then
+			Ping_Stop(Spawnpost4)		
+			elseif j==5 then
+			Ping_Stop(Spawnpost5)		
+			elseif j==6 then
+			Ping_Stop(Spawnpost6)		
+			end
+		end
+	end
+
+	if spawnercheck == 0 then
+	Rule_AddOneShot(Rule_FindMeAnExit, 1.0)
+	Rule_Remove(Rule_SecureHoles)
+	end
+
+end
+
+
+function Rule_Pingstart()
+Spawnpost1 = Ping_Marker("mkr_spawn_1",true,"attack")
+Spawnpost2 = Ping_Marker("mkr_spawn_2",true,"attack")
+Spawnpost3 = Ping_Marker("mkr_spawn_3",true,"attack")
+Spawnpost4 = Ping_Marker("mkr_spawn_4",true,"attack")
+Spawnpost5 = Ping_Marker("mkr_spawn_5",true,"attack")
+Spawnpost6 = Ping_Marker("mkr_spawn_6",true,"attack")
+end
+
+
+---------------------------------------------------------------------------------------------------------------------------
+
+function PingExit()
+	Ping_Marker( "mkr_Exit", true, "bubecce" )
+end
+
+---------------------------------------------------------------------------------------------------------------------------
+
+function Win()
+
+		World_SetTeamWin(World_GetPlayerAt(0), "annihilate")
+		World_SetGameOver() 
+end
+
+
+function Rule_RelicCheck()
+	if Prox_AnySquadNearMarker("sg_termiPlayer", "mkr_relic") == true then
+	EGroup_DeSpawn( "eg_relic")
+	Ping_Stop(png_relic)
+	EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Mission Accomplished", "We have the relic, let's go!" )
+	Rule_AddOneShot(Rule_FindMeAnExit, 1)
+	Rule_Remove(Rule_RelicCheck)
+	end
+end
+
+function Rule_TurretCheck()
+
+	for k=1,4 do
+		if EGroup_CountSpawned("EPump"..k)==0 then
+		EGroup_DeSpawn( "eg_replacmentPump0"..k)
+		end
+	end
+
+	if EGroup_CountSpawned("eg_Pumps")== 0 then
+	EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Environmental Hazard Negated", "Turret power down -  you are free to advance!" )	
+				for j=1, g_numTurrets do
+					if Marker_Exists("mkr_turret_"..j,"basic_marker") then
+						if EGroup_CountSpawned("eg_enemy_turret"..j) == 1 then
+						EGroup_DeSpawn("eg_enemy_turret"..j)
+						end
+					end
+				
+				Rule_Remove(Rule_TurretCheck)
+				end
+	end
+	
+end
+
+function Rule_AmmoCount_Triggers()
+	WinWarning_Add( "Player_ammo_count_space_hulk",  g_Player1, "", "wincondition_name", "help tip text" )
+	Rule_AddInterval(Rule_AmmoCount_Players,0.5)
+end
+
+function Rule_AmmoCount_Players()
+	Ammocounter = Player_GetResource( g_Player1, RT_Requisition) 
+	local count = "Assault Cannon Ammo Remaining "
+	count = count..": "..Ammocounter
+	WinWarning_SetText( "Player_ammo_count_space_hulk", count )
+end
+
+function SetDifficultyLevel()
+	
+	local difficultyLevel = Cpu_GetDifficulty(g_Player2)
+	print ("difficulty is "..difficultyLevel)
+
+spawntimer = spawntimer - (difficultyLevel * 5)
+		
+end
+
+function Rule_StopFlamerPing()
+	Ping_Stop(png_flamer)
+end
+
+function Rule_StopStartServitorPing()
+Ping_Stop(png_srvtor)
+end
+
+function Rule_Testmode()
+print ("IDDQD Engaged")
+Player_GetAllSquadsNearMarker(g_Player1, "sg_testing", "mkr_termiPlayer1")
+SGroup_SetHealthInvulnerable( "sg_testing", true ) 
+end
+
+function Rule_AssassinateSetup()
+Util_CreateSquadsAtMarker(g_Player2, "sg_boss", Boss1, "mkr_servitor_2", 1)
+Cpu_LockSGroup(g_Player2, "sg_boss")
+Rule_AddInterval(Rule_Bosscheck, 0.5)
+png_ass1 = Ping_Marker("mkr_servitor_2", true, "attack")
+Util_CreateSquadsAtMarker(g_Player2, "sg_boss2", Boss1, "mkr_servitor_3", 1)
+Cpu_LockSGroup(g_Player2, "sg_boss2")
+Rule_AddInterval(Rule_Bosscheck2, 0.5)
+png_ass2 = Ping_Marker("mkr_servitor_3", true, "attack")
+	Rule_AddInterval(Rule_AssassinateCheck1,1)
+	Rule_AddInterval(Rule_AssassinateCheck2,1)
+	Rule_AddInterval(Rule_AssassinateComplete,1)
+end
+
+function Rule_AssassinateCheck1()
+	if SGroup_CountSpawned("sg_boss") == 0 then
+	bosstotal = bosstotal +1 
+	Ping_Stop(png_ass1)
+	EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Target Eliminated", "One target down - Make sure none remain!" )	
+	Rule_Remove(Rule_AssassinateCheck1)
+	end
+end
+
+function Rule_AssassinateCheck2()
+	if SGroup_CountSpawned("sg_boss2") == 0 then
+	bosstotal = bosstotal +1 
+	Ping_Stop(png_ass2)
+	EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "Target Eliminated", "One target down - Make sure none remain!" )	
+	Rule_Remove(Rule_AssassinateCheck2)
+	end
+end
+
+function Rule_AssassinateComplete()
+	if bosstotal == 2 then
+	EventCue_DoEvent("warning", "/event_cue_notifications/team_change", "All Targets Eliminated", "All foes defeated - Let's go home!" )	
+	Rule_AddOneShot(Rule_FindMeAnExit, 1)
+	Rule_Remove(Rule_AssassinateComplete)
+	end
+end

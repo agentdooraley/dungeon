@@ -1,0 +1,118 @@
+
+GameLevel={
+DebugON=0,
+}
+
+function GameLevel.GetRes(ID)
+	if World_DoesRaceUseRequisition(Player_GetRace(ID)) then 
+		return Player_GetResource(ID,RT_Requisition)
+	else
+		return Player_GetResource(ID,RT_Power)*2
+	end
+end
+	
+function GameLevel.Start(HumanID,CpuID)
+	
+	GameLevel.HumanID=HumanID
+	GameLevel.CpuID=CpuID
+
+	GameLevel.HumanRes0=GameLevel.GetRes(GameLevel.HumanID)
+	GameLevel.CpuRes0=GameLevel.GetRes(GameLevel.CpuID)
+	GameLevel.Time0=World_GetGameTime()
+
+	if GameLevel.DebugON>1 then 
+		print("GameLevel.Start human0(" .. GameLevel.HumanID.id ..") =" .. GameLevel.HumanRes0)
+		print("GameLevel.Start Cpu0(" .. GameLevel.CpuID.id ..") =" .. GameLevel.CpuRes0) 
+		print("GameLevel.Start Time0=" .. GameLevel.Time0) 
+	end
+	
+end
+
+function GameLevel.Step1()
+
+	GameLevel.HumanRes1=GameLevel.GetRes(GameLevel.HumanID)
+	GameLevel.CpuRes1=GameLevel.GetRes(GameLevel.CpuID)
+	GameLevel.Time1=World_GetGameTime()
+
+	if GameLevel.DebugON>1 then 
+		print("GameLevel.Step1 Human1 =" .. GameLevel.GetRes(GameLevel.HumanID)) 
+		print("GameLevel.Step1 Cpu1 =" .. GameLevel.GetRes(GameLevel.CpuID)) 
+		print("GameLevel.Step1 Updated Time1 =" .. GameLevel.Time1) 
+	end
+	
+	local HumanHQID=Entity_GetPlayerStartHQ(GameLevel.HumanID)
+	assert(HumanHQID~=nil)
+	local CpuHQID=Entity_GetPlayerStartHQ(GameLevel.CpuID)
+	assert(CpuHQID~=nil)
+	
+	if GameLevel.DebugON>1 then 
+		print("GameLevel.Step1 Creating " .. Entity_GetBlueprintName(HumanHQID) .. " for player " .. GameLevel.HumanID.id) 
+		Ping_Position(Entity_GetPosition(HumanHQID),false)
+	end
+	GameLevel.NewHumanHQID=Entity_Create(Entity_GetBlueprintName(HumanHQID),GameLevel.HumanID,Entity_GetPosition(HumanHQID))
+	
+	if GameLevel.DebugON>1 then 
+		print("GameLevel.Step1 Creating " .. Entity_GetBlueprintName(CpuHQID) .. " for player " .. GameLevel.CpuID.id) 
+		Ping_Position(Entity_GetPosition(CpuHQID),false)
+	end
+	GameLevel.NewCpuHQID=Entity_Create(Entity_GetBlueprintName(CpuHQID),GameLevel.CpuID,Entity_GetPosition(CpuHQID))
+	
+	Entity_Spawn(GameLevel.NewHumanHQID)
+	Entity_Spawn(GameLevel.NewCpuHQID)
+	
+end
+
+function GameLevel.Step2()
+
+	Entity_Destroy(GameLevel.NewHumanHQID)
+	Entity_Destroy(GameLevel.NewCpuHQID)
+	GameLevel.NewHumanHQID=nil
+	GameLevel.NewCpuHQID=nil
+
+	GameLevel.HumanRes2=GameLevel.GetRes(GameLevel.HumanID)
+	GameLevel.CpuRes2=GameLevel.GetRes(GameLevel.CpuID)
+	GameLevel.Time2=World_GetGameTime()
+
+	local HumanDeltaRate=(GameLevel.HumanRes2-GameLevel.HumanRes1)/(GameLevel.Time2-GameLevel.Time1)-(GameLevel.HumanRes1-GameLevel.HumanRes0)/(GameLevel.Time1-GameLevel.Time0)
+	local CpuDeltaRate=(GameLevel.CpuRes2-GameLevel.CpuRes1)/(GameLevel.Time2-GameLevel.Time1)-(GameLevel.CpuRes1-GameLevel.CpuRes0)/(GameLevel.Time1-GameLevel.Time0)
+	
+	GameLevel.levelratio=CpuDeltaRate/HumanDeltaRate
+	
+	if GameLevel.DebugON>1 then 
+		print("GameLevel.Step2 Updated Human2 =" .. GameLevel.HumanRes2) 
+		print("GameLevel.Step2 Updated Cpu2 =" .. GameLevel.CpuRes2) 
+		print("GameLevel.Step2 Updated Time2 =" .. GameLevel.Time2) 
+		print("GameLevel.Step2 HumanRate1=" .. (GameLevel.HumanRes1-GameLevel.HumanRes0)/(GameLevel.Time1-GameLevel.Time0))
+		print("GameLevel.Step2 HumanRate2=" .. (GameLevel.HumanRes2-GameLevel.HumanRes1)/(GameLevel.Time2-GameLevel.Time1))
+		print("GameLevel.Step2 HumanDeltaRate=" .. HumanDeltaRate)
+		print("GameLevel.Step2 CpuRate1=" .. (GameLevel.CpuRes1-GameLevel.CpuRes0)/(GameLevel.Time1-GameLevel.Time0))
+		print("GameLevel.Step2 CpuRate2=" .. (GameLevel.CpuRes2-GameLevel.CpuRes1)/(GameLevel.Time2-GameLevel.Time1))
+		print("GameLevel.Step2 CpuDeltaRate=" .. CpuDeltaRate)
+		print("GameLevel.Step2 GameLevel.levelratio=" .. GameLevel.levelratio)
+	end
+	
+	-- Easy=0.30
+	-- Normal=0.80
+	-- Hard=1.00
+	-- Harder=1.20
+	-- Insane=1.40
+	if GameLevel.levelratio<0.55 then 
+		GameLevel.level=1
+		GameLevel.levelname="Easy"
+	elseif GameLevel.levelratio<0.9 then 
+		GameLevel.level=2
+		GameLevel.levelname="Normal"
+	elseif GameLevel.levelratio<1.1 then 
+		GameLevel.level=3
+		GameLevel.levelname="Hard"
+	elseif GameLevel.levelratio<1.3 then 
+		GameLevel.level=4
+		GameLevel.levelname="Harder"
+	else 
+		GameLevel.level=5
+		GameLevel.levelname="Insane"
+	end
+
+	if GameLevel.DebugON>0 then 	print("GameLevel.Step2 ratio=" .. GameLevel.levelratio .. " Level= " .. GameLevel.level .." (" .. GameLevel.levelname .. ")" ) end
+	
+end

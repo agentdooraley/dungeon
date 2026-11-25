@@ -1,0 +1,93 @@
+-- Testing Mode. Adapted by Gambit @ 14/10/2021
+
+import("Player.scar")
+import("GroupCallers.scar")
+import("Command.scar")
+import("Groups.scar")
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+import("World_Race_Entities.scar")
+
+TestMode_ArmyCapModifier = 50
+
+function TestMode_DEV_RecourseRule()
+	-- Maximize Resources for all Players, constantly
+	for idx = 0, World_GetPlayerCount() - 1 do
+		local playerID = World_GetPlayerAt(idx)
+		Player_SetResource(playerID, RT_Requisition, 10000)
+		Player_SetResource(playerID, RT_Power, 10000)
+		Player_SetResource(playerID, RT_Souls, 1000)
+		Player_SetResource(playerID, RT_Faith, 100)
+		Player_SetResource(playerID, RT_Pop, TestMode_ArmyCapModifier*10)
+	end
+	-- Disable AI and Reveal the MAP
+	pcall(Cpu_EnableAll,0); FOW_RevealAll()
+end
+
+
+function TestMode_DEV()
+	Rule_Add(TestMode_DEV_RecourseRule)
+	Rule_AddOneShot(TestMode_DEV_ProductionRule,0.25)
+end
+
+
+Scar_AddInit(TestMode_DEV)
+
+
+function TestMode_DEV_ProductionRule()
+	-- Maximize player caps
+	local oModMaxSquadCap	= Modifier_Create(MAT_Player, "max_squad_cap_player_modifier", MUT_Multiplication, false, TestMode_ArmyCapModifier, "")
+	local oModMaxSupportCap	= Modifier_Create(MAT_Player, "max_support_cap_player_modifier", MUT_Multiplication, false, TestMode_ArmyCapModifier, "")
+	local oModPopulationCap	= Modifier_Create(MAT_Player, "population_cap_player_modifier", MUT_Multiplication, false, TestMode_ArmyCapModifier, "")
+	local oModSquadCap		= Modifier_Create(MAT_Player, "squad_cap_player_modifier", MUT_Multiplication, false, TestMode_ArmyCapModifier, "")
+	local oModSupportCap	= Modifier_Create(MAT_Player, "support_cap_player_modifier", MUT_Multiplication, false, TestMode_ArmyCapModifier, "")
+	for idx = 0, World_GetPlayerCount() - 1 do
+		local playerID = World_GetPlayerAt(idx)
+		pcall(Modifier_ApplyToPlayer, oModMaxSquadCap, playerID)
+		pcall(Modifier_ApplyToPlayer, oModMaxSupportCap, playerID)
+		pcall(Modifier_ApplyToPlayer, oModPopulationCap, playerID)
+		pcall(Modifier_ApplyToPlayer, oModSquadCap, playerID)
+		pcall(Modifier_ApplyToPlayer, oModSupportCap, playerID)
+	end
+
+	-- Populate all the players' buildings array for later fast-building
+	-- All in-game races names
+	local in_game_races_names = {}
+	-- The array with all the in-game buildings
+	local buildings = {}
+	for idx = 0, World_GetPlayerCount() - 1 do
+		table.insert(in_game_races_names, Player_GetRaceName(World_GetPlayerAt(idx)))
+	end
+	-- Then remove duplicates, to avoid identical multiples
+	for i=1, table.getn(in_game_races_names) do
+		for j = table.getn(in_game_races_names), i+1, -1 do
+			if in_game_races_names[i] == in_game_races_names[j] then
+				table.remove(in_game_races_names, j)
+			end
+		end
+	end
+	-- Populate the buildings table the appropriate building names
+	for i = 1, table.getn(in_game_races_names) do
+		if Global_RaceEntities[in_game_races_names[i]] ~= nil then
+			for j = 1, table.getn(Global_RaceEntities[in_game_races_names[i]].building_list) do
+				table.insert(buildings, Global_RaceEntities[in_game_races_names[i]].building_list[j])
+			end
+		else
+			print("TEST MODE - RACE "..in_game_races_names[i].." NOT SUPPORTED!")
+			Rule_Remove(TestMode_DEV_ProductionRule)
+			return
+		end
+	end
+	-- Apply fast-build
+	for idx = 0, World_GetPlayerCount() - 1 do
+		local playerID = World_GetPlayerAt(idx)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "reinforce_time2_player_modifier", MUT_Multiplication, true, 0.001, ""), playerID)
+		Modifier_ApplyToPlayer(Modifier_Create(MAT_Player, "faith_max_modifier", MUT_Addition, true, 100, ""), playerID )
+		for i = 1, table.getn(buildings) do
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "production_speed_modifier", MUT_Multiplication, true, 1000, buildings[i]), playerID)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "cost_time_modifier", MUT_Multiplication, true, 0.001, buildings[i]), playerID)
+		end
+	end
+end
+

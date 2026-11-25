@@ -1,0 +1,12 @@
+-------------------------------------
+-- Made by fuggles --
+-- 
+-- 			Ver 1.0		   --
+-------------------------------------
+
+function Allow_Airwaves()
+	air_attack_toggle = true
+end
+
+
+Scar_AddInit(Allow_Airwaves)

@@ -1,0 +1,35 @@
+-- Custom Imports script
+-- Created by Gambit
+
+
+import("WXPScarUtil.scar")
+
+
+-- Trick to re-import each race's code, on load
+if g_CustomModScarImports_Switch ~= nil then
+	if not g_ty_flag then import("Tyranids.scar") end
+end
+
+
+function CustomCodeInitiation()
+	-------------------------------------------------------------------
+	-- Custom SCaR code initiation. Put any optional Race code here. --
+	-------------------------------------------------------------------
+
+	g_CustomModScarImports_Switch = true
+
+	g_ty_flag = true
+	
+	for i = 0, World_GetPlayerCount()-1 do
+		local playerRaceName = Player_GetRaceName(World_GetPlayerAt(i))
+		if g_ty_flag and playerRaceName == "tyranids_race" then
+			g_ty_flag = false
+			print"Tyranids SCaR code initiated!"
+			import("Tyranids.scar")
+			Tyranids_Threshold()
+		end
+	end
+end
+
+
+Scar_AddInit(CustomCodeInitiation)

@@ -1,0 +1,495 @@
+-----------------------------------------------------------------------
+-- Survival Mode conceived and Coded by Argonaut. Updated by Gambit. --
+-----------------------------------------------------------------------
+
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations
+DeCapturingSquadName = "inquisition_squad_shock_troops"
+DeCapturingSquadMmbrs = 9
+
+--------------------------------------------------------------------------
+--             Stats for Destroy Enemy Outpost wincondition         ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+--------------------------------------------------------------------------
+EnemyBuilding1Name = "inquisition_watch"
+EnemyBuilding1Squad1 = {"inquisition_squad_bodyguard", 3, 5}
+EnemyBuilding1Squad2 = {"inquisition_squad_shock_troops", 2, 6}
+EnemyBuilding1Squad3 = {"inquisition_squad_chimera_transport", 2, 1}
+EnemyBuilding2Name = "inquisition_librarium"
+EnemyBuilding2Squad1 = {"inquisition_squad_grey_knights_terminator", 1, 4}
+EnemyBuilding2Squad2 = {"inquisition_squad_grey_knights", 1, 6}
+EnemyBuilding2Squad3 = {"inquisition_squad_dreadnought_venerable", 2, 1}
+EnemyBuilding2SquadA1 = {"inquisition_squad_whirlwind_hyperios",1,1}
+EnemyBuilding2SquadA2 = {"inquisition_squad_whirlwind_hyperios",1,1}
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Add up to 3 squad types per building, use nil if none.           ------
+-- Squad format: {squad name, squads_count, squad_member_loadout }	------
+-- If no race transport, then use nil - And empower Honour Guard    ------
+--------------------------------------------------------------------------
+EnemyTransportName = "inquisition_squad_chimera_transport"
+EnemyTransportedSquad = {"inquisition_squad_shock_troops", 2, 7}
+EnemyHonourGuardSquad1 = {"inquisition_squad_bodyguard", 2, 5}
+EnemyHonourGuardSquad2 = {"inquisition_squad_inquisitor_lord_cs", 1, 1}
+EnemyHonourGuardSquad3 = {"inquisition_squad_grey_knights", 1, 6}
+EnemyHonourGuardSquad4 = {"inquisition_squad_grey_knights_terminator", 1, 6}
+
+--------------------------------------------------------------------------
+--                 Stats for Assassinate wincondition               ------
+-- Add 6 commanders (or single-entity powerful squads) in gradually ------
+-- increasing prowess and ability level.							------
+-- LEADERS: If a commander squad has leaders, add the number of		------
+-- each, after the name. The first number, is the number of leaders ------
+-- of the first type (index 1), etc. 								------
+-- WARNING: DO NOT add non-existing ones or you will get a CTD!!!	------
+--------------------------------------------------------------------------
+EnemyCommanderSquadName1 = {"inquisition_squad_scholars"}
+EnemyCommanderSquadName2 = {"inquisition_squad_death_cultist"}
+EnemyCommanderSquadName3 = {"inquisition_squad_inquisitor_lord"}
+EnemyCommanderSquadName4 = {"inquisition_squad_inquisitor_lord_cs", 1, 1, 1, 1}
+EnemyCommanderSquadName5 = {"inquisition_squad_grey_knight_hero"}
+EnemyCommanderSquadName6 = {"inquisition_squad_master_kaldor_draigo"}
+
+
+-- If a player attacks the enemy AI base before defeating the 10th wave, push him forcefully back!
+function Rule_DefensiveDeterrentPlayer()
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_land_raider", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_land_raider_crusader", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_land_raider_redeemer", "mk_uberspawn_1", 3, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_grey_knights_terminator", "mk_enemy_pos", 4, 6)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_grey_knights", "mk_enemy_pos", 2, 6)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_lemanruss_huntsman", "mk_enemy_pos", 1, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_stormhawk_interceptor", "mk_enemy_pos", 2, 1)
+	Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_deterrent_one", "inquisition_squad_stormraven_fury", "mk_enemy_pos", 2, 1)
+end
+
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Standard_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if Srvl_PlayerInfo.Techlvl[slot]==1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 1, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 2, 6)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon("sg_random_squads_start_p"..slot,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_chimera_transport", marker, 1, 1)
+	elseif Srvl_PlayerInfo.Techlvl[slot]==4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_grey_knights_purgation", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_grey_knights_terminator", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 1, 9)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_chimera_transport", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_death_cultist", marker, 2, 1)
+	end
+	SGroup_AddLeaders("sg_random_squads_start_p"..slot)	
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+	local marker = "mk_enemy_player_"..(slot+1)
+	if(Srvl_PlayerInfo.Techlvl[slot]==1)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 1, 9)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==2)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 2, 9)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==3)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_shock_troops", marker, 1, 9)
+		SGroup_UpgradeSquadsWithWeapon("sg_random_squads_start_p"..slot,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_servitor_maintenance", marker, 2, 7)
+	elseif(Srvl_PlayerInfo.Techlvl[slot]==4)then
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_grey_knights_purgation", marker, 1, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_grey_knights_terminator", marker, 2, 6)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_bodyguard", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_servitor_maintenance", marker, 2, 7)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_chimera_transport", marker, 3, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, "inquisition_squad_death_cultist", marker, 2, 1)
+	end
+end
+
+
+-- Defines the 10 Enemy's Attack Waves. Slot denotes the player, while wave, the wave level
+function Rule_WavesAttacks_Player(i,wave)
+	if g_SPMP_trigger == 1 then 
+	--print "bonus spawn"
+		if Marker_Exists("mk_enemy_player_"..(2),"basic_marker") then
+		marker = "mk_enemy_player_"..(2)
+		else
+		marker = "mk_enemy_player_"..(1)
+		end
+	else
+	--print "normal spawn"
+	marker = "mk_enemy_player_"..(1)
+	end
+	local sgroupName = "sg_level"..wave.."_P"..i
+	if wave == 1 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_servitor_maintenance", marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 1,6 )
+	elseif wave == 2 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_bodyguard", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_rhino", marker, 1,1 )
+		end
+	elseif wave == 3 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_bodyguard", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_servitor_maintenance", marker, 1,7 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_servitor_maintenance", marker, 2,5 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 1,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		end
+	elseif wave == 4 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_bodyguard", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_rhino_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_servitor_maintenance", marker, 2,7 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 1,5 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_death_cultist", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker, 3,5 )
+		end
+	elseif wave == 5 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "inquisition_targeters")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_bodyguard", marker, 2, 5)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_rhino_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_servitor_maintenance", marker, 2,7 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 2,5 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,1,1 )
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker,4,1 )
+		end
+	elseif wave == 6 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_rhino_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_exorcist_sister", marker, 3,6 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_predator", marker,1,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_dreadnought_support","inquisition_heavy_plasma_gun_dreadnought",1)
+		if g_surv_high_resources then 
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker, 2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker, 3,5 )
+		end
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 7 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_rhino_gk", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_exorcist_sister", marker, 3,6 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,2,1 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker,4,1 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,2,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_dreadnought_support","inquisition_heavy_plasma_gun_dreadnought",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_stormhawk_interceptor", marker, 2, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_stormraven_fury", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 8 then
+		if g_difficulty ~= nil then
+			if g_difficulty == "hard" or g_difficulty == "harder" or g_difficulty == "insane" then
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "inquisition_psybolt_ammunition")
+				pcall(Player_GrantResearch, g_enemy_PlayerID, "inquisition_blessed_aegis_seals_research")
+			end
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_purgation", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_terminator", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_predator", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker,4,1 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_lemanruss_huntsman", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_vindicator", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,2,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_dreadnought_support","inquisition_heavy_plasma_gun_dreadnought",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_land_raider_crusader", marker,1,1 )
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 9 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )	
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_shock_troops","inquisition_melta_gun_shock_troops",4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_chimera_transport", marker, 2,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker,4,1 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_terminator", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knight_hero", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_paladin", marker,2,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_exorcist_sister", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,3,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_land_raider", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_death_cultist", marker,3,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_whirlwind_hyperios", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,2,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_dreadnought_support","inquisition_heavy_plasma_gun_dreadnought",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_predator", marker,2,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_predator","inquisition_plasma_cannon_predator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadknight", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_baneblade", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+	elseif wave == 10 then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_shock_troops", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_inquisitor_lord_cs", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought", marker,4,1 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_purgation", marker, 2,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_terminator", marker, 3,6 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_exorcist_sister", marker, 3,6 )		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_assault", marker,3,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_land_raider_redeemer", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_land_raider_crusader", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_paladin", marker,2,8 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knight_hero", marker, 1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadnought_support", marker,2,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_dreadnought_support","inquisition_heavy_plasma_gun_dreadnought",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_predator", marker,3,1 )
+		SGroup_UpgradeSquadsWithWeapon(sgroupName,"inquisition_squad_predator","inquisition_plasma_cannon_predator",1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_whirlwind_hyperios", marker,1,1 )
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_stormhawk_interceptor", marker, 4, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_stormraven_fury", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_dreadknight", marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_baneblade", marker, 1, 1)		
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_psi_titan", marker, 1, 1)
+		SGroup_AddLeaders(sgroupName)
+		if G_HeroicDefenceSwitchEnabled ~= nil then
+			-- Increase health of "Bosses", based on difficulty
+			local mdfr = 1    -- for normal Difficulty
+			if     g_difficulty=="easy"   	then mdfr = 1
+			elseif g_difficulty=="standard"	then mdfr = 2
+			elseif g_difficulty=="hard"		then mdfr = 2.5
+			elseif g_difficulty=="harder"	then mdfr = 3.25
+			elseif g_difficulty=="insane"	then mdfr = 4
+			end
+			-- Include the bosses in the current wave, and increase their health
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_grey_knights_paladin", "mk_uberspawn_1",2,8 )
+			Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, sgroupName, "inquisition_squad_master_kaldor_draigo", "mk_uberspawn_1", 1, 1)
+			Modifier_ApplyToPlayer(Modifier_Create(MAT_EntityType, "health_maximum_modifier", MUT_Multiplication, false, mdfr, "inquisition_squad_master_kaldor_draigo"), g_enemy_PlayerID)
+		end
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Defence wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodSurvival()
+	Rule_AddIntervalDelay(Rule_ID_DropPods_EnemyBase_Attacks,Get_NextRule_InitiationTMR_Survival(),60)
+end
+
+
+-- Drop pod with the colours of IDH, NOT Space Marines!
+function IDH_CreateSquadsAndDropPodIn( playerID, sgName, bpName, pos, numsquads, loadout )
+	local groupID = _ScarUtil_Private.CreateSquads(playerID,sgName,bpName,pos,numsquads,loadout,false)
+	Squad_DeepStrikeToPos( sgName, "inq_single_player_drop_pod_building", pos )
+	return groupID
+end
+
+
+function Rule_ID_DropPods_EnemyBase_Attacks()
+	local dropped = false
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			local pos = EGroup_GetPosition(Player_GetEntities(Srvl_PlayerInfo.PlayerID[pIDX]))
+			if pos.x == 0 and pos.y == 0 and pos.z == 0 then
+				pos = SGroup_GetPosition(Player_GetSquads(Srvl_PlayerInfo.PlayerID[pIDX]))
+			end
+			if pos.x ~= 0 or pos.y ~= 0 or pos.z ~= 0 then
+				IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_GK_DP_P"..pIDX, "inquisition_squad_grey_knights", pos, 2, 6)
+				if not g_Survival_Enemy_Waves_Have_Failed then
+					Rule_LockSGroupSurvivalPlayer("sg_GK_DP_P"..pIDX)
+				end
+				Cmd_AttackMovePos("sg_GK_DP_P"..pIDX,Srvl_PlayerInfo.HQpos[pIDX])
+				SGroup_Clear("sg_GK_DP_P"..pIDX)
+				Ping_Position(pos,false)
+				dropped = true
+			end
+		end
+	end
+	if dropped then
+		Rule_AddInterval(Rule_Display_Mission_Message_Inq,0.25)
+	end
+end
+
+
+function Rule_Display_Mission_Message_Inq()
+	if not Event_IsAnyRunning() then
+		Util_MissionTitle("No one expects the Inquisition!")
+		Rule_Remove(Rule_Display_Mission_Message_Inq)
+	end
+end
+
+
+
+--------------------------------------------------------------------------
+--            SPECIAL RULES that apply for this race ONLY           ------
+-- Include your code here, that is race-specific and it is outside  ------
+-- and beyond the scope of the standard code !!!!!				 	------
+--------------------------------------------------------------------------
+
+function Check_GreyKnightsOrInquisition_Branch()
+	if Player_GetResearchState(g_enemy_PlayerID,"inquisition_branch_gk.rgd") == RS_Complete then
+	-- Now check if the AI has chosen the Grey Knight Branch, in which case,
+	-- we use the ADDITIONAL Drop-Pods, instead of the (unavailable) Astra Telepathica
+		print("The Inquisition Player has chosen the GK branch!")
+		print("Expect DropPods supporting the attacking waves!")
+		-- Create the array for waves' attack checking (must be done only once)
+		Has_Inq_DPed_Wave_Player = {}
+		for wave = 1, 10 do
+			Has_Inq_DPed_Wave_Player[wave] = {}
+			for pIDX=0, g_number_of_players-2 do
+				Has_Inq_DPed_Wave_Player[wave][pIDX] = false
+			end
+		end
+		Rule_AddInterval(Rule_ID_Dropin_On_Attack, 22.25)
+	elseif Player_GetResearchState(g_enemy_PlayerID,"inquisition_branch_inq.rgd") == RS_Complete then
+	-- Make the Astra Telepathica able to target at long distances.
+	-- This is the special ability of the Inquisition Branch.
+		print("The Inquisition Player has chosen the IDH branch!")
+		print("Expect Orbital and Melta strikes, regularly!")
+		local recharge = 1
+		if World_GetPlayerCount() == 3 then
+			recharge = 3/4
+		elseif World_GetPlayerCount() > 3 and (g_difficulty == "harder" or g_difficulty == "insane") then
+			recharge = 1/2
+		end
+		local range = 1.25
+		if g_difficulty == "harder" or g_difficulty == "insane" then
+			range = 1.5
+		end
+		Modifier_ApplyToPlayer( Modifier_Create(MAT_StructureType, "ability_range_modifier", MUT_Multiplication, false, range, "inquisition_astra_telepathica"), g_enemy_PlayerID)
+		Modifier_ApplyToPlayer( Modifier_Create(MAT_StructureType, "ability_recharge_modifier", MUT_Multiplication, false, recharge, "inquisition_astra_telepathica"), g_enemy_PlayerID)
+		IDH_Lord_Blueprinttable = {}
+		IDH_Lord_Blueprinttable[0] = Util_MakeBlueprintTable("inquisition_squad_inquisitor_lord")
+		Rule_AddInterval(Rule_Spawn_Lord_ToEnableOrbitalAbilities,61.5)
+		-- Increase the range, and target by SCaR code - rejected, we now use the AI targeting
+		--[[Modifier_ApplyToPlayer( Modifier_Create(MAT_StructureType, "ability_range_modifier", MUT_Multiplication, false,10, "inquisition_astra_telepathica"), g_enemy_PlayerID)
+		Rule_AddIntervalDelay(Rule_ID_Melta_Orbital_Attack, Get_NextRule_InitiationTMR_Survival()/(World_GetPlayerCount()-1), 200)]]
+	else
+		print("Unable to see which branch the Inquisition army has chosen. CHECK!!")
+	end
+end
+
+
+-- Scar_AddInit won't work. This, DOES!!! 
+if g_Global_Rule_Initiation_Switch then
+	g_Global_Rule_Initiation_Switch = false
+	SGroup_Clear(SGroup_CreateIfNotFound("sg_idh_wh_female_inquisitor"))
+	Rule_AddOneShot(Check_GreyKnightsOrInquisition_Branch, 8)
+end
+
+
+function Rule_ID_Dropin_On_Attack()
+	local start = 4
+	if g_surv_high_resources then start = 2 end
+	for pIDX=0, g_number_of_players-2 do
+		if Player_IsAlive(Srvl_PlayerInfo.PlayerID[pIDX]) then
+			for wave = start, 10 do
+				if not Has_Inq_DPed_Wave_Player[wave][pIDX] then
+					local sgroupName = "sg_level"..wave.."_P"..pIDX
+					if SGroup_Exists(sgroupName) and SGroup_CountSpawned(sgroupName) > 0 and SGroup_IsUnderAttack(sgroupName,false) then
+						local pos = SGroup_GetPosition(sgroupName)
+						if Srvl_PlayerInfo.Techlvl[pIDX] == 1 then
+							IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID,"sg_IG_ambush","inquisition_squad_grey_knights_purgation",pos,1,5)
+						elseif Srvl_PlayerInfo.Techlvl[pIDX] == 2 then
+							IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID,"sg_IG_ambush","inquisition_squad_grey_knights_interceptors",pos,2,3)
+						elseif Srvl_PlayerInfo.Techlvl[pIDX] == 3 then
+							IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID,"sg_IG_ambush","inquisition_squad_grey_knights_terminator",pos,1,6)
+						elseif Srvl_PlayerInfo.Techlvl[pIDX] == 4 then
+							IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID,"sg_IG_ambush","inquisition_squad_dreadnought_assault",pos,1,1)
+						end						
+						Has_Inq_DPed_Wave_Player[wave][pIDX] = true
+						if not g_Survival_Enemy_Waves_Have_Failed then
+							Rule_LockSGroupSurvivalPlayer("sg_IG_ambush")
+						end
+						Cmd_AttackMovePos("sg_IG_ambush",Srvl_PlayerInfo.HQpos[pIDX])
+						SGroup_Clear("sg_IG_ambush")
+						break
+					end
+				end
+			end
+		end
+	end
+end
+
+
+function Rule_Spawn_Lord_ToEnableOrbitalAbilities()
+	local pos = Srvl_PlayerInfo.HQpos[World_GetPlayerCount()-1]
+	-- Addition: Include an Ordo Hereticus Inquisitor, just for the show!
+	if SGroup_CountSpawned("sg_idh_wh_female_inquisitor") == 0 then
+		local pos2 = Community_Extended_SpawnablePositionSearch(pos, nil, g_enemy_PlayerID, 10)
+		if World_GetRand(1,3) == 3 then
+			IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_idh_wh_female_inquisitor", "inquisition_squad_astor_sabbathiel", pos2, 1, 1)
+		else
+			IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "sg_idh_wh_female_inquisitor", "inquisition_squad_inquisitor_female", pos2, 1, 1)
+		end
+	end
+	if not SGroup_ContainsBlueprints(Player_GetSquads(g_enemy_PlayerID), IDH_Lord_Blueprinttable[0], false) then
+		IDH_CreateSquadsAndDropPodIn(g_enemy_PlayerID, "idh_lord_sg_temp", "inquisition_squad_inquisitor_lord", pos, 1, 1)
+	end
+end
+
+
+--[[ Remove this rule if waves fail!
+function Rule_ID_Melta_Orbital_Attack()
+	SGroup_AddGroup(SGroup_CreateIfNotFound("sg_P1_all"), Player_GetSquads(g_Player1))
+	local countsquads = SGroup_CountSpawned(SGroup_FromName("sg_P1_all"))
+	local inqmelta = World_GetRand(1,countsquads)
+		if inqmelta > 0 then	
+			SGroup_Clear(SGroup_CreateIfNotFound("sg_Player_target"))
+			SGroup_Add(SGroup_FromName("sg_Player_target"), SGroup_GetSpawnedSquadAt("sg_P1_all",inqmelta))
+			
+			Player_AddResource(g_enemy_PlayerID,RT_Requisition,300)
+			Player_AddResource(g_enemy_PlayerID,RT_Power,200)
+			Cmd_EntityCastAbilityPos(Player_GetEntities(g_enemy_PlayerID), "inquisition_exterminatus", SGroup_GetPosition("sg_Player_target"))
+			Cmd_EntityCastAbilityPos(Player_GetEntities(g_enemy_PlayerID), "inquisition_mega_melta", SGroup_GetPosition("sg_Player_target"))
+		end
+	end
+end]]
+

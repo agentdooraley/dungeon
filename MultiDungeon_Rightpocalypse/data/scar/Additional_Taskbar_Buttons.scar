@@ -1,0 +1,44 @@
+-------------------------------------
+--  Additional Taskbar Buttons rules
+--  1] Rampage for Ultramarines
+-------------------------------------
+
+
+UM_Rampage_Research_Name = "ultra_marine_dozer_blade_research.rgd"
+
+
+function TaskBar_More_Buttons_OnInit()
+	-- Global var that checks if the race needs Taskbar Button modifications
+	g_TBB_Previous_Player_IDX = Tut_GetLocalPlayerIndex()
+	g_TBB_PlayerID = World_GetPlayerAt(g_TBB_Previous_Player_IDX)
+	-- Boolean global switch
+	g_NeedsToCheckForUMTaskbarButtons = (Player_GetRaceName(g_TBB_PlayerID) == "ultra_marine_race")
+	for idx = 0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(idx)
+		-- Only add the rules if needed
+		if Player_GetRaceName(playerID) == "ultra_marine_race" then
+			Rule_AddDelay(TaskBar_More_Buttons,0.75)
+			return
+		end
+	end
+end
+
+
+function TaskBar_More_Buttons()
+	-- In case of change players, re-initiate the check
+	if Tut_GetLocalPlayerIndex() ~= g_TBB_Previous_Player_IDX then
+		Button_SetVisible( g_toggleRampageButtonUltramarines, false )
+		g_TBB_Previous_Player_IDX = Tut_GetLocalPlayerIndex()
+		g_TBB_PlayerID = World_GetPlayerAt(g_TBB_Previous_Player_IDX)
+		g_NeedsToCheckForUMTaskbarButtons = (Player_GetRaceName(g_TBB_PlayerID) == "ultra_marine_race")
+	end
+	if g_NeedsToCheckForUMTaskbarButtons then
+		if Player_GetResearchState(g_TBB_PlayerID,UM_Rampage_Research_Name) == RS_Complete then
+			Button_SetVisible( g_toggleRampageButtonUltramarines, true )
+			g_NeedsToCheckForUMTaskbarButtons = false
+		end
+	end
+end
+
+
+Scar_AddInit(TaskBar_More_Buttons_OnInit)

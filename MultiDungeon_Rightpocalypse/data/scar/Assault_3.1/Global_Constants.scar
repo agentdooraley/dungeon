@@ -1,0 +1,191 @@
+
+-- list building that cannot be repaired when damaged after construction is over 
+NoRepairBuildingList={
+	chaos_mine_field=true,
+	ork_mine_field=true,
+	eldar_mine_field=true,
+	space_marine_mine_field=true,
+	guard_mines=true,
+}
+
+-- list building that can receive listening points
+Can_Have_ListeningPoint={
+	strategic_point_flag=true,
+	relic_struct=true
+}
+
+-- sbps\races\ file contains squad_can_attach_ext
+Can_Attach={
+	tau_ethereal_squad_stronghold_sp=true,
+	tau_kroot_shaper_squad=true,
+	space_marine_librarian_evil_sp=true,
+	space_marine_squad_chaplain=true,
+	space_marine_squad_force_commander=true,
+	--space_marine_squad_force_commander_advance_sp_wg=true,
+	space_marine_squad_librarian=true,
+	space_marine_squad_skull_probe=true,
+	ork_squad_bad_dok=true,
+	ork_squad_mek_boy=true,
+	ork_squad_warboss=true,
+	--ork_squad_warboss_advance_sp_wg=true,
+	guard_squad_chimera_sp_test=true,
+	guard_squad_commissar=true,
+	guard_squad_priest=true,
+	guard_squad_psyker=true,
+	eldar_squad_farseer=true,
+	chaos_squad_lord=true,
+	chaos_squad_sorcerer=true,
+}
+
+-- sbps\races\ file contains squad_attach_receive_ext
+Can_Attach_Receive={
+	tau_kroot_carnivore_squad=true,
+	tau_kroot_hound_squad=true,
+	space_marine_squad_grey_knights=true,
+	space_marine_squad_scout=true,
+	space_marine_squad_tactical=true,
+	space_marine_squad_terminator=true,
+	space_marine_squad_veteran_sp=true,
+	ork_flash_gitz_squad=true,
+	ork_squad_nob=true,
+	ork_squad_shoota_boy=true,
+	ork_squad_slugga=true,
+	ork_squad_tankbusta=true,
+	guard_squad_guardsmen=true,
+	guard_squad_kasrkin=true,
+	guard_squad_ogryns=true,
+	eldar_guardian_squad=true,
+	eldar_squad_banshees=true,
+	eldar_squad_dark_reapers=true,
+	eldar_squad_rangers=true,
+	eldar_squad_seer_council=true,
+	chaos_marine_squad=true,
+	chaos_squad_cultist=true,
+	chaos_squad_khorne_berserker=true,
+	chaos_squad_possessed_marine=true,
+}
+
+-- sbps\races\ file contains squad_capture_strategic_point_ext
+Can_Capture_Point={
+	tau_fire_warrior_squad=true,
+	tau_honor_guard_fire_warrior_squad_advance_sp=true,
+	tau_kroot_carnivore_squad=true,
+	tau_pathfinder_squad=true,
+	tau_stealth_team_squad=true,
+	space_marine_squad_assault=true,
+	space_marine_squad_assault_veteran_sp=true,
+	space_marine_squad_scout=true,
+	space_marine_squad_tactical=true,
+	space_marine_squad_terminator=true,
+	space_marine_squad_veteran_sp=true,
+	ork_flash_gitz_squad=true,
+	ork_squad_nob=true,
+	ork_squad_shoota_boy=true,
+	ork_squad_slugga=true,
+	ork_squad_stormboy=true,
+	ork_squad_tankbusta=true,
+	npc_necron_warrior=true,
+	necron_builder_scarab_squad=true,
+	necron_wraith_squad=true,
+	guard_squad_guardsmen=true,
+	guard_squad_kasrkin=true,
+	guard_squad_ogryns=true,
+	eldar_guardian_squad=true,
+	eldar_squad_banshee_exarch_council=true,
+	eldar_squad_dark_reapers_base=true,
+	eldar_squad_fire_dragon=true,
+	eldar_squad_rangers=true,
+	eldar_squad_seer_council=true,
+	eldar_squad_warp_spider=true,
+	chaos_marine_squad=true,
+	chaos_squad_aspiring_champion_advance_sp=true,
+	chaos_squad_cultist=true,
+	chaos_squad_khorne_berserker=true,
+	chaos_squad_obliterator=true,
+	chaos_squad_possessed_marine=true,
+	chaos_squad_raptor=true,
+}
+
+-- units that cannot make attack move
+Cant_Attack={
+	space_marine_squad_rhino=true,
+}
+
+-- Max nbr of units - Used to override 
+Squad_GetMaxFromName2_Def={
+	guard_squad_guardsmen=12,
+}
+
+-- list squads that can entrench
+CanEntrench_Blueprint={ 
+	guard_heavy_weapons_team_squad=true,
+}
+-- list squads that can uproot
+CanUpRoot_Blueprint={ 
+	guard_heavy_weapon_team_entrenched_squad_sp=true, 
+}
+
+
+CST_BPType_Infantry=0
+CST_BPType_Vehicule=1
+CST_BPType_Other=2
+
+CST_BPType={
+	space_marine_squad_servitor = CST_BPType_Infantry,
+	space_marine_squad_scout = CST_BPType_Infantry,
+	space_marine_squad_tactical = CST_BPType_Infantry,
+	space_marine_squad_assault = CST_BPType_Infantry,
+	space_marine_squad_grey_knights = CST_BPType_Infantry,
+	space_marine_squad_skull_probe = CST_BPType_Infantry,
+	space_marine_squad_apothecary = CST_BPType_Other,
+	space_marine_squad_librarian = CST_BPType_Other,
+	space_marine_squad_chaplain = CST_BPType_Other,
+	space_marine_squad_force_commander = CST_BPType_Other,
+	--space_marine_squad_force_commander_advance_sp_wg = CST_BPType_Other,
+	space_marine_squad_terminator = CST_BPType_Infantry,
+	space_marine_squad_terminator_assault = CST_BPType_Infantry,
+	space_marine_squad_rhino = CST_BPType_Vehicule,
+	space_marine_squad_land_speeder = CST_BPType_Vehicule,
+	space_marine_squad_dreadnought = CST_BPType_Vehicule,
+	space_marine_squad_dreadnought_hellfire = CST_BPType_Vehicule,
+	space_marine_squad_whirlwind = CST_BPType_Vehicule,
+	space_marine_squad_predator = CST_BPType_Vehicule,
+	space_marine_squad_land_raider = CST_BPType_Vehicule,
+
+	guard_squad_enginseer = CST_BPType_Infantry,
+	guard_squad_guardsmen = CST_BPType_Infantry,
+	guard_squad_command_squad = CST_BPType_Other,
+	--guard_squad_command_squad_advance_sp_wg = CST_BPType_Other,
+	guard_heavy_weapons_team_squad = CST_BPType_Infantry,
+	guard_heavy_weapon_team_entrenched_squad_sp = CST_BPType_Infantry,
+	guard_squad_kasrkin = CST_BPType_Infantry,
+	guard_squad_assassin = CST_BPType_Other,
+	guard_squad_ogryns = CST_BPType_Other,
+	guard_squad_psyker = CST_BPType_Other,
+	guard_squad_priest = CST_BPType_Other,
+	guard_squad_commissar = CST_BPType_Other,
+	guard_squad_sentinel = CST_BPType_Vehicule,
+	guard_squad_hellhound = CST_BPType_Vehicule,
+	guard_squad_basilisk = CST_BPType_Vehicule,
+	guard_squad_chimera = CST_BPType_Vehicule,
+	guard_squad_lemanruss = CST_BPType_Vehicule,
+	guard_squad_baneblade = CST_BPType_Vehicule,
+
+	ork_squad_grot = CST_BPType_Infantry,
+	ork_squad_bad_dok = CST_BPType_Other,
+	ork_squad_slugga = CST_BPType_Infantry,
+	ork_squad_shoota_boy = CST_BPType_Infantry,
+	ork_squad_stormboy = CST_BPType_Infantry,
+	ork_squad_tankbusta = CST_BPType_Infantry,
+	ork_squad_nob = CST_BPType_Infantry,
+	ork_squad_armored_nob = CST_BPType_Infantry,
+	ork_flash_gitz_squad = CST_BPType_Infantry,
+	ork_squad_mek_boy = CST_BPType_Other,
+	ork_squad_warboss = CST_BPType_Other,
+	--ork_squad_warboss_advance_sp_wg = CST_BPType_Other,
+	ork_squad_trukk = CST_BPType_Vehicule,
+	ork_squad_wartrak = CST_BPType_Vehicule,
+	ork_squad_killa_kan = CST_BPType_Vehicule,
+	ork_squad_looted_tank = CST_BPType_Vehicule,
+	ork_squad_squiggoth = CST_BPType_Vehicule,
+}

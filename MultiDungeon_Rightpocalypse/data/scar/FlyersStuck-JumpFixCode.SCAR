@@ -1,0 +1,18 @@
+-- Fixes the stuck issue of flyers in DC maps.
+
+
+-- Call this function to grant all flyers a jump ability (has the "0flyer_fix" research, as requirement)
+function FlyerJumpFixForDCMaps_OnInit()
+	-- First, see if we play a skirmish SS map, in which case do NOT start the rule
+	-- I defined the Is_SoulStorm_Game_Map var, in the scenarios folder, once for each map
+	if Is_SoulStorm_Game_Map ~= true then
+		print("DC Map, initiating Flyer Jump Fix Code, to counter stuck cases over rough terrain!")
+		for i = 0, World_GetPlayerCount()-1 do
+			Player_GrantResearch(World_GetPlayerAt(i),"0flyer_fix")
+		end
+	end
+
+end
+
+
+Scar_AddInit(FlyerJumpFixForDCMaps_OnInit)

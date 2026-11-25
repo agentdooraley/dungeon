@@ -1,0 +1,16 @@
+----------------------------------
+
+import("ScarUtil.scar")
+
+G_SurvivalArtilleryEnabled = true
+print "Artillery is here!"
+
+function Rule_OpeningSettings_Artillery()
+	if G_Is_Survival_Map == nil then
+		print("NON-Survival Map.  Survival: Artillery Enabled (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+end
+
+
+Scar_AddInit(Rule_OpeningSettings_Artillery)

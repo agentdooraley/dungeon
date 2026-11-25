@@ -1,0 +1,26 @@
+----------------------------------------
+-- File: 'defilertactic.ai'
+
+class 'DefilerTactic' (ChaosMarineVehicleTactic)
+
+function DefilerTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Defiler Tactic")
+	
+end
+
+function DefilerTactic:Update()
+	
+	if (self:IsComplete()) then
+		return
+	end
+    
+	-- State machine
+	if (not VehicleTactic.Update( self )) then
+		return
+	end
+
+	if (self.squad_ai:GetMeleeStance() == SquadAI.MSTANCE_Assault) then
+		self.squad_ai:DoSetMeleeStance(SquadAI.MSTANCE_Ranged)
+	end
+end

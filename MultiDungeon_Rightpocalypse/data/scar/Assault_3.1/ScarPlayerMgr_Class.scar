@@ -1,0 +1,235 @@
+
+if ScarPlayerMgr_Class==nil then
+	ScarPlayerMgr_Class={
+		sg_01=SgroupMgr:New(" ScarPlayerMgr_Class"),
+		sg_02=SgroupMgr:New(" ScarPlayerMgr_Class"),
+	}
+end
+ScarPlayerMgr_Class.DebugON=0
+
+local ScarPlayerMgr_Metatable={
+	__index=ScarPlayerMgr_Class
+}
+
+function ScarPlayerMgr_Class:New(PlayerID)
+	
+	local NewScarPlayerMgr={
+		PlayerID=PlayerID,
+		ZoneMgrList={},
+		ReinforcementMgrList={},
+		ZoneStartList={},
+		CurrentStep=0,
+	}
+	
+	setmetatable(NewScarPlayerMgr, ScarPlayerMgr_Metatable)
+	
+	if self.DebugON>0 then print("ScarPlayerMgr_Class:New(), Player=" .. NewScarPlayerMgr.PlayerID.id .. " ScarPlayerMgr=" .. tostring(NewScarPlayerMgr)) end
+
+	return NewScarPlayerMgr
+	
+end
+
+function ScarPlayerMgr_Class.Reload(PlayerMgr)
+	
+	setmetatable(PlayerMgr, ScarPlayerMgr_Metatable)
+
+	for Reinf_Index,Reinf in pairs(PlayerMgr.ReinforcementMgrList) do
+		ReinforceMgr_Class.Reload(Reinf)
+	end
+	
+	for ZoneIndex,Zone in pairs(PlayerMgr.ZoneMgrList) do
+		ZoneMgr_Class.Reload(Zone)
+	end
+	
+end
+
+function ScarPlayerMgr_Class:AddZoneMgr(ZoneMgr, StartBuild, StartCapture, ZoneKeyName)
+
+	if ZoneKeyName==nil then
+		local i=0
+		repeat 
+			i=i+1
+			ZoneKeyName=string.format("ZoneMgr_%02d",i)
+		until self.ZoneMgrList[ZoneKeyName]==nil
+	end
+	
+	assert(self.ZoneMgrList[ZoneKeyName]==nil)
+	
+	if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:AddZoneMgr(), Player=" .. self.PlayerID.id .. " ZoneMgr=" .. tostring(ZoneKeyName)) end
+	self.ZoneMgrList[ZoneKeyName]=ZoneMgr
+	
+	local ReinforcementMgr=PointerTable.Get(ZoneMgr.ReinforcementMgrPointer)
+	if self.ReinforcementMgrList[ReinforcementMgr.KeyName]==nil then
+		if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:AddZoneMgr(), Add ReinforcementMgr" .. tostring(ReinforcementMgr.KeyName)) end
+		self.ReinforcementMgrList[ReinforcementMgr.KeyName]=ReinforcementMgr
+	end
+	
+	if StartBuild or StartCapture then
+		self.ZoneStartList[ZoneKeyName]={StartBuild=StartBuild, StartCapture=StartCapture,}
+	end
+	
+end
+
+function ScarPlayerMgr_Class:DoNextStep()
+	
+	if self.DebugON>1 then print(tostring(self) .. " ScarPlayerMgr_Class:DoNextStep(), Player=" .. self.PlayerID.id) end
+
+	if self.CurrentStep==0 then
+		if self.DebugON>2 then print("ScarPlayerMgr_Class:DoNextStep():RequireReinforcement") end
+		for ZoneIndex,Zone in pairs(self.ZoneMgrList) do
+			Zone:RequireReinforcement()	
+		end
+		
+	elseif self.CurrentStep==1 then
+		if self.DebugON>2 then print("ScarPlayerMgr_Class:DoNextStep():DoReinforce") end
+		for Reinf_Index,Reinf in pairs(self.ReinforcementMgrList) do
+			Reinf:DoReinforce()
+		end
+		
+	elseif self.CurrentStep==2 then
+		if self.DebugON>2 then print("ScarPlayerMgr_Class:DoNextStep():DoOrders") end
+		for ZoneIndex,Zone in pairs(self.ZoneMgrList) do
+			Zone:DoOrders()	
+		end
+		
+	elseif self.CurrentStep==3 then
+		if self.DebugON>2 then print("ScarPlayerMgr_Class:DoNextStep():RecoverLostLeaders") end
+		self:RecoverLostLeaders()
+		
+	elseif self.CurrentStep==4 then
+		if self.DebugON>2 then print("ScarPlayerMgr_Class:DoNextStep():DoSpecAbility") end
+		self:DoSpecAbility()
+	end
+	
+	if self.CurrentStep==4 then self.CurrentStep=0 else self.CurrentStep=self.CurrentStep+1 end
+	
+end
+
+function ScarPlayerMgr_Class:UpdateLiveStatus()
+	for ZoneIndex,Zone in pairs(self.ZoneMgrList) do
+		Zone:UpdateLiveStatus()
+	end
+end
+
+function ScarPlayerMgr_Class:InitLiveStatus()
+	for ZoneIndex,Zone in pairs(self.ZoneMgrList) do
+		Zone:InitLiveStatus()
+	end
+end
+
+function ScarPlayerMgr_Class:ForceStartCreation()
+
+	if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:ForceStartCreation() : Destroying all squads and buildings, Time=" .. World_GetGameTime())  end
+
+	-- destroy all entities and squads on map
+	EGroup_DestroyAllEntities(EGroup_GetName(Player_GetEntities(self.PlayerID)))
+	SGroup_DestroyAllSquads(SGroup_GetName(Player_GetSquads(self.PlayerID)))
+
+	-- force the code to aknowledge the destruction
+	if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:ForceStartCreation() : Updating live status, Time=" .. World_GetGameTime())  end
+	self:UpdateLiveStatus()
+
+	-- reconstruct squads and buildings
+	if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:ForceStartCreation() : creating active zones, Time=" .. World_GetGameTime())  end	
+	for ZoneKeyName,ZoneStart in pairs(self.ZoneStartList) do
+		self.ZoneMgrList[ZoneKeyName]:ForceStartCreation(ZoneStart.StartCapture,ZoneStart.StartBuild)
+	end
+	
+end
+
+--
+-- Find all non tracked leaders (i.e. members of Can_Attach list)
+-- => reattach to attach capable squad if some available near it
+-- => affect to CaptureWave if squads from capture wave are near 
+--
+function ScarPlayerMgr_Class:RecoverLostLeaders()
+	
+	-- find all non tracked squads
+	Player_GetSquads(self.PlayerID)
+	
+	for LeaderBPIndex,LeaderBP in pairs(Can_Attach) do
+		
+		SGroup_Clear(self.sg_01.ID)
+		Util_GetSquadsByBP("__Player" .. self.PlayerID.id .. "Squads",self.sg_01.Name,LeaderBPIndex)
+		
+		while SGroup_CountSpawned(self.sg_01.ID)>0 do
+			
+			-- get leader unit
+			local LeaderID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,1)
+			
+			if Squad_Class.GetSquadObject(LeaderID)==nil then
+				
+				if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:RecoverLostLeaders() Lost leader found, bp=" .. LeaderBPIndex .. " ID.id=" .. LeaderID.id) end
+				
+				-- search squads around leader
+				SGroup_Clear(self.sg_02.ID)
+				
+				Player_GetAllSquadsNearPos( self.PlayerID, self.sg_02.Name, Squad_GetPosition(LeaderID), 25.0 )
+				
+				SGroup_Remove(self.sg_02.ID,LeaderID)
+				
+				--check if near squads can receive attachee
+				for j=1,SGroup_CountSpawned(self.sg_02.ID) do
+					local SquadID=SGroup_GetSpawnedSquadAt(self.sg_02.ID,j)
+					if Can_Attach_Receive[Squad_GetBlueprintName(SquadID)] then
+						local SquadObject=Squad_Class.GetSquadObject(SquadID)
+						if SquadObject~=nil then
+							if SquadObject.AttachID==nil then
+								SGroup_Remove(self.sg_01.ID,LeaderID)
+								SquadObject:ForceAttach(LeaderID)
+								if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:RecoverLostLeaders() leader reattached, squad=" .. tostring(SquadObject)) end
+								break
+							end
+						end
+					end
+				end
+				
+				--check if near squad are part of a CaptureWave
+				if SGroup_ContainsSquad(self.sg_01.ID,LeaderID) then
+					
+					for j=1,SGroup_CountSpawned(self.sg_02.ID) do
+						local SquadID=SGroup_GetSpawnedSquadAt(self.sg_02.ID,j)
+						local SquadObject=Squad_Class.GetSquadObject(SquadID)
+						
+						if SquadObject~=nil then
+							local FatherMgr=SquadObject:GetFatherMgr()
+							if CaptureWave_Class.CheckMetatable(FatherMgr) then
+								FatherMgr:ForceAddSquad(LeaderID)
+								SGroup_Remove(self.sg_01.ID,LeaderID)
+								if self.DebugON>0 then print(tostring(self) .. " ScarPlayerMgr_Class:RecoverLostLeaders() leader reassigned, wave=" .. tostring(SquadObject.Father)) end
+								break
+							end
+						end
+					end
+					
+				end
+				
+			end
+			
+			--nothing could be done removing from list
+			SGroup_Remove(self.sg_01.ID,LeaderID)
+			
+		end
+	end
+
+end
+
+function ScarPlayerMgr_Class:DoSpecAbility()
+	
+	-- init health density tables
+	local Friend_Sampling=MapSampling_Class:New()
+	local Ennemy_Sampling=MapSampling_Class:New()
+	for i=0, World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetTeam(self.PlayerID)==Player_GetTeam(Player2ID) then
+			Friend_Sampling:AddHealth_PlayerID(Player2ID,self.PlayerID)
+		else
+			Ennemy_Sampling:AddHealth_PlayerID(Player2ID,self.PlayerID)
+		end
+	end
+
+	for ZoneIndex,Zone in pairs(self.ZoneMgrList) do
+		Zone:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	end
+	
+end

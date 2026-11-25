@@ -1,0 +1,97 @@
+----------------------------------------
+-- File: 'riptidetactic.ai'
+-- Edited by Gambit @ 13.09.2020
+
+class 'RiptideTactic' (TauInfantryTactic)
+
+Riptide = {}
+
+function RiptideTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("XV104 Riptide Battlesuit Tactic")
+
+	self.Upgrade_Selection = math.random(0,1)	  -- Choose one of the two main upgrades (addons 0 and 1)
+	self.lastAddonTry = g_iGMT
+	self.DoDance = false
+end
+
+
+function RiptideTactic:AutoBuildAddOn( addonSlot )
+	for e in self.squad_ai:GetEntities() do
+		local buildChannel = build_manager:GetBuildChannelFromID(e:GetID())
+		if buildChannel ~= nil then
+			local addOnID = buildChannel:GetItemIDAt(BuildChannelAI.PQ_AddOn, addonSlot)
+			if (buildChannel:IsBuilding() == 0 and buildChannel:CanAddToQueue(BuildChannelAI.PQ_AddOn, addOnID) == BuildChannelAI.CANBUILD_Ok) then
+				buildChannel:BuildAddOn(addOnID)
+				return
+			end
+		end
+	end
+	return
+end
+
+function RiptideTactic:CheckDance(oSquad)
+	return self.DoDance
+end
+
+function RiptideTactic:InitAbilities()
+
+	-- Init ability ID's
+	if Riptide.shield == nil then
+		Riptide.shield = cpu_manager.stats:GetAbilityID( "tau_riptide_personal_shield" )
+		Riptide.charge_bc = cpu_manager.stats:GetAbilityID( "tau_riptide_overcharge_burst_cannon" )
+		Riptide.charge_ic = cpu_manager.stats:GetAbilityID( "tau_riptide_overcharge_ion_accelerator" )
+	end
+end
+
+
+function RiptideTactic:DoAbilities()
+
+	local was_recently_hurt = self.squad_ai:WasRecentlyHurt()
+	local health = self.squad_ai:GetHealthPercentage()
+	local use_shield = (health < 0.4 and was_recently_hurt)
+
+	if self.squad_ai:IsUsingAbility(Riptide.shield) then
+		-- Stop Shield not injured enough
+		if not use_shield then
+			self.squad_ai:DoSpecialAbility(Riptide.shield)
+			self.DoDance = false
+		end
+	elseif use_shield then
+		-- Enable Shield, to prevent further damage
+		self.squad_ai:DoSpecialAbility(Riptide.shield)
+		self.DoDance = true
+	end
+
+	if self.squad_ai:IsInCombat() then
+		if self.squad_ai:CanDoAbility(Riptide.charge_bc) then
+			if not was_recently_hurt and health > 0.8 then
+				if resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Power) > 150 then
+					self.squad_ai:DoSpecialAbility(Riptide.charge_bc)
+				end
+			end
+		elseif self.squad_ai:CanDoAbility(Riptide.charge_ic) then
+			if not was_recently_hurt and health > 0.8 then
+				if resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Power) > 250 then
+					self.squad_ai:DoSpecialAbility(Riptide.charge_ic)
+				end
+			end
+		end
+	end
+
+	-- Check to addon every 6+ secs
+	if g_iGMT > self.lastAddonTry + 6 then
+		self.lastAddonTry = g_iGMT
+		-- Check available resources and health, before performing any upgrade
+		local iReq = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Requisition )
+		local iPow = resource_manager:GetResourceAmount():Get( ResourceAmount.RT_Power )
+		if iReq > 300 and iPow > 300 and health > 0.35 then
+			self:AutoBuildAddOn(self.Upgrade_Selection)
+			self:AutoBuildAddOn(2); self:AutoBuildAddOn(3)
+		end
+	end
+
+	-- New code to unstuck units with pathing issues, that can jump.
+	-- Call it with [true], only for multi-membered squads.
+	self:SolveStuckCase(false)
+end

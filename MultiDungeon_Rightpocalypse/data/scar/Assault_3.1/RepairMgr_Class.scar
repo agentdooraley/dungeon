@@ -1,0 +1,406 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                             RepairMgr Class                                       ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+-- Global constant
+SQUADSTATEID_Repair=14
+
+if RepairMgr_Class==nil then
+	RepairMgr_Class={
+		sg_01=SgroupMgr:New("RepairMgrCls"),
+		sg_02=SgroupMgr:New("RepairMgrCls"),
+		eg_01=EgroupMgr:New("RepairMgrCls"),
+	}
+end
+RepairMgr_Class.DebugON=0
+
+local RepairMgr_Metatable={
+	__index=RepairMgr_Class
+}
+
+--[[
+
+PlayerID
+
+SquadList: table
+{
+	IddlePos
+	BP
+}
+
+RepairData: table
+{
+	CreatePos: CreatePos_Class internal pointer to CreatePos object
+	IdllePosError
+	Stance
+}
+
+BuildingPointerList: List of global pointers to object containing buildings to repair
+
+RepairFactor: table listing repair coeficients used to select most damaged building
+
+]]
+function RepairMgr_Class:New(PlayerID, SquadList, RepairData, BuildingPointerList, RepairFactor)
+	local NewRepairMgr={
+		PlayerID=PlayerID,
+		SquadList=SquadList,
+		RepairData=RepairData,
+		BuildingPointerList=BuildingPointerList,
+		RepairSquadID={},
+		PreviousData={},
+		RepairSquadPosIndex={},
+		ReinforceQuery={},
+		RepairBuilding={},
+		RepairFactor=RepairFactor,
+	}
+	setmetatable(NewRepairMgr, RepairMgr_Metatable)
+	-- save a global pointer to the object
+	NewRepairMgr.Pointer=PointerTable.Add(NewRepairMgr)
+	
+	if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: Created object " .. tostring(NewRepairMgr) .. " Time=" .. World_GetGameTime()) end
+
+	return NewRepairMgr
+
+end
+
+function RepairMgr_Class.Reload(RepairMgr)
+	
+	setmetatable(RepairMgr,RepairMgr_Metatable)
+	PointerTable.Add(RepairMgr,RepairMgr.Pointer)
+	
+end
+
+function RepairMgr_Class:NewFromSgroup(PlayerID, sg_ID, RepairData, BuildingPointerList, RepairFactor)
+
+	if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: Importing squads from " .. SGroup_GetName(sg_ID) .. " Time=" .. World_GetGameTime()) end
+
+	local SquadList={}
+	for i=1, SGroup_CountSpawned(sg_ID) do
+		local SquadID=SGroup_GetSpawnedSquadAt(sg_ID,i)
+		SquadList[i]={
+			IddlePos=Squad_GetPosition(SquadID),
+			BP=Squad_GetBlueprintName(SquadID)
+		}
+	end
+	
+	local NewRepairMgr=RepairMgr_Class:New(PlayerID, SquadList, RepairData, BuildingPointerList, RepairFactor)
+	
+	return NewRepairMgr
+end
+
+--create all squads at their final position
+function RepairMgr_Class:ForceStartCreation()
+	for PosIndex,Pos in pairs(self.SquadList) do
+		self:CreateSquad(PosIndex,self.SquadList[PosIndex].IddlePos,true)
+	end
+end
+
+-- create squad at position, return true if success
+function RepairMgr_Class:ResurSquad(PosIndex)
+	
+	if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: Resurecting squad Index= " .. PosIndex .. " Time=" .. World_GetGameTime()) end
+
+	local ResurPosition=CreatePos_Class.Get(self.RepairData.CreatePos):ClosestActivePos(self.SquadList[PosIndex].IddlePos)
+	if ResurPosition==nil then 
+		if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: No resurection place found, cancelling. Time=" .. World_GetGameTime()) end
+		return false 
+	end
+ 	
+	return self:CreateSquad(PosIndex,ResurPosition)
+	
+end
+
+function RepairMgr_Class:CreateSquad(PosIndex, ResurPosition, FullCap)
+
+	SGroup_Clear(self.sg_01.ID)
+	
+	if FullCap==true then
+		Util_CreateSquadsAtPositionEx(
+			self.PlayerID, self.sg_01.Name, self.SquadList[PosIndex].BP, ResurPosition, 
+			1, Squad_GetMaxFromName2(self.SquadList[PosIndex].BP)
+		)
+	else
+		Util_CreateSquadsAtPosition(self.PlayerID, self.sg_01.Name, self.SquadList[PosIndex].BP, ResurPosition, 1)
+	end
+	
+	if SGroup_CountSpawned(self.sg_01.ID)>0 then
+		Cmd_SetStance(self.sg_01.Name,self.RepairData.Stance)
+		self.RepairSquadID[PosIndex]=SGroup_GetSpawnedSquadAt(self.sg_01.ID,1)
+		self.RepairSquadPosIndex[self.RepairSquadID[PosIndex].id]=PosIndex
+		return true
+	end
+	
+	print(tostring(self) .. " WARNING : RepairMgr_Class: CreateSquad() Failed, BP=" .. self.SquadList[PosIndex].BP .. ", Time=" .. World_GetGameTime())
+	
+	return false
+
+end
+
+function RepairMgr_Class:DoReinforce(ReinforceType, ReinforceData)
+
+	if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: DoReinforce, Type=" .. ReinforceType .. "Nbr=" .. tostring(ReinforceData) ..", Time=" .. World_GetGameTime()) end
+
+	-- clear ReinforceQuery
+	self.ReinforceQuery[ReinforceData]=nil
+	
+	if ReinforceType=="BuilderSquad" then
+		return self:ResurSquad(ReinforceData)
+		
+	elseif ReinforceType=="BuilderTrooper" then
+		
+		if self.RepairSquadID[ReinforceData]==nil then return false end
+		if not Squad_Exists(self.RepairSquadID[ReinforceData].id) then return false end
+		
+		if Squad_IsReinforcing(self.RepairSquadID[ReinforceData]) then
+			print(tostring(self) .. " RepairMgr_Class: DoReinforce, WARNING: Squad already reinforcing, skipping, Time=" .. World_GetGameTime())
+			return false
+		end
+		
+		if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: DoReinforce, ReinforceTrooper Squad=" .. tostring(self.RepairSquadID[ReinforceData].id) .. " , Time=" .. World_GetGameTime()) end
+		
+		SGroup_Clear(self.sg_01.ID)
+		SGroup_Add(self.sg_01.ID,self.RepairSquadID[ReinforceData])
+		Cmd_ReinforceTrooper(self.sg_01.Name,1)
+		
+		return true
+		
+	else
+		print(tostring(self) .. " RepairMgr_Class: DoReinforce, WARNING: RepairMgr_Class: ReinforceType unknown =" .. tostring(ReinforceType) .. ",Time=" .. World_GetGameTime())
+	end
+	
+	return false
+	
+end
+
+function RepairMgr_Class:UpdateLiveStatus()
+
+	--search for dead squads
+	for Squad_Index,SquadID in pairs(self.RepairSquadID) do
+		if not Squad_Exists(SquadID.id) then
+			self.RepairSquadID[Squad_Index]=nil
+			
+			if self.RepairBuilding[SquadID.id]~=nil then
+				PointerTable.Get(self.RepairBuilding[SquadID.id]):SetUnderRepairStatus(false)
+				self.RepairBuilding[SquadID.id]=nil
+			end
+			self.PreviousData[SquadID.id]=nil
+		end
+	end
+	
+end
+
+-- check if reinforcements are needed. return false if no reinforcement were required
+function RepairMgr_Class:RequireReinforcement(ReinforcementMgr)
+	
+	--search for dead squads
+	for Squad_Index,SquadID in pairs(self.SquadList) do
+		
+		-- if squad is dead
+		if self.RepairSquadID[Squad_Index]==nil then
+			--remove query if different from BuilderSquad
+			if self.ReinforceQuery[Squad_Index]==nil then
+				self.ReinforceQuery[Squad_Index]=ReinforcementMgr:Require(self, "BuilderSquad",Squad_Index)
+				return true
+			elseif ReinforcementMgr:GetQuery(self.ReinforceQuery[Squad_Index]).Type~="BuilderSquad" then
+				ReinforcementMgr:RemoveQuery(self.ReinforceQuery[Squad_Index])
+				self.ReinforceQuery[Squad_Index]=ReinforcementMgr:Require(self, "BuilderSquad",Squad_Index)
+				return true
+			end
+			
+		-- if squad is not dead and no query is pending
+		elseif self.ReinforceQuery[Squad_Index]==nil then
+			
+			if (Squad_GetMax(self.RepairSquadID[Squad_Index])-Squad_Count(self.RepairSquadID[Squad_Index])>0) and not Squad_IsReinforcing(self.RepairSquadID[Squad_Index]) then
+				self.ReinforceQuery[Squad_Index]=ReinforcementMgr:Require(self, "BuilderTrooper",Squad_Index)
+				return true
+			end
+			
+		end
+	end
+	
+	return false
+end
+
+function RepairMgr_Class:CancelReinforcement(ReinforcementMgr)
+	ReinforcementMgr:RemoveAllQueries(self)
+	self.ReinforceQuery={}
+end
+
+function RepairMgr_Class:DoOrders()
+
+	if self.DebugON>1 then print(tostring(self) .. " RepairMgr_Class: DoOrders, Time=" .. World_GetGameTime()) end
+	
+	--list building requiring repair and computes damage
+	local NeedRepairList={}
+	local NeedRepairNbr=0
+	for BuildingIndex,BuildingPointer in pairs(self.BuildingPointerList) do
+		local Building=PointerTable.Get(BuildingPointer)
+		-- player is dead => building object removed from list of buildings to repair
+		if Building==nil then
+			self.BuildingPointerList[BuildingIndex]=nil
+		elseif Building:NeedRepair() and (not Building:UnderRepair())then
+			local Damage
+			if self.RepairFactor[Building.BuildingBP]~=nil then
+				Damage=Building:GetDamage()*self.RepairFactor[Building.BuildingBP]
+			else
+				Damage=Building:GetDamage()
+			end
+			NeedRepairList[Building.EntityID.id]={Building=Building, Damage=Damage}
+			NeedRepairNbr=NeedRepairNbr+1
+		end
+	end
+	
+	-- scan repair units: 
+	-- - check dead units 
+	-- - find units that are iddle and put them in sg_01
+	-- - remove buildings under repair from NeedRepairList
+	SGroup_Clear(self.sg_01.ID)
+	for Squad_Index,SquadID in pairs(self.RepairSquadID) do
+		
+		-- if squad is not dead => check if it is operational list
+		if Squad_Exists(SquadID.id) then
+			
+			-- if no target => add to iddle list
+			if self.RepairBuilding[SquadID.id]==nil then
+				SGroup_Add(self.sg_01.ID,SquadID)
+				
+			-- target available
+			else
+				local ActCom=Squad_GetActiveCommand(SquadID)
+				local RepairBuilding=PointerTable.Get(self.RepairBuilding[SquadID.id])
+				
+				-- target is repaired =>remove target + add to iddle list 
+				if not RepairBuilding:NeedRepair() then
+					if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: Repair Terminated for Squad=" .. SquadID.id .. " and Building=" .. tostring(RepairBuilding) .. " ,Time=" .. World_GetGameTime() ) end
+					RepairBuilding:SetUnderRepairStatus(false)
+					self.RepairBuilding[SquadID.id]=nil
+					SGroup_Add(self.sg_01.ID,SquadID)
+					
+				-- squad is not repairing (forced move order or order lost)
+				elseif (ActCom~=SQUADSTATEID_Repair) and (ActCom ~= SQUADSTATEID_Construction) then
+					
+					if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class:Order - Order Lost - Resending order, Time=" .. World_GetGameTime() ) end
+					self:OrderRepair(SquadID, RepairBuilding)
+					
+					--self.PreviousData[SquadID.id].Health=NewHealth
+					--self.PreviousData[SquadID.id].Distance=NewDistance
+					
+					--NeedRepairList[self.RepairBuilding[SquadID.id].EntityID.id]=nil
+					--NeedRepairNbr=NeedRepairNbr-1
+					
+				-- squad is repairing => check if it is not locked and if ok remove building from needrepair list
+				else
+					-- check if squad is not locked (Squad_GetActiveCommand answers working but squad does not move)
+					local NewDistance=World_DistancePointToPoint(Squad_GetPosition(SquadID),RepairBuilding.Position)
+					local NewHealth=Entity_GetHealth(RepairBuilding.EntityID)
+					if NewDistance==self.PreviousData[SquadID.id].Distance then
+						if NewDistance>=20 then
+							if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class:Order - Squad locked - Forcing move order, Time=" .. World_GetGameTime() ) end
+							SGroup_Clear(self.sg_02.ID)
+							SGroup_Add(self.sg_02.ID,SquadID)
+							Command_SquadPos(self.PlayerID, self.sg_02.ID, SCMD_Move, RepairBuilding.Position )
+						elseif NewHealth<=self.PreviousData[SquadID.id].Health then
+							if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class:Order - Squad locked - resending order, Time=" .. World_GetGameTime() ) end
+							self:OrderRepair(SquadID, RepairBuilding)
+						end
+					end
+					self.PreviousData[SquadID.id].Health=NewHealth
+					self.PreviousData[SquadID.id].Distance=NewDistance
+					
+					--NeedRepairList[self.RepairBuilding[SquadID.id].EntityID.id]=nil
+					--NeedRepairNbr=NeedRepairNbr-1
+				end
+				
+			end
+			
+		end
+		
+	end
+
+	if self.DebugON>1 then print(tostring(self) .. " RepairMgr_Class: NeedRepair/AvailableSquads=" .. NeedRepairNbr .. "/" .. SGroup_Count(self.sg_01.ID)) end
+	
+	-- repair damaged buildings with available repair units 
+	while (SGroup_Count(self.sg_01.ID)>0) and (NeedRepairNbr>0) do
+		
+		--search most damaged building
+		local MaxDamage=0
+		local MaxDamageIndex
+		for NeedRepairIndex, NeedRepair in pairs(NeedRepairList) do
+			if NeedRepair.Damage>MaxDamage then
+				MaxDamage=NeedRepair.Damage
+				MaxDamageIndex=NeedRepairIndex
+			end
+		end
+		local MaxDamageBuilding=NeedRepairList[MaxDamageIndex].Building
+		
+		--search for closest iddle repair unit
+		local RepairPos=Entity_GetPosition(MaxDamageBuilding.EntityID)
+		local MinSquadIndex=1
+		local MinDist=World_DistancePointToPoint(RepairPos,Squad_GetPosition(SGroup_GetSpawnedSquadAt(self.sg_01.ID,1)))
+		for i=2,SGroup_Count(self.sg_01.ID) do
+			if World_DistancePointToPoint(RepairPos,Squad_GetPosition(SGroup_GetSpawnedSquadAt(self.sg_01.ID,i)))<MinDist then
+				MinDist=World_DistancePointToPoint(RepairPos,Squad_GetPosition(SGroup_GetSpawnedSquadAt(self.sg_01.ID,i)))
+				MinSquadIndex=i
+			end
+		end
+		local MinSquadID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,MinSquadIndex)
+		
+		-- order squad to repair building
+		self:OrderRepair(MinSquadID, MaxDamageBuilding)
+		
+		-- remove squad from iddle group
+		SGroup_Remove(self.sg_01.ID,MinSquadID)
+		
+		-- remove building from NeedRepairList
+		NeedRepairList[MaxDamageBuilding.EntityID.id]=nil
+		NeedRepairNbr=NeedRepairNbr-1
+		
+		
+	end
+	
+	-- send remaining repair units to their default position if they are far away
+	for i=1, SGroup_Count(self.sg_01.ID) do
+		local Squad_ID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,i)
+		local ActCom=Squad_GetActiveCommand(Squad_ID)
+		if ActCom==SQUADSTATEID_Idle then
+			local DefaultPos=self.SquadList[self.RepairSquadPosIndex[Squad_ID.id]].IddlePos 
+			if World_DistancePointToPoint(Squad_GetPosition(Squad_ID), DefaultPos)>self.RepairData.IdllePosError then
+				if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class: Sending to base position Squad=" .. Squad_ID.id .." Error=" .. World_DistancePointToPoint(Squad_GetPosition(Squad_ID), DefaultPos) ) end
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_02.ID,Squad_ID)
+				Command_SquadPos(self.PlayerID, self.sg_02.ID, SCMD_Move, DefaultPos )
+			end
+		end
+	end
+	
+end
+
+function RepairMgr_Class:OrderRepair(SquadID, Building)
+	
+	--send the squad to repair
+	SGroup_Clear(self.sg_02.ID)
+	SGroup_Add(self.sg_02.ID,SquadID)
+	EGroup_Clear(self.eg_01.ID)
+	EGroup_Add(self.eg_01.ID,Building.EntityID)
+	if Entity_GetBuildingProgress(Building.EntityID)<1.0 then
+		if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class:OrderRepair Rebuild Squad=" .. SquadID.id .. "To Building=" .. tostring(Building)  .. " ,Time=" .. World_GetGameTime() ) end
+		Command_SquadEntity(self.PlayerID, self.sg_02.ID, SCMD_BuildStructure, self.eg_01.ID)
+	else
+		if self.DebugON>0 then print(tostring(self) .. " RepairMgr_Class:OrderRepair Repair Squad=" .. SquadID.id .. "To Building=" .. tostring(Building)  .. " ,Time=" .. World_GetGameTime() ) end
+		Command_SquadEntity(self.PlayerID, self.sg_02.ID, SCMD_Repair, self.eg_01.ID)
+	end
+	
+	-- assign repair 
+	self.RepairBuilding[SquadID.id]=Building.Pointer
+	-- reinit position table
+	self.PreviousData[SquadID.id]={
+		Distance=World_DistancePointToPoint(Squad_GetPosition(SquadID),Building.Position),
+		Health=Entity_GetHealth(Building.EntityID)
+	}
+	
+	-- set building under repair
+	Building:SetUnderRepairStatus(true)
+	
+end

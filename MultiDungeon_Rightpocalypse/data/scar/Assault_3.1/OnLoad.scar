@@ -1,0 +1,24 @@
+OnLoad={}
+
+function OnLoad.Start()
+
+	-- Scar starting message - shows code version
+	print("===============================================")
+	print("  ")
+	print("              ASSAULT MAP SCAR CODE (DARK40K)")
+	print("                      " .. Assault_map_version)
+	print("  ")
+	print("==============================================")
+
+	print("Assault Map Loading - Please wait")
+	
+	-- init DebugSymbole
+	DebugSymbole.Init()
+	
+	AllScarPlayerMgr.Reload()
+	
+	Rule_Add(AllScarPlayerMgr.DoNextStep)
+	
+end
+
+	

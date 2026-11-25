@@ -1,0 +1,84 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##  Egroup/Sgroup Objects                                                                             ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+--[[ Creation of EgroupMgr, SgroupMgr objects used to track groups in code.
+
+AddNewGroup(String SubName) return table : 
+	create group with SubName included in group Name, 
+	return table containing {Name= Groupname, ID= GroupID} of new group, can be use before game starts
+
+StartCreation() : start group creation after game has started
+
+]]
+-- Initial declaration of Group Manager Class
+-- default values
+GroupMgr_Class={
+}
+local GroupMgr_Metatable={
+	__index=GroupMgr_Class
+}
+
+-- function to initialize a group manager object
+-- basename : string used at the beginning of group name
+function GroupMgr_Class:NewGroupMgr(BaseName)
+	
+	local New_GroupMgr={}
+	
+	New_GroupMgr.List={}
+	New_GroupMgr.Counter=0
+	New_GroupMgr.CreateGroup=CreateGroupFunction
+	New_GroupMgr.BaseName=BaseName
+	
+	setmetatable(New_GroupMgr, GroupMgr_Metatable)
+	
+	return New_GroupMgr
+	
+end
+
+-- function used to reset groups after game is reloaded
+function GroupMgr_Class.Reload(GroupMgr)
+	setmetatable(GroupMgr, GroupMgr_Metatable)
+end
+
+-- function used to create a new group
+-- return a pointer to a table containing {Name= Groupname, ID= GroupID}
+-- if launched before start has been issued then ingame group creation is not done and ID is nil
+function GroupMgr_Class:New(SubName)
+	self.Counter=self.Counter+1
+	local NewGroupName=self.BaseName .. "_" .. SubName .. "_" .. self.Counter
+	local NewGroup={Name=NewGroupName}
+	if self.List~=nil then
+		self.List[NewGroupName]=NewGroup
+	else
+		NewGroup.ID=self.CreateGroup(NewGroupName) 
+	end
+	return NewGroup
+end
+
+-- to be called after game is started (instant creation of group is allowed afterward)
+-- CreateGroupFunction : function used to create a group ingame (EGroup_Create,SGroup_Create)
+-- create all groups that have been declared but not created 
+function GroupMgr_Class:StartCreation(CreateGroupFunction)
+	self.CreateGroup=CreateGroupFunction
+	for GroupName,Group in pairs(self.List) do
+		Group.ID=self.CreateGroup(Group.Name)
+	end
+	self.List=nil
+end
+
+-- create object for Sgroup management
+if EgroupMgr==nil then 
+	EgroupMgr=GroupMgr_Class:NewGroupMgr("eg_Mgr")
+else
+	GroupMgr_Class.Reload(EgroupMgr)
+end
+
+-- create object for Egroup management
+if SgroupMgr==nil then 
+	SgroupMgr=GroupMgr_Class:NewGroupMgr("sg_Mgr")
+else
+	GroupMgr_Class.Reload(SgroupMgr)
+end

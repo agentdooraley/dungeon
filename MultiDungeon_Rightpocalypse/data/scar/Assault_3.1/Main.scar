@@ -1,0 +1,73 @@
+-- SCAR code for assault map
+-- feel fre to use this code, just let me know
+-- (c) Dark40k 2008
+Assault_map_version="v3.1.13 - 25/10/2008"
+--
+-- 
+-- map scar code should contain:
+-- import("Assault_3.1\\Main.scar") => call to the main body (this file)
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("Assault_3.1\\ForceOrkCap.scar")
+import("Assault_3.1\\Global_Constants.scar")
+import("Assault_3.1\\Global_Functions.scar")
+import("Assault_3.1\\Tools_LUA.scar")
+import("Assault_3.1\\Tools_DOW.scar")
+import("Assault_3.1\\DebugSymbole.scar")
+import("Assault_3.1\\GroupMgr_Class.scar")
+import("Assault_3.1\\MapSampling_Class.scar")
+import("Assault_3.1\\HiddingMgr.scar")
+import("Assault_3.1\\SpecAbilityMgr.scar")
+import("Assault_3.1\\races\\SpecAbility_space_marines.scar")
+import("Assault_3.1\\races\\SpecAbility_orks.scar")
+import("Assault_3.1\\races\\SpecAbility_guards.scar")
+import("Assault_3.1\\CreatePos_Class.scar")
+import("Assault_3.1\\ReinforceMgr_Class.scar")
+import("Assault_3.1\\Squad_Class.scar")
+import("Assault_3.1\\HiddenSquad_Class.scar")
+import("Assault_3.1\\CaptureWave_Class.scar")
+import("Assault_3.1\\CaptureMgr_Class.scar")
+import("Assault_3.1\\DefendMgr_Class.scar")
+import("Assault_3.1\\Building_Class.scar")
+import("Assault_3.1\\BuildingList_Class.scar")
+import("Assault_3.1\\BuildingMgr_Class.scar")
+import("Assault_3.1\\RepairMgr_Class.scar")
+import("Assault_3.1\\ZoneStatus_ByEgroup_Class.scar")
+import("Assault_3.1\\ZoneMgr_Class.scar")
+import("Assault_3.1\\ScarPlayerMgr_Class.scar")
+import("Assault_3.1\\AllScarPlayerMgr.scar")
+import("Assault_3.1\\GameLevel.scar")
+import("Assault_3.1\\OnInit.scar")
+import("Assault_3.1\\OnLoad.scar")
+
+PointerTable=NewPointerTable()
+
+--~ DebugSymbole.DebugON=1
+--~ ReinforceMgr_Class.DebugON=1 -- 0,1,2
+
+--~ SpecAbilityMgr.DebugON=1 -- 0,1,2
+
+--~ Squad_Class.DebugON=1 -- 0,1,2
+
+--~ CaptureWave_Class.DebugON=1 -- 0,1,2
+--~ CaptureMgr_Class.DebugON=1
+
+--~ DefendMgr_Class.DebugON=1
+
+--~ Building_Class.DebugON=1
+--~ BuildingList_Class.DebugON=1
+--~ BuildingMgr_Class.DebugON=1
+
+--~ RepairMgr_Class.DebugON=1
+
+--~ ZoneMgr_Class.DebugON=1
+--~ ScarPlayerMgr_Class.DebugON=1
+AllScarPlayerMgr.DebugON=1
+
+--~ GameLevel.DebugON=2
+OnInit.DebugON=1 -- 0,1,2
+
+Scar_AddInit(OnInit.Start)
+
+Scar_AddLoad(OnLoad.Start)

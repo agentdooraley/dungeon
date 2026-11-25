@@ -1,0 +1,19 @@
+--------------------------------------
+-- Removes cover/idle builder icons --
+-- Created by Gambit, v1.0 12/7/18  --
+--------------------------------------
+
+-- Add the events you want to remove here.
+g_EventModifierList = { "builder_idle_event", "negative_cover_event_modifier", "cover_event_modifier", "morale_break_event" }
+
+
+function RemoveEvents_OnInit()
+	for i = 0, World_GetPlayerCount()-1 do
+		for j = 1, table.getn(g_EventModifierList) do
+			Modifier_Player_FX_Enable (World_GetPlayerAt(i), g_EventModifierList[j], false)
+		end
+	end
+end
+
+
+Scar_AddInit(RemoveEvents_OnInit)

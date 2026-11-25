@@ -1,0 +1,1166 @@
+-- ########################################################################################################
+-- ##                                                                                                    ##
+-- ##                                               Squad Class                                          ##
+-- ##                                                                                                    ##
+-- ########################################################################################################
+
+-- Class creation
+if Squad_Class==nil then 
+	Squad_Class={
+		ClassType="Squad_Class",
+		sg_01=SgroupMgr:New("Squad_Class"),
+		sg_02=SgroupMgr:New("Squad_Class"),
+		sg_CanSee=SgroupMgr:New("Squad_Class"),
+		eg_01=EgroupMgr:New("Squad_Class"),
+		OrderCst={ Attack=1, Capture=2, Defend=3, StoreInBuilding=4, Move=5},
+	}
+end
+Squad_Class.DebugON=0 -- 0 => no debug, 1=> low debug, 2=> full debug
+Squad_Class.TrackerSquadList=NewPointerTable()
+
+local Squad_Metatable={
+	__index=Squad_Class
+}
+
+-- create squad object and associated squad on map, returns object if successfull, nil otherwise.
+--
+-- Example for CreationParams=
+-- {
+--	bp="chaos_marine_squad", 
+--	CreatePos= pointer to create pos object (not used in this object)
+--	[leader]=true,  
+--	[weapons_list]={chaos_plasma_gun_tactical=2}, 
+--	[entrenchweapons_list]={guard_lasgun_heavy_weapons_team=1},
+--	[attachbp]="chaos_squad_lord"
+--	UnloadDistance=30, UnloadLifeRatio=0.8, UnloadTroops={ list of squads creations params to be unloaded }
+
+--}
+function Squad_Class:NewEmpty(PlayerID, CreationParams, stance, FatherPointer)
+	
+	if self.DebugON>0 then 
+		print(tostring(self) .. " Squad_Class:NewEmpty(), Time=" .. World_GetGameTime())
+	end
+	
+	local NewSquad={
+		CreationParams=CreationParams,
+		PlayerID=PlayerID,
+		stance=stance,
+		FatherPointer=FatherPointer,
+		StoredInBuilding=false,
+		CastAbilityAllowTime={},
+	}
+	setmetatable(NewSquad, Squad_Metatable)
+	
+	-- save a global pointer to the object
+	NewSquad.Pointer=PointerTable.Add(NewSquad)
+
+	if self.DebugON>0 then fullprint("	NewSquad=(" .. tostring(NewSquad) .. ")", NewSquad) end	
+	
+	return NewSquad
+	
+end
+
+function Squad_Class.Reload(Squad)
+	
+	setmetatable(Squad,Squad_Metatable)
+	PointerTable.Add(Squad,Squad.Pointer)
+	
+	if Squad.ID~=nil then
+		Squad_Class.TrackerSquadList.Add(Squad,Squad.ID.id)
+	end
+	
+	if Squad.AttachID~=nil then
+		Squad_Class.TrackerSquadList.Add(Squad,Squad.AttachID.id)
+	end
+	
+	if Squad.CurrentOrder==nil then
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.Move then Squad.DoOrders=Squad_Class.DoOrders_Move
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.Attack then Squad.DoOrders=Squad_Class.DoOrders_Attack
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.Capture then Squad.DoOrders=Squad_Class.DoOrders_Capture
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.Defend then Squad.DoOrders=Squad_Class.DoOrders_Defend
+	elseif Squad.CurrentOrder.Order==Squad_Class.OrderCst.StoreInBuilding then Squad.DoOrders=Squad_Class.DoOrders_StoreInBuilding
+	end
+
+	if Squad.HiddenData~=nil then
+		return HiddenSquad_Class.Reload(Squad)
+	end
+	
+end
+
+function Squad_Class:New(PlayerID, CreationParams, CreationPos, StartFull, stance, FatherPointer)
+	
+	local NewSquad=Squad_Class:NewEmpty(PlayerID, CreationParams, stance, FatherPointer)
+	
+	NewSquad:Create(CreationPos, StartFull)
+	
+	return NewSquad
+end
+
+function Squad_Class:NewExisting(SquadID, stance, FatherPointer)
+
+	local NewSquad=Squad_Class:NewEmpty(
+		Squad_GetPlayerOwner(SquadID),
+		{ bp=Squad_GetBlueprintName(SquadID),}, 
+		stance, 
+		FatherPointer)
+
+	if CanEntrench_Blueprint[Squad_GetBlueprintName(SquadID)]==true then
+		NewSquad.Entrench=false
+	elseif CanUpRoot_Blueprint[Squad_GetBlueprintName(SquadID)]==true then
+		NewSquad.Entrench=true
+	else
+		NewSquad.Entrench=nil
+	end
+
+	NewSquad.ID=SquadID
+	NewSquad:AddTrackedSquad(NewSquad.ID)
+	
+	SGroup_Clear(self.sg_01.ID)
+	SGroup_Add(self.sg_01.ID,SquadID)
+	Cmd_SetStance(self.sg_01.Name,stance)
+	
+	return NewSquad
+
+end
+
+function Squad_Class:Create(CreationPos, StartFull)
+
+	-- check if squad does no already exist
+	if (self.ID~=nil) or (self.AttachID~=nil) then 
+		print("Warning: Squad_Class:Create() Creation aborted, squad is already alive")
+		return false 
+	end
+
+	SGroup_Clear(self.sg_01.ID)
+	
+	if StartFull then
+		Util_CreateSquadsAtPositionEx(self.PlayerID, self.sg_01.Name, self.CreationParams.bp, CreationPos, 1, Squad_GetMaxFromName2(self.CreationParams.bp))
+	else
+		Util_CreateSquadsAtPosition(self.PlayerID, self.sg_01.Name, self.CreationParams.bp, CreationPos, 1)
+	end
+	
+	-- quit and return nil if creation failed
+	if SGroup_CountSpawned(self.sg_01.ID)==0 then return false end
+	
+	-- store SquadID
+	self.ID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,1)
+
+	-- Entrench status
+	if CanEntrench_Blueprint[self.CreationParams.bp]==true then
+		self.Entrench=false
+		self.UprootID=self.ID
+	elseif CanUpRoot_Blueprint[self.CreationParams.bp]==true then
+		self.Entrench=nil
+		print(tostring(self) .. "Squad_Class:Create - ERROR: cannot manage squads entrenched on creation " .. Squad_GetBlueprintName(self.ID) .. "> ,Time=" .. World_GetGameTime())
+	else
+		self.Entrench=nil
+	end
+	
+	-- StoredInBuilding status
+	self.StoredInBuilding=false,
+	
+	-- add tracker to Squad
+	self:AddTrackedSquad(self.ID)
+	
+	-- set stance
+	Cmd_SetStance(self.sg_01.Name,self.stance)
+	
+	-- check if squad starts at full capacity
+	if StartFull then
+		
+		-- add leader if required
+		if self.CreationParams.leader then Squad_AddLeader(self.ID) end
+		
+		-- add weapons
+		if self.CreationParams.weapons_list~=nil then
+			for weapon_name, weapon_nbr in pairs(self.CreationParams.weapons_list) do
+				for i=1, weapon_nbr do
+					if Squad_CanUpgradeWeapon(self.ID,weapon_name) then
+						Squad_UpgradeWeapon(self.ID,weapon_name)
+					else
+						print(tostring(self) .. "Squad_Class:Create - WARNING: cannot UpgradeWeapon <" .. weapon_name .. "> for squad " .. self.ID.id .. "<" .. Squad_GetBlueprintName(self.ID) .. "> ,Time=" .. World_GetGameTime())
+					end
+				end
+			end
+		end
+		
+		--add attachee
+		if self.CreationParams.attachbp~=nil then
+			
+			SGroup_Clear(self.sg_02.ID)
+			Util_CreateSquadsAtPosition(self.PlayerID, self.sg_02.Name, self.CreationParams.attachbp, CreationPos, 1)
+			
+			-- if creation success then add unit to general group and attach unit
+			if SGroup_CountSpawned(self.sg_02.ID)==1 then
+				-- set stance
+				Cmd_SetStance(self.sg_02.Name,self.stance)
+				-- get ID
+				self.AttachID=SGroup_GetSpawnedSquadAt(self.sg_02.ID,1)
+				-- add tracker
+				self:AddTrackedSquad(self.AttachID)
+				-- attach order
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			else
+				print("Warning: Attach Creation failed <" .. self.CreationParams.attachbp .. "> for squad " .. self.ID.id)
+			end
+		end		
+	end
+
+	return true
+	
+end
+
+function Squad_Class:UpdateLiveStatus()
+
+	-- check if squad is not dead
+	if (self.ID~=nil) then
+		if not Squad_Exists(self.ID.id) then
+			Squad_Class.TrackerSquadList.Clear(self.ID.id)
+			self.ID=nil
+		end
+	end
+	
+	-- check if leader is dead
+	if self.AttachID~=nil then
+		if (self.ID~=nil) then
+			if not Squad_IsAttached(self.ID) then
+				if not Squad_Exists(self.AttachID.id) then
+					Squad_Class.TrackerSquadList.Clear(self.AttachID.id)
+					self.AttachID=nil
+				end
+			end
+		else
+			if not Squad_Exists(self.AttachID.id) then
+				Squad_Class.TrackerSquadList.Clear(self.AttachID.id)
+				self.AttachID=nil
+			end
+		end
+	end
+	
+	if (self.Entrench~=nil) and (self.ID~=nil) then
+		SGroup_Clear(self.sg_01.ID)
+		SGroup_Add(self.sg_01.ID,self.ID)
+		if SGroup_CountDeSpawned(self.sg_01.ID)>0 then
+			
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:UpdateLiveStatus() Entrench Squad id=" .. self.ID.id .. "Despawned, Time=" .. World_GetGameTime()) end
+			
+			-- if alter is not known then detect its ID
+			-- add special weapon if provided
+			if self.EntrenchID==nil then
+				
+				SGroup_Clear(self.sg_02.ID)
+				Player_GetAllSquadsNearPos(self.PlayerID, self.sg_02.Name, Squad_GetPositionDeSpawned(self.ID), 0.05)
+				if SGroup_CountSpawned(self.sg_02.ID)>0 then
+					if self.DebugON>1 then print(tostring(self) .. " Squad_Class:UpdateLiveStatus() Alter Entrench Squad Found id=" .. self.ID.id .. "Despawned, Time=" .. World_GetGameTime()) end
+					self.EntrenchID=SGroup_GetSpawnedSquadAt(self.sg_02.ID,1)
+					Squad_Class.TrackerSquadList.Add(self,self.EntrenchID.id)
+				else
+					print("WARNING:" .. tostring(self) .. " Squad_Class:UpdateLiveStatus() : ASSOCIATED SPAWNED SQUAD NOT FOUND, Time=" .. World_GetGameTime())
+					Squad_Class.TrackerSquadList.Clear(self.ID.id)
+					self.ID=nil
+				end
+				
+				--Add EntrenchWeapons
+				if self.CreationParams.entrenchweapons_list~=nil then
+					for weapon_name, weapon_nbr in pairs(self.CreationParams.entrenchweapons_list) do
+						for i=1, weapon_nbr do
+							if Squad_CanUpgradeWeapon(self.EntrenchID,weapon_name) then
+								Squad_UpgradeWeapon(self.EntrenchID,weapon_name)
+							else
+								print(tostring(self) .. "Squad_Class:UpdateLiveStatus - WARNING: cannot UpgradeWeapon <" .. weapon_name .. "> for squad " .. self.EntrenchID.id .. "<" .. Squad_GetBlueprintName(self.EntrenchID) .. "> ,Time=" .. World_GetGameTime())
+							end
+						end
+					end
+				end
+				
+			end
+			
+			-- squad is entrenched (current ID is despawned and canentrench)
+			if CanEntrench_Blueprint[Squad_GetBlueprintName(self.ID)] then
+				self.ID=self.EntrenchID
+				self.Entrench=true
+			-- squad is uproot
+			else
+				self.ID=self.UprootID
+				self.Entrench=false
+			end
+			
+		end
+	end
+
+	if self.CurrentOrder~=nil then
+		if self.CurrentOrder.Order==Squad_Class.OrderCst.StoreInBuilding then
+			if self.ID~=nil then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)
+				self.StoredInBuilding=(SGroup_CountDeSpawned(self.sg_01.ID)>0)
+			else
+				self.StoredInBuilding=false
+			end
+		end
+	end
+	
+	return self:IsAlive()
+end
+
+function Squad_Class:IsAlive()
+	return (self.ID~=nil) or (self.AttachID~=nil)
+end
+
+function Squad_Class:GetHealth()
+	local HP=0
+	if self.ID~=nil then
+		HP=HP+Squad_GetHealth(self.ID)
+		if (self.AttachID~=nil) and not Squad_IsAttached(self.ID) then
+			HP=HP+Squad_GetHealth(self.AttachID)
+		end
+	elseif self.AttachID~=nil then
+		HP=HP+Squad_GetHealth(self.AttachID)
+	end
+	return HP
+end
+
+function Squad_Class:SetStance(Newstance)
+	self.stance=Newstance
+	if self.ID~=nil then
+		SGroup_Clear(self.sg_01.ID)
+		SGroup_Add(self.sg_01.ID,self.ID)
+		Cmd_SetStance(self.sg_01.Name,Newstance)
+	end
+	if (self.CreationParams.attachbp~=nil) and (self.AttachID~=nil) then
+		SGroup_Clear(self.sg_01.AttachID)
+		SGroup_Add(self.sg_01.AttachID,self.ID)
+		Cmd_SetStance(self.sg_01.Name,Newstance)
+	end
+end
+
+--check if squad has no query pending
+-- reinforcement order is sub-units, leaders, weapons, attached unit
+-- if higher priority reinforcement asked then overwrite previous demand
+function Squad_Class:RequireReinforcement(ReinforcementMgr)
+
+	local CurrentQueryNbr=ReinforcementMgr:GetClosestQueryNbr(self)
+
+	local CurrentQuery
+	local CurrentType
+	if CurrentQueryNbr~=nil then
+		CurrentQuery=ReinforcementMgr:GetQuery(CurrentQueryNbr)
+		CurrentType=CurrentQuery.Type
+	end
+	
+	-- check if squad is dead
+	if (not self:IsAlive()) or (self.StoredInBuilding) then
+		if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+		return false
+	elseif CurrentType=="Trooper" then
+		return false
+	elseif self.ID==nil then
+		if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+		ReinforcementMgr:Require(self, "Trooper","")
+		return true
+	elseif Squad_IsReinforcing(self.ID) then
+		return false
+	elseif Squad_GetMaxReinforcement(self.ID)>0 then
+		if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+		ReinforcementMgr:Require(self, "Trooper","")
+		return true
+	-- leader
+	elseif CurrentType=="Leader" then
+		return false
+	elseif Squad_IsReinforcingLeader(self.ID) then
+		return false
+	elseif (not Squad_HasLeader(self.ID)) and self.CreationParams.leader then
+		if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+		ReinforcementMgr:Require(self, "Leader","")
+		return true
+	--weapons
+	elseif CurrentType=="Weapon" then
+		return false
+	elseif (self.CreationParams.weapons_list~=nil) then
+		--scan weapon table
+		for weapon_name, weapon_nbr in pairs(self.CreationParams.weapons_list) do
+			-- if a weapon is missing
+			if Squad_WeaponCount( self.ID, weapon_name) < weapon_nbr then
+				if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+				ReinforcementMgr:Require(self, "Weapon",weapon_name)
+				return true
+			end
+		end
+	-- attached unit
+	elseif CurrentType=="Attach" then
+		return false
+	elseif (self.CreationParams.attachbp~=nil) then
+		-- attach squadID is not defined ( dead or previous resurection/creation failed) 
+		if self.AttachID==nil then
+			if CurrentQuery~=nil then ReinforcementMgr:RemoveQuery(CurrentQueryNbr) end
+			ReinforcementMgr:Require(self, "Attach","")
+			return true
+		end
+	end
+	
+end
+
+function Squad_Class:CancelReinforcement(ReinforcementMgr)
+	ReinforcementMgr:RemoveAllQueries(self)
+end
+
+-- Make squad to reinforce, return true if success.
+function Squad_Class:DoReinforce(ReinforceType, ReinforceData)
+
+	if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() " .. ReinforceType .. " Time=" .. World_GetGameTime()) end
+	
+	-- check if main squad is not dead (can only reinforce trooper in case attachee is alive)
+	if not self:IsAlive() then
+		if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() WARNING Squad is all dead: reinforcement aborted") end
+		return false
+		
+	elseif self.StoredInBuilding then
+		if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() WARNING Squad is in a building: reinforcement aborted") end
+		return false
+		
+	-- only the attachee is remaining
+	elseif self.ID==nil then
+		
+		if ReinforceType=="Trooper" then
+			
+			if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() Recreating single trooper squad") end
+			
+			SGroup_Clear(self.sg_01.ID)
+			Util_CreateSquadsAtPositionEx(self.PlayerID, self.sg_01.Name, self.CreationParams.bp, Squad_GetPosition(self.AttachID), 1, 1)
+			
+			-- if creation success then add unit to general group and attach unit
+			if SGroup_CountSpawned(self.sg_01.ID)==1 then
+				
+				-- store new squad ID
+				self.ID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,1)
+				self:AddTrackedSquad(self.ID)
+				
+				-- set stance
+				Cmd_SetStance(self.sg_01.Name,self.stance)
+				
+				-- send attach order
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_02.ID,self.AttachID)
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+				
+				return true
+			else
+				print(tostring(self) .. " Squad_Class:DoReinforce() Warning: Single resurection failed <" .. Squad_Data.bp .. ">")
+				return false
+			end
+		else
+			if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() WARNING Main squad is dead: reinforcement aborted") end
+			return false
+		end
+		
+	-- sub-units		
+	elseif ReinforceType=="Trooper" then
+		if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() Adding trooper") end
+		SGroup_Clear(self.sg_01.ID)
+		SGroup_Add(self.sg_01.ID,self.ID)
+		Cmd_ReinforceTrooper(self.sg_01.Name,1)
+		return true
+		
+	-- leader
+	elseif ReinforceType=="Leader" then
+		if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() Adding Leader") end
+		Squad_AddLeader(self.ID)
+		return true
+		
+	--weapons
+	elseif ReinforceType=="Weapon" then
+		if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() Adding Weapon=" .. ReinforceData) end
+		
+		if Squad_CanUpgradeWeapon(self.ID,ReinforceData) then
+			Squad_UpgradeWeapon(self.ID,ReinforceData)
+			return true
+		else
+			print(tostring(self) .. " Squad_Class:DoReinforce() WARNING: cannot Upgrade Weapon <" .. weapon_name .. "> for squad " .. self.ID.id .. " ,Time=" .. World_GetGameTime())
+			return false
+		end
+		
+	-- attached unit
+	elseif (ReinforceType=="Attach") then
+		if self.AttachID==nil then
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Clear(self.sg_02.ID)
+			SGroup_Add(self.sg_01.ID,self.ID)
+			if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() Adding Attach=" .. self.CreationParams.attachbp) end
+			Util_CreateSquadsAtPosition(self.PlayerID, self.sg_02.Name, self.CreationParams.attachbp, Squad_GetPosition(self.ID), 1)
+			-- if creation success then attach unit
+			if SGroup_CountSpawned(self.sg_02.ID)==1 then
+				self.AttachID=SGroup_GetSpawnedSquadAt(self.sg_02.ID,1)
+				self:AddTrackedSquad(self.AttachID)
+				Cmd_SetStance(self.sg_02.Name,self.stance)
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+				return true
+			else
+				print("Warning:Squad_Class: Attach Creation failed <" .. self.CreationParams.attachbp .. "> for squad " .. self.ID.id)
+				return false
+			end
+		-- squad has already an attachee (forced attached for ex.)
+		else
+			if self.DebugON>0 then print(tostring(self) .. " Squad_Class:DoReinforce() WARNING Adding Attach Canceled, Squad has already an attachee") end
+			return false
+		end
+	else
+		print(tostring(self) .. " Squad_Class:DoReinforce() ERROR Squad_Class: unknown reinforcement type=" .. ReinforceType)
+		return false
+	end
+end
+
+function Squad_Class:GetID()
+	-- check if squad is not dead
+	if (self.ID~=nil) then
+		return self.ID
+	end
+	-- check if leader is not dead
+	if (self.AttachID~=nil) then
+		return self.AttachID
+	end
+end
+
+function Squad_Class:CanCapture()
+	-- check if squad is not dead
+	if (self.ID~=nil) then
+		return (Can_Capture_Point[Squad_GetBlueprintName(self.ID)]==true)
+	elseif (self.AttachID~=nil) then
+		return (Can_Capture_Point[Squad_GetBlueprintName(self.AttachID)]==true)
+	else
+		return false
+	end
+end
+
+--
+--
+-- Methods to change the current order 
+--
+--
+function Squad_Class:SetOrder_Attack(AttackPos,DistMax)
+
+	if Cant_Attack[self.CreationParams.bp] then
+		self.CurrentOrder={Order=Squad_Class.OrderCst.Move, Position=AttackPos, DistMax=DistMax, ForceOrder=true}
+		self.DoOrders=Squad_Class.DoOrders_Move
+	else
+		self.CurrentOrder={Order=Squad_Class.OrderCst.Attack, Position=AttackPos, DistMax=DistMax, ForceOrder=true}
+		self.DoOrders=Squad_Class.DoOrders_Attack
+	end
+end
+
+function Squad_Class:SetOrder_Capture(CaptureID)
+	self.CurrentOrder={Order=Squad_Class.OrderCst.Capture, TargetID=CaptureID, ForceOrder=true}
+	self.DoOrders=Squad_Class.DoOrders_Capture
+end
+
+function Squad_Class:SetOrder_Defend(DefendPos,DistMin,DistMax,AttackRecoverPos)
+	self.CurrentOrder={Order=Squad_Class.OrderCst.Defend, Position=DefendPos, DistMin=DistMin,DistMax=DistMax, AttackRecoverPos=AttackRecoverPos, ForceOrder=true}
+	self.DoOrders=Squad_Class.DoOrders_Defend
+end
+
+-- if building is not active or if squad only contains an attachee then order is treated as Defend on building position.
+function Squad_Class:SetOrder_StoreInBuilding(Building)
+	self.CurrentOrder={Order=Squad_Class.OrderCst.StoreInBuilding, BuildingPointer=Building.Pointer, Position=Building.Position, DistMin=5.0,DistMax=10.0}
+	self.DoOrders=Squad_Class.DoOrders_StoreInBuilding
+end
+
+--
+--
+-- Orders methods - not called directly (Replace DoOrders function)
+-- return false if order cannot be done (dead, action impossible, no order)
+--
+--
+
+-- base DoOrders - Default function when squad has no orders
+function Squad_Class:DoOrders()
+	
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders (NoOrders) BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- exit if squad is in building
+	if self.StoredInBuilding then return true end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		return true
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		-- Entrench if squad can
+		if self.Entrench==false then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() ForceEntrench " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.ID)	
+			Cmd_SquadEntrench(self.sg_01.Name)
+			return true
+		end
+		
+		return true
+		
+	end
+	
+	return true
+	
+end
+
+function Squad_Class:DoOrders_Attack()
+	
+	if self.DebugON>2 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- check if squad is in building
+	if self.StoredInBuilding then return true end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		
+		local SquadActiveCommand=Squad_GetActiveCommand(self.AttachID)
+		if (SquadActiveCommand==SQUADSTATEID_Idle) or self.CurrentOrder.ForceOrder then
+			local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.AttachID))
+			if PosError>self.CurrentOrder.DistMax then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.AttachID)	
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove, self.CurrentOrder.Position )
+				return true
+			end
+		end
+		
+		return true
+		
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		--Manage orders for main squad
+		local SquadActiveCommand=Squad_GetActiveCommand(self.ID)
+		
+		if self.Entrench==false then
+			if self:CanSeeEnnemy() then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Entrench " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Cmd_SquadEntrench(self.sg_01.Name)
+				return true
+			end
+		end
+		
+		-- Force Entrench
+		if (SquadActiveCommand==SQUADSTATEID_Idle) or self.CurrentOrder.ForceOrder then
+			local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.ID))
+			if PosError>self.CurrentOrder.DistMax then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Attack " .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. " Time=" .. World_GetGameTime()) end
+				if self.Entrench~=true then
+					SGroup_Clear(self.sg_01.ID)
+					SGroup_Add(self.sg_01.ID,self.ID)	
+					Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove, self.CurrentOrder.Position )
+					self.CurrentOrder.ForceOrder=false
+					return true
+				else
+					if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Attack Uproot " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+					SGroup_Clear(self.sg_01.ID)
+					SGroup_Add(self.sg_01.ID,self.ID)	
+					Cmd_SquadUproot(self.sg_01.Name)
+					return true
+				end
+			end
+		end
+		
+	end
+	
+	return true
+end
+
+function Squad_Class:DoOrders_Move()
+	
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Move() BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- check if squad is in building
+	if self.StoredInBuilding then return true end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		
+		local SquadActiveCommand=Squad_GetActiveCommand(self.AttachID)
+		if (SquadActiveCommand==SQUADSTATEID_Idle) or self.CurrentOrder.ForceOrder then
+			local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.AttachID))
+			if PosError>self.CurrentOrder.DistMax then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.AttachID)	
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move, self.CurrentOrder.Position )
+				return true
+			end
+		end
+		
+		return true
+		
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		--Manage orders for main squad
+		local SquadActiveCommand=Squad_GetActiveCommand(self.ID)
+		
+		if (SquadActiveCommand==SQUADSTATEID_Idle) or self.CurrentOrder.ForceOrder then
+			local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.ID))
+			if PosError>self.CurrentOrder.DistMax then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Attack " .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. " Time=" .. World_GetGameTime()) end
+				if self.Entrench~=true then
+					SGroup_Clear(self.sg_01.ID)
+					SGroup_Add(self.sg_01.ID,self.ID)	
+					Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move, self.CurrentOrder.Position )
+					self.CurrentOrder.ForceOrder=false
+					return true
+				else
+					if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Attack Uproot " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+					SGroup_Clear(self.sg_01.ID)
+					SGroup_Add(self.sg_01.ID,self.ID)	
+					Cmd_SquadUproot(self.sg_01.Name)
+					return true
+				end
+			end
+		end
+		
+	end
+	
+	return true
+end
+
+function Squad_Class:DoOrders_Capture()
+	
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Capture() BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- check if squad is in building
+	if self.StoredInBuilding then return false end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		
+		return false
+		
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		--Manage orders for main squad
+		local SquadActiveCommand=Squad_GetActiveCommand(self.ID)
+		
+		--Capture order
+		if (SquadActiveCommand~=SQUADSTATEID_Capture) or self.CurrentOrder.ForceOrder then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Capture() Capture " .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. " TargetID.id=" .. self.CurrentOrder.TargetID.id .. " Time=" .. World_GetGameTime()) end
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.ID)	
+			EGroup_Clear(self.eg_01.ID)
+			EGroup_Add(self.eg_01.ID,self.CurrentOrder.TargetID)
+			Command_SquadEntity(self.PlayerID, self.sg_01.ID, SCMD_Capture, self.eg_01.ID)
+			self.CurrentOrder.ForceOrder=false
+		end
+		
+	end
+	
+	return true
+end
+
+function Squad_Class:DoOrders_Defend()
+	
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Defend() BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- check if squad is in building
+	if self.StoredInBuilding then return true end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		
+		local SquadActiveCommand=Squad_GetActiveCommand(self.AttachID)
+		local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.AttachID))
+		
+		if PosError>self.CurrentOrder.DistMax and SquadActiveCommand~=SQUADSTATEID_Move then
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.AttachID)	
+			Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move, self.CurrentOrder.Position)
+		elseif (SquadActiveCommand==SQUADSTATEID_Idle and PosError>self.CurrentOrder.DistMin) or self.CurrentOrder.ForceOrder then
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.AttachID)	
+			Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove, self.CurrentOrder.Position)
+		end
+		
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		--Manage orders for main squad
+		local SquadActiveCommand=Squad_GetActiveCommand(self.ID)
+		
+		-- Force Entrench
+		if self.Entrench==false then
+			if self:CanSeeEnnemy() then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_Attack() Entrench " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Cmd_SquadEntrench(self.sg_01.Name)
+				return true
+			end
+		end
+		
+		--Defend order
+		local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.ID))
+		
+		if self.CurrentOrder.AttackRecoverPos==true then
+			self.CurrentOrder.AttackRecoverPos=(PosError>self.CurrentOrder.DistMin)
+		end
+		
+		if PosError>self.CurrentOrder.DistMax and SquadActiveCommand~=SQUADSTATEID_Move and not self.CurrentOrder.AttackRecoverPos then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend ForceMove Reposition" .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. ", Dist=" .. PosError .. "/" .. self.CurrentOrder.DistMax  .. " Time=" .. World_GetGameTime()) end
+			if self.Entrench~=true then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move,  self.CurrentOrder.Position)
+				self.CurrentOrder.ForceOrder=false
+			else
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend ForceMove Uproot " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Cmd_SquadUproot(self.sg_01.Name)
+			end
+		elseif (SquadActiveCommand==SQUADSTATEID_Idle and PosError>self.CurrentOrder.DistMin) or self.CurrentOrder.ForceOrder then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend Move Reposition " .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. ", Dist=" .. PosError .. "/" .. self.CurrentOrder.DistMin .. " Time=" .. World_GetGameTime()) end
+			if self.Entrench~=true then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove,  self.CurrentOrder.Position)
+				self.CurrentOrder.ForceOrder=false
+			else
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend Move Uproot " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Cmd_SquadUproot(self.sg_01.Name)
+			end
+		elseif (SquadActiveCommand==SQUADSTATEID_Idle) and (self.Entrench==false) then
+			if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend Entrench " .. self.ID.id  .. " Time=" .. World_GetGameTime()) end
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.ID)	
+			Cmd_SquadEntrench(self.sg_01.Name)				
+		end
+		
+	end
+	
+	-- ADD SPECIAL ABILITY MANAGER HERE
+	
+	return true
+end
+
+function Squad_Class:DoOrders_StoreInBuilding()
+	
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders_StoreInBuilding() BP=" .. self.CreationParams.bp) end
+	
+	-- exit if nobody is alive
+	if not self:IsAlive() then return false end
+	
+	-- check if squad is in building
+	if self.StoredInBuilding then return true end 
+	
+	-- attached squad is alone  
+	if (self.ID==nil) then
+		
+		local SquadActiveCommand=Squad_GetActiveCommand(self.AttachID)
+		local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.AttachID))
+		
+		if PosError>self.CurrentOrder.DistMax and SquadActiveCommand~=SQUADSTATEID_Move then
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.AttachID)	
+			Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move, self.CurrentOrder.Position)
+		elseif (SquadActiveCommand==SQUADSTATEID_Idle and PosError>self.CurrentOrder.DistMin) or self.CurrentOrder.ForceOrder then
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.AttachID)	
+			Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove, self.CurrentOrder.Position)
+		end
+		
+	--Main squad is alive
+	else
+		
+		-- check attachement 
+		if self.AttachID~=nil then
+			if (not Squad_IsAttached(self.ID)) then
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Clear(self.sg_02.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				SGroup_Add(self.sg_02.ID,self.AttachID)	
+				Cmd_AttachSquads( self.sg_01.Name, self.sg_02.Name)
+			end
+		end
+		
+		--Manage orders for main squad
+		local SquadActiveCommand=Squad_GetActiveCommand(self.ID)
+		
+		if PointerTable.Get(self.CurrentOrder.BuildingPointer):IsFunctional() then
+			
+			self:Suicide()
+			self:Create(self.CurrentOrder.Position, true)
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_Add(self.sg_01.ID,self.ID)	
+			EGroup_Clear(self.eg_01.ID)
+			EGroup_Add(self.eg_01.ID,PointerTable.Get(self.CurrentOrder.BuildingPointer).EntityID)
+			Cmd_EnterBuilding(self.sg_01.Name,self.eg_01.Name)
+			
+		else
+			
+			local PosError=World_DistancePointToPoint(self.CurrentOrder.Position,Squad_GetPosition(self.ID))
+			if PosError>self.CurrentOrder.DistMax and SquadActiveCommand~=SQUADSTATEID_Move then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend ForceMove Reposition" .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. ", Dist=" .. PosError .. "/" .. self.CurrentOrder.DistMax  .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_Move,  self.CurrentOrder.Position)
+				self.CurrentOrder.ForceOrder=false
+			elseif (SquadActiveCommand==SQUADSTATEID_Idle and PosError>self.CurrentOrder.DistMin) or self.CurrentOrder.ForceOrder then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:DoOrders() Defend Move Reposition " .. self.ID.id .. " bp= " .. Squad_GetBlueprintName(self.ID) .. ", Dist=" .. PosError .. "/" .. self.CurrentOrder.DistMin .. " Time=" .. World_GetGameTime()) end
+				SGroup_Clear(self.sg_01.ID)
+				SGroup_Add(self.sg_01.ID,self.ID)	
+				Command_SquadPos(self.PlayerID, self.sg_01.ID, SCMD_AttackMove,  self.CurrentOrder.Position)
+				self.CurrentOrder.ForceOrder=false
+			end
+			
+		end
+		
+	end
+	
+	return true
+end
+
+--
+--
+-- Various methods
+--
+--
+function Squad_Class.SetMetatable(Object)
+	setmetatable(Object,Squad_Metatable)
+end
+
+function Squad_Class:Suicide()
+
+	if self.DebugON>0 then print(tostring(self) .. " Squad_Class: Suicide, Time=" .. World_GetGameTime()) end
+	
+	-- check if squad is not dead
+	if (self.ID~=nil) then
+		
+		if Squad_IsAttached(self.ID) then
+			
+			local AllSquadID=Player_GetSquads(self.PlayerID)
+			SGroup_Clear(self.sg_01.ID)
+			SGroup_AddGroup(self.sg_01.ID,AllSquadID)
+			
+			Squad_Class.TrackerSquadList.Clear(self.ID.id)
+			Squad_Destroy(self.ID)
+			self.ID=nil
+			
+			AllSquadID=Player_GetSquads(self.PlayerID)
+			
+			for i=1,SGroup_CountSpawned(AllSquadID) do
+				if not SGroup_ContainsSquad(self.sg_01.ID,SGroup_GetSpawnedSquadAt(AllSquadID,i)) then
+					if self.DebugON>0 then print("Attachee found, ID.id=" .. SGroup_GetSpawnedSquadAt(AllSquadID,i).id .. ", destroying") end
+					Squad_Destroy(SGroup_GetSpawnedSquadAt(AllSquadID,i))
+					break
+				end
+			end
+			
+			Squad_Class.TrackerSquadList.Clear(self.AttachID.id)
+			self.AttachID=nil
+			
+		elseif self.AttachID~=nil then
+			
+			Squad_Class.TrackerSquadList.Clear(self.ID.id)
+			Squad_Class.TrackerSquadList.Clear(self.AttachID.id)
+			Squad_Destroy(self.ID)
+			Squad_Destroy(self.AttachID)
+			self.ID=nil
+			self.AttachID=nil
+			
+		else
+			Squad_Class.TrackerSquadList.Clear(self.ID.id)
+			Squad_Destroy(self.ID)
+			self.ID=nil
+		end
+		
+		
+	elseif (self.AttachID~=nil) then
+		Squad_Destroy(self.AttachID)
+		self.AttachID=nil
+	end
+	
+end
+
+function Squad_Class:ForceAttach(SquadID)
+	
+	if self.DebugON>0 then print(tostring(self) .. " Squad_Class: ForceAttach " .. SquadID.id .. " to " .. tostring(self.ID.id) .. " Time=" .. World_GetGameTime()) end
+
+	--check if squad does not already have attachee
+	if self.AttachID~=nil then 
+		if self.DebugON>0 then print("Failed: dest squad already has attachee") end
+		return false 
+	end
+	
+	--check if squad can attach
+	if not Can_Attach[Squad_GetBlueprintName(SquadID)] then 
+		if self.DebugON>0 then print("Failed: cannot attach squad=" .. Squad_GetBlueprintName(SquadID)) end
+		return false 
+	end
+	
+	--check if squad can receive an attachee
+	if not Can_Attach_Receive[Squad_GetBlueprintName(self.ID)] then 
+		if self.DebugON>0 then print("Failed: cannot receive attach squad=" .. Squad_GetBlueprintName(self.ID)) end
+		return false 
+	end
+	
+	--set attached squad and add tracker
+	self.AttachID=SquadID
+	self:AddTrackedSquad(SquadID)
+	return true
+
+end
+
+function Squad_Class:AddTrackedSquad(SquadID)
+	if self.DebugON>1 then print(tostring(self) .. " Squad_Class: AddTrackedSquad " .. SquadID.id .. " bp= " .. Squad_GetBlueprintName(SquadID) .. " Time=" .. World_GetGameTime()) end
+	Squad_Class.TrackerSquadList.Add(self,SquadID.id)
+end
+
+function Squad_Class.GetSquadObject(SquadID)
+	return Squad_Class.TrackerSquadList.Get(SquadID.id)
+end
+
+function Squad_Class:GetFatherMgr()
+
+	if self.DebugON>0 then print(tostring(self) .. " Squad_Class:GetFatherMgr() FatherKey=" .. tostring(self.FatherPointer)) end
+
+	return PointerTable.Get(self.FatherPointer)
+
+end
+
+function Squad_Class:GetPosition()
+	if self.ID~=nil then
+		return Squad_GetPosition(self.ID)
+	elseif (self.AttachID~=nil) then
+		return Squad_GetPosition(self.AttachID)
+	end
+end
+
+function Squad_Class:CanSeeEnnemy()
+
+	local playerteam=Player_GetTeam(self.PlayerID)
+	SGroup_Clear(self.sg_CanSee.ID)
+	SGroup_Add(self.sg_CanSee.ID,self.ID)
+	
+	for i=0,World_GetPlayerCount()-1 do
+		local Player2ID=World_GetPlayerAt(i)
+		if Player_GetTeam(Player2ID)~=playerteam then
+			if SGroup_CanSeeSGroup(self.sg_CanSee.Name, SGroup_GetName(Player_GetSquads(Player2ID)), false ) then
+				if self.DebugON>1 then print(tostring(self) .. " Squad_Class:CanSeeEnnemy() Squad id=" .. self.ID.id .. " Can see ennemy, Time=" .. World_GetGameTime()) end
+				return true
+			end
+		end
+	end
+	return false
+end
+
+function Squad_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	
+	SpecAbilityMgr.DoSpecAbility(self,Friend_Sampling,Ennemy_Sampling)
+	
+	-- if squad can transport troops
+	if self.CreationParams.UnloadTroops~=nil then 
+		if not self.UnloadTroops then 
+			if self:TestUnloadTroops(Friend_Sampling,Ennemy_Sampling) then 
+				self:DoUnloadTroops()
+			end
+		end
+	end
+	
+end
+
+function Squad_Class:TestUnloadTroops(Friend_Sampling,Ennemy_Sampling)
+
+	-- check if life ratio is reached
+	if Squad_GetHealth(self.ID)/Squad_GetHealthMax(self.ID)<self.CreationParams.UnloadLifeRatio then return true end
+
+	-- check if UnloadDistance to target is reached
+	if self.CurrentOrder~=nil then
+		if self.CurrentOrder.Position~=nil then 
+			if World_DistancePointToPoint(Squad_GetPosition(self.ID),self.CurrentOrder.Position)<self.CreationParams.UnloadDistance then
+				return true
+			end
+		end
+	end
+	
+	return false
+	
+end
+
+function Squad_Class:DoUnloadTroops(Friend_Sampling,Ennemy_Sampling)
+
+	local FatherMgr=self:GetFatherMgr()
+	FatherMgr:AddSquadsAtPosition(self.CreationParams.UnloadTroops,Squad_GetPosition(self.ID))
+	
+	self.UnloadTroops=true
+
+end
+

@@ -1,0 +1,471 @@
+----------------------------------------------------------------------------------
+-- Persistent Bases code                                                        --
+-- Created by Miros  @ 30.Oct.2013                                              --
+--                                                                              --
+--  It's alive!                                                                 --
+--                                                                              --
+-- (c) 2003 Relic Entertainment Inc.                                            --
+----------------------------------------------------------------------------------
+
+--------------------------------------------------
+--            Edit to your liking               --
+--------------------------------------------------
+
+CampaignBasesVariablePrefix = "CB"
+
+
+--------------------------------------------------
+--					Addon list					--
+--  Enter here ALL the building addons for all	--
+--   the supported Campaing Races. MANUALLY.	--
+--------------------------------------------------
+--
+addons1_dark_eldar_race = {"addon_dark_eldar_cage_empty","addon_dark_eldar_gruesome_display","addon_dark_eldar_hq_1","addon_dark_eldar_list_post_1","addon_dark_eldar_slave_graveyard","addon_dark_eldar_turret"}
+addons2_dark_eldar_race = {"addon_dark_eldar_hq_2","addon_dark_eldar_list_post_2"}
+addons3_dark_eldar_race = {"addon_dark_eldar_list_post_dark_lance"}
+addons4_dark_eldar_race = {}
+addons5_dark_eldar_race = {}
+--
+addons1_guard_race = {"addon_guard_hq_1","addon_guard_kasrkin_quarters","addon_guard_list_post_1","addon_guard_sentinel_depot","addon_guard_turret","addon_guard_turret_2","addon_guard_turret_3","addon_guard_turret_4"}
+addons2_guard_race = {"addon_guard_hellhound_depot","addon_guard_hq_2","addon_guard_list_post_2","addon_guard_ogryn_quarters"}
+addons3_guard_race = {"addon_guard_basilisk_depot","addon_guard_ministorum_temple","addon_guard_medusa"}
+addons4_guard_race = {"addon_guard_marauder_depot","addon_guard_telepathica_temple"}
+addons5_guard_race = {"addon_guard_lemanruss_depot","addon_guard_vindicare_temple","addon_guard_vanus_temple"}
+--
+addons1_necron_race = {"addon_necron_hq_1","addon_necron_list_post_1","addon_necron_turret"}
+addons2_necron_race = {"addon_necron_hq_2","addon_necron_list_post_2"}
+addons3_necron_race = {"addon_necron_hq_3"}
+addons4_necron_race = {}
+addons5_necron_race = {}
+--
+addons1_sisters_race = {"addon_sisters_hq_1","addon_sisters_list_post_1","addon_sisters_turret"}
+addons2_sisters_race = {"addon_sisters_hq_2","addon_sisters_list_post_2"}
+addons3_sisters_race = {"addon_sisters_holy_icon","addon_sisters_laud_hailers"}
+addons4_sisters_race = {}
+addons5_sisters_race = {}
+--
+addons1_tau_race = {"addon_tau_list_post_1","tau_turret_missile_addon","tau_turret_plasma_addon"}
+addons2_tau_race = {"addon_tau_list_post_2"}
+addons3_tau_race = {}
+addons4_tau_race = {}
+addons5_tau_race = {}
+--
+addons1_chaos_marine_race = {"chaos_hq_addon_1","chaos_list_post_addon_1","chaos_turret_addon"}
+addons2_chaos_marine_race = {"chaos_hq_addon_2","chaos_list_post_addon_2"}
+addons3_chaos_marine_race = {}
+addons4_chaos_marine_race = {}
+addons5_chaos_marine_race = {}
+--
+addons1_eldar_race = {"eldar_aspect_stone_vyper","eldar_aspect_stone_warp_spider","eldar_list_post_addon_1","eldar_support_platform_addon"}
+addons2_eldar_race = {"eldar_aspect_stone_banshees","eldar_aspect_stone_wraithlord","eldar_list_post_addon_2","eldar_aspect_stone_scorpions"}
+addons3_eldar_race = {"eldar_aspect_stone_dark_reapers","eldar_aspect_stone_nightwing","eldar_aspect_stone_hawk"}
+addons4_eldar_race = {"eldar_aspect_stone_fire_dragon","eldar_aspect_stone_prism","eldar_aspect_stone_shadow_spectres","eldar_aspect_stone_nightshade"}
+addons5_eldar_race = {}
+--
+addons1_ork_race = {"ork_gork_totem_addon_1","ork_hq_addon","ork_waagh_banner_gunzaddon"}
+addons2_ork_race = {"ork_gork_totem_addon_2","ork_waagh_banner_gunzaddon_2"}
+addons3_ork_race = {}
+addons4_ork_race = {}
+addons5_ork_race = {}
+--
+addons1_space_marine_race = {"space_marine_hq_addon_1","space_marine_list_post_addon_1","space_marine_turret_addon"}
+addons2_space_marine_race = {"space_marine_hq_addon_2","space_marine_list_post_addon_2"}
+addons3_space_marine_race = {}
+addons4_space_marine_race = {}
+addons5_space_marine_race = {}
+--
+addons1_tyranids_race = {"tyranids_hq_addon_1","tyranids_list_post_addon_1"}
+addons2_tyranids_race = {"tyranids_hq_addon_2","tyranids_list_post_addon_2"}
+addons3_tyranids_race = {}
+addons4_tyranids_race = {}
+addons5_tyranids_race = {}
+--
+addons1_inquisition_daemonhunt_race = {"inquisition_tower_addon","inquisition_imperial_icon_addon_1"}
+addons2_inquisition_daemonhunt_race = {"inquisition_extremis_diabolus","inquisition_imperial_icon_addon_2"}
+addons3_inquisition_daemonhunt_race = {"inquisition_mass_teleporter"}
+addons4_inquisition_daemonhunt_race = {}
+addons5_inquisition_daemonhunt_race = {}
+--
+addons1_deamons_race = {"addon_daemons_hq_1","addon_daemons_list_post_1"}
+addons2_deamons_race = {"addon_daemons_hq_2","addon_daemons_list_post_2","addon_daemons_turret","addon_daemons_mark_khorne","addon_daemons_mark_nurgle","addon_daemons_mark_slaanesh","addon_daemons_mark_tzeentch"}
+addons3_deamons_race = {"addon_daemons_hq_3"}
+addons4_deamons_race = {"addon_daemons_hell_fire"}
+addons5_deamons_race = {"addon_daemons_hell_fire_2"}
+--
+addons1_emperors_children_race = {"emperors_children_hq_addon_1","emperors_children_list_post_addon_1"}
+addons2_emperors_children_race = {"emperors_children_hq_addon_2","emperors_children_list_post_addon_2","emperors_children_turret_addon","emperors_children_turret_addon_2"}
+addons3_emperors_children_race = {}
+addons4_emperors_children_race = {}
+addons5_emperors_children_race = {}
+--
+addons1_witch_hunters_race = {"witch_hunters_adeptus_arbites_hq_repressor_defense","witch_hunters_adeptus_arbites_listening_post_addon_1"}
+addons2_witch_hunters_race = {"witch_hunters_adeptus_arbites_hq_bolter_defense_right","witch_hunters_adeptus_arbites_listening_post_addon_2","witch_hunters_adeptus_arbites_hq_bolter_defense_left","witch_hunters_inquisition_call_up","witch_hunters_hq_inquisition_drop_pod"}
+addons3_witch_hunters_race = {"witch_hunters_shrine_glory","witch_hunters_hq_ecclesiarchy_psyker","witch_hunters_armorium_addon_1"}
+addons4_witch_hunters_race = {"witch_hunters_turret_damage","witch_hunters_turret_melta","witch_hunters_turret_stealth","witch_hunters_shrine_mother_saint"}
+addons5_witch_hunters_race = {}
+--
+addons1_renegade_guard_race = {"addon_renegade_guard_hq_1","addon_renegade_guard_list_post_1"}
+addons2_renegade_guard_race = {"addon_renegade_guard_hq_2","addon_renegade_guard_list_post_2","addon_renegade_guard_turret"}
+addons3_renegade_guard_race = {"addon_renegade_guard_turret_stealth"}
+addons4_renegade_guard_race = {"addon_renegade_guard_basilisk_gas"}
+addons5_renegade_guard_race = {}
+--------------------------------------------------
+--           Overall Rule managing              --
+--------------------------------------------------
+
+function CampaignBases()
+
+	-- Enable/Disable Persistent Bases switch
+	if G_Campaign__EnableCampaignBases == nil or G_Campaign__EnableCampaignBases == false then return end
+
+	-- Make sure we're playing the Metamap
+	if pcall( MetaMap_GetAttackerRaceIndex ) then
+		Metamap=1;
+
+		-- This will allow us to save based on race, difficulty (Easy, Standard, Hard) and, of course, territory.
+		Game_Prefix = '/'..MetaMap_GetPlayerRaceIndex()..':'..MetaMap_GetDefendingTerritoryIndex()..':'..Difficulty_Get()..'/'
+
+		-- Place Bases (only if defending!)
+		if MetaMap_GetDefenderRaceIndex() == MetaMap_GetPlayerRaceIndex() then
+			CampaignBases_Place()
+		end
+
+	else
+		Metamap=0;
+	end
+
+end
+
+
+-- The following function should be called automatically when the game is over
+function haswon()
+
+	-- Enable/Disable Persistent Bases switch
+	if G_Campaign__EnableCampaignBases == nil or G_Campaign__EnableCampaignBases == false then return end
+
+	if (Metamap==1) then
+		print("Campaign Bases: Saving data...")
+		-- Record Bases
+		CampaignBases_Learn()
+	end
+end
+
+-----------------------------------------------------
+--        Save Functions (Thanks Titlams!)         --
+-----------------------------------------------------
+
+
+function PlayerProfile_SetVar_Long(index,data) --Bypass the 1024 player profile limit save
+    for i=0, math.ceil(string.len(data)/1020)-1 do  --start at index 0, end at (data length/1020-1)
+        PlayerProfile_SetVar(index..i,string.sub(data,i*1020+1,(i+1)*1020)) --Use relics PlayerProfile_SetVar to place the data in chunks
+    end
+    --sd
+    for i=math.ceil(string.len(data)/1020), 512 do --start at next expected place
+        if PlayerProfile_GetVar(index..i)~="" then --if has data in it clear the data
+            PlayerProfile_SetVar(index..i,"")        
+        else -- if empty just return
+            return
+        end
+    end
+end
+
+
+function PlayerProfile_GetVar_Long(index)
+    local temp = ""
+    for i=0, 512 do --start a loop
+        local a = PlayerProfile_GetVar(index..i)
+        if a == "" then --if the data is blank we are done and return
+            return temp
+        end
+        temp = temp..a --attach the chunks together
+    end
+	print("Something Went Wrong:")
+	print("Campaign_Bases PlayerProfile_GetVar_Long function, returned an empty string!")
+	return temp
+end
+
+--------------------------------------------------
+--                Definitions                   --
+--------------------------------------------------
+
+-- write functions
+function savetable(varname,table)
+	local territorystring = Game_Prefix;
+	local storedterritorystring = "";
+	local storedstring = PlayerProfile_GetVar_Long(varname)
+	for k, v in pairs(table) do
+		territorystring = territorystring..k..':'..v..', '
+	end
+	for GP, Dat in string.gfind(storedstring, "/([:%w]+)/([:,%s_%-%.%w]+)") do
+		if "/"..GP.."/" == Game_Prefix then
+			storedterritorystring = "/"..GP.."/"..Dat
+			storedstring = string.gsub(storedstring, "/"..GP.."/([:,%s_%-%.%w]+)", "", 1)
+		end
+	end
+	if storedterritorystring == "" then
+		storedstring = string.gsub(storedstring, Game_Prefix, "", 1)
+	end
+	PlayerProfile_SetVar_Long(varname,storedstring..territorystring)
+end
+function savepositiontable(varname,table)
+	local territorystring = Game_Prefix;
+	local storedterritorystring = "";
+	local storedstring = PlayerProfile_GetVar_Long(varname)
+	for k, v in pairs(table) do
+		for x, n in pairs(v) do
+			territorystring = territorystring..k..':'..x..':'..n..', '
+		end
+	end
+	for GP, Dat in string.gfind(storedstring, "/([:%w]+)/([:,%s_%-%.%w]+)") do
+		if "/"..GP.."/" == Game_Prefix then
+			storedterritorystring = "/"..GP.."/"..Dat
+			storedstring = string.gsub(storedstring, "/"..GP.."/([:,%s_%-%.%w]+)", "", 1)
+		end
+	end
+	if storedterritorystring == "" then
+		storedstring = string.gsub(storedstring, Game_Prefix, "", 1)
+	end
+	PlayerProfile_SetVar_Long(varname,storedstring..territorystring)
+end
+
+-- read functions
+function readsavedtable(varname)
+	local savedstring = PlayerProfile_GetVar_Long(varname)
+--	print(varname.." => "..savedstring)
+	local t = {}
+	for GP, Dat in string.gfind(savedstring, "/([:%w]+)/([:,%s_%-%.%w]+)") do
+	--	print("GP: "..GP..", Game_Prefix: "..Game_Prefix)
+		if "/"..GP.."/" == Game_Prefix then
+	--		print("GP = Game_Prefix")
+			for k, v in string.gfind(Dat, "(%w+):([_%w]+)") do
+				k = tonumber(k)
+				t[k] = v
+			end
+		end
+	end
+	return t
+end
+function readsavedpositiontable(varname)
+	local savedstring = PlayerProfile_GetVar_Long(varname)
+	local v = {}
+	local count = 0
+	for GP, Dat in string.gfind(savedstring, "/([:%w]+)/([:,%s_%-%.%w]+)") do
+		if "/"..GP.."/" == Game_Prefix then
+			for k, x, n in string.gfind(Dat, "(%w+):(%w+):([%-%.%w]+)") do
+				k = tonumber(k)
+				for s, d in string.gfind(n, "(%-*)([%.%w]+)") do
+					if tonumber(n) ~= nil then
+						n = tonumber(n)
+					else
+						n = 0-tonumber(d)
+					end
+				end
+				v[x] = n
+				count = count + 1
+				if count == 3 then
+					count = 0
+					setmetatable(v, PositionsMetaTable)
+					Entity_CreateBuildingPositionForce(World_GetPlayerAt(Tut_GetLocalPlayerIndex()), "eg_InitialBuildings", BlueprintsTable[k], v, 1)
+					local ForceAddon = function( egroupid, itemindex, entityID )
+						if AddonsTable1[k] then
+							pcall( Entity_ForceAddOn, entityID, AddonsTable1[k] )
+						end
+						if AddonsTable2[k] then
+							pcall( Entity_ForceAddOn, entityID, AddonsTable2[k] )
+						end
+						if AddonsTable3[k] then
+							pcall( Entity_ForceAddOn, entityID, AddonsTable3[k] )
+						end
+						if AddonsTable4[k] then
+							pcall( Entity_ForceAddOn, entityID, AddonsTable4[k] )
+						end
+						if AddonsTable5[k] then
+							pcall( Entity_ForceAddOn, entityID, AddonsTable5[k] )
+						end
+					end
+					
+					Player_GetAllEntitiesNearPos( World_GetPlayerAt(Tut_GetLocalPlayerIndex()), "eg_AddonBuilding", v, 1 )
+					EGroup_ForEach( eg_AddonBuilding, ForceAddon )
+					EGroup_Clear( eg_AddonBuilding ) 
+				end
+			end
+		end
+	end
+end
+function readsavedpointstable(varname)
+	local savedstring = PlayerProfile_GetVar_Long(varname)
+	local v1 = {}
+	local count1 = 0
+	local count2 = 0
+	for GP, Dat in string.gfind(savedstring, "/([:%w]+)/([:,%s_%-%.%w]+)") do
+		if "/"..GP.."/" == Game_Prefix then
+			for k1, x1, n1 in string.gfind(Dat, "(%w+):(%w+):([%-%.%w]+)") do
+				k1 = tonumber(k1)
+				for s1, d1 in string.gfind(n1, "(%-*)([%.%w]+)") do
+					if tonumber(n1) ~= nil then
+						n1 = tonumber(n1)
+					else
+						n1 = 0-tonumber(d1)
+					end
+				end
+				v1[x1] = n1
+				count1 = count1 + 1
+				if count1 == 3 then
+					count1 = 0
+					setmetatable(v1, PositionsMetaTable)
+					for k2, v2 in pairs(PointsPositionTable) do
+					--	print("Begin comparison "..v1["y"].." = "..v2["y"].."?")
+					--	print("Begin comparison "..v1["x"].." = "..v2["x"].."?")
+					--	print("Begin comparison "..v1["z"].." = "..v2["z"].."?")
+						if v1["y"] == v2["y"] and v1["x"] == v2["x"] and v1["z"] == v2["z"] then
+					--	print("same points!")
+							Entity_SetPlayerOwner( PointsTable[k2], World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )
+						end
+					end							
+				end
+			end
+		end
+	end
+end
+
+
+--------------------------------------------------
+--                Place Bases                   --
+--------------------------------------------------
+
+function CampaignBases_Place()
+
+	BlueprintsTable = readsavedtable(CampaignBasesVariablePrefix.."_blueprints")
+	PositionsTable = {}
+	PointsTable = {}
+	PointsPositionTable = {}
+	eg_PlayerSPs = EGroup_CreateIfNotFound( "eg_PlayerSPs" )
+	eg_WorldSPs = EGroup_CreateIfNotFound( "eg_WorldSPs" )
+	AddonsTable1 = readsavedtable(CampaignBasesVariablePrefix.."_addons1")
+	AddonsTable2 = readsavedtable(CampaignBasesVariablePrefix.."_addons2")
+	AddonsTable3 = readsavedtable(CampaignBasesVariablePrefix.."_addons3")
+	AddonsTable4 = readsavedtable(CampaignBasesVariablePrefix.."_addons4")
+	AddonsTable5 = readsavedtable(CampaignBasesVariablePrefix.."_addons5")
+	eg_AddonBuilding = EGroup_CreateIfNotFound( "eg_AddonBuilding" )
+
+	local CopyBuilding = function( egroupid, itemindex, entityID )
+		PositionsTable[itemindex] = Entity_GetPosition( entityID )
+	end
+	local CheckPointsPosition = function( egroupid, itemindex, entityID )
+		PointsPositionTable[itemindex] = Entity_GetPosition( entityID )
+		PointsTable[itemindex] = entityID
+	end
+
+	Player_GetEntities( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )
+
+	-- DoW won't accept foreign position-tables (it requires a specific position metatable)
+	-- so we generate one ingame to get its metatable
+	EGroup_ForEach( EGroup_FromName( "__Player"..Player_GetID(World_GetPlayerAt(Tut_GetLocalPlayerIndex())).."Entities" ), CopyBuilding )
+
+	Position_HQ = PositionsTable[1]
+	PositionsMetaTable = getmetatable(Position_HQ)
+
+	-- First we get all SP in the map
+	World_GetStrategicPoints( eg_WorldSPs )
+	-- Next we get their positions to compare with the stored ones
+	EGroup_ForEach( eg_WorldSPs, CheckPointsPosition )
+	
+	-- Time for some magic!
+	readsavedpointstable(CampaignBasesVariablePrefix.."_points")
+
+	-- Order is important, since LP won't be placed if SP is not yet captured
+	-- So we place our buildings now (Yet more magic!)
+	readsavedpositiontable(CampaignBasesVariablePrefix.."_positions")
+end
+
+--------------------------------------------------
+--                Record Bases                  --
+--------------------------------------------------
+
+function CampaignBases_Learn()
+	Record_PositionsTable = {}
+	Record_BlueprintsTable = {}
+	Record_PointsTable = {}
+	eg_RecordPlayerSPs = EGroup_CreateIfNotFound( "eg_RecordPlayerSPs" )
+	Record_AddonsTable1 = {}
+	Record_AddonsTable2 = {}
+	Record_AddonsTable3 = {}
+	Record_AddonsTable4 = {}
+	Record_AddonsTable5 = {}
+	local addonlist1 = {}
+	local addonlist2 = {}
+	local addonlist3 = {}
+	local addonlist4 = {}
+	local addonlist5 = {}
+
+	local WriteEachBuilding = function( egroupid, itemindex, entityID )
+		if Entity_GetBuildingProgress( entityID ) >= 0.5 then
+			Record_PositionsTable[itemindex] = Entity_GetPosition( entityID )		
+			Record_BlueprintsTable[itemindex] = Entity_GetBlueprintName( entityID )
+		end
+	end
+	local WriteEachPoint = function( egroupid, itemindex, entityID )
+		if Entity_IsCapturedByPlayer( entityID, World_GetPlayerAt(Tut_GetLocalPlayerIndex()) ) then
+		--	print("Strategic point nº"..itemindex.." captured!")
+			Record_PointsTable[itemindex] = Entity_GetPosition( entityID )
+		end
+	end
+	local CheckAddons = function( egroupid, itemindex, entityID )
+		for i = 1, table.getn(addonlist1) do
+			if Entity_ContainsAddOn( entityID, addonlist1[i] ) then
+			--	print(addonlist1[i])
+				Record_AddonsTable1[itemindex] = addonlist1[i]
+			end
+		end
+		for i = 1, table.getn(addonlist2) do
+			if Entity_ContainsAddOn( entityID, addonlist2[i] ) then
+				Record_AddonsTable2[itemindex] = addonlist2[i]
+			end
+		end
+		for i = 1, table.getn(addonlist3) do
+			if Entity_ContainsAddOn( entityID, addonlist3[i] ) then
+				Record_AddonsTable3[itemindex] = addonlist3[i]
+			end
+		end
+		for i = 1, table.getn(addonlist4) do
+			if Entity_ContainsAddOn( entityID, addonlist4[i] ) then
+				Record_AddonsTable4[itemindex] = addonlist4[i]
+			end
+		end
+		for i = 1, table.getn(addonlist5) do
+			if Entity_ContainsAddOn( entityID, addonlist5[i] ) then
+				Record_AddonsTable5[itemindex] = addonlist5[i]
+			end
+		end
+	end
+
+
+	Player_GetEntities( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )
+	Player_GetStrategicPoints( World_GetPlayerAt(Tut_GetLocalPlayerIndex()), eg_RecordPlayerSPs )
+
+	addonlist1 = _G["addons1_"..Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )]
+	addonlist2 = _G["addons2_"..Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )]
+	addonlist3 = _G["addons3_"..Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )]
+	addonlist4 = _G["addons4_"..Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )]
+	addonlist5 = _G["addons5_"..Player_GetRaceName( World_GetPlayerAt(Tut_GetLocalPlayerIndex()) )]
+
+	EGroup_ForEach( EGroup_FromName( "__Player"..Player_GetID(World_GetPlayerAt(Tut_GetLocalPlayerIndex())).."Entities" ), WriteEachBuilding )
+	EGroup_ForEach( eg_RecordPlayerSPs, WriteEachPoint )
+	EGroup_ForEach( EGroup_FromName( "__Player"..Player_GetID(World_GetPlayerAt(Tut_GetLocalPlayerIndex())).."Entities" ), CheckAddons )
+
+	-- We save the obtained tables
+	savepositiontable(CampaignBasesVariablePrefix.."_positions",Record_PositionsTable)
+	savetable(CampaignBasesVariablePrefix.."_blueprints",Record_BlueprintsTable)
+	savepositiontable(CampaignBasesVariablePrefix.."_points",Record_PointsTable)
+	savetable(CampaignBasesVariablePrefix.."_addons1",Record_AddonsTable1)
+	savetable(CampaignBasesVariablePrefix.."_addons2",Record_AddonsTable2)
+	savetable(CampaignBasesVariablePrefix.."_addons3",Record_AddonsTable3)
+	savetable(CampaignBasesVariablePrefix.."_addons4",Record_AddonsTable4)
+	savetable(CampaignBasesVariablePrefix.."_addons5",Record_AddonsTable5)
+end
+
+--------------------------------------------------
+--              Start the show!                 --
+--------------------------------------------------
+
+Scar_AddInit(CampaignBases)

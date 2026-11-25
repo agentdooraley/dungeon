@@ -1,0 +1,19 @@
+----------------------------------
+
+import("ScarUtil.scar")
+
+
+
+function Rule_Assault_Escalating_Tensions()
+
+G_Assault_Escalating_Tensions = true
+print "Going to get spicy in here!"
+
+	if G_Is_Assault_Map == nil then
+		print("NON-Assault Map.  Assault: Increasing Response (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+end
+
+
+Scar_AddInit(Rule_Assault_Escalating_Tensions)

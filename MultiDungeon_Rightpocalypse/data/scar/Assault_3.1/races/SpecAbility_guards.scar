@@ -1,0 +1,149 @@
+
+local DebugON=0
+
+-- ===================================================================================
+--
+-- guard_squad_commissar
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_commissar", "guard_commissar_execute",
+	{
+		DebugON=DebugON,
+		MinDelay=20, FalseDelay=10, HealthRange=20, HealthMin=2500, 
+	},
+	function(self,SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+		if Squad.ID==nil then return false end
+		if Squad_Count(Squad.ID)<=6 then return false end
+		if not Squad_IsAttached(Squad.ID) then return false end
+		return SpecAbilityMgr.GenericDoSpecAbilityToSelf(self,SquadID,Squad,Friend_Sampling,Ennemy_Sampling)
+	end
+)
+
+-- ===================================================================================
+--
+-- guard_squad_psyker
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_psyker", "guard_psyker_strip_soul",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=25, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "guard_squad_psyker", "guard_psyker_lightning_arc",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=30, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_builder"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+SpecAbilityMgr.AddAbility( "guard_squad_psyker", "guard_curse_machine_spirits",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=40, HealthMin=1000, 
+		ArmorFilterList={"tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+
+-- ===================================================================================
+--
+-- guard_squad_priest
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_priest", "guard_priest_fanatical",
+	{
+		DebugON=DebugON,
+		MinDelay=120, HealthRange=20, HealthMin=5000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- guard_squad_kasrkin
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_kasrkin", "guard_kasrkin_frag_grenades",
+	{
+		DebugON=DebugON,
+		MinDelay=30, HealthRange=35, HealthMin=1000, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquadOrEntity
+)
+
+-- ===================================================================================
+--
+-- guard_squad_assassin
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_assassin", "guard_assassin_assassinate",
+	{
+		DebugON=DebugON,
+		MinDelay=40, HealthRange=25, HealthMin=5000,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSelf
+)
+
+-- ===================================================================================
+--
+-- guard_squad_command_squad
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_command_squad", "guard_strafing_run",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=10, HealthMin=10000, SearchRange=40, MinDistance=15,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)
+
+--[[SpecAbilityMgr.AddAbility( "guard_squad_command_squad_advance_sp_wg", "guard_strafing_run",
+	{
+		DebugON=DebugON,
+		MinDelay=180, HealthRange=10, HealthMin=10000, SearchRange=40, MinDistance=15,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)]]
+
+-- ===================================================================================
+--
+-- guard_squad_basilisk
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_basilisk", "earthshaker_round",
+	{
+		DebugON=DebugON,
+		MinDelay=90, HealthRange=10, HealthMin=10000, SearchRange=120, MinDistance=15,
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityArea
+)
+
+-- ===================================================================================
+--
+-- guard_squad_hellhound
+--
+-- ===================================================================================
+
+SpecAbilityMgr.AddAbility( "guard_squad_hellhound", "guard_let_it_burn",
+	{
+		DebugON=DebugON,
+		MinDelay=60, HealthRange=15, HealthMin=1500, 
+		ArmorFilterList={"tp_infantry_low","tp_infantry_med","tp_infantry_high","tp_infantry_heavy_med","tp_infantry_heavy_high","tp_commander","tp_monster_med","tp_monster_high","tp_vehicle_low","tp_vehicle_med","tp_vehicle_high"},
+	},
+	SpecAbilityMgr.GenericDoSpecAbilityToSquad
+)
+

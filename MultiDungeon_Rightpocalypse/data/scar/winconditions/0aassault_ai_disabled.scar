@@ -1,0 +1,19 @@
+----------------------------------
+
+import("ScarUtil.scar")
+
+
+
+function Rule_AI_Stays_BrainDead()
+
+G_Assault_Artificial_Stupidity = true
+print "Turing test failed!"
+
+	if G_Is_Assault_Map == nil then
+		print("NON-Assault Map.  Assault: Profiles-only AI (selected wincondition) has no effect at all - NO rule started!")
+		return
+	end
+end
+
+
+Scar_AddInit(Rule_AI_Stays_BrainDead)

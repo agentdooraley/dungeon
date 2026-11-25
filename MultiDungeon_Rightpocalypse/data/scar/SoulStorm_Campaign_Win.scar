@@ -1,0 +1,72 @@
+--------------------------------------
+-- AutoWin Button for the Campaign	--
+-- Created by Gambit @20/06/2021	--
+--------------------------------------
+-- Edited by fuggles @29/08/2024
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+
+function AutoWinButtonWC_Init()
+	-- Setup the scar button
+	local chosen_button = 0
+	for button = 1, 6 do
+		-- g_CustomScarButtonUsed is already defined in scarutil.
+		if not g_CustomScarButtonUsed[button] then
+			chosen_button = button
+			g_CustomScarButtonUsed[button] = true
+			break
+		end
+	end
+	-- Free button found, set it up	
+	G_AutoWin_ButtonBTN = Button_Add( "btn_ScarUI"..chosen_button, true, true, false )
+	Button_SetTextures( G_AutoWin_ButtonBTN, "event_cue_icons/custom/AutoWin1", "event_cue_icons/custom/AutoWin2", "event_cue_icons/custom/AutoWin2" )
+	Button_SetTooltip( G_AutoWin_ButtonBTN, "$5800248", "$5800249" )
+	-- Start the Rule
+	Rule_Add(AutoWinButtonWC_Rule)
+end
+
+
+function AutoWinButtonWC_First_Init()
+	-- Add a delay of 1.5, to initiate the proper buttons. The delay is made so that the Change Players
+	--  and Restricted Tiering win condition to take precedence over all other win conditions that utilise Scar buttons.
+	print("Auto-Win Button Enabled.")
+	--fuggles this needs to be longer as it really borks up in campaign where scripts are firing
+	--fugglestest2 = MetaMap_GetDefendingTerritoryIndex()
+	--	if MetaMap_IsTerritoryStronghold( fugglestest2) then
+	--	Rule_AddOneShot(AutoWinButtonWC_Init, 20)
+	--	else
+		Rule_AddOneShot(AutoWinButtonWC_Init, 1.5)
+	--	end
+end
+
+
+Scar_AddInit(AutoWinButtonWC_First_Init)
+
+
+function AutoWinButtonWC_Rule()
+	if Button_GetPressed( G_AutoWin_ButtonBTN ) and not Event_IsAnyRunning() then
+	-- does this go here?
+	Rule_Check_Remove(AutoWinButtonWC_Rule)
+	Rule_RemoveAll()
+		for idx = 0, World_GetPlayerCount()-1 do
+			if Tut_GetLocalPlayerIndex() ~= idx then
+				playerID = World_GetPlayerAt(idx)
+				if Player_IsAlive(playerID) then
+					Player_Kill(playerID)
+				end
+			end
+		end
+		haswon()
+		-- Kill any possible problematic DE Possessing squads (Medusae) that cause CTD!
+		pcall(SGroup_DestroyAllSquads,"sg_DarkEldar_Medusae_Possessed_Squads")
+		World_SetTeamWin( World_GetPlayerAt(Tut_GetLocalPlayerIndex()), "3annihilate")
+		Rule_AddOneShot(AutoWinButtonWC_GameEnd, 1)
+	Rule_Check_Remove(AutoWinButtonWC_Rule)
+	end
+end
+
+function AutoWinButtonWC_GameEnd()
+	World_SetGameOver() 	
+end

@@ -1,0 +1,56 @@
+--------------------------------------
+-- Additional Campaign Functions	--
+-- Created by Gambit @24/07/2021	--
+--------------------------------------
+
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+
+
+function SoulStorm_Campaign_AdditionalRulesMetaMap_Init()
+
+	local is_campaign = pcall(MetaMap_GetAttackerRaceIndex)
+-- 1] * * * * * * *  RULES THAT ALWAYS COME IN PLAY * * * * * * * --
+	
+	-- IMPERIAL GUARD - Chimera swap with Testudo / Allow Doom Hammer only in Campaign
+	-- TAU - Tetras and Female Fire Warriors are only available for Campaign
+	-- ORKS - Wartrukk swap with Looted Rhino
+	-- ELDAR - Allow Lynx only in Campaign
+	-- NOTE: These could have been coded via the AE player metamap requirement, alas...
+	for i=0, World_GetPlayerCount()-1 do
+		local playerID = World_GetPlayerAt(i)
+		if is_campaign then
+			Player_RestrictSquad(playerID, "guard_squad_chimera")
+			Player_RestrictSquad(playerID, "tau_fire_warrior_squad")
+			Player_RestrictSquad(playerID, "ork_squad_trukk")
+		end
+	end
+
+-- 2] * * * * * * *  ONLY WORKS ON CAMPAIGN FROM NOW ON! RETURN, IN ALL OTHER CASES  * * * * * * * --
+
+	if not is_campaign then
+		return
+	end
+
+	-- SISTERS OF BATTLE - Sabbat Appearance after beating Guard
+	local check_rule = PlayerProfile_GetVar("SoB_Player_Has_Beaten_The_Guard_Meta")
+	if check_rule ~= nil and check_rule ~= "" and check_rule == "DONE" then
+		if VanillaTitansWC_Enabled ~= nil and VanillaTitansWC_Enabled == true then
+			Rule_AddOneShot(SoulStorm_Campaign_SoB_Sabbat,5)
+		end
+	end
+end
+
+
+function SoulStorm_Campaign_SoB_Sabbat()
+	if MetaMap_GetPlayerNRaceName(0) == "sisters_race" then
+		EventCue_DoEvent("sabbat_enabled", "/event_cue_notifications/team_change", "Saint Sabbat!", "After having defeated the Imperial Guard, Saint Sabbat feels obliged and has joined your cause.  You can now recruit her from the Shrine of the Archangel.")
+	end
+	for i=0, World_GetPlayerCount()-1 do
+		Player_GrantResearch(World_GetPlayerAt(i),"0sisters_sabbat_campaign_enable")
+	end
+end
+
+
+
+Scar_AddInit(SoulStorm_Campaign_AdditionalRulesMetaMap_Init)

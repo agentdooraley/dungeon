@@ -1,0 +1,357 @@
+
+-- Assault Mode conceived and Coded by Dark40k, updated by fuggles. --
+-----------------------------------------------------------------------
+
+--These can be nil, or duplicate - ie barracks can be a hq blueprint
+BarracksName = "ork_boy_hut"
+TechName = "ork_pile_o_guns"
+BigVehicleName = "ork_titans_building"
+VehicleName = "ork_mek_shop"
+TurretName = "ork_waagh_banner_no_limit"
+TurretAddonName = "ork_waagh_banner_gunzaddon_2"
+MinesName = "ork_mine_field"
+HQName = "ork_hq"
+GenName = "ork_generator"
+LPName = "ork_gork_totem"
+LP1Name = "ork_gork_totem_addon_1"
+LP2Name = "ork_gork_totem_addon_2"
+Thermo = "ork_bigger_generator"
+
+-- Set here the name of the squad you want to attempt decapturing Critical Locations. I'm not so clever to do it with fun shortcuts.
+DeCapturingSquadName = "ork_squad_slugga"
+DeCapturingSquadMmbrs = 15
+--These need to be duplicated if they do not exists, so if you have one transport type, it goes in both slots.
+RepairingSquadName = "ork_squad_grot"
+RepairingSquadMmbrs = 4
+AircraftType1 = "ork_squad_fighta_bomba"
+AircraftType2 = "ork_squad_burna_bomba"
+RelicName1 = "ork_squad_squiggoth"
+RelicName2= "ork_squad_stompa"
+TitanName1 = "ork_squad_gargant_titan"
+TitanName2 = "ork_squad_great_gargant_titan"
+--Upgrades and add leader
+Squad1 = "ork_squad_kommandoz"
+Squad1Upgrade1 = "ork_rokkit_launcha_kommando"
+Squad1Upgrade2 = "ork_big_shoota_kommando"
+--Upgrades and adds leader
+Elite1 = "ork_squad_shoota_boy"
+Elite1Upgrade1 = "ork_big_shoota_shoota"
+Elite1Upgrade2 = "ork_big_shoota_shoota"
+--Melee no upgrades by default, adds leader
+Elite2 = "ork_squad_armored_nob"
+--Entrench
+Elite3 = "ork_squad_stikk_bomma"
+Hero1 = "ork_squad_weirdboy"
+Hero2 = "ork_squad_mek_boy"
+Hero3 = "ork_squad_bad_dok"
+MainTank1 = "ork_squad_looted_tank"
+MainTank2 = "ork_squad_looted_tank_pred"
+SmallTank1 = "ork_squad_killa_kan"
+--Recommend this to be a walker type.
+SmallTank2 = "ork_squad_deff_dread"
+Transport1 = "ork_squad_trukk"
+Artillery1 = "ork_squad_gunwagon"
+Artillery2 = "ork_squad_flakkatrukk"
+
+
+--This is tedious but gives you control
+--Infantry and entrenched
+function Rule_Critical_One_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_1") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, "mk_cp_1_1", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, "mk_cp_1_2", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite3, "mk_cp_1_3", 1, 6)
+Cmd_SquadEntrench("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, SmallTank1, "mk_cp_1_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_1_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_1", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_1",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_1")
+end
+
+--Elite infantry
+function Rule_Critical_Two_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_2") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, "mk_cp_2_1", 1, 6)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_2", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, "mk_cp_2_2", 1, 6)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_2", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_2_3", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_2", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, SmallTank1, "mk_cp_2_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_2", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_2_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_2", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_2",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_2")
+end
+
+--more tanks
+function Rule_Critical_Three_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_3") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, "mk_cp_3_1", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_3", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_3_2", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_3", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, SmallTank1, "mk_cp_3_3", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_3", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_3_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_3", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_3_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_3", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_3",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_3")
+end
+
+--mostly arty
+function Rule_Critical_Four_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_4") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, "mk_cp_4_1", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_4", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_4_2", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_4", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_4_3", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_4", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_4_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_4", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_4_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_4", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_4",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_4")
+end
+
+--same as 4
+function Rule_Critical_Five_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_5") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, "mk_cp_5_1", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_5", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_5_2", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_5", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_5_3", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_5", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_5_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_5", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_5_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_5", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_5",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_5")
+end
+
+--mbt and arty
+function Rule_Critical_Six_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_6") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_6_1",1, 1)
+SGroup_AddGroup( "sg_repair_defend_6", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_6_2",1, 1)
+SGroup_AddGroup( "sg_repair_defend_6", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_6_3",1, 1)
+SGroup_AddGroup( "sg_repair_defend_6", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_6_4",1, 1)
+SGroup_AddGroup( "sg_repair_defend_6", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_6_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_6", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_6",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_6")
+end
+
+--inf and arty same as 4/5
+function Rule_Critical_Seven_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_7") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, "mk_cp_7_1", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_7", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_7_2", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_7", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_7_3", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_7", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_7_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_7", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery1, "mk_cp_7_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_7", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_7",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_7")
+end
+
+--elite and 2 mbt, similar to 2
+function Rule_Critical_Eight_Squads(slot)
+SGroup_CreateIfNotFound("sg_repair_defend_8") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, "mk_cp_8_1", 1, 6)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_8", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, "mk_cp_8_2", 1, 6)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_8", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_cp_8_3", 1, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_repair_defend_8", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_8_4", 1, 1)
+SGroup_AddGroup( "sg_repair_defend_8", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_cp_8_5",1, 1)
+SGroup_AddGroup( "sg_repair_defend_8", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_repair_defend_8",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_repair_defend_8")
+end
+
+function Rule_Final_Stand_Squads(slot)
+SGroup_CreateIfNotFound("sg_final_defend_1") 
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, "mk_final_51", 1, 1)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, "mk_final_51", 4, 6)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, "mk_final_51", 2, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_random_squads_start_p"..slot)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Artillery2, "mk_final_51",3, 1)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Transport1, "mk_final_51", 2, 1)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, SmallTank1, "mk_final_51", 2, 2)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, MainTank1, "mk_final_51", 4, 1)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, RelicName1, "mk_final_51", 2, 1)
+SGroup_AddGroup( "sg_final_defend_1", "sg_random_squads_start_p"..slot)
+Cmd_SetStance("sg_final_defend_1",STANCE_StandGround)
+Cpu_LockSGroup(g_enemy_PlayerID, "sg_final_defend_1")
+end
+
+function Rule_First_Level_Relief()
+SGroup_CreateIfNotFound("sg_relief_squads_one_start") 
+SGroup_CreateIfNotFound("sg_relief_squads_one")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_one_start", SmallTank1, "mk_enemy_pos", 2, 1)
+SGroup_AddGroup( "sg_relief_squads_one","sg_relief_squads_one_start")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_one_start", Transport1, "mk_enemy_pos", 2, 1)
+SGroup_AddGroup( "sg_relief_squads_one","sg_relief_squads_one_start")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_one_start", Elite2, "mk_enemy_pos", 2, 1)
+SGroup_AddLeaders("sg_relief_squads_one_start")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_one_start", Squad1, "mk_enemy_pos", 3, 6)
+SGroup_AddGroup( "sg_relief_squads_one","sg_relief_squads_one_start")
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_relief_squads_one_start"), 1), Squad1Upgrade1, 4)
+SGroup_AddLeaders("sg_relief_squads_one_start")
+SGroup_AddGroup( "sg_relief_squads_one","sg_relief_squads_one_start")
+end
+
+function Rule_Second_Level_Relief()
+SGroup_CreateIfNotFound("sg_relief_squads_two_start") 
+SGroup_CreateIfNotFound("sg_relief_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_two_start", MainTank1, "mk_enemy_pos", 3, 1)
+SGroup_AddGroup( "sg_relief_squads_two_start", "sg_relief_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_two_start", Transport1, "mk_enemy_pos", 2, 1)
+SGroup_AddGroup( "sg_relief_squads_two_start", "sg_relief_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_two_start", Elite2, "mk_enemy_pos", 2, 1)
+SGroup_AddLeaders("sg_relief_squads_two_start")
+SGroup_AddGroup( "sg_relief_squads_two_start", "sg_relief_squads_two")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_two_start", Elite1, "mk_enemy_pos", 3, 6)
+Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_relief_squads_two_start"), 1), Elite1Upgrade2, 4)
+SGroup_AddLeaders("sg_relief_squads_two_start")
+SGroup_AddGroup( "sg_relief_squads_two", "sg_relief_squads_two_start")
+
+end
+
+function Rule_Third_Level_Relief()
+SGroup_CreateIfNotFound("sg_relief_squads_three_start") 
+SGroup_CreateIfNotFound("sg_relief_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_three_start", MainTank1, "mk_enemy_pos", 2, 1)
+SGroup_AddGroup( "sg_relief_squads_three_start", "sg_relief_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_three_start", Hero1, "mk_enemy_pos", 3, 1)
+SGroup_AddGroup( "sg_relief_squads_three_start", "sg_relief_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_three_start", Elite2, "mk_enemy_pos", 3, 1)
+SGroup_AddLeaders("sg_relief_squads_three_start")
+SGroup_AddGroup( "sg_relief_squads_three_start", "sg_relief_squads_three")
+Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_relief_squads_three_start", RelicName1, "mk_enemy_pos", 1, 1)
+SGroup_AddGroup( "sg_relief_squads_three", "sg_relief_squads_three_start")
+end
+
+--Add some form of escalation?
+
+-- Random spamming attacks against players, based on their tech level - STANDARD (Starting) Resources games.
+function Rule_RandomSpammingAttacks(slot)
+	local marker = "mk_enemy_pos"
+	if(Assault_PlayerInfo.Techlvl[slot]==1)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, marker, 1, 1)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==2)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero2, marker, 1, 1)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==3)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 1, 4)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero2, marker, 1, 1)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==4)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 1, 4)
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, marker, 1, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero1, marker, 1, 1)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Hero2, marker, 1, 1)
+	end
+end
+
+
+-- Random spamming attacks against players, based on their tech level - HIGH (Starting) Resources games.
+function Rule_RandomSpammingAttacks_Quickstart_Player(slot)
+--fuggles sort this
+	local marker = "mk_enemy_pos"
+	if(Assault_PlayerInfo.Techlvl[slot]==1)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 3, 4)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==2)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 3, 4)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==3)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 2, 4)
+		if Squad1Upgrade1 ~= Nil then
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, marker, 2, 4)
+	elseif(Assault_PlayerInfo.Techlvl[slot]==4)then
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Squad1, marker, 2, 4)
+		if Squad1Upgrade1 ~= Nil then
+		Squad_ForceUpgradeWeapons(SGroup_GetSpawnedSquadAt(SGroup_FromName("sg_random_squads_start_p"..slot), 1), Squad1Upgrade1, 4)
+		end
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite1, marker, 2, 4)
+		Util_CreateSquadsAtMarkerEx(g_enemy_PlayerID, "sg_random_squads_start_p"..slot, Elite2, marker, 2, 4)
+	end
+end
+
+
+--------------------------------------------------------------------------
+--                Stats for Heroic Assault wincondition             ------
+-- Race-Specific special attacks/effects. Include your code in the  ------
+-- Rule_SpecialRaceAttackingMethodSurvival function below, leave it	------
+-- empty, if no special method for this race is coded!				------
+--------------------------------------------------------------------------
+
+function Rule_SpecialRaceAttackingMethodAssault()
+--add titans or whatnot here
+end
+

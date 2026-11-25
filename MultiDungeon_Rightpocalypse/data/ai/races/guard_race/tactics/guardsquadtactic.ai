@@ -1,0 +1,57 @@
+----------------------------------------
+-- File: 'guardsquadtactic.ai'
+-- Edited by Thudmeizer	@ 05.09.2016
+
+class 'GuardSquadTactic' (GuardInfantryTactic)
+
+GuardSquad = {}
+
+function GuardSquadTactic:__init( squad_ai ) super( squad_ai )
+
+	self:SetName("Guard Squad Tactic")
+	
+	-- Squad is able to occupy bunkers
+	self.m_bBunkerSquad = true
+
+	self.m_iTacticaID = cpu_manager.stats:GetBuildingID( "guard_tactica" )
+end
+
+function GuardSquadTactic:InitAbilities()
+
+	-- Init ability ID's
+	if (GuardSquad.bolster_id == nil) then
+		GuardSquad.bolster_id = cpu_manager.stats:GetAbilityID( "guard_bolster_defenses" )	
+	end
+end
+
+function GuardSquadTactic:DoAbilities()
+
+	-- Check if we can Bolster Defenses
+	if (self.squad_ai:CanDoAbility(GuardSquad.bolster_id)) then
+	
+		-- Search a squad
+		local iRange = self.squad_ai:GetAbilityRange(GuardSquad.bolster_id)
+		local oUnit = Ability.Filters.CloseHurt(self.squad_ai:GetPosition(), iRange, 1)
+		if (oUnit ~= nil and oUnit:IsInCombat() and cpu_manager:GetUnitStrength(oUnit) > 150) then
+			self.squad_ai:DoSpecialAbilitySquad(GuardSquad.bolster_id, oUnit:GetSquad())
+		end
+	end
+
+
+end
+
+function GuardSquadTactic:Reinforce()
+	
+	-- If there are no ressources available, don't upgrade!
+	local iRequisition = resource_manager:GetResourceAmount():Get(ResourceAmount.RT_Requisition)
+	-- Try for leader
+	if (not self.squad_ai:IsReinforcing()) or iRequisition < 800 then
+		if (self.squad_ai:CanReinforce(false, 0)) then
+
+			-- Don't reinforce more than 7 guards without a leader
+			if ((self.squad_ai:HasLeader() or self.squad_ai:HasSquadAttached("guard_squad_commissar") or self.squad_ai:HasSquadAttached("guard_squad_priest") and g_iGMT >= 120) or self.squad_ai:GetNumTroopers() < 5) then
+				self.squad_ai:DoReinforce(false, 0)
+			end
+		end
+	end
+end

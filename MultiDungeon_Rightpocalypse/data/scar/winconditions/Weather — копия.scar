@@ -1,0 +1,348 @@
+-----------------------------------------------------------------
+-- Original Dynamic Weather concept created by Fuggles.
+-- Heavily Revamped from the original 1.0 to 3.6 by Gambit.
+-- Added support for constant weather conditions.
+-- Pending 1] Clear other possible weather entities of the maps
+--         2] Create More weather types (and possibly FXes)
+-----------------------------------------------------------------
+import("ScarUtil.scar")
+import("WXPScarUtil.scar")
+import("WCUtil.scar")
+
+
+
+-- These are the weather effects. If set to true, the effect will be included in the list of possible weather conditions.
+-- If false, the effect will be excluded. Use ONLY true or false values. At LEAST ONE MUST be true, or the game will freeze!!
+Weather_Effect_Type =
+{
+false,		-- 1] STORM: Lowers aircraft maximum speed, if HPs>3000 (??). (heavy winds, aircrafts lose control if below some HPs, inf cannot jumps/teleport) lose_control enable_squad_jump
+true,		-- 2] RAIN: Lowers ranged weapon accuracy. 2 types. accuracy_ranged_weapon_modifier
+true,		-- 3] SNOW STORM: Lowers infantry maximum speed. 3 types.
+false,		-- 4] Electromagnetic Storm (veh + aircraft hindering modifiers) speed_maximum_modifier
+true,		-- 5] Gravitational Ripples (Gravitational waves hit the planet, the anomaly modifies masses. Max +25/-15) special_attack_physics_mass
+true,		-- 6] Acid Rain (small degen + weapon accuracy reduction) health_degeneration_modifier + accuracy_ranged_weapon_modifier
+false		-- 7] Poison Rain (enable poison damage, NO weapon accuracy reduction) poison_enable + accuracy_ranged_weapon_modifier
+}
+
+-- Apply the weather(s) chosen above, CONSTANTLY (no pauses for calm weather).
+Weather_Effects_Always_On = false
+
+-- EXAMPLES
+-- Scenario 1: Snow Storm, always. Set "true" ONLY the SNOW STORM weather type, set to "true" the Weather_Effects_Always_On.
+-- Scenario 2: Snow Storm or Rain (swapping from one to the other), always. Set to "true" ONLY the SNOW STORM and RAIN weather types, set "true" the Weather_Effects_Always_On.
+-- Scenario 3: Any weather (swapping from one to the other), with random pauses with calm weather. Set "true" only the weather type you want, set to "false" the Weather_Effects_Always_On. This is the average Scenario.
+-- NOTE: All weather effects have random duration.
+
+----------------------------------------------------------------------------------------------------------
+
+
+function Weather_GlobalArrayInitialisation()
+	-- Global Arrays.
+	-------------------------------
+	Weather_Modifiers_Rain  = {{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}},{{{},{}},{{},{}}}}
+	Rain_Modifs = {{0.8,1.25},{0.64,1.5625}}  -- Type: normal/heavy
+	-------------------------------
+	Weather_Modifiers_SnowStorm = {{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}},{{{},{},{}},{{},{},{}}}}
+	SnowStorm_Modifs = {{0.8,1.25},{0.64,1.5625},{0.4,2.5}}  -- Type: light/medium/heavy
+	-------------------------------
+	Weather_Modifiers_Storm = {{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}},{{},{}}}
+	-------------------------------
+end
+
+
+
+-- Choose the Weather type.
+function Weather_TypeAndAplication(application_type)
+	if Weather_Type_Index == 1 then
+		Weather_Effect_Storm(application_type)
+	elseif Weather_Type_Index == 2 then
+		Weather_Effect_Rain(application_type)
+	elseif Weather_Type_Index == 3 then
+		Weather_Effect_SnowStorm(application_type)
+	end
+end
+
+
+
+function Weather_Effect_Storm(application_type)
+end
+
+
+
+function Weather_Effect_Rain(application_type)
+-- Give the appropriate notification and set the ambient sound.
+local ambience = {""}
+local wEntity = ""
+local message1 = ""
+local message2 = ""
+-- We have only 2 types of rain,so we cannot directly use Weather_Modifier_Type, it may take the value of 3.
+local rain_Weather_Modifier_Type = 0
+
+if Weather_Modifier_Type == 1 then
+	rain_Weather_Modifier_Type = 1
+	ambience = {"Rain_thunder_amb"}
+	wEntity = "fx_rain_01"
+	if Weather_Effects_Always_On then message1 = "Weather: The weather shifts to Rain...!"
+	else message1 = "Weather: Rain suddenly hits the locale!" end
+	message2 = "The Ranged Weapon Accuracy of all units is hindered."
+else
+	rain_Weather_Modifier_Type = 2
+	ambience = {"Rain_thunder_amb"}
+	wEntity = "fx_sleet_hvy"
+	if Weather_Effects_Always_On then message1 = "Weather: The weather shifts to a Rainy Sleet Storm...!"
+	else message1 = "Weather: A Strong Rain Sleet Storm, suddenly hits the locale!" end
+	message2 = "The Ranged Weapon Accuracy of all units is severely hindered! Better resort to Melee strategies."
+end
+if application_type == 2 then
+	message1 = "Weather: The Rain weakens, and the weather returns to normal..."
+	message2 = "There are no longer any weather modifications to units' behaviour."
+end
+
+if application_type == 1 then
+	local sIcon = "player_donation"
+	local sSound = "event_cue_notifications_wincon/WeatherStart"
+	EventCue_DoEvent(sIcon, sSound, message1, message2)
+	Sound_PlaylistClear(PC_Ambient)
+	Playlist_Manager(PC_Ambient, ambience, true , true , {0,0})
+elseif not Weather_Effects_Always_On then
+	local sIcon = "player_donation"
+	local sSound = "event_cue_notifications_wincon/WeatherEnd"
+	EventCue_DoEvent(sIcon, sSound, message1, message2)
+	Sound_PlaylistClear(PC_Ambient)
+end
+
+-- Let's do it!!!
+-- Spawn/Despawn the weather entity responsible for the visuals.
+if application_type == 2 then
+	Entity_Destroy(Weather_Entity)
+else
+	for player=1, World_GetPlayerCount() do
+		local playerID = World_GetPlayerAt(player-1)
+		if Player_IsAlive(playerID) then
+			Weather_Entity = Entity_Create( wEntity, playerID, World_Pos( 0, 0, 0)) --attrib\ebps\environment\snow
+			Entity_SetWorldOwner(Weather_Entity)
+			Entity_Spawn(Weather_Entity)
+			break		
+		end
+	end
+end
+end
+
+
+
+
+function Weather_Effect_SnowStorm(application_type)
+-- Give the appropriate notification and set the ambient sound.
+local ambience = {""}
+local wEntity = ""
+local message1 = ""
+local message2 = ""
+if Weather_Modifier_Type == 1 then
+	ambience = {"Snowy_wind_1"}
+	wEntity = "fx_snow_light_01"
+	if Weather_Effects_Always_On then message1 = "Weather: The weather shifts to a Mild Snow Storm...!"
+	else message1 = "Weather: A Mild Snow Storm, suddenly hits the locale!" end
+	message2 = "The Movement Speed of all Infantry units is hindered. Vehicles are unaffected."
+elseif Weather_Modifier_Type == 2 then
+	ambience = {"Snowy_wind_1"}
+	wEntity = "fx_snow_med_01"
+	if Weather_Effects_Always_On then message1 = "Weather: The weather shifts to a Strong Snow Storm...!"
+	else message1 = "Weather: A Strong Snow Storm, suddenly hits the locale!" end
+	message2 = "The Movement Speed of all Infantry units is greatly hindered. Vehicles are unaffected. This is a good time to utilise your transports."
+else
+	ambience = {"Snowy_wind_2"}
+	wEntity = "fx_snow_hvy_02"
+	if Weather_Effects_Always_On then message1 = "Weather: The weather shifts to a Terrible Snow Storm...!"
+	else message1 = "Weather: A Terrible Snow Storm, suddenly hits the locale!" end
+	message2 = "The Movement Speed of all Infantry units is severely hindered! Vehicles are unaffected - so it is the BEST time to utilise your transports."
+end
+if application_type == 2 then
+	message1 = "Weather: The Snow Storm weakens, and the weather returns to normal..."
+	message2 = "There are no longer any weather modifications to units' behaviour."
+end
+
+if application_type == 1 then
+	local sIcon = "player_donation"
+	local sSound = "event_cue_notifications_wincon/WeatherStart"
+	EventCue_DoEvent(sIcon, sSound, message1, message2)
+	Sound_PlaylistClear(PC_Ambient)
+	Playlist_Manager(PC_Ambient, ambience, true , true , {0,0})
+elseif not Weather_Effects_Always_On then
+	local sIcon = "player_donation"
+	local sSound = "event_cue_notifications_wincon/WeatherEnd"
+	EventCue_DoEvent(sIcon, sSound, message1, message2)
+	Sound_PlaylistClear(PC_Ambient)
+end
+
+-- Let's do it!!!
+-- Spawn/Despawn the weather entity responsible for the visuals.
+if application_type == 2 then
+	Entity_Destroy(Weather_Entity)
+else
+	for player=1, World_GetPlayerCount() do
+		if Player_IsAlive(playerID) then
+			Weather_Entity = Entity_Create( wEntity, playerID, World_Pos( 0, 0, 0)) --attrib\ebps\environment\snow
+			Entity_SetWorldOwner(Weather_Entity)
+			Entity_Spawn(Weather_Entity)
+			break		
+		end
+	end
+end
+end
+
+
+
+function Weather_InitSet()
+	-- Global table that saves the variables so that on load to be properly restored. All 7 are integers.
+	-- In order of appearance: Weather_Clock(1), Weather_Clock_Interval(2), Weather_Duration(3), Weather_Initiation_Time(4),
+	--						   Weather_Modifier_Type(5), Weather_Problem_Test(6), Weather_Type_Index(7).
+	Weather_Condition_Variables = {0,0,0,0,0,0,0}
+
+	-- It is the time interval upon which the random weather occurs. Better not touch.
+	Weather_Clock_Interval = 1
+
+	Weather_Entity = nil
+	Weather_Duration = 0
+	Weather_Clock = Weather_Clock_Interval
+	Weather_Initiation_Time = Weather_Clock
+
+	--Initiate global arrays
+	Weather_GlobalArrayInitialisation()
+
+
+	--Clear current ambient playlist.
+	Sound_PlaylistClear(PC_Ambient)
+
+	--Then, store the necessary variables in case the player saves->loads.
+	Weather_Condition_Variables[2] = Weather_Clock_Interval
+	Weather_Condition_Variables[3] = Weather_Duration
+	Weather_Condition_Variables[1] = Weather_Clock
+	Weather_Condition_Variables[4] = Weather_Initiation_Time
+
+	-- There is a chance of 1/3, that we will almost immediately start with a weather condition.
+	if World_GetRand(1,3) == 2 then
+		Weather_Random_Initiation_Time = 0
+	else
+		Weather_Random_Initiation_Time = Weather_Clock_Interval*World_GetRand(5,240)
+	end
+	-- ... but if we want no calm weather at all, start immediately.
+	if Weather_Effects_Always_On then Weather_Random_Initiation_Time = 0 end
+
+	--Console info, reporting the weather specifics
+	--[[if not Weather_Effects_Always_On then
+		print("------------ Weather Condition Specifics ------------")
+		print("Next Weather will strike after: "..Weather_Random_Initiation_Time + Weather_Clock_Interval.." secs")
+		print("-----------------------------------------------------------")
+	end]]
+
+	print("Weather Conditions rule active! The locale is governed by weather cycles.")
+	-- Initiate the rule
+	Rule_AddIntervalDelay(Weather_SetWorldWeather, Weather_Clock_Interval, Weather_Random_Initiation_Time)
+end
+
+
+
+function Weather_SetWorldWeather()
+-- If we must apply a weather condition, do it.
+if Weather_Clock == Weather_Initiation_Time then
+	local previous_Weather_Type_Index = Weather_Type_Index
+	local previous_Weather_Modifier_Type = Weather_Modifier_Type
+	Weather_Duration = Weather_Clock_Interval*World_GetRand(15,World_GetRand(180, 420))
+	Weather_Condition_Variables[3] = Weather_Duration
+	-- Choose a random weather. Store the type, to cancel later.
+	local weather_Types_Number = table.getn(Weather_Effect_Type)
+	repeat
+		Weather_Type_Index = World_GetRand(1, weather_Types_Number)
+	until Weather_Effect_Type[Weather_Type_Index] == true
+	Weather_Condition_Variables[7] = Weather_Type_Index
+	-- Chose a random type of the chosen weather type.
+	local type = World_GetRand(1, 10)
+	if type<=5 then Weather_Modifier_Type = 1
+	elseif type<=8 then Weather_Modifier_Type = 2
+	else Weather_Modifier_Type = 3 end
+	Weather_Condition_Variables[5] = Weather_Modifier_Type
+
+	--Console info, reporting the weather specifics
+	--[[print("------------ Weather Condition Specifics ------------")
+	print("Weather Duration: "..Weather_Duration + Weather_Clock_Interval.." secs")
+	print("Weather Type: "..Weather_Type_Index)
+	print("Weather Application Type: "..Weather_Modifier_Type)
+	print("-----------------------------------------------------------")]]
+
+	if Weather_Effects_Always_On then
+		-- NOW it's time to cancel/ apply modifiers (immediately), and ONLY if necessary (weather change).
+		-- At the first time, work normally.
+		if previous_Weather_Type_Index == nil then
+			Weather_TypeAndAplication(1)
+		elseif previous_Weather_Type_Index ~= Weather_Type_Index or previous_Weather_Modifier_Type ~= Weather_Modifier_Type then
+			-- Do it ONLY if necessary (weather change).
+			-- First, revert the PREVIOUS modifiers.
+			local t_Weather_Type_Index = Weather_Type_Index
+			Weather_Type_Index = previous_Weather_Type_Index
+			local t_Weather_Modifier_Type = Weather_Modifier_Type
+			Weather_Modifier_Type = previous_Weather_Modifier_Type
+			Weather_Condition_Variables[7] = Weather_Type_Index
+			Weather_Condition_Variables[5] = Weather_Modifier_Type
+			Weather_TypeAndAplication(2)
+			-- Now, apply the NEW ones.
+			Weather_Type_Index = t_Weather_Type_Index 
+			Weather_Modifier_Type = t_Weather_Modifier_Type
+			Weather_Condition_Variables[7] = Weather_Type_Index
+			Weather_Condition_Variables[5] = Weather_Modifier_Type
+			Weather_TypeAndAplication(1)
+		end
+	else
+		-- Run the random weather function ONCE with the apply modifier (1) of the appropriate type.
+		Weather_TypeAndAplication(1)
+	end
+	Weather_Clock = Weather_Clock + Weather_Clock_Interval
+	Weather_Condition_Variables[1] = Weather_Clock
+-- If not, just shift the clock.
+else
+	if Weather_Clock == Weather_Initiation_Time + Weather_Duration then
+		-- Reset Clock.
+		Weather_Clock = Weather_Clock_Interval
+		Weather_Condition_Variables[1] = Weather_Clock
+		-- Define the initiation time of the next weather effect.
+		if Weather_Effects_Always_On then
+			-- Start the next weather immediately
+			Weather_Initiation_Time = Weather_Clock
+		else
+			Weather_Initiation_Time = Weather_Clock*World_GetRand(20,420)
+		end
+		Weather_Condition_Variables[4] = Weather_Initiation_Time
+
+		--Console info, reporting the weather specifics
+		--[[if not Weather_Effects_Always_On then
+			print("------------ Weather Condition Specifics ------------")
+			print("Next Weather will strike after: "..Weather_Initiation_Time.." secs")
+			print("-----------------------------------------------------------")
+		end]]
+
+		-- Cancel the previous on-going weather effect (2) of the appropriate type.
+		-- Do not cancel now, if Weather_Effects_Always_On.
+		if not Weather_Effects_Always_On then
+			Weather_TypeAndAplication(2)
+		end
+	else
+		Weather_Clock = Weather_Clock + Weather_Clock_Interval
+		Weather_Condition_Variables[1] = Weather_Clock
+	end
+end
+
+end
+
+function Weather_RestoreVariables()
+	Weather_Clock = Weather_Condition_Variables[1]
+	Weather_Clock_Interval = Weather_Condition_Variables[2]
+	Weather_Duration = Weather_Condition_Variables[3]
+	Weather_Initiation_Time = Weather_Condition_Variables[4]
+	Weather_Modifier_Type = Weather_Condition_Variables[5]
+	Weather_Problem_Test = Weather_Condition_Variables[6]
+	Weather_Type_Index = Weather_Condition_Variables[7]
+end
+
+Scar_AddInit(Weather_InitSet)
+-- On load, restore global condition variables.
+Scar_AddLoad(Weather_RestoreVariables)
+

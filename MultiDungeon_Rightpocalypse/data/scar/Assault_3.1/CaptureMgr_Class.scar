@@ -1,0 +1,228 @@
+if CaptureMgr_Class==nil then 
+	CaptureMgr_Class={
+		sg_01=SgroupMgr:New("CaptureMgr_Class"),
+	}
+end
+CaptureMgr_Class.DebugON=0
+
+local CaptureMgr_Metatable={
+	__index=CaptureMgr_Class
+}
+
+--[[ object that manages attack launches
+	PlayerID
+	WaveDef: table 
+		bp : string
+		size : number
+		CreatePos : pointer, CreatePos_Class internal pointer to CreatePos object
+		[attachbp] : string
+		[leader] : boolean
+		[weapons_list] : table
+			weaponBP=<Quantity>
+	WaveParams: table
+		SuccessDelay: delay in seconds after success when the squad suicides
+		MinCaptureDistance: min distance to send a squad to capture available point
+	TargetEGName: EgroupName containing points to capture
+	LaunchParams: table
+		DelayList: table
+			1= delay for 1st wave
+			2= delay for 2nd wave
+			...
+			<n>=delay for nth wave and other waves after
+		Ratio: if (total_hp / start_hp) of wave falls under ratio then new wave is called
+		Cost: integer cost of the wave
+	NextTargetEgName: Egroup containing list of next targets to capture
+-- ]]
+function CaptureMgr_Class:New(PlayerID, WaveDef, WaveParams, TargetEgName,LaunchParams,NextTargetEgName)
+	
+	local NewCaptureMgr={
+		PlayerID=PlayerID,
+		WaveDef=WaveDef,
+		WaveParams=WaveParams,
+		TargetEgName=TargetEgName,
+		TargetEgID=EGroup_FromName(TargetEgName),
+		LaunchParams=LaunchParams,
+		LaunchDelayIndex=1,
+		WaveList={},
+		WaveCount=0,
+	}
+	-- create object
+	setmetatable(NewCaptureMgr, CaptureMgr_Metatable)
+	-- save a global pointer to the object
+	NewCaptureMgr.Pointer=PointerTable.Add(NewCaptureMgr)
+	
+	if NextTargetEgName~=nil then
+		NewCaptureMgr.NextTargetEgName=NextTargetEgName
+		NewCaptureMgr.NextTargetEgID=EGroup_FromName(NextTargetEgName)
+	end
+	
+	return NewCaptureMgr
+end
+
+function CaptureMgr_Class.Reload(CaptureMgr)
+
+	setmetatable(CaptureMgr,CaptureMgr_Metatable)
+	PointerTable.Add(CaptureMgr,CaptureMgr.Pointer)
+	
+	for Wave_Index,Wave in pairs(CaptureMgr.WaveList) do
+		CaptureWave_Class.Reload(Wave)
+	end
+	
+end
+
+function CaptureMgr_Class:AddWaveDefFromMap(SquadList, LeaderList, AttachList, WeaponList, EntrenchWeaponList)
+	
+	local SquadIndex=1
+	
+	SGroup_Clear(self.sg_01.ID)
+	for SquadGroup_Index, SquadGroup_Name in (SquadList) do
+		SGroup_AddGroup(self.sg_01.ID, SGroup_FromName(SquadGroup_Name))
+	end
+	
+	for SquadNbr=1,SGroup_CountSpawned(self.sg_01.ID) do
+		
+		while self.WaveDef[SquadIndex]~=nil do SquadIndex=SquadIndex+1 end
+		
+		local SquadID=SGroup_GetSpawnedSquadAt(self.sg_01.ID,SquadNbr)
+		
+		self.WaveDef[SquadIndex]={
+			bp=Squad_GetBlueprintName(SquadID),
+			CreatePos=CreatePos_Class:NewFixedPos(Squad_GetPosition(SquadID)).Pointer,
+		}
+
+		for LeaderGroupIndex,LeaderGroupName in (LeaderList) do
+			if not SGroup_Exists(LeaderGroupName) then 
+				print("CaptureMgr_Class:AddWaveDefFromMap ERROR : sgroup does not exist (skipping):" .. LeaderGroupName)
+			elseif SGroup_ContainsSquad(SGroup_FromName(LeaderGroupName),SquadID) then
+				self.WaveDef[SquadIndex].leader=true
+				break
+			end
+		end
+		
+		for AttachGroupName,Attachbp in (AttachList) do
+			if not SGroup_Exists(AttachGroupName) then 
+				print("CaptureMgr_Class:AddWaveDefFromMap ERROR : sgroup does not exist (skipping):" .. AttachGroupName)
+			elseif SGroup_ContainsSquad(SGroup_FromName(AttachGroupName),SquadID) then
+				self.WaveDef[SquadIndex].attachbp=Attachbp
+				break
+			end
+		end
+		
+		for WeaponGroupName,WeaponDef in (WeaponList) do
+			if not SGroup_Exists(WeaponGroupName) then 
+					print("CaptureMgr_Class:AddWaveDefFromMap ERROR : sgroup does not exist (skipping):" .. WeaponGroupName)
+			elseif SGroup_ContainsSquad(SGroup_FromName(WeaponGroupName),SquadID) then
+				self.WaveDef[SquadIndex].weapons_list=WeaponDef
+				break
+			end
+		end
+		
+		for WeaponGroupName,WeaponDef in (EntrenchWeaponList) do
+			if not SGroup_Exists(WeaponGroupName) then 
+				print("CaptureMgr_Class:AddWaveDefFromMap ERROR : sgroup does not exist (skipping):" .. WeaponGroupName)
+			elseif SGroup_ContainsSquad(SGroup_FromName(WeaponGroupName),SquadID) then
+				self.WaveDef[SquadIndex].entrenchweapons_list=WeaponDef
+				break
+			end
+		end
+		
+	end
+	
+end
+
+function CaptureMgr_Class:UpdateLiveStatus()
+
+	for Wave_Index,Wave in pairs(self.WaveList) do
+		Wave:UpdateLiveStatus()
+		if not Wave:IsAlive() then
+			self.WaveList[Wave_Index]=nil
+		end
+	end
+	
+	local NewLaunchStatus=not Egroup_IsCapturedByPlayerTeam(self.TargetEgID, self.PlayerID, true)
+	if self.LaunchStatus~=NewLaunchStatus then
+		if self.DebugON>0 then print(tostring(self) .. "CaptureMgr_Class:UpdateLiveStatus() New launch status=" .. tostring(NewLaunchStatus) .. " Time=" .. World_GetGameTime()) end
+		if not NewLaunchStatus then
+			if self.ReinforceQueryNbr~=nil then
+				if self.DebugON>0 then print(tostring(self) .. "CaptureMgr_Class:UpdateLiveStatus() Clearing existing query, Time=" .. World_GetGameTime()) end
+				PointerTable.Get(self.ReinforceMgr_Pointer):RemoveQuery(self.ReinforceQueryNbr)
+				self.ReinforceQueryNbr=nil
+			end
+			self.LaunchDelayIndex=1
+		end
+		self.LaunchStatus=NewLaunchStatus
+	end
+
+end
+
+function CaptureMgr_Class:RequireReinforcement(ReinforcementMgr)
+
+	for Wave_Index,Wave in pairs(self.WaveList) do
+		Wave:RequireReinforcement(ReinforcementMgr)
+	end
+
+	if self.LaunchStatus and self.ReinforceQueryNbr==nil then
+		
+		local HealthRatio=true
+		for Wave_Index,Wave in pairs(self.WaveList) do
+			if Wave:GetAvgHealth()>=self.LaunchParams.Ratio then
+				HealthRatio=false
+				break
+			end
+		end
+		
+		if HealthRatio then
+			if self.DebugON>0 then print(tostring(self) .. " CaptureMgr_Class:RequireReinforcement() Requiring CaptureWave, Time=" .. World_GetGameTime() ) end
+			self.ReinforceMgr_Pointer=ReinforcementMgr.Pointer
+			self.ReinforceQueryNbr=ReinforcementMgr:Require(self, "CaptureWave","",self.LaunchParams.DelayList[self.LaunchDelayIndex],self.LaunchParams.Cost)
+			if self.LaunchParams.DelayList[self.LaunchDelayIndex+1]~=nil then
+				self.LaunchDelayIndex=self.LaunchDelayIndex+1
+			end
+		end
+	end
+	
+end
+
+function CaptureMgr_Class:DoReinforce(ReinforceType, ReinforceData)
+	if ReinforceType=="CaptureWave" then 
+		self.WaveCount=self.WaveCount+1
+		local WaveName="Capture"..self.WaveCount
+		self.WaveList[WaveName]=CaptureWave_Class:New(
+			self.PlayerID, 
+			self.WaveDef, 
+			self.WaveParams, 
+			self.TargetEgName,
+			self.NextTargetEgName
+			)
+		self.ReinforceQueryNbr=nil
+		
+		if self.LaunchParams.OnLaunch~=nil then
+			CustomFunctions[self.LaunchParams.OnLaunch](self,WaveName)
+		end
+		
+		return true
+	else
+		print("Warning:CaptureMgr_Class: unknown reinforcement type=" .. ReinforceType)
+		return false
+	end
+end
+
+function CaptureMgr_Class:CancelReinforcement(ReinforcementMgr)
+	for Wave_Index,Wave in pairs(self.WaveList) do
+		Wave:CancelReinforcement(ReinforcementMgr)
+	end
+	ReinforcementMgr:RemoveAllQueries(self)
+	self.ReinforceQueryNbr=nil
+end
+
+function CaptureMgr_Class:DoOrders()
+	for Wave_Index,Wave in pairs(self.WaveList) do
+		Wave:DoOrders()
+	end
+end
+
+function CaptureMgr_Class:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	for Wave_Index,Wave in pairs(self.WaveList) do
+		Wave:DoSpecAbility(Friend_Sampling,Ennemy_Sampling)
+	end
+end
